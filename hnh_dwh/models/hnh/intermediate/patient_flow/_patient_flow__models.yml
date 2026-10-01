@@ -40,3 +40,21 @@ models:
         tests:
           - accepted_values:
               values: ["Normal discharge", "Left against advice", "Died", "Transferred out", "Transferred to another episode", "Wrong admission", "Absconded", "Other", "Not recorded"]
+
+  - name: int_encounter
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, encounter_type, source_id]
+    columns:
+      - name: encounter_type
+        tests:
+          - accepted_values:
+              values: ["OP", "ER", "IP"]
+      - name: care_type
+        tests:
+          - accepted_values:
+              values: ["OP", "ER", "IP", "DAYCASE"]
+      - name: visit_type
+        tests:
+          - accepted_values:
+              values: ["New patient", "Free follow-up", "Paid visit"]

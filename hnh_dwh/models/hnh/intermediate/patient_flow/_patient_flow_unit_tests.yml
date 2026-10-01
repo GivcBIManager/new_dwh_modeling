@@ -390,3 +390,102 @@ unit_tests:
         - {admission_no: 1, had_critical_bed: 1, is_icu_readmission_48h: 0}
         - {admission_no: 2, had_critical_bed: 1, is_icu_readmission_48h: 1}
         - {admission_no: 3, had_critical_bed: 1, is_icu_readmission_48h: 0}
+
+  - name: int_encounter_flags
+    description: >
+      Cancellation from the outcome group; no-show only when the patient did not arrive
+      anywhere in the branch that day; booked row without an episode is kept as OP;
+      out-of-order timestamps give null guarded minutes; returning patient from prior months.
+    model: int_encounter
+    given:
+      - input: ref('stg_oasis__appointments')
+        format: sql
+        rows: |
+          -- 1: attended, waited 20 minutes, patient's first episode
+          select toUInt8(1) as branch_id, toInt64(1) as appointment_id, toNullable(toInt64(500)) as work_entity,
+                 toNullable(toDateTime('2026-06-10 09:00:00', 'Asia/Riyadh')) as starts_at,
+                 toNullable(toInt64(100)) as patient_id, toNullable(toInt64(1)) as episode_no,
+                 toNullable(toDateTime('2026-06-10 08:50:00', 'Asia/Riyadh')) as arrived_at,
+                 toNullable(toDateTime('2026-06-10 09:10:00', 'Asia/Riyadh')) as seen_at,
+                 toNullable(toDateTime('2026-06-10 09:30:00', 'Asia/Riyadh')) as completed_at,
+                 toNullable('D1') as booked_staff_id, toNullable('D1') as treating_staff_id,
+                 toNullable('N') as new_followup_flag, toNullable(toInt64(95)) as outcome_code,
+                 toUInt8(0) as is_walk_in, toUInt8(0) as is_virtual, toUInt8(0) as is_online_booking,
+                 cast(null as Nullable(String)) as booked_from,
+                 toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as booked_at
+          union all
+          -- 2: cancelled by patient
+          select toUInt8(1), toInt64(2), toNullable(toInt64(500)), toNullable(toDateTime('2026-07-05 09:00:00', 'Asia/Riyadh')),
+                 toNullable(toInt64(100)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable('D1'), cast(null as Nullable(String)), toNullable('N'), toNullable(toInt64(107)),
+                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+          union all
+          -- 3: booked, no episode, never arrived, no other arrival that day -> no-show
+          select toUInt8(1), toInt64(3), toNullable(toInt64(500)), toNullable(toDateTime('2026-07-20 09:00:00', 'Asia/Riyadh')),
+                 toNullable(toInt64(100)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable('D1'), cast(null as Nullable(String)), toNullable('N'), cast(null as Nullable(Int64)),
+                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+          union all
+          -- 4: missed the booked slot ...
+          select toUInt8(1), toInt64(4), toNullable(toInt64(500)), toNullable(toDateTime('2026-08-03 09:00:00', 'Asia/Riyadh')),
+                 toNullable(toInt64(100)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable('D1'), cast(null as Nullable(String)), toNullable('N'), cast(null as Nullable(Int64)),
+                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+          union all
+          -- 5: ... but walked in the same day; seen before arrival is recorded
+          select toUInt8(1), toInt64(5), toNullable(toInt64(501)), toNullable(toDateTime('2026-08-03 17:00:00', 'Asia/Riyadh')),
+                 toNullable(toInt64(100)), toNullable(toInt64(2)),
+                 toNullable(toDateTime('2026-08-03 17:05:00', 'Asia/Riyadh')),
+                 toNullable(toDateTime('2026-08-03 16:55:00', 'Asia/Riyadh')),
+                 toNullable(toDateTime('2026-08-03 17:20:00', 'Asia/Riyadh')),
+                 toNullable('D2'), toNullable('D2'), toNullable('F'), toNullable(toInt64(1781)),
+                 toUInt8(1), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+      - input: ref('stg_oasis__er_visits')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(9001) as er_visit_id, toNullable(toInt64(100)) as patient_id,
+                 toNullable(toInt64(3)) as episode_no, toNullable(toInt64(3)) as priority,
+                 toNullable(toDateTime('2026-09-10 22:00:00', 'Asia/Riyadh')) as arrived_at,
+                 toNullable(toDateTime('2026-09-10 22:06:00', 'Asia/Riyadh')) as triaged_at,
+                 toNullable(toDateTime('2026-09-10 22:30:00', 'Asia/Riyadh')) as treatment_started_at,
+                 toNullable(toDateTime('2026-09-11 01:00:00', 'Asia/Riyadh')) as completed_at,
+                 toNullable(toInt64(96)) as outcome_code, toNullable(toInt64(700)) as work_entity,
+                 toNullable('E1') as treating_staff_id
+      - input: ref('int_admission')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(7001) as admission_no, toNullable(toInt64(100)) as patient_id,
+                 toNullable(toInt64(4)) as episode_no,
+                 toNullable(toDateTime('2026-09-11 01:10:00', 'Asia/Riyadh')) as admitted_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as seen_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as physical_discharge_at,
+                 toNullable(toInt64(800)) as first_work_entity,
+                 toNullable('C1') as request_consultant_staff_id, toNullable('T1') as treating_staff_id
+      - input: ref('int_episode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(1) as episode_no, 'OP' as care_type,
+                 toNullable('D1') as consultant_staff_id, toInt64(200) as purchaser_code,
+                 toNullable(toInt64(279)) as eligibility_type, toUInt8(1) as is_first_episode
+          union all select toUInt8(1), toInt64(100), toInt64(2), 'OP', toNullable('D2'), toInt64(200), toNullable(toInt64(231)), toUInt8(0)
+          union all select toUInt8(1), toInt64(100), toInt64(3), 'ER', toNullable('E9'), toInt64(9999), cast(null as Nullable(Int64)), toUInt8(0)
+          union all select toUInt8(1), toInt64(100), toInt64(4), 'IP', toNullable('C1'), toInt64(200), cast(null as Nullable(Int64)), toUInt8(0)
+      - input: ref('int_code_decode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(95) as code, toNullable('FOLLOW-UP BOOKED') as description_upper
+          union all select toUInt8(1), toInt64(107), toNullable('CANCELLED BY PATIENT')
+          union all select toUInt8(1), toInt64(1781), toNullable('CONDITION CURED')
+          union all select toUInt8(1), toInt64(96), toNullable('DISCHARGED')
+    expect:
+      rows:
+        - {encounter_type: "OP", source_id: 1, care_type: "OP", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: 20, service_minutes: 20, booking_lead_days: 9, visit_type: "New patient", prior_encounters_4m: 0, is_returning: 0, booked_staff_id: "D1", purchaser_code: 200}
+        - {encounter_type: "OP", source_id: 2, care_type: "OP", is_arrived: 0, is_cancelled: 1, is_no_show: 0, wait_minutes: null, service_minutes: null, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 1, is_returning: 1, booked_staff_id: "D1", purchaser_code: 9999}
+        - {encounter_type: "OP", source_id: 3, care_type: "OP", is_arrived: 0, is_cancelled: 0, is_no_show: 1, wait_minutes: null, service_minutes: null, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 1, is_returning: 1, booked_staff_id: "D1", purchaser_code: 9999}
+        - {encounter_type: "OP", source_id: 4, care_type: "OP", is_arrived: 0, is_cancelled: 0, is_no_show: 0, wait_minutes: null, service_minutes: null, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 1, is_returning: 1, booked_staff_id: "D1", purchaser_code: 9999}
+        - {encounter_type: "OP", source_id: 5, care_type: "OP", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: null, service_minutes: 25, booking_lead_days: null, visit_type: "Free follow-up", prior_encounters_4m: 1, is_returning: 1, booked_staff_id: "D2", purchaser_code: 200}
+        - {encounter_type: "ER", source_id: 9001, care_type: "ER", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: 30, service_minutes: 150, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 2, is_returning: 1, booked_staff_id: "E9", purchaser_code: 9999}
+        - {encounter_type: "IP", source_id: 7001, care_type: "IP", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: null, service_minutes: null, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 2, is_returning: 1, booked_staff_id: "C1", purchaser_code: 200}
