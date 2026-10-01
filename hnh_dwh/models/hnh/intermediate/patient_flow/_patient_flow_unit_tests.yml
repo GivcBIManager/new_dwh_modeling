@@ -19,6 +19,14 @@ unit_tests:
           select toUInt8(1), toInt64(200), toInt64(1),
                  toNullable(toDateTime('2026-03-02 09:00:00', 'Asia/Riyadh')),
                  cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(300), toInt64(1),
+                 toNullable(toDateTime('2026-03-03 09:00:00', 'Asia/Riyadh')),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(300), toInt64(2),
+                 toNullable(toDateTime('2026-03-04 09:00:00', 'Asia/Riyadh')),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(Int64))
       - input: ref('stg_oasis__eligibility')
         format: sql
         rows: |
@@ -36,6 +44,10 @@ unit_tests:
           select toUInt8(1), toInt64(10), toNullable(toInt64(100)), toNullable(toInt64(2)),
                  toNullable(toInt64(1)), toNullable('1'), toNullable('E'), toNullable('D010'),
                  cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(960), toNullable(toInt64(300)), toNullable(toInt64(2)),
+                 toNullable(toInt64(1)), toNullable('1'), toNullable('O'), toNullable('D960'),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64))
       - input: ref('stg_oasis__bill_agreements')
         format: sql
         rows: |
@@ -52,3 +64,5 @@ unit_tests:
       rows:
         - {branch_id: 1, patient_id: 100, episode_no: 5, care_type: "OP", has_eligibility: 1, consultant_staff_id: "D950", work_entity: 2002, purchaser_code: 200, policy_code: 20, episode_seq: 2, is_first_episode: 0, previous_care_type: "ER"}
         - {branch_id: 1, patient_id: 200, episode_no: 1, care_type: "Unknown", has_eligibility: 0, consultant_staff_id: null, work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 1, is_first_episode: 1, previous_care_type: null}
+        - {branch_id: 1, patient_id: 300, episode_no: 1, care_type: "Unknown", has_eligibility: 0, consultant_staff_id: null, work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 1, is_first_episode: 1, previous_care_type: null}
+        - {branch_id: 1, patient_id: 300, episode_no: 2, care_type: "OP", has_eligibility: 1, consultant_staff_id: "D960", work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 2, is_first_episode: 0, previous_care_type: "Unknown"}

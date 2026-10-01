@@ -73,7 +73,7 @@ select
     tupleElement(py.chosen, 3)                               as contract_no,
     toUInt32(r.episode_seq)                                  as episode_seq,
     toUInt8(r.episode_seq = 1)                               as is_first_episode,
-    if(r.episode_seq = 1 or r.previous_attendance_type is null, null,
+    if(r.episode_seq = 1, null,
        {{ hnh_care_type('r.previous_attendance_type') }})    as previous_care_type,
     {{ hnh_care_type('pe.legacy_attendance_type') }}         as legacy_care_type,
     ifNull(py.legacy_purchaser_code, toInt64(9999))          as legacy_purchaser_code
