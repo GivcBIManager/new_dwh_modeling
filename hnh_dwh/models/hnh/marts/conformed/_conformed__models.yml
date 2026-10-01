@@ -82,3 +82,18 @@ models:
           - relationships:
               to: ref('dim_patient')
               field: patient_key
+  - name: dim_staff
+    columns:
+      - name: staff_key
+        tests: [unique, not_null]
+      - name: unified_specialty
+        tests: [not_null]
+      - name: contract_status
+        tests:
+          - accepted_values:
+              values: ["Active", "Terminated", "No contract", "Unknown"]
+      - name: home_department_key
+        tests:
+          - relationships:
+              to: ref('hnh_dim_department')
+              field: department_key
