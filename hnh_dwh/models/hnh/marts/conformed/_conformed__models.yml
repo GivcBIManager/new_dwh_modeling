@@ -1,0 +1,39 @@
+version: 2
+
+models:
+  - name: dim_branch
+    columns:
+      - name: branch_key
+        tests: [unique, not_null]
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+      - name: date_day
+        tests: [unique, not_null]
+      - name: hijri_year
+        tests: [not_null]
+  - name: dim_time
+    columns:
+      - name: time_key
+        tests: [unique, not_null]
+      - name: shift
+        tests:
+          - accepted_values:
+              values: ["00:00-08:00", "08:00-12:00", "12:00-16:30", "16:30-24:00"]
+  - name: dim_care_type
+    columns:
+      - name: care_type_key
+        tests: [unique, not_null]
+      - name: care_type
+        tests:
+          - accepted_values:
+              values: ["OP", "ER", "IP", "DAYCASE", "Unknown"]
+  - name: dim_admission_source
+    columns:
+      - name: admission_source_key
+        tests: [unique, not_null]
+  - name: dim_procedure_type
+    columns:
+      - name: procedure_type_key
+        tests: [unique, not_null]

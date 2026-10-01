@@ -52,3 +52,11 @@ models:
     columns:
       - name: user_name
         tests: [not_null]
+  - name: stg_ref__hijri_calendar
+    columns:
+      - name: date_day
+        tests: [unique, not_null]
+  - name: stg_ref__public_holiday
+    columns:
+      - name: date_day
+        tests: [unique, not_null]
