@@ -3,14 +3,27 @@
 {% set start_date = "toDate('" ~ var('hnh_history_start_date') ~ "')" %}
 {% set end_date = "(today() - 1)" %}
 
-with beds as (
+with bed_rows as (
+    select
+        branch_id, bed_detail_id, bed_location, bed_status, work_entity, started_at,
+        if(
+            ended_at is null and is_current != 'Y',
+            ifNull(leadInFrame(started_at) over (
+                partition by branch_id, bed_location order by started_at, bed_detail_id
+                rows between current row and unbounded following), started_at),
+            ended_at
+        ) as ended_at
+    from {{ ref('stg_oasis__bed_details') }}
+    where bed_location is not null and started_at is not null
+),
+
+beds as (
     select
         branch_id, bed_location,
         toDate(min(started_at)) as first_seen_date,
         max(if(ended_at is null, {{ end_date }}, toDate(assumeNotNull(ended_at)))) as last_seen_date,
         argMax(work_entity, tuple(started_at, bed_detail_id)) as current_work_entity
-    from {{ ref('stg_oasis__bed_details') }}
-    where bed_location is not null and started_at is not null
+    from bed_rows
     group by branch_id, bed_location
 ),
 
@@ -29,13 +42,13 @@ occupied_days as (
     -- before its end date; an open stay occupies every night through yesterday.
     select
         branch_id, bed_location, date_day,
-        argMax(admission_no, started_at)      as admission_no,
-        argMax(patient_id, started_at)        as patient_id,
-        argMax(work_entity, started_at)       as work_entity,
-        argMax(is_excluded_ward, started_at)  as is_excluded_ward
+        argMax(admission_no, tuple(started_at, bed_detail_id))      as admission_no,
+        argMax(patient_id, tuple(started_at, bed_detail_id))        as patient_id,
+        argMax(work_entity, tuple(started_at, bed_detail_id))       as work_entity,
+        argMax(is_excluded_ward, tuple(started_at, bed_detail_id))  as is_excluded_ward
     from (
         select
-            branch_id, bed_location, admission_no, patient_id, work_entity, is_excluded_ward, started_at,
+            branch_id, bed_location, bed_detail_id, admission_no, patient_id, work_entity, is_excluded_ward, started_at,
             arrayJoin(arrayMap(
                 x -> toDate(started_at) + x,
                 range(toUInt32(greatest(
@@ -56,11 +69,10 @@ unavailable_days as (
                 dateDiff('day', toDate(b.started_at), if(b.ended_at is null, {{ end_date }} + 1, toDate(assumeNotNull(b.ended_at)))),
                 0)))
         )) as date_day
-    from {{ ref('stg_oasis__bed_details') }} as b
+    from bed_rows as b
     inner join {{ ref('int_code_decode') }} as st
         on st.branch_id = b.branch_id and st.code = b.bed_status
-    where b.bed_location is not null and b.started_at is not null
-      and st.description_upper in ('NO BED IN SLOT', 'NOT AVAILABLE')
+    where st.description_upper in ('NO BED IN SLOT', 'NOT AVAILABLE')
 )
 
 select

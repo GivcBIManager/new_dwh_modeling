@@ -1,5 +1,21 @@
 {{ config(order_by='(branch_id, admission_no, bed_detail_id)') }}
 
+with bed_rows as (
+    -- A row with no end is open only when it is the current row. A stale open row
+    -- ends at the start of the next row of the same bed, or has zero length.
+    select
+        *,
+        if(
+            ended_at is null and is_current != 'Y',
+            ifNull(leadInFrame(started_at) over (
+                partition by branch_id, bed_location order by started_at, bed_detail_id
+                rows between current row and unbounded following), started_at),
+            ended_at
+        ) as effective_ended_at
+    from {{ ref('stg_oasis__bed_details') }}
+    where bed_location is not null and started_at is not null
+)
+
 select
     b.branch_id                                               as branch_id,
     b.bed_detail_id                                           as bed_detail_id,
@@ -10,13 +26,13 @@ select
     assumeNotNull(b.bed_location)                             as bed_location,
     b.bed_class                                               as bed_class,
     assumeNotNull(b.started_at)                               as started_at,
-    b.ended_at                                                as ended_at,
+    b.effective_ended_at                                      as ended_at,
     ifNull(cls.classification, 'Not Mapped')                  as classification,
     toUInt8(ifNull(cls.classification, '') = 'Critical')      as is_critical,
     toUInt8(ifNull(d.is_excluded_ward, 0))                    as is_excluded_ward,
     row_number() over (partition by b.branch_id, b.admission_no order by b.started_at asc, b.bed_detail_id asc)   as segment_seq,
     row_number() over (partition by b.branch_id, b.admission_no order by b.started_at desc, b.bed_detail_id desc) as segment_seq_desc
-from {{ ref('stg_oasis__bed_details') }} as b
+from bed_rows as b
 left join {{ ref('stg_ref__bed_classification') }} as cls
     on cls.branch_id = b.branch_id and cls.bed_location = b.bed_location
 left join {{ ref('int_department_conformed') }} as d

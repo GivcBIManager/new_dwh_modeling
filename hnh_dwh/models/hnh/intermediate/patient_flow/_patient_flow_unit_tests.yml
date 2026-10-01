@@ -143,6 +143,21 @@ unit_tests:
                  toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(1)),
                  cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
                  cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          -- bed A6: stale open row with an admission, ended by the next row
+          select toUInt8(1), toInt64(9), toNullable('N'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A6'), toNullable(toInt64(29)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 5, 'Asia/Riyadh') + toIntervalHour(10)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(103)), toNullable(toInt64(7004)), toNullable(toInt64(1)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(10), toNullable('Y'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A6'), toNullable(toInt64(28)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(12)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
       - input: ref('int_bed_segment')
         format: sql
         rows: |
@@ -159,6 +174,10 @@ unit_tests:
           select toUInt8(1), toInt64(3), toInt64(7003), toNullable(toInt64(102)), toNullable(toInt64(500)), 'A3',
                  toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(20),
                  cast(null as Nullable(DateTime('Asia/Riyadh'))), toUInt8(0)
+          union all
+          select toUInt8(1), toInt64(9), toInt64(7004), toNullable(toInt64(103)), toNullable(toInt64(500)), 'A6',
+                 toDateTime(today() - 5, 'Asia/Riyadh') + toIntervalHour(10),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(12)), toUInt8(0)
       - input: ref('int_code_decode')
         format: sql
         rows: |
@@ -190,3 +209,8 @@ unit_tests:
         union all select toUInt8(1), 'A5', today() - 5, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
         union all select toUInt8(1), 'A5', today() - 4, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
         union all select toUInt8(1), 'A5', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A6', today() - 5, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7004)), toNullable(toInt64(103)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A6', today() - 4, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7004)), toNullable(toInt64(103)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A6', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A6', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A6', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
