@@ -14,9 +14,9 @@ with first_request as (
 beds as (
     select
         branch_id, admission_no,
-        argMinIf(work_entity, tuple(started_at, bed_detail_id), is_excluded_ward = 0)   as first_work_entity,
-        argMaxIf(work_entity, tuple(started_at, bed_detail_id), is_excluded_ward = 0)   as last_work_entity,
-        argMaxIf(toNullable(bed_location), tuple(started_at, bed_detail_id), is_excluded_ward = 0) as last_bed_location,
+        if(countIf(is_excluded_ward = 0) > 0, argMinIf(work_entity, tuple(started_at, bed_detail_id), is_excluded_ward = 0), argMin(work_entity, tuple(started_at, bed_detail_id))) as first_work_entity,
+        if(countIf(is_excluded_ward = 0) > 0, argMaxIf(work_entity, tuple(started_at, bed_detail_id), is_excluded_ward = 0), argMax(work_entity, tuple(started_at, bed_detail_id))) as last_work_entity,
+        if(countIf(is_excluded_ward = 0) > 0, argMaxIf(toNullable(bed_location), tuple(started_at, bed_detail_id), is_excluded_ward = 0), argMax(toNullable(bed_location), tuple(started_at, bed_detail_id))) as last_bed_location,
         toUInt8(count() > 0)                                                            as has_bed,
         toUInt8(max(is_critical))                                                       as had_critical_bed,
         sumIf(dateDiff('minute', started_at, ifNull(ended_at, now('Asia/Riyadh'))), is_critical = 1) / 60 as critical_bed_hours,

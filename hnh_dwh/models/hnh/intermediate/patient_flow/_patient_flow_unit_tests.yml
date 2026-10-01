@@ -274,6 +274,12 @@ unit_tests:
                  toNullable(toDateTime('2026-06-05 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-06-08 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D5')
+          union all
+          -- patient 600: only segment is in an excluded ward
+          select toUInt8(1), toInt64(9), toNullable(toInt64(600)), toNullable(toInt64(1)),
+                 toNullable(toDateTime('2026-07-01 08:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-07-02 08:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D6')
       - input: ref('stg_oasis__admission_requests')
         format: sql
         rows: |
@@ -309,6 +315,10 @@ unit_tests:
           union all
           select toUInt8(1), toInt64(802), toInt64(8), toNullable(toInt64(700)), 'I1',
                  toDateTime('2026-06-04 07:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-08 06:00:00', 'Asia/Riyadh')), toUInt8(1), toUInt8(0)
+          union all
+          -- admission 9: only segment is in excluded ward 600
+          select toUInt8(1), toInt64(901), toInt64(9), toNullable(toInt64(600)), 'P9',
+                 toDateTime('2026-07-01 08:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-07-02 08:00:00', 'Asia/Riyadh')), toUInt8(0), toUInt8(1)
       - input: ref('int_episode')
         format: sql
         rows: |
@@ -330,6 +340,7 @@ unit_tests:
         - {admission_no: 6, is_open: 0, los_days: 1, is_short_stay: 0, is_countable: 0, first_work_entity: null, last_work_entity: null, legacy_in_vw_inpatients: 0, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
         - {admission_no: 7, is_open: 0, los_days: 2, is_short_stay: 0, is_countable: 1, first_work_entity: 700, last_work_entity: 500, legacy_in_vw_inpatients: 1, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
         - {admission_no: 8, is_open: 0, los_days: 3, is_short_stay: 0, is_countable: 1, first_work_entity: 700, last_work_entity: 500, legacy_in_vw_inpatients: 1, days_since_previous_discharge: 2, is_readmission_30d: 1, admission_source: "Direct"}
+        - {admission_no: 9, is_open: 0, los_days: 1, is_short_stay: 0, is_countable: 1, first_work_entity: 600, last_work_entity: 600, legacy_in_vw_inpatients: 0, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
 
   - name: int_admission_icu_readmission_window
     description: Back in a Critical bed 47 hours after leaving one is a 48-hour ICU readmission; 49 hours is not.
