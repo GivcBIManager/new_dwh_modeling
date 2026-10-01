@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_oasis__codes_data
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, code]
+  - name: stg_oasis__work_entities
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, work_entity]
+  - name: stg_oasis__service_departments
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, service_dept]
+  - name: stg_oasis__cost_centres
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, cost_centre_id]
+  - name: stg_oasis__purchasers
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, purchaser_code]
+  - name: stg_oasis__external_accounts
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, account_code, account_type, c_id]
+  - name: stg_oasis__eligibility_types
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, eligibility_type]
+  - name: stg_oasis__er_priorities
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, priority]

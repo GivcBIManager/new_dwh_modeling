@@ -1,0 +1,10 @@
+version: 2
+
+models:
+  - name: int_code_decode
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, code]
+    columns:
+      - name: code
+        tests: [not_null]

@@ -1,0 +1,73 @@
+version: 2
+
+sources:
+  - name: oasis
+    schema: oasis
+    description: Hospital information system staging tables. ReplacingMergeTree on recorded_updated_at.
+    loaded_at_field: recorded_updated_at
+    freshness:
+      warn_after: {count: 30, period: hour}
+      error_after: {count: 54, period: hour}
+    tables:
+      - name: codes_data
+        freshness: null
+      - name: work_entities_data
+        freshness: null
+      - name: service_dept_data
+        freshness: null
+      - name: control_contexts_data
+        freshness: null
+      - name: purchasers
+        freshness: null
+      - name: external_accounts_data
+        freshness: null
+      - name: eligibility_types
+        freshness: null
+      - name: hnh_disacharge_mode_mapping
+        freshness: null
+      - name: hnh_admission_reason_mapping
+        freshness: null
+      - name: er_priorities
+        freshness: null
+      - name: patient_master_data
+      - name: patient_file_master
+        freshness: null
+      - name: patient_ids
+        freshness: null
+      - name: staff_master_data
+        freshness: null
+      - name: staff_posts
+        freshness: null
+      - name: positions_data
+        freshness: null
+      - name: staff_types_data
+        freshness: null
+      - name: staff_type_classification
+        freshness: null
+      - name: staff_contracts
+        freshness: null
+      - name: hnh_internal_doctor_list
+        freshness: null
+      - name: personnel_documents
+        freshness: null
+      - name: bed_slots_master
+        freshness: null
+      - name: room_master
+        freshness: null
+      - name: bed_class_master_data
+        freshness: null
+      - name: bed_details
+      - name: appointments
+      - name: patient_emergency_visit
+      - name: patient_ad
+      - name: admission_request
+        freshness: null
+      - name: patient_episodes
+      - name: patient_eligibility
+      - name: patient_bill_agreements
+      - name: operating_diary_slots
+        freshness: null
+      - name: operating_slot_details
+        freshness: null
+      - name: ios_main_data
+        freshness: null
