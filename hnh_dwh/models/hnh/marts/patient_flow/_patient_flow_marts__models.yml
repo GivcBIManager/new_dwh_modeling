@@ -115,3 +115,37 @@ models:
       - name: staff_key
         tests:
           - relationships: {to: ref('dim_staff'), field: staff_key}
+  - name: fact_surgery
+    columns:
+      - name: surgery_key
+        tests: [unique, not_null]
+      - name: operation_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: surgeon_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: procedure_type_key
+        tests:
+          - relationships: {to: ref('dim_procedure_type'), field: procedure_type_key}
+  - name: fact_target_daily
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, date_key, scenario, care_type_key, stay_type, creditor, specialty]
+    columns:
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: scenario
+        tests:
+          - accepted_values:
+              values: ["most_likely", "best_case", "worst_case"]
