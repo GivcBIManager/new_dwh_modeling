@@ -46,6 +46,8 @@ models:
       - hnh_unique_combination:
           columns: [branch_id, encounter_type, source_id]
     columns:
+      - name: encounter_at
+        tests: [not_null]
       - name: encounter_type
         tests:
           - accepted_values:

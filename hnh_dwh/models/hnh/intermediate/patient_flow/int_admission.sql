@@ -131,7 +131,7 @@ select
     toUInt8(c.discharge_outcome_group = 'Left against advice')   as is_dama,
     toUInt8(dateDiff('hour', c.admitted_at, ifNull(c.physical_discharge_at, now('Asia/Riyadh'))) <= 1) as legacy_is_wrong_admission,
     toUInt8(dateDiff('hour', c.admitted_at, ifNull(c.physical_discharge_at, now('Asia/Riyadh'))) / 24 > 30
-            or ifNull(c.referred_upper as referred_upper, '') = 'LTC')             as legacy_is_ltc,
+            or ifNull(c.referred_upper, '') = 'LTC')             as legacy_is_ltc,
     if(pa.previous_admitted_at is null, null, dateDiff('day', pa.previous_admitted_at, c.admitted_at)) as legacy_days_since_previous_admission,
     toUInt8(c.has_bed = 1 and c.legacy_last_bed_ok = 1)          as legacy_in_vw_inpatients
 from countable as c

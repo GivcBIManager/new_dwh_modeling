@@ -7,13 +7,22 @@ with encounters as (
         uniqExactIf(encounter_key, encounter_type in ('OP', 'ER') and is_arrived = 1 and is_cancelled = 0)  as census,
         uniqExactIf(encounter_key, encounter_type = 'OP' and is_arrived = 1 and is_cancelled = 0)           as op_visits,
         uniqExactIf(encounter_key, encounter_type = 'ER' and is_cancelled = 0)                              as er_visits,
-        uniqExactIf(episode_key, encounter_type in ('OP', 'ER') and is_arrived = 1 and is_cancelled = 0 and is_follow_up = 0) as episodes,
         -- old bsc.vw_customer: OP and ER together, arrived, old cancellation list
         uniqExactIf(encounter_key, legacy_in_op_census = 1 and is_arrived = 1)                              as legacy_census,
         uniqExactIf(encounter_key, legacy_in_op_census = 1 and is_arrived = 1 and encounter_type = 'OP')    as legacy_op_census,
         uniqExactIf(encounter_key, legacy_in_op_census = 1 and is_arrived = 1 and encounter_type = 'ER')    as legacy_er_census,
         sumIf(wait_minutes_raw, legacy_in_op_census = 1 and is_arrived = 1 and encounter_type = 'OP')       as legacy_wait_minutes_sum
     from {{ ref('fact_encounter') }}
+    group by branch_key, month_start
+),
+
+episode_months as (
+    select
+        branch_key,
+        toStartOfMonth(YYYYMMDDToDate(toUInt32(start_date_key))) as month_start,
+        countIf(has_arrived_non_follow_up_encounter = 1)         as episodes
+    from {{ ref('fact_episode') }}
+    where episode_key != -1
     group by branch_key, month_start
 ),
 
@@ -52,6 +61,7 @@ beds as (
 
 spine as (
     select branch_key, month_start from encounters
+    union distinct select branch_key, month_start from episode_months
     union distinct select branch_key, month_start from admissions
     union distinct select branch_key, month_start from discharges
     union distinct select branch_key, month_start from beds
@@ -68,7 +78,7 @@ select
     ifNull(e.census, 0)                    as census,
     ifNull(e.op_visits, 0)                 as op_visits,
     ifNull(e.er_visits, 0)                 as er_visits,
-    ifNull(e.episodes, 0)                  as episodes,
+    ifNull(ep.episodes, 0)                 as episodes,
     ifNull(a.admissions, 0)                as admissions,
     ifNull(d.discharges, 0)                as discharges,
     d.alos_non_ltc                         as alos_non_ltc,
@@ -87,6 +97,7 @@ select
     ifNull(e.legacy_wait_minutes_sum, 0)   as legacy_wait_minutes_sum
 from spine as s
 left join encounters as e on e.branch_key = s.branch_key and e.month_start = s.month_start
+left join episode_months as ep on ep.branch_key = s.branch_key and ep.month_start = s.month_start
 left join admissions as a on a.branch_key = s.branch_key and a.month_start = s.month_start
 left join discharges as d on d.branch_key = s.branch_key and d.month_start = s.month_start
 left join beds as b on b.branch_key = s.branch_key and b.month_start = s.month_start

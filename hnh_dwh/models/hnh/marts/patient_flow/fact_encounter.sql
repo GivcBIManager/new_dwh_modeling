@@ -22,9 +22,9 @@ select
     e.branch_id                                              as branch_key,
     toInt32(toYYYYMMDD(assumeNotNull(e.encounter_at)))       as encounter_date_key,
     {{ hnh_time_key('e.encounter_at') }}                     as encounter_time_key,
-    {{ hnh_date_key('e.arrived_at') }}                       as arrival_date_key,
+    {{ hnh_date_key_in_range('e.arrived_at') }}                       as arrival_date_key,
     {{ hnh_time_key('e.arrived_at') }}                       as arrival_time_key,
-    {{ hnh_date_key('e.booked_at') }}                        as booking_date_key,
+    {{ hnh_date_key_in_range('e.booked_at') }}                        as booking_date_key,
     e.episode_key                                            as episode_key,
     ifNull(dp.patient_key, toInt64(-1))                      as patient_key,
     ifNull(dbs.staff_key, toInt64(-1))                       as booked_staff_key,
@@ -42,8 +42,8 @@ select
     e.is_arrived, e.is_seen, e.is_cancelled, e.is_no_show, e.is_walk_in, e.is_follow_up,
     e.is_virtual, e.is_online_booking, e.is_first_episode, e.is_returning,
     e.prior_encounters_4m,
-    e.wait_minutes, e.wait_minutes_raw, e.door_to_triage_minutes,
-    e.service_minutes, e.service_minutes_raw, e.er_los_minutes, e.booking_lead_days,
+    e.wait_minutes, e.wait_minutes_raw, e.door_to_triage_minutes, e.door_to_triage_minutes_raw,
+    e.service_minutes, e.service_minutes_raw, e.er_los_minutes, e.er_los_minutes_raw, e.booking_lead_days,
     e.legacy_in_op_census, e.legacy_is_cancelled_outpatient_model,
     now()                                                    as _loaded_at
 from e

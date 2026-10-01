@@ -48,14 +48,29 @@ occupied_days as (
         argMax(is_excluded_ward, tuple(started_at, bed_detail_id))  as is_excluded_ward
     from (
         select
-            branch_id, bed_location, bed_detail_id, admission_no, patient_id, work_entity, is_excluded_ward, started_at,
+            g.branch_id as branch_id, g.bed_location as bed_location, g.bed_detail_id as bed_detail_id,
+            g.admission_no as admission_no, g.patient_id as patient_id, g.work_entity as work_entity,
+            g.is_excluded_ward as is_excluded_ward, g.started_at as started_at,
             arrayJoin(arrayMap(
-                x -> toDate(started_at) + x,
-                range(toUInt32(greatest(
-                    dateDiff('day', toDate(started_at), if(ended_at is null, {{ end_date }} + 1, toDate(assumeNotNull(ended_at)))),
-                    0)))
+                x -> g.night_from + x,
+                range(toUInt32(greatest(dateDiff('day', g.night_from, g.night_to), 0)))
             )) as date_day
-        from {{ ref('int_bed_segment') }}
+        from (
+            -- Nights are clipped to the admission: [admission date, physical discharge date).
+            select
+                s.branch_id as branch_id, s.bed_location as bed_location, s.bed_detail_id as bed_detail_id,
+                s.admission_no as admission_no, s.patient_id as patient_id, s.work_entity as work_entity,
+                s.is_excluded_ward as is_excluded_ward, s.started_at as started_at,
+                greatest(toDate(s.started_at), ifNull(toDate(a.admitted_at), toDate('1970-01-01'))) as night_from,
+                least(
+                    if(s.ended_at is null, {{ end_date }} + 1, toDate(assumeNotNull(s.ended_at))),
+                    if(a.admission_no is null, toDate('2149-06-06'),
+                       if(a.physical_discharge_at is null, {{ end_date }} + 1, toDate(assumeNotNull(a.physical_discharge_at))))
+                ) as night_to
+            from {{ ref('int_bed_segment') }} as s
+            left join {{ ref('int_admission') }} as a
+                on a.branch_id = s.branch_id and a.admission_no = s.admission_no
+        ) as g
     )
     group by branch_id, bed_location, date_day
 ),

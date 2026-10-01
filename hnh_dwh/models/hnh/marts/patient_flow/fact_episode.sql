@@ -29,7 +29,7 @@ select
     e.episode_key                                        as episode_key,
     e.branch_id                                          as branch_key,
     toInt32(toYYYYMMDD(assumeNotNull(e.started_at)))     as start_date_key,
-    {{ hnh_date_key('e.ended_at') }}                     as end_date_key,
+    {{ hnh_date_key_in_range('e.ended_at') }}                     as end_date_key,
     ifNull(dp.patient_key, toInt64(-1))                  as patient_key,
     ifNull(ds.staff_key, toInt64(-1))                    as consultant_staff_key,
     ifNull(dd.department_key, toInt64(-1))               as department_key,

@@ -11,8 +11,11 @@ select
     sum(census)                                          as target_census,
     sum(episodes)                                        as target_episodes,
     sum(revenue)                                         as target_revenue,
-    if(sum(episodes) = 0, 0, sum(revenue) / sum(episodes)) as target_cost_per_episode,
-    max(alos)                                            as target_alos,
+    sum(cost_per_episode * episodes)                     as target_cost_total,
+    sum(alos * episodes)                                 as target_patient_days,
+    -- Non-additive helpers (episode-weighted averages); sum the two additive columns above and divide in the model.
+    if(sum(episodes) = 0, 0, sum(cost_per_episode * episodes) / sum(episodes)) as target_cost_per_episode,
+    if(sum(episodes) = 0, 0, sum(alos * episodes) / sum(episodes))             as target_alos,
     now()                                                as _loaded_at
 from {{ ref('stg_ref__budget') }}
 where is_latest = 1

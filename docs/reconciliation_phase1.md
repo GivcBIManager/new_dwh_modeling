@@ -33,6 +33,8 @@
 
 ## Known limits
 
+- `episodes` in the reconciliation table counts `fact_episode` rows that have at least one arrived, non-cancelled, non-follow-up OP or ER encounter, grouped by the episode's start month. It is not comparable to a visit-month count.
+- Walk-in appointments have no slot start time; their visit time is the arrival time (or the slot date when there is none), so they are counted in the month they happened.
 - `prior_encounters_4m` and "returning patients" are understated for January to April 2022, because encounters before 2022 are not in staging.
 - `legacy_care_type` and `legacy_purchaser_code` are approximate. The old values were picked arbitrarily by `any()`, so they are excluded from the 0.5% threshold.
 - Bed availability before a bed's first recorded row is unknown; the bed is treated as not existing until then.
@@ -43,22 +45,22 @@ Month: the calendar month before the build date (September 2026, built 2026-10-0
 
 | branch_key | census | legacy_census | census_diff | admissions | legacy_admissions | admission_diff |
 |---|---|---|---|---|---|---|
-| 1 | 12192 | 12270 | -78 | 901 | 833 | 68 |
-| 2 | 4306 | 4270 | 36 | 964 | 864 | 100 |
-| 3 | 6523 | 6499 | 24 | 1239 | 1033 | 206 |
-| 4 | 7331 | 7372 | -41 | 844 | 736 | 108 |
-| 5 | 3277 | 3282 | -5 | 1047 | 941 | 106 |
-| 6 | 2427 | 2423 | 4 | 334 | 303 | 31 |
-| 7 | 1578 | 1584 | -6 | 340 | 308 | 32 |
-| 8 | 165 | 174 | -9 | 72 | 51 | 21 |
+| 1 | 21922 | 22000 | -78 | 901 | 833 | 68 |
+| 2 | 15543 | 15507 | 36 | 964 | 864 | 100 |
+| 3 | 16968 | 16944 | 24 | 1239 | 1033 | 206 |
+| 4 | 15100 | 15141 | -41 | 844 | 736 | 108 |
+| 5 | 11788 | 11793 | -5 | 1047 | 941 | 106 |
+| 6 | 5108 | 5104 | 4 | 334 | 303 | 31 |
+| 7 | 5466 | 5472 | -6 | 340 | 308 | 32 |
+| 8 | 1188 | 1197 | -9 | 72 | 51 | 21 |
 
-| branch_key | alos | legacy_alos | occupancy_pct | legacy_occupancy_pct |
-|---|---|---|---|---|
-| 1 | 2.31 | 2.32 | 84.2 | 75.9 |
-| 2 | 2.41 | 2.49 | 57.8 | 51.0 |
-| 3 | 2.39 | 2.56 | 74.5 | 60.0 |
-| 4 | 2.31 | 2.35 | 56.7 | 52.4 |
-| 5 | 2.41 | 2.53 | 58.8 | 58.5 |
-| 6 | 3.47 | 3.52 | 34.4 | 30.8 |
-| 7 | 2.08 | 2.04 | 19.7 | 14.3 |
-| 8 | 2.00 | 2.13 | 2.2 | 2.1 |
+| branch_key | alos | legacy_alos | occupancy_pct | legacy_occupancy_pct | available_bed_nights | legacy_available_bed_nights |
+|---|---|---|---|---|---|---|
+| 1 | 2.31 | 2.32 | 84.0 | 75.7 | 13518 | 14993 |
+| 2 | 2.41 | 2.49 | 57.3 | 50.5 | 7851 | 8903 |
+| 3 | 2.39 | 2.56 | 74.5 | 60.0 | 7126 | 8845 |
+| 4 | 2.31 | 2.35 | 56.6 | 52.4 | 7350 | 7946 |
+| 5 | 2.41 | 2.53 | 58.7 | 58.5 | 6031 | 6061 |
+| 6 | 3.47 | 3.52 | 33.5 | 30.0 | 6255 | 6989 |
+| 7 | 2.08 | 2.04 | 19.7 | 14.3 | 3600 | 4959 |
+| 8 | 2.00 | 2.13 | 2.2 | 2.1 | 4770 | 5075 |

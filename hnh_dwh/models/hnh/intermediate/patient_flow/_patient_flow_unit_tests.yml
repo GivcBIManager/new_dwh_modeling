@@ -158,6 +158,14 @@ unit_tests:
                  cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
                  cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          -- bed A7: segment runs 2 days past its admission's physical discharge
+          select toUInt8(1), toInt64(11), toNullable('N'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A7'), toNullable(toInt64(29)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 6, 'Asia/Riyadh') + toIntervalHour(10)),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(10)),
+                 toNullable(toInt64(104)), toNullable(toInt64(7005)), toNullable(toInt64(1)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
       - input: ref('int_bed_segment')
         format: sql
         rows: |
@@ -178,6 +186,33 @@ unit_tests:
           select toUInt8(1), toInt64(9), toInt64(7004), toNullable(toInt64(103)), toNullable(toInt64(500)), 'A6',
                  toDateTime(today() - 5, 'Asia/Riyadh') + toIntervalHour(10),
                  toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(12)), toUInt8(0)
+          union all
+          select toUInt8(1), toInt64(11), toInt64(7005), toNullable(toInt64(104)), toNullable(toInt64(500)), 'A7',
+                 toDateTime(today() - 6, 'Asia/Riyadh') + toIntervalHour(10),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(10)), toUInt8(0)
+      - input: ref('int_admission')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(7001) as admission_no,
+                 toNullable(toDateTime(today() - 4, 'Asia/Riyadh') + toIntervalHour(10)) as admitted_at,
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(9)) as physical_discharge_at
+          union all
+          select toUInt8(1), toInt64(7002),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(8)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(15))
+          union all
+          select toUInt8(1), toInt64(7003),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(20)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh')))
+          union all
+          select toUInt8(1), toInt64(7004),
+                 toNullable(toDateTime(today() - 5, 'Asia/Riyadh') + toIntervalHour(10)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(12))
+          union all
+          -- A7's admission was discharged 4 days ago at 10:00; its bed row kept running 2 more days
+          select toUInt8(1), toInt64(7005),
+                 toNullable(toDateTime(today() - 6, 'Asia/Riyadh') + toIntervalHour(10)),
+                 toNullable(toDateTime(today() - 4, 'Asia/Riyadh') + toIntervalHour(10))
       - input: ref('int_code_decode')
         format: sql
         rows: |
@@ -214,6 +249,11 @@ unit_tests:
         union all select toUInt8(1), 'A6', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
         union all select toUInt8(1), 'A6', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
         union all select toUInt8(1), 'A6', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A7', today() - 6, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7005)), toNullable(toInt64(104)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A7', today() - 5, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7005)), toNullable(toInt64(104)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A7', today() - 4, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A7', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A7', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
 
   - name: int_admission_rules
     description: >
@@ -423,28 +463,28 @@ unit_tests:
                  toNullable('N') as new_followup_flag, toNullable(toInt64(95)) as outcome_code,
                  toUInt8(0) as is_walk_in, toUInt8(0) as is_virtual, toUInt8(0) as is_online_booking,
                  cast(null as Nullable(String)) as booked_from,
-                 toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as booked_at
+                 toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as booked_at, toDate('2026-01-01') as slot_date
           union all
           -- 2: cancelled by patient
           select toUInt8(1), toInt64(2), toNullable(toInt64(500)), toNullable(toDateTime('2026-07-05 09:00:00', 'Asia/Riyadh')),
                  toNullable(toInt64(100)), cast(null as Nullable(Int64)),
                  cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  toNullable('D1'), cast(null as Nullable(String)), toNullable('N'), toNullable(toInt64(107)),
-                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh'))), toDate('2026-01-01')
           union all
           -- 3: booked, no episode, never arrived, no other arrival that day -> no-show
           select toUInt8(1), toInt64(3), toNullable(toInt64(500)), toNullable(toDateTime('2026-07-20 09:00:00', 'Asia/Riyadh')),
                  toNullable(toInt64(100)), cast(null as Nullable(Int64)),
                  cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  toNullable('D1'), cast(null as Nullable(String)), toNullable('N'), cast(null as Nullable(Int64)),
-                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh'))), toDate('2026-01-01')
           union all
           -- 4: missed the booked slot ...
           select toUInt8(1), toInt64(4), toNullable(toInt64(500)), toNullable(toDateTime('2026-08-03 09:00:00', 'Asia/Riyadh')),
                  toNullable(toInt64(100)), cast(null as Nullable(Int64)),
                  cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  toNullable('D1'), cast(null as Nullable(String)), toNullable('N'), cast(null as Nullable(Int64)),
-                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+                 toUInt8(0), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh'))), toDate('2026-01-01')
           union all
           -- 5: ... but walked in the same day; seen before arrival is recorded
           select toUInt8(1), toInt64(5), toNullable(toInt64(501)), toNullable(toDateTime('2026-08-03 17:00:00', 'Asia/Riyadh')),
@@ -453,7 +493,7 @@ unit_tests:
                  toNullable(toDateTime('2026-08-03 16:55:00', 'Asia/Riyadh')),
                  toNullable(toDateTime('2026-08-03 17:20:00', 'Asia/Riyadh')),
                  toNullable('D2'), toNullable('D2'), toNullable('F'), toNullable(toInt64(1781)),
-                 toUInt8(1), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh')))
+                 toUInt8(1), toUInt8(0), toUInt8(0), cast(null as Nullable(String)), cast(null as Nullable(DateTime('Asia/Riyadh'))), toDate('2026-01-01')
       - input: ref('stg_oasis__er_visits')
         format: sql
         rows: |

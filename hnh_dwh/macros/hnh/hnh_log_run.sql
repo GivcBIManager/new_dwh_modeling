@@ -2,6 +2,9 @@
 {% macro hnh_log_run(results) %}
   {% if execute and flags.WHICH in ('run', 'build') %}
     {% set failed = results | selectattr('status', 'in', ['error', 'fail']) | list | length %}
+    {% set sel = invocation_args_dict.get("select") or [] %}
+    {% set sel = sel if sel is string else (sel | join(" ")) %}
+    {% set selected_text = sel | replace("\\", "") | replace("'", "") %}
     {% set built = results | selectattr('node.resource_type', 'equalto', 'model') | selectattr('status', 'equalto', 'success') | list | length %}
     {% set create_sql %}
       create table if not exists gold.etl_run_log (
@@ -23,7 +26,7 @@
           '{{ "failed" if failed > 0 else "success" }}',
           {{ built }},
           {{ failed }},
-          '{{ (invocation_args_dict.get("select") or []) | join(" ") | replace("'", "") }}'
+          '{{ selected_text }}'
       )
     {% endset %}
     {% do run_query(insert_sql) %}

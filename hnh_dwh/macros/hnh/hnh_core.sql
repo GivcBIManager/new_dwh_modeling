@@ -47,6 +47,12 @@ if({{ col }} < toDateTime64('1970-01-01 03:00:00', 6, 'UTC') or {{ col }} >= toD
 toInt32(toYYYYMMDD({{ col }}))
 {%- endmacro %}
 
+{# Date key for optional dates: null when outside [2008-01-01, end of dim_date] so it never dangles. #}
+{% macro hnh_date_key_in_range(col) -%}
+if(toDate({{ col }}) between toDate('2008-01-01') and toDate(concat(toString(toYear(today()) + 2), '-12-31')),
+   toInt32(toYYYYMMDD({{ col }})), null)
+{%- endmacro %}
+
 {% macro hnh_time_key(col) -%}
 toInt16(toHour({{ col }}) * 60 + toMinute({{ col }}))
 {%- endmacro %}

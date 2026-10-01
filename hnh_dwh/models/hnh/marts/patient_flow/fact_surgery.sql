@@ -1,4 +1,4 @@
-{{ config(order_by='(branch_key, surgery_key)') }}
+{{ config(order_by='(branch_key, ifNull(operation_date_key, 0), surgery_key)') }}
 
 with ops as (
     select
@@ -107,7 +107,7 @@ k as (
 select
     k.surgery_key                                        as surgery_key,
     k.branch_id                                          as branch_key,
-    {{ hnh_date_key('k.operation_at') }}                 as operation_date_key,
+    {{ hnh_date_key_in_range('k.operation_at') }}                 as operation_date_key,
     {{ hnh_time_key('k.operation_at') }}                 as operation_time_key,
     k.episode_key                                        as episode_key,
     ifNull(dp.patient_key, toInt64(-1))                  as patient_key,
@@ -127,9 +127,13 @@ select
     toUInt8(k.cancel_status = 'R')                       as is_rescheduled,
     k.cancel_reason                                      as cancel_reason,
     {{ hnh_minutes_between('k.hall_arrived_at', 'k.theatre_arrived_at') }}        as hall_to_theatre_minutes,
+    dateDiff('minute', k.hall_arrived_at, k.theatre_arrived_at)                    as hall_to_theatre_minutes_raw,
     {{ hnh_minutes_between('k.anaesthesia_started_at', 'k.anaesthesia_ended_at') }} as anaesthesia_minutes,
+    dateDiff('minute', k.anaesthesia_started_at, k.anaesthesia_ended_at)           as anaesthesia_minutes_raw,
     {{ hnh_minutes_between('k.operation_started_at', 'k.operation_ended_at') }}   as operating_minutes,
+    dateDiff('minute', k.operation_started_at, k.operation_ended_at)               as operating_minutes_raw,
     {{ hnh_minutes_between('k.recovery_at', 'k.ward_at') }}                       as recovery_handover_minutes,
+    dateDiff('minute', k.recovery_at, k.ward_at)                                   as recovery_handover_minutes_raw,
     now()                                                as _loaded_at
 from k
 left join (select patient_key from {{ ref('dim_patient') }}) as dp on dp.patient_key = k.patient_key_raw

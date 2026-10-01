@@ -66,12 +66,23 @@ Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar
 
 ## Run log
 
-Add this to the receiving `dbt_project.yml` so every run appends a row to `gold.etl_run_log`. SSAS processing should start only when the latest row has `status = 'success'`.
+Add this to the receiving `dbt_project.yml` so every run appends a row to `gold.etl_run_log`. SSAS processing should start only when the latest `etl_run_log` row whose `selected = 'tag:hnh'` has `status = 'success'` (`selected` records the `--select` text exactly, backslashes and quotes removed; `status` is `success` only when no node failed).
 
 ```yaml
 on-run-end:
   - "{{ hnh_log_run(results) }}"
 ```
+
+## Notes for the SSAS model
+
+- Do not relate the facts to each other on `encounter_key` or `episode_key`. Their windows differ (facts start at 2022-01-01, intermediate look-backs do not), and admissions open from before 2022 have no matching rows elsewhere.
+- Visit and patient KPIs filter `encounter_type in ('OP', 'ER')`; `IP` rows in `fact_encounter` are admissions, not visits.
+- Occupancy uses inpatient wards only (`is_inpatient_ward = 1`) and excludes excluded wards (`is_excluded_ward = 0`).
+- ER wait is arrival to treatment start (`wait_minutes`); ER length of stay is arrival to completion.
+- Admission source maps `EMERGENCY` as well as the department descriptions.
+- Run `dbt build --full-refresh --select agg_clinic_capacity_daily` weekly: no-show flips and late dimension members change past days that the incremental load does not revisit.
+- `fact_admission` does not yet carry critical-bed timestamps, the admission request reason or the discharging ward (planned).
+- `fact_target_daily`: `target_cost_total` and `target_patient_days` are additive; `target_cost_per_episode` and `target_alos` are episode-weighted averages for one row and must not be summed. Compute cost per episode as `SUM(target_cost_total) / SUM(target_episodes)`.
 
 ## Running
 
