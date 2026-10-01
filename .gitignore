@@ -1,0 +1,29 @@
+# Reference material supplied for design - not part of the project
+/oasis sample queries for business logic and relations understanding/
+/powerbi_tmdl/
+
+# Data exports. Includes static_mappings/_BI_USERS_.csv (contains passwords)
+# and static_mappings/budget_data.csv (260 MB).
+*.csv
+
+# dbt
+target/
+dbt_packages/
+logs/
+profiles.yml
+.user.yml
+
+# Python / Dagster
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.dagster/
+tmp*/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
