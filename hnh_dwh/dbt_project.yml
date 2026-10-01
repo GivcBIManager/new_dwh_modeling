@@ -30,3 +30,8 @@ models:
         +schema: gold
         +materialized: table
         +tags: ["hnh_gold"]
+
+data_tests:
+  hnh_dwh:
+    hnh:
+      +tags: ["hnh"]
