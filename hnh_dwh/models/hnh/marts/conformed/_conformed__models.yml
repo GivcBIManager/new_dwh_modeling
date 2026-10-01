@@ -37,3 +37,25 @@ models:
     columns:
       - name: procedure_type_key
         tests: [unique, not_null]
+  - name: hnh_dim_department
+    columns:
+      - name: department_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships:
+              to: ref('hnh_dim_branch')
+              field: branch_key
+      - name: unified_department
+        tests: [not_null]
+  - name: dim_payer
+    columns:
+      - name: payer_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships:
+              to: ref('hnh_dim_branch')
+              field: branch_key
+      - name: creditor
+        tests: [not_null]

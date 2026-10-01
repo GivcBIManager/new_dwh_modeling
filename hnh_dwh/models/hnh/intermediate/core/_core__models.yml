@@ -8,3 +8,14 @@ models:
     columns:
       - name: code
         tests: [not_null]
+  - name: int_department_conformed
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, work_entity]
+    columns:
+      - name: care_setting
+        tests:
+          - accepted_values:
+              values: ["OP", "IP", "ER", "Theatre", "Ancillary", "Support"]
+      - name: tower
+        tests: [not_null]
