@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: reference
+    schema: default
+    description: Hand-maintained mapping tables, loaded once by scripts/load_reference_data.py.
+    tables:
+      - name: branch_dict_source
+      - name: map_purchasers
+      - name: map_referral_policies
+      - name: map_unified_department_v2
+      - name: map_bed_classification
+      - name: map_ward_tower
+      - name: map_clinic_duration
+      - name: map_clinic_count
+      - name: map_home_care_entity
+      - name: map_termination_reason
+      - name: bi_users
+      - name: budget_data
+      - name: map_hijri_calendar
+      - name: map_public_holiday

@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_ref__branch
+    columns:
+      - name: branch_id
+        tests: [unique, not_null]
+  - name: stg_ref__purchaser_mapping
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, purchaser_code]
+  - name: stg_ref__referral_policy
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, purchaser_code, policy_code]
+  - name: stg_ref__unified_department
+    columns:
+      - name: department
+        tests: [unique, not_null]
+      - name: unified_department
+        tests: [not_null]
+  - name: stg_ref__bed_classification
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bed_location]
+    columns:
+      - name: classification
+        tests:
+          - accepted_values:
+              values: ["Critical", "Intermediate Care", "Non Critical", "Non-Admitting Unit"]
+  - name: stg_ref__ward_tower
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, work_entity]
+  - name: stg_ref__clinic_duration
+    columns:
+      - name: specialty
+        tests: [unique, not_null]
+  - name: stg_ref__clinic_count
+    columns:
+      - name: branch_id
+        tests: [unique, not_null]
+  - name: stg_ref__home_care_entity
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, work_entity]
+  - name: stg_ref__termination_reason
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, termination_reason_code]
+  - name: stg_ref__bi_users
+    columns:
+      - name: user_name
+        tests: [not_null]
