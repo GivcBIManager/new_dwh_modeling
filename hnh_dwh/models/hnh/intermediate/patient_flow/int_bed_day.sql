@@ -7,6 +7,7 @@ with beds as (
     select
         branch_id, bed_location,
         toDate(min(started_at)) as first_seen_date,
+        max(if(ended_at is null, {{ end_date }}, toDate(assumeNotNull(ended_at)))) as last_seen_date,
         argMax(work_entity, tuple(started_at, bed_detail_id)) as current_work_entity
     from {{ ref('stg_oasis__bed_details') }}
     where bed_location is not null and started_at is not null
@@ -18,7 +19,7 @@ spine as (
         branch_id, bed_location, current_work_entity,
         arrayJoin(arrayMap(
             x -> greatest(first_seen_date, {{ start_date }}) + x,
-            range(toUInt32(greatest(dateDiff('day', greatest(first_seen_date, {{ start_date }}), {{ end_date }}) + 1, 0)))
+            range(toUInt32(greatest(dateDiff('day', greatest(first_seen_date, {{ start_date }}), least(last_seen_date, {{ end_date }})) + 1, 0)))
         )) as date_day
     from beds
 ),
@@ -71,7 +72,8 @@ select
     toUInt8(o.bed_location is not null)                    as is_occupied,
     o.admission_no                                         as admission_no,
     o.patient_id                                           as patient_id,
-    toUInt8(coalesce(o.is_excluded_ward, d.is_excluded_ward, 0)) as is_excluded_ward
+    toUInt8(coalesce(o.is_excluded_ward, d.is_excluded_ward, 0)) as is_excluded_ward,
+    toUInt8(ifNull(dw.care_setting, '') = 'IP')            as is_inpatient_ward
 from spine as s
 left join occupied_days as o
     on o.branch_id = s.branch_id and o.bed_location = s.bed_location and o.date_day = s.date_day
@@ -79,4 +81,6 @@ left join unavailable_days as u
     on u.branch_id = s.branch_id and u.bed_location = s.bed_location and u.date_day = s.date_day
 left join {{ ref('int_department_conformed') }} as d
     on d.branch_id = s.branch_id and d.work_entity = s.current_work_entity
+left join {{ ref('int_department_conformed') }} as dw
+    on dw.branch_id = s.branch_id and dw.work_entity = coalesce(o.work_entity, s.current_work_entity)
 {{ hnh_settings() }}

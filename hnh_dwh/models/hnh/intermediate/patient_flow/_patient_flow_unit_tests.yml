@@ -120,6 +120,29 @@ unit_tests:
                  cast(null as Nullable(DateTime('Asia/Riyadh'))),
                  cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
                  cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          -- bed A1/A2 get a later open row, so they stay open locations
+          select toUInt8(1), toInt64(6), toNullable('Y'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A1'), toNullable(toInt64(28)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(9)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(7), toNullable('Y'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A2'), toNullable(toInt64(28)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(15)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          -- bed A5: retired, only row ended 3 days ago
+          select toUInt8(1), toInt64(8), toNullable('N'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A5'), toNullable(toInt64(28)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 6, 'Asia/Riyadh') + toIntervalHour(1)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(1)),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
       - input: ref('int_bed_segment')
         format: sql
         rows: |
@@ -147,19 +170,23 @@ unit_tests:
       - input: ref('int_department_conformed')
         format: sql
         rows: |
-          select toUInt8(1) as branch_id, toInt64(500) as work_entity, toUInt8(0) as is_excluded_ward
+          select toUInt8(1) as branch_id, toInt64(500) as work_entity, toUInt8(0) as is_excluded_ward, 'IP' as care_setting
     expect:
       format: sql
       rows: |
-        select toUInt8(1) as branch_id, 'A1' as bed_location, today() - 4 as date_day, toNullable(toInt64(500)) as work_entity, toUInt8(1) as is_available, toUInt8(1) as is_occupied, toNullable(toInt64(7001)) as admission_no, toNullable(toInt64(100)) as patient_id, toUInt8(0) as is_excluded_ward
-        union all select toUInt8(1), 'A1', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7001)), toNullable(toInt64(100)), toUInt8(0)
-        union all select toUInt8(1), 'A1', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A1', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A2', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A2', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A2', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A3', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7003)), toNullable(toInt64(102)), toUInt8(0)
-        union all select toUInt8(1), 'A3', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7003)), toNullable(toInt64(102)), toUInt8(0)
-        union all select toUInt8(1), 'A4', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A4', today() - 2, toNullable(toInt64(500)), toUInt8(0), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
-        union all select toUInt8(1), 'A4', today() - 1, toNullable(toInt64(500)), toUInt8(0), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        select toUInt8(1) as branch_id, 'A1' as bed_location, today() - 4 as date_day, toNullable(toInt64(500)) as work_entity, toUInt8(1) as is_available, toUInt8(1) as is_occupied, toNullable(toInt64(7001)) as admission_no, toNullable(toInt64(100)) as patient_id, toUInt8(0) as is_excluded_ward, toUInt8(1) as is_inpatient_ward
+        union all select toUInt8(1), 'A1', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7001)), toNullable(toInt64(100)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A1', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A1', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A2', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A2', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A2', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A3', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7003)), toNullable(toInt64(102)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A3', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7003)), toNullable(toInt64(102)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A4', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A4', today() - 2, toNullable(toInt64(500)), toUInt8(0), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A4', today() - 1, toNullable(toInt64(500)), toUInt8(0), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A5', today() - 6, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A5', today() - 5, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A5', today() - 4, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+        union all select toUInt8(1), 'A5', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
