@@ -1,0 +1,89 @@
+version: 2
+
+models:
+  - name: fact_encounter
+    columns:
+      - name: encounter_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: encounter_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: booked_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: treating_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: outcome_key
+        tests:
+          - relationships: {to: ref('dim_appointment_outcome'), field: outcome_key}
+      - name: eligibility_type_key
+        tests:
+          - relationships: {to: ref('dim_eligibility_type'), field: eligibility_type_key}
+      - name: er_priority_key
+        tests:
+          - relationships: {to: ref('dim_er_priority'), field: er_priority_key}
+  - name: fact_admission
+    columns:
+      - name: admission_key
+        tests: [unique, not_null]
+      - name: admit_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: physical_discharge_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: consultant_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: first_department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: last_department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: last_bed_key
+        tests:
+          - relationships: {to: ref('dim_bed'), field: bed_key}
+      - name: payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: admission_source_key
+        tests:
+          - relationships: {to: ref('dim_admission_source'), field: admission_source_key}
+      - name: discharge_outcome_key
+        tests:
+          - relationships: {to: ref('dim_discharge_outcome'), field: discharge_outcome_key}
+  - name: fact_episode
+    columns:
+      - name: episode_key
+        tests: [unique, not_null]
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
