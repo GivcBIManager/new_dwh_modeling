@@ -134,3 +134,16 @@ models:
     columns:
       - name: er_priority_key
         tests: [unique, not_null]
+  - name: sec_user_access
+    tests:
+      - hnh_unique_combination:
+          columns: [login_name, branch_key, unified_specialty]
+    columns:
+      - name: login_name
+        tests: [not_null]
+      - name: branch_key
+        tests:
+          - not_null
+          - relationships:
+              to: ref('hnh_dim_branch')
+              field: branch_key
