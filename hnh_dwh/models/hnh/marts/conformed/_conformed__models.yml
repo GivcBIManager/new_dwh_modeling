@@ -97,3 +97,40 @@ models:
           - relationships:
               to: ref('hnh_dim_department')
               field: department_key
+  - name: dim_bed
+    columns:
+      - name: bed_key
+        tests: [unique, not_null]
+      - name: classification
+        tests:
+          - accepted_values:
+              values: ["Critical", "Intermediate Care", "Non Critical", "Non-Admitting Unit", "Not Mapped", "Unknown"]
+      - name: current_department_key
+        tests:
+          - relationships:
+              to: ref('hnh_dim_department')
+              field: department_key
+  - name: dim_eligibility_type
+    columns:
+      - name: eligibility_type_key
+        tests: [unique, not_null]
+  - name: dim_appointment_outcome
+    columns:
+      - name: outcome_key
+        tests: [unique, not_null]
+      - name: outcome_group
+        tests:
+          - accepted_values:
+              values: ["Attended", "Cancelled", "Rescheduled", "No-show recorded", "Left without being seen", "Admitted", "Referred", "Left against advice", "Died", "Other", "Unknown"]
+  - name: dim_discharge_outcome
+    columns:
+      - name: discharge_outcome_key
+        tests: [unique, not_null]
+      - name: outcome_group
+        tests:
+          - accepted_values:
+              values: ["Normal discharge", "Left against advice", "Died", "Transferred out", "Transferred to another episode", "Wrong admission", "Absconded", "Other", "Unknown"]
+  - name: dim_er_priority
+    columns:
+      - name: er_priority_key
+        tests: [unique, not_null]
