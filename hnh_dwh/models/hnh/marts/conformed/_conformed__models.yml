@@ -59,3 +59,26 @@ models:
               field: branch_key
       - name: creditor
         tests: [not_null]
+  - name: dim_patient
+    columns:
+      - name: patient_key
+        tests: [unique, not_null]
+      - name: person_key
+        tests: [not_null]
+      - name: gender
+        tests:
+          - accepted_values:
+              values: ["Male", "Female", "Unknown"]
+      - name: person_key_source
+        tests:
+          - accepted_values:
+              values: ["National id or iqama", "Passport", "Border number", "Local", "Unknown"]
+  - name: dim_patient_pii
+    columns:
+      - name: patient_key
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('dim_patient')
+              field: patient_key
