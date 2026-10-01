@@ -87,3 +87,31 @@ models:
       - name: care_type_key
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
+  - name: fact_bed_occupancy_daily
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, date_key, bed_key]
+    columns:
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: bed_key
+        tests:
+          - relationships: {to: ref('dim_bed'), field: bed_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+  - name: agg_clinic_capacity_daily
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, date_key, department_key, staff_key]
+    columns:
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
