@@ -10,10 +10,10 @@ having distinct_values > 1
 union all
 
 select 'map_bed_classification',
-       concat(toString(BRANCH_ID), '|', trimBoth(BED)),
+       concat(toString(BRANCH_ID), '|', upper(trimBoth(BED))),
        uniqExact(trimBoth(CLASSIFICATION))
 from {{ source('reference', 'map_bed_classification') }}
-group by BRANCH_ID, BED
+group by BRANCH_ID, upper(trimBoth(BED))
 having uniqExact(trimBoth(CLASSIFICATION)) > 1
 
 union all

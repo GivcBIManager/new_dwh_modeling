@@ -39,6 +39,27 @@ select 'wall clock is shifted'
 where toString({{ hnh_ksa_wall_clock("toDateTime64('2026-10-01 06:03:21', 6, 'UTC')") }}) != '2026-10-01 06:03:21'
 
 union all
+select 'wall clock keeps an in-range value'
+where isNull({{ hnh_ksa_wall_clock("toDateTime64('2026-10-01 06:03:21', 6, 'UTC')") }})
+
+union all
+select 'wall clock leaks 1900-01-01'
+where isNotNull({{ hnh_ksa_wall_clock("toDateTime64('1900-01-01 00:00:00', 6, 'UTC')") }})
+
+union all
+-- 4712-12-31 is outside the DateTime64 range itself; 2299-12-31 is its largest representable stand-in.
+select 'wall clock leaks 2299-12-31'
+where isNotNull({{ hnh_ksa_wall_clock("toDateTime64('2299-12-31 00:00:00', 6, 'UTC')") }})
+
+union all
+select 'wall clock leaks 1970-01-01 01:00'
+where isNotNull({{ hnh_ksa_wall_clock("toDateTime64('1970-01-01 01:00:00', 6, 'UTC')") }})
+
+union all
+select 'wall clock invents a value for null'
+where isNotNull({{ hnh_ksa_wall_clock("cast(null as Nullable(DateTime64(6, 'UTC')))") }})
+
+union all
 select 'julian conversion wrong'
 where {{ hnh_julian_to_date("toFloat64(2440588)") }} != toDate('1970-01-01')
    or {{ hnh_julian_to_date("toFloat64(2460585)") }} != toDate('2024-10-01')

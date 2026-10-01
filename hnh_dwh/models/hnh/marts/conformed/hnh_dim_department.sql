@@ -27,5 +27,5 @@ from {{ ref('int_department_conformed') }}
 union all
 
 select
-    toInt64(-1), toUInt8(0), null, 'Unknown', null, null, 'Unknown', 'Support', null, null, null,
+    toInt64(-1), toUInt8(0), null, 'Unknown', null, null, 'Unknown', 'Unknown', null, null, null,
     'Unknown', toUInt8(0), toUInt8(0), null, null, 'Main', null, toUInt8(0), toUInt8(0), toUInt8(0)

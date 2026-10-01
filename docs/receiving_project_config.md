@@ -17,6 +17,7 @@ Do not copy our `generate_schema_name.sql`: `dbt/macros/generate_schema_name.sql
 ```yaml
 vars:
   hnh_oasis_as_ref: true                 # staging reads the oasis_lake models via ref(), so dbt orders the DAG
+  hnh_oasis_source_only: ['operating_diary_slots', 'operating_slot_details']   # no oasis_lake model yet; read as sources
   hnh_history_start_date: "2022-01-01"
   hnh_ssas_machine_name: "SSAS-SERVER"   # machine name of the SSAS server
 
@@ -47,7 +48,7 @@ Merge into the existing `vars:`, `models: oasis:` and `data_tests:` keys if they
 
 ## How the models read Oasis
 
-With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so a `dbt build --select tag:hnh+` builds upstream first. With `false` they use `source('oasis', ...)`. The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
+With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so a `dbt build --select tag:hnh+` builds upstream first. With `false` they use `source('oasis', ...)`. Two used tables have no `oasis_lake` model yet: `operating_diary_slots` and `operating_slot_details`. They are listed in var `hnh_oasis_source_only` and are always read with `source('oasis', ...)`, whatever `hnh_oasis_as_ref` says. Remove a table from that list once an upstream model for it exists. The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
 
 ## Aliased models
 
@@ -56,6 +57,14 @@ With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `
 ## Reference tables that must exist in `default`
 
 Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_hijri_calendar`, `map_public_holiday`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+
+## Security table and dim_date
+
+`gold.sec_user_access.login_name` is `<SSAS machine>\<user name>`. The source `UserName` already has an old domain prefix (for example `HNHRIYADH
+ame`, `INMA-BINTELLIGE
+ame`) in mixed case. The model keeps the part after the last backslash, lower-cased, as `user_name`, and puts the SSAS machine name in front of it. The original text is kept in `source_user_name`. The DAX comparison against `USERNAME()` must be case-insensitive (DAX `=` on text is case-insensitive). Administrators get every real branch (never branch 0) and keep the specialty of their own source rows.
+
+`dim_date` offset columns: a positive value means the date is in the past (for example a day offset of 1 is yesterday).
 
 ## Running
 

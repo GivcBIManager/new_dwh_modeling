@@ -30,9 +30,12 @@ toUInt8(ifNull(toString({{ col }}), '') = 'Y')
 {%- endmacro %}
 
 {# Oasis timestamps are KSA wall-clock values labelled UTC. Keep the wall-clock
-   value and give it its true zone. KSA has no daylight saving, so the offset is fixed. #}
+   value and give it its true zone. KSA has no daylight saving, so the offset is fixed.
+   Values outside the DateTime range (1970-01-01 03:00 to 2106) would wrap silently, so they become NULL. #}
 {% macro hnh_ksa_wall_clock(col) -%}
-toDateTime({{ col }} - toIntervalHour(3), 'Asia/Riyadh')
+if({{ col }} < toDateTime64('1970-01-01 03:00:00', 6, 'UTC') or {{ col }} >= toDateTime64('2106-01-01 00:00:00', 6, 'UTC'),
+   cast(null as Nullable(DateTime('Asia/Riyadh'))),
+   toDateTime({{ col }} - toIntervalHour(3), 'Asia/Riyadh'))
 {%- endmacro %}
 
 {# Oracle Julian day number to Date. Julian day 2440588 is 1970-01-01. #}
@@ -60,7 +63,14 @@ settings join_use_nulls = 1
 {%- endmacro %}
 
 {# Read an Oasis staging table. In this project it is a source; in a project that
-   builds the oasis database with dbt models, set var hnh_oasis_as_ref: true. #}
+   builds the oasis database with dbt models, set var hnh_oasis_as_ref: true. Tables listed in var hnh_oasis_source_only
+   have no model there yet and are always read as sources. #}
 {% macro hnh_oasis_source(table_name) -%}
-{%- if var('hnh_oasis_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('oasis', table_name) }}{%- endif -%}
+{%- if table_name in var('hnh_oasis_source_only', []) -%}{{ source('oasis', table_name) }}
+{%- elif var('hnh_oasis_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('oasis', table_name) }}{%- endif -%}
+{%- endmacro %}
+
+{# Lower-case user name without its old domain prefix (text after the last backslash). #}
+{% macro hnh_user_name(col) -%}
+lower(trimBoth(arrayElement(splitByChar(char(92), trimBoth({{ col }})), -1)))
 {%- endmacro %}

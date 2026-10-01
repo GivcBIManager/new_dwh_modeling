@@ -43,7 +43,7 @@ left join (
 ) as dep
     on dep.branch_id = l.branch_id and dep.work_entity = coalesce(s.work_entity, fd.work_entity)
 left join {{ ref('stg_oasis__bed_classes') }} as bc on bc.branch_id = l.branch_id and bc.bed_class = fd.bed_class
-left join {{ ref('stg_ref__bed_classification') }} as cls on cls.branch_id = l.branch_id and upper(cls.bed_location) = l.bed_location
+left join {{ ref('stg_ref__bed_classification') }} as cls on cls.branch_id = l.branch_id and cls.bed_location = l.bed_location
 left join {{ ref('int_code_decode') }} as st on st.branch_id = l.branch_id and st.code = s.slot_status
 
 union all

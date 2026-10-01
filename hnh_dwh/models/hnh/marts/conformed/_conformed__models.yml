@@ -48,6 +48,10 @@ models:
               field: branch_key
       - name: unified_department
         tests: [not_null]
+      - name: care_setting
+        tests:
+          - accepted_values:
+              values: ["OP", "IP", "ER", "Theatre", "Ancillary", "Support", "Unknown"]
   - name: dim_payer
     columns:
       - name: payer_key
@@ -140,6 +144,8 @@ models:
           columns: [login_name, branch_key, unified_specialty]
     columns:
       - name: login_name
+        tests: [not_null]
+      - name: source_user_name
         tests: [not_null]
       - name: branch_key
         tests:
