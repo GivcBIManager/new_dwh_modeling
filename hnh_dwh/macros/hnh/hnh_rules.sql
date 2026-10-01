@@ -89,3 +89,14 @@ multiIf(
     '16:30-24:00'
 )
 {%- endmacro %}
+
+{# Patient id types that carry a Saudi national id or iqama number. #}
+{% macro hnh_is_national_id_type(description_upper_col) -%}
+ifNull({{ description_upper_col }}, '') in ('IQAMA', 'NATIONAL NUMBER', 'NATIONAL ID', 'NATIONAL ID CARD',
+    'NATIONAL IDENTITY CARD', 'SAUDI ID CARD', 'I.D. CARD')
+{%- endmacro %}
+
+{# A Saudi citizen (1...) or resident (2...) number: exactly 10 digits after normalisation. #}
+{% macro hnh_is_valid_national_id(col) -%}
+match({{ hnh_normalise_identifier(col) }}, '^[12][0-9]{9}$')
+{%- endmacro %}

@@ -11,7 +11,7 @@ ids as (
     select
         i.branch_id   as branch_id,
         i.patient_id  as patient_id,
-        minIf(i.id_number, d.description_upper in ('NATIONAL NUMBER', 'IQAMA')) as national_id,
+        minIf(i.id_number, {{ hnh_is_national_id_type('d.description_upper') }} and {{ hnh_is_valid_national_id('i.id_number') }}) as national_id,
         minIf(i.id_number, d.description_upper = 'PASSPORT')                    as passport_no,
         minIf(i.id_number, d.description_upper = 'BOARDER NUMBER')              as border_no
     from {{ ref('stg_oasis__patient_ids') }} as i

@@ -70,3 +70,28 @@ where {{ hnh_shift("toDateTime('2026-10-01 07:59:00')") }} != '00:00-08:00'
    or {{ hnh_shift("toDateTime('2026-10-01 08:00:00')") }} != '08:00-12:00'
    or {{ hnh_shift("toDateTime('2026-10-01 16:29:00')") }} != '12:00-16:30'
    or {{ hnh_shift("toDateTime('2026-10-01 16:30:00')") }} != '16:30-24:00'
+
+union all
+select 'national id type true cases wrong'
+where not ({{ hnh_is_national_id_type("'SAUDI ID CARD'") }})
+   or not ({{ hnh_is_national_id_type("'IQAMA'") }})
+
+union all
+select 'national id type false cases wrong'
+where ({{ hnh_is_national_id_type("'NATIONAL INSURANCE NUMBER'") }})
+   or ({{ hnh_is_national_id_type("'MOTHER ID (NATIONAL)'") }})
+   or ({{ hnh_is_national_id_type("'VISITORS IQAMA'") }})
+   or ({{ hnh_is_national_id_type("'OTHER'") }})
+   or ({{ hnh_is_national_id_type("cast(null as Nullable(String))") }})
+
+union all
+select 'valid national id true cases wrong'
+where not ({{ hnh_is_valid_national_id("'1181750587'") }})
+   or not ({{ hnh_is_valid_national_id("' 2281390662 '") }})
+
+union all
+select 'valid national id false cases wrong'
+where ({{ hnh_is_valid_national_id("'4156747752'") }})
+   or ({{ hnh_is_valid_national_id("'6249184'") }})
+   or ({{ hnh_is_valid_national_id("'00'") }})
+   or ({{ hnh_is_valid_national_id("cast(null as Nullable(String))") }})
