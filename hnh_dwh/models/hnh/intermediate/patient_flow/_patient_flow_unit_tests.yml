@@ -214,3 +214,179 @@ unit_tests:
         union all select toUInt8(1), 'A6', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
         union all select toUInt8(1), 'A6', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
         union all select toUInt8(1), 'A6', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0), toUInt8(1)
+
+  - name: int_admission_rules
+    description: >
+      Open stay, short stay, wrong-admission outcome, last bed in an excluded ward,
+      30-day readmission measured from the previous discharge, and ICU readmission
+      measured in hours between Critical beds.
+    model: int_admission
+    given:
+      - input: ref('stg_oasis__admissions')
+        format: sql
+        rows: |
+          -- patient 100: stay 1 (10 days), stay 2 admitted 30 days after stay 1's discharge, stay 3 admitted 31 days after stay 2's discharge
+          select toUInt8(1) as branch_id, toInt64(1) as admission_no, toNullable(toInt64(100)) as patient_id, toNullable(toInt64(1)) as episode_no,
+                 toNullable(toDateTime('2026-01-01 10:00:00', 'Asia/Riyadh')) as admitted_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as seen_at, cast(null as Nullable(DateTime('Asia/Riyadh'))) as estimated_discharge_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as clinical_discharge_at,
+                 toNullable(toDateTime('2026-01-11 10:00:00', 'Asia/Riyadh')) as physical_discharge_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as financial_discharge_at,
+                 toNullable(toInt64(90)) as status_code, toNullable(toInt64(33)) as outcome_code, cast(null as Nullable(Int64)) as bed_class,
+                 cast(null as Nullable(Int64)) as referred_type_code, cast(null as Nullable(Int64)) as admission_mode_code,
+                 toNullable('D1') as treating_staff_id
+          union all
+          select toUInt8(1), toInt64(2), toNullable(toInt64(100)), toNullable(toInt64(2)),
+                 toNullable(toDateTime('2026-02-10 09:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-02-12 09:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D1')
+          union all
+          select toUInt8(1), toInt64(3), toNullable(toInt64(100)), toNullable(toInt64(3)),
+                 toNullable(toDateTime('2026-03-15 09:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-03-16 09:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D1')
+          union all
+          -- patient 200: open stay
+          select toUInt8(1), toInt64(4), toNullable(toInt64(200)), toNullable(toInt64(1)),
+                 toNullable(toDateTime('2026-09-20 12:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D2')
+          union all
+          -- patient 300: 40-minute stay
+          select toUInt8(1), toInt64(5), toNullable(toInt64(300)), toNullable(toInt64(1)),
+                 toNullable(toDateTime('2026-05-01 10:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-05-01 10:40:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D3')
+          union all
+          -- patient 400: wrong-admission outcome
+          select toUInt8(1), toInt64(6), toNullable(toInt64(400)), toNullable(toInt64(1)),
+                 toNullable(toDateTime('2026-05-01 10:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-05-02 10:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(52300)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D4')
+          union all
+          -- patient 500: two stays; leaves a Critical bed, back in one 47 hours later
+          select toUInt8(1), toInt64(7), toNullable(toInt64(500)), toNullable(toInt64(1)),
+                 toNullable(toDateTime('2026-06-01 08:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-06-03 08:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D5')
+          union all
+          select toUInt8(1), toInt64(8), toNullable(toInt64(500)), toNullable(toInt64(2)),
+                 toNullable(toDateTime('2026-06-05 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-06-08 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), toNullable(toInt64(33)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toNullable('D5')
+      - input: ref('stg_oasis__admission_requests')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(11) as admission_request_id, toNullable(toInt64(2)) as admission_no,
+                 toNullable('C9') as consultant_staff_id, cast(null as Nullable(DateTime('Asia/Riyadh'))) as planned_admit_at,
+                 toNullable(toInt64(10549)) as admission_department_code, cast(null as Nullable(Int64)) as urgency_code,
+                 cast(null as Nullable(String)) as admission_type
+          union all
+          select toUInt8(1), toInt64(12), toNullable(toInt64(2)), toNullable('C8'), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(10550)), cast(null as Nullable(Int64)), cast(null as Nullable(String))
+      - input: ref('int_bed_segment')
+        format: sql
+        rows: |
+          -- admission 1: ward 500 then a pre-op (excluded) ward 600 as its last bed
+          select toUInt8(1) as branch_id, toInt64(101) as bed_detail_id, toInt64(1) as admission_no, toNullable(toInt64(500)) as work_entity,
+                 'A1' as bed_location, toDateTime('2026-01-01 10:00:00', 'Asia/Riyadh') as started_at,
+                 toNullable(toDateTime('2026-01-10 10:00:00', 'Asia/Riyadh')) as ended_at,
+                 toUInt8(0) as is_critical, toUInt8(0) as is_excluded_ward
+          union all
+          select toUInt8(1), toInt64(102), toInt64(1), toNullable(toInt64(600)), 'P1',
+                 toDateTime('2026-01-10 10:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-01-11 10:00:00', 'Asia/Riyadh')), toUInt8(0), toUInt8(1)
+          union all
+          -- admission 7: Critical bed until 2026-06-02 08:00, then ward
+          select toUInt8(1), toInt64(701), toInt64(7), toNullable(toInt64(700)), 'I1',
+                 toDateTime('2026-06-01 08:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-02 08:00:00', 'Asia/Riyadh')), toUInt8(1), toUInt8(0)
+          union all
+          select toUInt8(1), toInt64(702), toInt64(7), toNullable(toInt64(500)), 'A2',
+                 toDateTime('2026-06-02 08:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-03 08:00:00', 'Asia/Riyadh')), toUInt8(0), toUInt8(0)
+          union all
+          -- admission 8: ward first, Critical bed from 2026-06-04 07:00 (47 hours after leaving the last one)
+          select toUInt8(1), toInt64(801), toInt64(8), toNullable(toInt64(500)), 'A2',
+                 toDateTime('2026-06-05 06:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-05 07:00:00', 'Asia/Riyadh')), toUInt8(0), toUInt8(0)
+          union all
+          select toUInt8(1), toInt64(802), toInt64(8), toNullable(toInt64(700)), 'I1',
+                 toDateTime('2026-06-04 07:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-08 06:00:00', 'Asia/Riyadh')), toUInt8(1), toUInt8(0)
+      - input: ref('int_episode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(3) as episode_no, toNullable('ER') as previous_care_type
+      - input: ref('int_code_decode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(33) as code, toNullable('NORMAL DISCHARGE') as description_upper
+          union all select toUInt8(1), toInt64(52300), toNullable('WRONG ADMISSION')
+          union all select toUInt8(1), toInt64(10549), toNullable('OUTPATIENT CLINICS')
+          union all select toUInt8(1), toInt64(10550), toNullable('ACCIDENT & EMERGENCY')
+    expect:
+      rows:
+        - {admission_no: 1, is_open: 0, los_days: 10, is_short_stay: 0, is_countable: 1, first_work_entity: 500, last_work_entity: 500, legacy_in_vw_inpatients: 0, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
+        - {admission_no: 2, is_open: 0, los_days: 2, is_short_stay: 0, is_countable: 1, first_work_entity: null, last_work_entity: null, legacy_in_vw_inpatients: 0, days_since_previous_discharge: 30, is_readmission_30d: 1, admission_source: "OP"}
+        - {admission_no: 3, is_open: 0, los_days: 1, is_short_stay: 0, is_countable: 1, first_work_entity: null, last_work_entity: null, legacy_in_vw_inpatients: 0, days_since_previous_discharge: 31, is_readmission_30d: 0, admission_source: "ER"}
+        - {admission_no: 4, is_open: 1, los_days: null, is_short_stay: 0, is_countable: 1, first_work_entity: null, last_work_entity: null, legacy_in_vw_inpatients: 0, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
+        - {admission_no: 5, is_open: 0, los_days: 0.027777777777777776, is_short_stay: 1, is_countable: 0, first_work_entity: null, last_work_entity: null, legacy_in_vw_inpatients: 0, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
+        - {admission_no: 6, is_open: 0, los_days: 1, is_short_stay: 0, is_countable: 0, first_work_entity: null, last_work_entity: null, legacy_in_vw_inpatients: 0, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
+        - {admission_no: 7, is_open: 0, los_days: 2, is_short_stay: 0, is_countable: 1, first_work_entity: 700, last_work_entity: 500, legacy_in_vw_inpatients: 1, days_since_previous_discharge: null, is_readmission_30d: 0, admission_source: "Direct"}
+        - {admission_no: 8, is_open: 0, los_days: 3, is_short_stay: 0, is_countable: 1, first_work_entity: 700, last_work_entity: 500, legacy_in_vw_inpatients: 1, days_since_previous_discharge: 2, is_readmission_30d: 1, admission_source: "Direct"}
+
+  - name: int_admission_icu_readmission_window
+    description: Back in a Critical bed 47 hours after leaving one is a 48-hour ICU readmission; 49 hours is not.
+    model: int_admission
+    given:
+      - input: ref('stg_oasis__admissions')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(1) as admission_no, toNullable(toInt64(900)) as patient_id, toNullable(toInt64(1)) as episode_no,
+                 toNullable(toDateTime('2026-06-01 08:00:00', 'Asia/Riyadh')) as admitted_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as seen_at, cast(null as Nullable(DateTime('Asia/Riyadh'))) as estimated_discharge_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as clinical_discharge_at,
+                 toNullable(toDateTime('2026-06-03 08:00:00', 'Asia/Riyadh')) as physical_discharge_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as financial_discharge_at,
+                 toNullable(toInt64(90)) as status_code, cast(null as Nullable(Int64)) as outcome_code, cast(null as Nullable(Int64)) as bed_class,
+                 cast(null as Nullable(Int64)) as referred_type_code, cast(null as Nullable(Int64)) as admission_mode_code,
+                 cast(null as Nullable(String)) as treating_staff_id
+          union all
+          select toUInt8(1), toInt64(2), toNullable(toInt64(900)), toNullable(toInt64(2)),
+                 toNullable(toDateTime('2026-06-04 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-06-06 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(String))
+          union all
+          select toUInt8(1), toInt64(3), toNullable(toInt64(900)), toNullable(toInt64(3)),
+                 toNullable(toDateTime('2026-06-08 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime('2026-06-10 06:00:00', 'Asia/Riyadh')), cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(90)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(String))
+      - input: ref('stg_oasis__admission_requests')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(1) as admission_request_id, cast(null as Nullable(Int64)) as admission_no,
+                 cast(null as Nullable(String)) as consultant_staff_id, cast(null as Nullable(DateTime('Asia/Riyadh'))) as planned_admit_at,
+                 cast(null as Nullable(Int64)) as admission_department_code, cast(null as Nullable(Int64)) as urgency_code,
+                 cast(null as Nullable(String)) as admission_type
+      - input: ref('int_bed_segment')
+        format: sql
+        rows: |
+          -- stay 1 leaves Critical at 2026-06-02 08:00; stay 2 enters Critical 47 hours later; leaves at 2026-06-06 06:00; stay 3 enters 49 hours later
+          select toUInt8(1) as branch_id, toInt64(11) as bed_detail_id, toInt64(1) as admission_no, toNullable(toInt64(700)) as work_entity,
+                 'I1' as bed_location, toDateTime('2026-06-01 08:00:00', 'Asia/Riyadh') as started_at,
+                 toNullable(toDateTime('2026-06-02 08:00:00', 'Asia/Riyadh')) as ended_at, toUInt8(1) as is_critical, toUInt8(0) as is_excluded_ward
+          union all
+          select toUInt8(1), toInt64(21), toInt64(2), toNullable(toInt64(700)), 'I1',
+                 toDateTime('2026-06-04 07:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-06 06:00:00', 'Asia/Riyadh')), toUInt8(1), toUInt8(0)
+          union all
+          select toUInt8(1), toInt64(31), toInt64(3), toNullable(toInt64(700)), 'I1',
+                 toDateTime('2026-06-08 07:00:00', 'Asia/Riyadh'), toNullable(toDateTime('2026-06-10 06:00:00', 'Asia/Riyadh')), toUInt8(1), toUInt8(0)
+      - input: ref('int_episode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as patient_id, toInt64(0) as episode_no, cast(null as Nullable(String)) as previous_care_type
+      - input: ref('int_code_decode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as code, cast(null as Nullable(String)) as description_upper
+    expect:
+      rows:
+        - {admission_no: 1, had_critical_bed: 1, is_icu_readmission_48h: 0}
+        - {admission_no: 2, had_critical_bed: 1, is_icu_readmission_48h: 1}
+        - {admission_no: 3, had_critical_bed: 1, is_icu_readmission_48h: 0}

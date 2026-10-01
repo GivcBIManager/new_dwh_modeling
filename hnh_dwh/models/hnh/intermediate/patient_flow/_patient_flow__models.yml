@@ -27,3 +27,16 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, bed_location, date_day]
+  - name: int_admission
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, admission_no]
+    columns:
+      - name: admission_source
+        tests:
+          - accepted_values:
+              values: ["OP", "ER", "Direct"]
+      - name: discharge_outcome_group
+        tests:
+          - accepted_values:
+              values: ["Normal discharge", "Left against advice", "Died", "Transferred out", "Transferred to another episode", "Wrong admission", "Absconded", "Other", "Not recorded"]
