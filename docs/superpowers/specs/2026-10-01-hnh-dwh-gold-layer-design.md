@@ -156,7 +156,7 @@ hnh_dwh/
 | `seed_branch` | `default.branch_dict_source` | 8 (+ group row) | `dim_branch` |
 | `seed_unified_department` | `static_mappings/master_unified_department.csv` | 192 | `dim_department`, `dim_staff` (unified specialty, `not_admitting`, `high_value`) |
 | `seed_bed_classification` | `static_mappings/bed_mapping.csv` | 5,053 | `dim_bed` |
-| `seed_ward_tower` | `static_mappings/m_wards.csv` | 82 | `dim_department` |
+| `seed_ward_tower` | `static_mappings/m_wards.csv` | 82 | `dim_department`. Complete: only branches 1 and 4 have two towers. |
 | `seed_clinic_duration` | `static_mappings/clinic_duration_mapping.csv` | 108 | `agg_clinic_capacity_daily` (legacy capacity) |
 | `seed_clinic_count` | `static_mappings/clinics_mapping.csv` | 7 | `dim_branch` |
 | `seed_home_care_entity` | `static_mappings/home_care_entities.csv` | 9 | `dim_department` |
@@ -164,11 +164,12 @@ hnh_dwh/
 | `seed_claim_status` | `static_mappings/claim_status_mapping.csv` | 14 | Phase 2 |
 | `seed_outcome_group` | new, authored in Phase 1 | ~60 | Maps an outcome description to a group-level label and flags (section 6.3) |
 | `seed_entity_type` | new | 17 | Work-entity type letter → label and care setting |
-| `seed_public_holiday`, `seed_hijri_month` | new | small | `dim_date` |
+| `seed_hijri_calendar` | generated | one row per day | `dim_date`. Produced by a checked-in script from the Umm al-Qura calendar (Python `hijridate`), covering the `dim_date` range. |
+| `seed_public_holiday` | new | small | `dim_date`. Saudi official holidays; Eid dates derived from the Hijri calendar, fixed-date holidays listed. Reviewed yearly against the official announcement. |
 
 Tables that stay in ClickHouse and are declared as sources (database `default`): `map_purchasers`, `map_referral_policies`, `map_product_category`, plus two to be loaded:
 
-- **`default.budget_data`** — 2,166,331 rows (daily targets for 2026, three scenarios). Too large for a seed.
+- **`default.budget_data`** — 2,166,331 rows (daily targets for 2026, three scenarios). Too large for a seed. Loaded once from `static_mappings/budget_data.csv` as part of Phase 1; later versions are maintained by the BI manager directly in the table.
 - **`default.bi_users`** — loaded **without** the `Password` column. The exported `static_mappings/_BI_USERS_.csv` contains password values and must not be committed to the repository.
 
 ---
@@ -181,13 +182,15 @@ All in `gold`. Columns listed are the business attributes; every dimension also 
 Key `branch_key`. Name, city, region, licensed beds, clinic count, Fusion branch segment, Fusion ledger id, Press Ganey code, first data date. Row `0` = Group.
 
 ### dim_date
-Key `date_key`. Gregorian attributes, ISO week, fiscal period (fiscal year equals calendar year), Hijri year and month, public holiday flag, weekend flag (Friday and Saturday), **clinic working day** flag (Friday closed — the rule the capacity measures use), relative offsets (day, month, quarter, year) from the build date. Range: 2008-01-01 to the end of the year after the build date.
+Key `date_key`. Gregorian attributes, ISO week, fiscal period (fiscal year equals calendar year), Hijri year, month and day on the Umm al-Qura calendar, Saudi public holiday flag and name (Founding Day, National Day, Eid al-Fitr, Eid al-Adha), weekend flag (Friday and Saturday), **clinic working day** flag (Friday closed — the rule the capacity measures use), relative offsets (day, month, quarter, year) from the build date. Range: 2008-01-01 to the end of the year after the build date.
 
 ### dim_time
 Key `time_key` (minute of day). Hour, quarter-hour, shift: `00:00–08:00`, `08:00–12:00`, `12:00–16:30`, `16:30–24:00`.
 
 ### dim_patient
-Key `(branch_id, patient_id)`. MRN (lowest `patient_file_master.user_file_id`), gender, date of birth, nationality and Saudi flag (codes type 5, left join), marital status (type 2), occupation (type 4), registration date, registering department, patient category, status, chronic, at-risk and VIP flags, `person_key` (hash of the normalised national id or iqama when present, else null). **No names, identifiers or contact details.**
+Key `(branch_id, patient_id)`. MRN (lowest `patient_file_master.user_file_id`), gender, date of birth, nationality and Saudi flag (codes type 5, left join), marital status (type 2), occupation (type 4), registration date, registering department, patient category, status, chronic, at-risk and VIP flags, `person_key` and `person_key_source`. **No names, identifiers or contact details.**
+
+`person_key` identifies the same person across branches. It is the hash of the first identifier present, in this order: national id or iqama, passport number, border number. Each is trimmed, upper-cased, stripped of spaces and leading zeros, and prefixed with its type so a passport can never collide with a national id. These identifiers are mandatory and validated in the HIS, so the key is treated as reliable. A patient with none of them gets a key derived from `(branch_id, patient_id)`, so every patient has a non-null `person_key`.
 
 ### dim_patient_pii
 Same key. Names in English and Arabic, national id, iqama, passport, mobile, email. Exposed only to a restricted SSAS role.
@@ -196,10 +199,10 @@ Same key. Names in English and Arabic, national id, iqama, passport, mobile, ema
 Key `(branch_id, staff_id)`. Name EN and AR, gender, nationality and Saudi flag, staff grade (`staff_types_data`), classification, category and medical flag (`staff_type_classification`), position and home work entity (latest `staff_posts` by `date_started`, tie-break highest `posts_id`), specialty (first non-empty of: doctor list department, service department of the home work entity, work entity description), unified specialty with `not_admitting` and `high_value` (seed), SCFHS licence number, clinic duration and slots per hour (seed), contract status (`Active` / `Terminated` / `No contract`), termination date and unified reason. Role-plays as consultant, treating doctor, surgeon and anaesthetist.
 
 ### dim_department
-Key `(branch_id, work_entity)`. Description, short name, entity type and label, care setting (`OP`, `IP`, `ER`, `Theatre`, `Ancillary`, `Support`), service department code and description, department type, unified department, cost centre (`gl_section_code` → `control_contexts_data.heading`), tower, maximum beds, flags: `is_excluded_ward` (description contains `NURS`, `BOOKING` or `PRE OP`), `is_home_care`, `is_virtual_clinic`.
+Key `(branch_id, work_entity)`. Description, short name, entity type and label, care setting (`OP`, `IP`, `ER`, `Theatre`, `Ancillary`, `Support`), service department code and description, department type, unified department, cost centre (`gl_section_code` → `control_contexts_data.heading`), tower (`OLD` / `NEW` from the seed for branches 1 and 4, the only branches with two towers; `Main` for all others), maximum beds, flags: `is_excluded_ward` (description contains `NURS`, `BOOKING` or `PRE OP`), `is_home_care`, `is_virtual_clinic`.
 
 ### dim_payer
-Key `(branch_id, purchaser_code)`. Description, account code, company, creditor, category, billing type, manual-submission flag (from `map_purchasers`), purchaser type (`CASH POLICY` when listed as a cash purchaser; `INSURANCE` when the account code starts with `INS` or the description contains `GOSI`; else `NOT INSURANCE`), TPA flag, CCHI and NPHIES licence, MOH flag (`creditor = 'Government'`). Synthetic members for every branch: `9999` Cash and `8888` Deductible. Unmapped values read `Not Mapped`.
+Key `(branch_id, purchaser_code)`. Description, account code, company, creditor, category, billing type, manual-submission flag (from `map_purchasers`), purchaser type (`CASH POLICY` when listed as a cash purchaser; `INSURANCE` when the account code starts with `INS` or the description contains `GOSI`; else `NOT INSURANCE`), TPA flag, CCHI and NPHIES licence, MOH flag (`creditor = 'Government'` in the purchaser mapping, which is the single source for MOH classification in every branch; the old per-branch MOH account list is not used). Synthetic members for every branch: `9999` Cash and `8888` Deductible. Unmapped values read `Not Mapped`.
 
 ### dim_care_type
 Static. `OP`, `ER`, `IP`, `DAYCASE`, `Unknown`. Source mapping: `O` → OP, `E` → ER, `I` → IP, `D` → DAYCASE, anything else → Unknown.
@@ -214,7 +217,7 @@ Key `(branch_id, eligibility_type)`. Description, attendance type, free follow-u
 `dim_appointment_outcome`, `dim_discharge_outcome`, `dim_admission_source`, `dim_er_priority`, `dim_procedure_type`. Each: branch-level code and description, plus the group-level label and flags from `seed_outcome_group`.
 
 ### sec_user_access
-One row per user and permitted branch. Columns: `user_name`, `branch_key`, `unified_specialty` (nullable — no restriction), `is_admin`. An admin has one row per branch. A source row with no branch and `is_admin = 0` produces **no** access row. See section 9.
+One row per user and permitted branch. Columns: `user_name`, `login_name`, `branch_key`, `unified_specialty` (nullable — no restriction), `is_admin`. Users are local accounts on the SSAS server, so `login_name` is the SSAS machine name (`var('ssas_machine_name')`), a backslash, then `user_name` — the value SSAS `USERNAME()` returns. An admin has one row per branch. A source row with no branch and `is_admin = 0` produces **no** access row. See section 9.
 
 ---
 
@@ -391,7 +394,7 @@ Each row is a deliberate change; the named legacy field reproduces the old behav
 - One SSAS role filters `dim_branch` by the user's branches and `dim_staff` by the user's unified specialties when any are set. Every fact relates to `dim_branch`.
 - Facts with no staff reference relate to the Unknown staff member, which every user may see, so a specialty restriction does not hide rows that have no doctor.
 - `dim_patient_pii` is in a separate perspective and role.
-- **Open:** the user-name format. Source values have no `@`; SSAS on-prem presents `DOMAIN\user`. The format is fixed before `sec_user_access` is built (section 14).
+- **User names** are local accounts created on the SSAS server by the BI manager. The role compares `USERNAME()` with `sec_user_access.login_name`. The machine name is a dbt variable, set once.
 
 ---
 
@@ -436,11 +439,24 @@ Fixtures with expected output for: outcome grouping and cancellation; no-show wi
 
 | Phase | Domain | Main facts | Notes |
 |---|---|---|---|
-| 2 | Revenue cycle | `fact_charge_line`, `fact_invoice`, `fact_claim_line`, `fact_preauth_line` | Fix discount fan-out, deductible purchaser logic, "submitted" claims total, partial approvals without a reason code. Needs `icu_services`. |
-| 3 | Finance | `fact_gl_journal_line`, `fact_gl_balance`, `fact_ap_invoice_line`, `fact_budget_monthly` | Fusion star is the source; branch via COA segment 1. Needs Fusion department → unified department mapping. |
+| 2 | Revenue cycle | `fact_charge_line`, `fact_invoice`, `fact_claim_line`, `fact_preauth_line` | Fix discount fan-out, deductible purchaser logic, "submitted" claims total, partial approvals without a reason code. The LTC ICU revenue split (old `icu_services` list) is dropped. |
+| 3 | Finance | `fact_gl_journal_line`, `fact_gl_balance`, `fact_ap_invoice_line`, `fact_budget_monthly` | Fusion star is the source; branch via COA segment 1. A proposed `seed_fusion_department_unified` (Fusion department → unified department) is drafted in this phase for the BI manager to review. |
 | 4 | Workforce | `fact_headcount_monthly`, `fact_payroll_cost`, `fact_absence`, `fact_worker_movement` | `dim_employee` linked to `dim_staff` by national id. |
 | 5 | Supply chain | `fact_inventory_transaction`, `fact_inventory_onhand`, `fact_purchase_order_line` | |
-| 6 | Patient experience | `fact_survey_response`, `fact_survey_answer` | Depends on matching `encounter_id` to an Oasis episode. |
+| 6 | Patient experience | `fact_survey_response`, `fact_survey_answer` | Surveys must be analysable by doctor and clinic, so each response links to `fact_encounter` / `fact_episode`. See 13.1. |
+
+### 13.1 Survey-to-encounter link (finding, 2026-10-01)
+
+`pg_survey_responses.encounter_id` is a care-type letter followed by an Oasis id. Measured on surveys with a visit date in July–August 2026:
+
+| Prefix | Links to | Match rate |
+|---|---|---|
+| `e` | `patient_emergency_visit.er_visit_id` | 99.6% (20,130 of 20,217) |
+| `i` | `patient_ad.admission_no` | 100% (7,230 of 7,230) |
+| `o` | `appointments.appointment_id` | 32% (46,725 of 145,479) |
+| `o` | `delivery_charge.encounter_id` (1–14 August sample) | 85% (23,008 of 27,026) |
+
+Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `appointment_id`, else through `delivery_charge.encounter_id` to the episode, which supplies doctor and clinic. Unresolved outpatient surveys remain analysable by branch and service only. The outpatient id is the Oasis encounter id; ingesting the Oasis encounter table into `oasis` would let every outpatient survey link directly and is recommended before Phase 6.
 
 ---
 
@@ -448,17 +464,30 @@ Fixtures with expected output for: outcome grouping and cancellation; no-show wi
 
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
-| O1 | User-name format for SSAS security (`DOMAIN\user` vs UPN) | `sec_user_access` | Build with source values as-is; role cannot be tested |
+| O1 | A write-capable ClickHouse account for dbt and the one-off loads (creates `stg`, `int`, `gold`; writes `default.budget_data`, `default.bi_users`) | First build | Nothing can be built or loaded |
 | O2 | 88 access rows have no branch | Go-live | Those users see nothing |
-| O3 | Branch 8 has no budget, clinic count or MOH mapping; branch 7 no MOH mapping | Scorecards for those branches | Targets and MOH flag show as missing |
-| O4 | Ward tower seed covers branches 1 and 4 only | — | Tower = `Not Mapped` elsewhere |
-| O5 | `default.budget_data` and `default.bi_users` must be loaded into ClickHouse | `fact_target_daily`, `sec_user_access` | Those two models are skipped |
-| O6 | Hijri month table and public-holiday list | `dim_date` | Hijri and holiday columns null |
-| O7 | Join key between `bed_mapping.BED` and `bed_details` (`bed_location` or `bed_no`) is assumed to be `bed_location` | `dim_bed` | Verified in the first implementation task; mismatch surfaces as `Not Mapped` |
-| O8 | Hard deletes in Oasis are not propagated to staging | — | Deleted source rows remain in the warehouse |
-| O9 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build |
-| O10 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row |
-| O11 | Trigger time and SSAS processing mechanism | Orchestration | Manual run |
+| O3 | Branch 8 has no budget rows and no clinic count | Scorecards for branch 8 | Targets and clinic count show as missing |
+| O4 | Machine name of the SSAS server, for `ssas_machine_name` | SSAS role test | Variable left at a placeholder; the role cannot be tested |
+| O5 | Join key between `bed_mapping.BED` and `bed_details` is assumed to be `bed_location` | `dim_bed` | Verified in the first implementation task; a mismatch surfaces as `Not Mapped` |
+| O6 | Hard deletes in Oasis are not propagated to staging | — | Deleted source rows remain in the warehouse |
+| O7 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build |
+| O8 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row |
+| O9 | Trigger time and SSAS processing mechanism | Orchestration | Manual run |
+| O10 | The Oasis encounter table is not ingested (section 13.1) | Phase 6 | About 15% of outpatient surveys link to branch and service only |
+
+### Resolved on review (2026-10-01)
+
+| Item | Decision |
+|---|---|
+| User-name format for SSAS security | Local users on the SSAS server; `login_name` is machine name, backslash, user name. |
+| MOH account mapping missing for branches 7 and 8 | Not needed. MOH is classified through the purchaser mapping in all branches. |
+| Ward tower seed covers branches 1 and 4 only | Correct as is; only those branches have two towers. Others report `Main`. |
+| Budget file load and ownership | Loaded once in Phase 1. The BI manager maintains later versions. |
+| Hijri calendar and public holidays | Umm al-Qura calendar generated by script from a reliable published implementation; holidays reviewed yearly. |
+| Group-wide patient identity | Trusted. National id, iqama, passport and border number are mandatory and validated in the HIS; all are used for `person_key`. |
+| Fusion department to unified department | A proposed mapping is drafted in Phase 3 for review. |
+| Press Ganey link to Oasis | Required at doctor and clinic level. Feasibility confirmed (section 13.1). |
+| ICU service list | Not needed. |
 
 ---
 
