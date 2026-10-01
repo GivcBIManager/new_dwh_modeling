@@ -18,4 +18,13 @@ select
     {{ hnh_code('doctor_code') }}             as doctor_code,
     {{ hnh_str('ni_number') }}                as national_id,
     {{ hnh_flag('employee_dependant_flag') }} as is_employee_dependant
-from {{ source('oasis', 'staff_master_data') }} final
+from (
+    select *
+    from {{ source('oasis', 'staff_master_data') }} final
+    order by
+        branch_id,
+        {{ hnh_code('staff_id') }},
+        (trimBoth(ifNull(staff_id, '')) = ifNull(staff_id, '')) desc,
+        recorded_updated_at desc
+    limit 1 by branch_id, {{ hnh_code('staff_id') }}
+)
