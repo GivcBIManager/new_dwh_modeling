@@ -7,7 +7,7 @@ select
     {{ hnh_id('episode_no') }}                                  as episode_no,
     {{ hnh_ksa_wall_clock('operating_start') }}                 as scheduled_start_at,
     {{ hnh_ksa_wall_clock('operating_end') }}                   as scheduled_end_at,
-    {{ hnh_flag('cancel_flag') }}                               as is_cancelled,
+    {{ hnh_code('cancel_flag') }}                               as cancel_status,
     {{ hnh_id('cancel_code') }}                                 as cancel_code,
     {{ hnh_ksa_wall_clock('time_arrived_to_hall') }}            as hall_arrived_at,
     {{ hnh_ksa_wall_clock('time_arrived_to_or') }}              as theatre_arrived_at,
