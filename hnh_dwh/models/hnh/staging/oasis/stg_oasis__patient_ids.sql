@@ -4,4 +4,4 @@ select
     {{ hnh_id('patient_id') }}      as patient_id,
     {{ hnh_id('id_type_code') }}    as id_type_code,
     {{ hnh_str('id_number') }}      as id_number
-from {{ source('oasis', 'patient_ids') }} final
+from {{ hnh_oasis_source('patient_ids') }} final

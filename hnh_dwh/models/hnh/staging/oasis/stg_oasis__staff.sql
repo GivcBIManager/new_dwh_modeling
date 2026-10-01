@@ -20,7 +20,7 @@ select
     {{ hnh_flag('employee_dependant_flag') }} as is_employee_dependant
 from (
     select *
-    from {{ source('oasis', 'staff_master_data') }} final
+    from {{ hnh_oasis_source('staff_master_data') }} final
     order by
         branch_id,
         {{ hnh_code('staff_id') }},

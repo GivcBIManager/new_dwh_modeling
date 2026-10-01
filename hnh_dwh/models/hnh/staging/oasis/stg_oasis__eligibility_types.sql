@@ -4,4 +4,4 @@ select
     {{ hnh_str('eligibility_description') }}    as description,
     {{ hnh_code('attendence_type') }}           as attendance_type,
     toInt32(eligibility_no_days)                as free_follow_up_days
-from {{ source('oasis', 'eligibility_types') }} final
+from {{ hnh_oasis_source('eligibility_types') }} final

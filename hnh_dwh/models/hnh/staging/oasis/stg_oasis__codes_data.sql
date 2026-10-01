@@ -6,4 +6,4 @@ select
     {{ hnh_str('description_a') }}  as description_ar,
     {{ hnh_str('user_code') }}      as user_code,
     toInt32(prog_code)              as prog_code
-from {{ source('oasis', 'codes_data') }} final
+from {{ hnh_oasis_source('codes_data') }} final

@@ -4,4 +4,4 @@ select
     {{ hnh_str('description') }}       as description,
     {{ hnh_code('dept_type') }}        as dept_type,
     {{ hnh_str('dept_short_code') }}   as short_code
-from {{ source('oasis', 'service_dept_data') }} final
+from {{ hnh_oasis_source('service_dept_data') }} final

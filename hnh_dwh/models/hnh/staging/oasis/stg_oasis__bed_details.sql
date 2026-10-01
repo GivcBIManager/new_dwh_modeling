@@ -14,4 +14,4 @@ select
     {{ hnh_id('episode_no') }}                 as episode_no,
     {{ hnh_code('bed_sex') }}                  as bed_sex,
     {{ hnh_id('trans_from_work_entity') }}     as transferred_from_work_entity
-from {{ source('oasis', 'bed_details') }} final
+from {{ hnh_oasis_source('bed_details') }} final

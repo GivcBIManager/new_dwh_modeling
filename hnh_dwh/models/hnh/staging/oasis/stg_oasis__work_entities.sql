@@ -11,4 +11,4 @@ select
     {{ hnh_flag('virtual_clinic') }}         as is_virtual_clinic,
     {{ hnh_flag('private_flag') }}           as is_private,
     {{ hnh_flag('vip_flag') }}               as is_vip
-from {{ source('oasis', 'work_entities_data') }} final
+from {{ hnh_oasis_source('work_entities_data') }} final

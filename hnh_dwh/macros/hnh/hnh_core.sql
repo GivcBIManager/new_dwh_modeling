@@ -58,3 +58,9 @@ if(dateDiff('minute', {{ start_col }}, {{ end_col }}) between 0 and 1440,
 {% macro hnh_settings() -%}
 settings join_use_nulls = 1
 {%- endmacro %}
+
+{# Read an Oasis staging table. In this project it is a source; in a project that
+   builds the oasis database with dbt models, set var hnh_oasis_as_ref: true. #}
+{% macro hnh_oasis_source(table_name) -%}
+{%- if var('hnh_oasis_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('oasis', table_name) }}{%- endif -%}
+{%- endmacro %}

@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: dim_branch
+  - name: hnh_dim_branch
     columns:
       - name: branch_key
         tests: [unique, not_null]

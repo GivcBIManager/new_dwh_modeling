@@ -6,4 +6,4 @@ select
     toDate32(end_date)                 as ended_at,
     toDate32(termination_date)         as terminated_at,
     {{ hnh_id('termination_reason_code') }} as termination_reason_code
-from {{ source('oasis', 'staff_contracts') }} final
+from {{ hnh_oasis_source('staff_contracts') }} final

@@ -5,4 +5,4 @@ select
     {{ hnh_str('description') }}    as description,
     {{ hnh_id('room_class') }}      as room_class,
     {{ hnh_code('room_sex') }}      as room_sex
-from {{ source('oasis', 'room_master') }} final
+from {{ hnh_oasis_source('room_master') }} final

@@ -5,4 +5,4 @@ select
     {{ hnh_str('classificaton') }}   as classification,
     {{ hnh_str('categorynew') }}     as category,
     {{ hnh_str('med_nonmed') }}      as med_nonmed
-from {{ source('oasis', 'staff_type_classification') }} final
+from {{ hnh_oasis_source('staff_type_classification') }} final

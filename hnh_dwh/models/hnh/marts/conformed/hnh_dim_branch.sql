@@ -1,4 +1,4 @@
-{{ config(order_by='branch_key') }}
+{{ config(alias='dim_branch', order_by='branch_key') }}
 
 select * from (
 

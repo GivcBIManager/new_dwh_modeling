@@ -9,4 +9,4 @@ select
     {{ hnh_str('nphies_license') }}    as nphies_license,
     {{ hnh_flag('is_tpa') }}           as is_tpa,
     toUInt8(ifNull(toString(activity_indicator), 'Y') != 'N') as is_active
-from {{ source('oasis', 'purchasers') }} final
+from {{ hnh_oasis_source('purchasers') }} final

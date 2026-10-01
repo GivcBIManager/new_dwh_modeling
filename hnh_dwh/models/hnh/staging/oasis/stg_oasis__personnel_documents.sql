@@ -5,4 +5,4 @@ select
     {{ hnh_id('doc_type') }}       as doc_type,
     {{ hnh_str('doc_number') }}    as doc_number,
     toDate32(date_from)            as valid_from
-from {{ source('oasis', 'personnel_documents') }} final
+from {{ hnh_oasis_source('personnel_documents') }} final

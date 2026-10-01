@@ -23,4 +23,4 @@ select
     {{ hnh_id('new_patient_id') }}            as merged_into_patient_id,
     {{ hnh_str('mobile_no') }}                as mobile_no,
     {{ hnh_str('email_address') }}            as email_address
-from {{ source('oasis', 'patient_master_data') }} final
+from {{ hnh_oasis_source('patient_master_data') }} final
