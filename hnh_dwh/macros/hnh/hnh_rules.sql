@@ -11,7 +11,7 @@ toInt8(multiIf({{ expr }} = 'OP', 1, {{ expr }} = 'ER', 2, {{ expr }} = 'IP', 3,
    Codes differ by branch; descriptions are what is shared. #}
 {% macro hnh_outcome_group(col) -%}
 multiIf(
-    startsWith(ifNull({{ col }}, ''), 'CANCELLED') or startsWith(ifNull({{ col }}, ''), 'EPISODE CLOSED-CANCEL'), 'Cancelled',
+    startsWith(ifNull({{ col }}, ''), 'CANCELLED'), 'Cancelled',
     startsWith(ifNull({{ col }}, ''), 'RESCHEDULED'), 'Rescheduled',
     ifNull({{ col }}, '') in ('DNA', 'NOSHOW') or startsWith(ifNull({{ col }}, ''), 'CARE LESS'), 'No-show recorded',
     startsWith(ifNull({{ col }}, ''), 'LEFT WITHOUT BEING SEEN'), 'Left without being seen',
