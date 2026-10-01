@@ -1,6 +1,8 @@
 # Moving the hnh models into the receiving dbt project
 
-Receiving project: GitHub `GivcBIManager/dlt`, folder `dbt/` (dbt project `oasis`, profile `oasis`, `dbt-clickhouse>=1.9,<1.10`).
+Receiving project: GitHub `GivcBIManager/dlt`, folder `dbt/` (dbt project `oasis`, profile `oasis`, `dbt-clickhouse>=1.9,<1.10`), deployed on the Ubuntu server where ClickHouse runs (`host: localhost`).
+
+Checked on 2026-10-01 against a copy of the server's `dbt/` folder: the integrated project parses, all `hnh` models resolve their Oasis inputs to the `oasis_lake` models, and `dbt build --select tag:hnh` completes from the integrated project (see "Deployment checklist").
 
 ## What to copy
 
@@ -17,7 +19,7 @@ Do not copy our `generate_schema_name.sql`: `dbt/macros/generate_schema_name.sql
 ```yaml
 vars:
   hnh_oasis_as_ref: true                 # staging reads the oasis_lake models via ref(), so dbt orders the DAG
-  hnh_oasis_source_only: ['operating_diary_slots', 'operating_slot_details']   # no oasis_lake model yet; read as sources
+  hnh_oasis_source_only: []               # every Oasis table used has an oasis_lake model on the server
   hnh_history_start_date: "2022-01-01"
   hnh_ssas_machine_name: "SSAS-SERVER"   # machine name of the SSAS server
 
@@ -44,11 +46,11 @@ data_tests:                              # top level; makes --select tag:hnh run
       +tags: ["hnh"]
 ```
 
-Merge into the existing `vars:`, `models: oasis:` and `data_tests:` keys if they exist. The project default is `+materialized: table`; the `hnh` block overrides it for staging (views).
+Merge into the existing keys: `vars:` already holds `iceberg_root` — keep it and add the four `hnh_` vars under it; put the `hnh:` block under `models: oasis:` next to `fusion:` and `oasis_lake:`. The server project has no `data_tests:` or `on-run-end:` key yet, so add those at top level. The project default is `+materialized: table`; the `hnh` block overrides it for staging (views).
 
 ## How the models read Oasis
 
-With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so a `dbt build --select tag:hnh+` builds upstream first. With `false` they use `source('oasis', ...)`. Two used tables have no `oasis_lake` model yet: `operating_diary_slots` and `operating_slot_details`. They are listed in var `hnh_oasis_source_only` and are always read with `source('oasis', ...)`, whatever `hnh_oasis_as_ref` says. Remove a table from that list once an upstream model for it exists. The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
+With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so dbt knows the `hnh` models depend on them. `dbt build --select tag:hnh` builds only the `hnh` models and reads the `oasis_lake` tables as they are; it never rebuilds them. (`--select +tag:hnh` would also build the `oasis_lake` models first; `tag:hnh+` means `hnh` and everything downstream of it.) With `false` the staging models use `source('oasis', ...)` instead. Var `hnh_oasis_source_only` lists tables to read with `source('oasis', ...)` even when `hnh_oasis_as_ref` is true; it is empty on the server because `operating_diary_slots` and `operating_slot_details` now have `oasis_lake` models (the GitHub copy of the repo does not have them yet — if you deploy from a revision without those two models, set the var to `['operating_diary_slots', 'operating_slot_details']`). The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
 
 ## Aliased models
 
@@ -66,7 +68,7 @@ Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar
 
 ## Run log
 
-Add this to the receiving `dbt_project.yml` so every run appends a row to `gold.etl_run_log`. SSAS processing should start only when the latest `etl_run_log` row whose `selected = 'tag:hnh'` has `status = 'success'` (`selected` records the `--select` text exactly, backslashes and quotes removed; `status` is `success` only when no node failed).
+Add this to the receiving `dbt_project.yml` so every run appends a row to `gold.etl_run_log`. The hook fires on every `dbt run`/`build` in the project, including Fusion and `oasis_lake` runs (it creates `gold` if needed); those rows have their own `selected` text and do not affect the gate. SSAS processing should start only when the latest `etl_run_log` row whose `selected = 'tag:hnh'` has `status = 'success'` (`selected` records the `--select` text exactly, backslashes and quotes removed; `status` is `success` only when no node failed).
 
 ```yaml
 on-run-end:
@@ -84,6 +86,18 @@ on-run-end:
 - `fact_admission` does not yet carry critical-bed timestamps, the admission request reason or the discharging ward (planned).
 - `fact_target_daily`: `target_cost_total` and `target_patient_days` are additive; `target_cost_per_episode` and `target_alos` are episode-weighted averages for one row and must not be summed. Compute cost per episode as `SUM(target_cost_total) / SUM(target_episodes)`.
 
+## Deployment checklist (Ubuntu server)
+
+1. Copy `models/hnh/`, `macros/hnh/`, `tests/hnh/` into `dbt/` (commit them to the repo and pull on the server, so line endings and file-name case come from git).
+2. Edit `dbt/dbt_project.yml` as above (vars, `hnh:` block, `data_tests:`, `on-run-end:`).
+3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
+4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
+5. `cd dbt && dbt parse` — must finish without errors.
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and a few warnings from `warn_*` tests.
+7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
+
+The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.
+
 ## Running
 
 ```bash
@@ -95,7 +109,7 @@ Tests named `warn_*` report data gaps and never fail a run. Any other failing te
 
 ## Profile setting
 
-Phase 1B adds an incremental model (`agg_clinic_capacity_daily`) with the `delete+insert` strategy. It needs `use_lw_deletes: true` in the ClickHouse profile. Not needed for Phase 1A.
+`agg_clinic_capacity_daily` is incremental with the `delete+insert` strategy and needs `use_lw_deletes: true` in the `oasis` profile output. The server's `profiles.yml` does not have it yet.
 
 ## Version notes
 

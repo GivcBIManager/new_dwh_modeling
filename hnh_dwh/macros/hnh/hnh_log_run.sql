@@ -6,6 +6,8 @@
     {% set sel = sel if sel is string else (sel | join(" ")) %}
     {% set selected_text = sel | replace("\\", "") | replace("'", "") %}
     {% set built = results | selectattr('node.resource_type', 'equalto', 'model') | selectattr('status', 'equalto', 'success') | list | length %}
+    {# The hook also fires on runs that build no hnh model, possibly before gold exists. #}
+    {% do run_query("create database if not exists gold") %}
     {% set create_sql %}
       create table if not exists gold.etl_run_log (
           invocation_id String,
