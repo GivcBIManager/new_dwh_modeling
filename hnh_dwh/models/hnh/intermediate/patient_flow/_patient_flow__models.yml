@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: int_episode
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, patient_id, episode_no]
+    columns:
+      - name: care_type
+        tests:
+          - accepted_values:
+              values: ["OP", "ER", "IP", "DAYCASE", "Unknown"]
+      - name: purchaser_code
+        tests: [not_null]
+      - name: episode_seq
+        tests: [not_null]

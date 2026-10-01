@@ -1,0 +1,54 @@
+version: 2
+
+unit_tests:
+  - name: int_episode_picks_primary_rows_deterministically
+    description: >
+      The eligibility row with the lowest sequence wins, then the lowest id. The active
+      bill agreement with the lowest responsibility sequence wins. Episode rank counts
+      episodes that exist only in the pre-2022 eligibility history.
+    model: int_episode
+    given:
+      - input: ref('stg_oasis__episodes')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(5) as episode_no,
+                 toNullable(toDateTime('2026-03-01 09:00:00', 'Asia/Riyadh')) as started_at,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as ended_at,
+                 toNullable(toInt64(279)) as eligibility_type
+          union all
+          select toUInt8(1), toInt64(200), toInt64(1),
+                 toNullable(toDateTime('2026-03-02 09:00:00', 'Asia/Riyadh')),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), cast(null as Nullable(Int64))
+      - input: ref('stg_oasis__eligibility')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(900) as patient_eligibility_id,
+                 toNullable(toInt64(100)) as patient_id, toNullable(toInt64(5)) as episode_no,
+                 toNullable(toInt64(2)) as sequence, toNullable('1') as responsibility,
+                 toNullable('I') as attendance_type, toNullable('D900') as consultant_staff_id,
+                 toNullable(toInt64(10)) as service_dept, toNullable(toInt64(1000)) as work_entity,
+                 cast(null as Nullable(Int64)) as eligibility_work_entity, cast(null as Nullable(Int64)) as admission_no
+          union all
+          select toUInt8(1), toInt64(950), toNullable(toInt64(100)), toNullable(toInt64(5)),
+                 toNullable(toInt64(1)), toNullable('1'), toNullable('O'), toNullable('D950'),
+                 toNullable(toInt64(11)), toNullable(toInt64(1001)), toNullable(toInt64(2002)), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(10), toNullable(toInt64(100)), toNullable(toInt64(2)),
+                 toNullable(toInt64(1)), toNullable('1'), toNullable('E'), toNullable('D010'),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64))
+      - input: ref('stg_oasis__bill_agreements')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(5) as episode_no,
+                 toInt64(2) as responsibility_seq, toNullable(toInt64(300)) as purchaser_code,
+                 toNullable(toInt64(30)) as policy_code, toNullable(toInt64(3)) as contract_no, toNullable('I') as status
+          union all
+          select toUInt8(1), toInt64(100), toInt64(5), toInt64(1), toNullable(toInt64(200)),
+                 toNullable(toInt64(20)), toNullable(toInt64(2)), cast(null as Nullable(String))
+          union all
+          select toUInt8(1), toInt64(100), toInt64(5), toInt64(0), toNullable(toInt64(999)),
+                 toNullable(toInt64(99)), toNullable(toInt64(9)), toNullable('C')
+    expect:
+      rows:
+        - {branch_id: 1, patient_id: 100, episode_no: 5, care_type: "OP", has_eligibility: 1, consultant_staff_id: "D950", work_entity: 2002, purchaser_code: 200, policy_code: 20, episode_seq: 2, is_first_episode: 0, previous_care_type: "ER"}
+        - {branch_id: 1, patient_id: 200, episode_no: 1, care_type: "Unknown", has_eligibility: 0, consultant_staff_id: null, work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 1, is_first_episode: 1, previous_care_type: null}
