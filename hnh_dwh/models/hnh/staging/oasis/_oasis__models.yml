@@ -33,3 +33,54 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, priority]
+  - name: stg_oasis__patients
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, patient_id]
+  - name: stg_oasis__patient_files
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, pat_file_id]
+  - name: stg_oasis__patient_ids
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, patient_id_seq]
+  - name: stg_oasis__staff
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, staff_id]
+    columns:
+      - name: staff_id
+        tests: [not_null]
+  - name: stg_oasis__staff_posts
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, post_number, started_at]
+  - name: stg_oasis__positions
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, position_type]
+  - name: stg_oasis__staff_types
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, staff_type]
+  - name: stg_oasis__staff_contracts
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, staff_contract_no]
+  - name: stg_oasis__personnel_documents
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, document_id]
+  - name: stg_oasis__bed_slots
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bed_location]
+  - name: stg_oasis__bed_classes
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bed_class]
+  - name: stg_oasis__bed_details
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bed_detail_id]

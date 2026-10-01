@@ -1,0 +1,21 @@
+select
+    toUInt8(branch_id)                        as branch_id,
+    {{ hnh_code('staff_id') }}                as staff_id,
+    {{ hnh_id('staff_type') }}                as staff_type,
+    {{ hnh_str('staff_name_1') }}             as name_1,
+    {{ hnh_str('staff_name_2') }}             as name_2,
+    {{ hnh_str('staff_name_3') }}             as name_3,
+    {{ hnh_str('staff_name_family') }}        as family_name,
+    {{ hnh_str('staff_name_1_b') }}           as name_ar_1,
+    {{ hnh_str('staff_name_2_b') }}           as name_ar_2,
+    {{ hnh_str('staff_name_3_b') }}           as name_ar_3,
+    {{ hnh_str('staff_name_familyb') }}       as family_name_ar,
+    toDate32(date_of_birth)                   as birth_date,
+    {{ hnh_code('sex') }}                     as sex,
+    {{ hnh_id('nationality_code') }}          as nationality_code,
+    {{ hnh_id('religion_code') }}             as religion_code,
+    toDate32(start_of_service)                as service_start_date,
+    {{ hnh_code('doctor_code') }}             as doctor_code,
+    {{ hnh_str('ni_number') }}                as national_id,
+    {{ hnh_flag('employee_dependant_flag') }} as is_employee_dependant
+from {{ source('oasis', 'staff_master_data') }} final
