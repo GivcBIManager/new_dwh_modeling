@@ -84,3 +84,47 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, bed_detail_id]
+  - name: stg_oasis__appointments
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, appointment_id]
+          config:
+            where: "patient_id is not null"
+  - name: stg_oasis__er_visits
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, er_visit_id]
+  - name: stg_oasis__admissions
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, admission_no]
+  - name: stg_oasis__admission_requests
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, admission_request_id]
+  - name: stg_oasis__episodes
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, patient_id, episode_no]
+  - name: stg_oasis__eligibility
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, patient_eligibility_id]
+  - name: stg_oasis__bill_agreements
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, patient_id, episode_no, responsibility_seq]
+  - name: stg_oasis__operating_slots
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, operating_slot_code]
+          config:
+            where: "patient_id is not null"
+  - name: stg_oasis__operations
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, operating_slot_code, operation_seq]
+  - name: stg_oasis__service_items
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, ios_main]

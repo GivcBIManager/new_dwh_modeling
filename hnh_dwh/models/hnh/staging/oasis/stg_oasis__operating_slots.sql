@@ -1,0 +1,21 @@
+select
+    toUInt8(branch_id)                                          as branch_id,
+    toInt64(operating_slot_code)                                as operating_slot_code,
+    {{ hnh_id('work_entity') }}                                 as work_entity,
+    {{ hnh_code('staff_id') }}                                  as slot_staff_id,
+    {{ hnh_id('patient_id') }}                                  as patient_id,
+    {{ hnh_id('episode_no') }}                                  as episode_no,
+    {{ hnh_ksa_wall_clock('operating_start') }}                 as scheduled_start_at,
+    {{ hnh_ksa_wall_clock('operating_end') }}                   as scheduled_end_at,
+    {{ hnh_flag('cancel_flag') }}                               as is_cancelled,
+    {{ hnh_id('cancel_code') }}                                 as cancel_code,
+    {{ hnh_ksa_wall_clock('time_arrived_to_hall') }}            as hall_arrived_at,
+    {{ hnh_ksa_wall_clock('time_arrived_to_or') }}              as theatre_arrived_at,
+    {{ hnh_ksa_wall_clock('anesthesia_started') }}              as anaesthesia_started_at,
+    {{ hnh_ksa_wall_clock('anesthesia_ended') }}                as anaesthesia_ended_at,
+    {{ hnh_ksa_wall_clock('operation_started') }}               as operation_started_at,
+    {{ hnh_ksa_wall_clock('operation_end') }}                   as operation_ended_at,
+    {{ hnh_ksa_wall_clock('transfered_to_recovery_room_at') }}  as recovery_at,
+    {{ hnh_ksa_wall_clock('transfered_to_ward_at') }}           as ward_at,
+    {{ hnh_code('entity_type') }}                               as entity_type
+from {{ hnh_oasis_source('operating_diary_slots') }} final
