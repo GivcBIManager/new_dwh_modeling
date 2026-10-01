@@ -66,3 +66,100 @@ unit_tests:
         - {branch_id: 1, patient_id: 200, episode_no: 1, care_type: "Unknown", has_eligibility: 0, consultant_staff_id: null, work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 1, is_first_episode: 1, previous_care_type: null}
         - {branch_id: 1, patient_id: 300, episode_no: 1, care_type: "Unknown", has_eligibility: 0, consultant_staff_id: null, work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 1, is_first_episode: 1, previous_care_type: null}
         - {branch_id: 1, patient_id: 300, episode_no: 2, care_type: "OP", has_eligibility: 1, consultant_staff_id: "D960", work_entity: null, purchaser_code: 9999, policy_code: null, episode_seq: 2, is_first_episode: 0, previous_care_type: "Unknown"}
+  - name: int_bed_day_uses_midnight_census
+    description: >
+      A bed is occupied on a day when a stay covers the end of that day. A stay that
+      starts and ends on the same day occupies no night. An open stay occupies every
+      night through yesterday. A day covered by a NOT AVAILABLE row is unavailable.
+    model: int_bed_day
+    overrides:
+      vars:
+        hnh_history_start_date: "2022-01-01"
+    given:
+      - input: ref('stg_oasis__bed_details')
+        format: sql
+        rows: |
+          -- bed A1: stay from 4 days ago 10:00 to 2 days ago 09:00 (two nights)
+          select toUInt8(1) as branch_id, toInt64(1) as bed_detail_id, toNullable('N') as is_current,
+                 toNullable(toInt64(500)) as work_entity, cast(null as Nullable(Int64)) as room_no,
+                 toNullable('A1') as bed_location, toNullable(toInt64(29)) as bed_status,
+                 cast(null as Nullable(Int64)) as bed_class,
+                 toNullable(toDateTime(today() - 4, 'Asia/Riyadh') + toIntervalHour(10)) as started_at,
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(9)) as ended_at,
+                 toNullable(toInt64(100)) as patient_id, toNullable(toInt64(7001)) as admission_no,
+                 toNullable(toInt64(1)) as episode_no, cast(null as Nullable(String)) as bed_sex,
+                 cast(null as Nullable(Int64)) as transferred_from_work_entity
+          union all
+          -- bed A2: same-day stay 3 days ago, no night
+          select toUInt8(1), toInt64(2), toNullable('N'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A2'), toNullable(toInt64(29)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(8)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(15)),
+                 toNullable(toInt64(101)), toNullable(toInt64(7002)), toNullable(toInt64(1)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          -- bed A3: open stay since 2 days ago
+          select toUInt8(1), toInt64(3), toNullable('Y'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A3'), toNullable(toInt64(29)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(20)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 toNullable(toInt64(102)), toNullable(toInt64(7003)), toNullable(toInt64(1)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          -- bed A4: exists since 3 days ago, out of service from 2 days ago, never occupied
+          select toUInt8(1), toInt64(4), toNullable('N'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A4'), toNullable(toInt64(28)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(1)),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(1)),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+          union all
+          select toUInt8(1), toInt64(5), toNullable('Y'), toNullable(toInt64(500)), cast(null as Nullable(Int64)),
+                 toNullable('A4'), toNullable(toInt64(30)), cast(null as Nullable(Int64)),
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(1)),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                 cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)),
+                 cast(null as Nullable(String)), cast(null as Nullable(Int64))
+      - input: ref('int_bed_segment')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(1) as bed_detail_id, toInt64(7001) as admission_no,
+                 toNullable(toInt64(100)) as patient_id, toNullable(toInt64(500)) as work_entity, 'A1' as bed_location,
+                 toDateTime(today() - 4, 'Asia/Riyadh') + toIntervalHour(10) as started_at,
+                 toNullable(toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(9)) as ended_at,
+                 toUInt8(0) as is_excluded_ward
+          union all
+          select toUInt8(1), toInt64(2), toInt64(7002), toNullable(toInt64(101)), toNullable(toInt64(500)), 'A2',
+                 toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(8),
+                 toNullable(toDateTime(today() - 3, 'Asia/Riyadh') + toIntervalHour(15)), toUInt8(0)
+          union all
+          select toUInt8(1), toInt64(3), toInt64(7003), toNullable(toInt64(102)), toNullable(toInt64(500)), 'A3',
+                 toDateTime(today() - 2, 'Asia/Riyadh') + toIntervalHour(20),
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))), toUInt8(0)
+      - input: ref('int_code_decode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(30) as code, toNullable('NOT AVAILABLE') as description_upper
+          union all
+          select toUInt8(1), toInt64(28), toNullable('READY FOR USE')
+          union all
+          select toUInt8(1), toInt64(29), toNullable('IN USE')
+      - input: ref('int_department_conformed')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(500) as work_entity, toUInt8(0) as is_excluded_ward
+    expect:
+      format: sql
+      rows: |
+        select toUInt8(1) as branch_id, 'A1' as bed_location, today() - 4 as date_day, toNullable(toInt64(500)) as work_entity, toUInt8(1) as is_available, toUInt8(1) as is_occupied, toNullable(toInt64(7001)) as admission_no, toNullable(toInt64(100)) as patient_id, toUInt8(0) as is_excluded_ward
+        union all select toUInt8(1), 'A1', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7001)), toNullable(toInt64(100)), toUInt8(0)
+        union all select toUInt8(1), 'A1', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A1', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A2', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A2', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A2', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A3', today() - 2, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7003)), toNullable(toInt64(102)), toUInt8(0)
+        union all select toUInt8(1), 'A3', today() - 1, toNullable(toInt64(500)), toUInt8(1), toUInt8(1), toNullable(toInt64(7003)), toNullable(toInt64(102)), toUInt8(0)
+        union all select toUInt8(1), 'A4', today() - 3, toNullable(toInt64(500)), toUInt8(1), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A4', today() - 2, toNullable(toInt64(500)), toUInt8(0), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)
+        union all select toUInt8(1), 'A4', today() - 1, toNullable(toInt64(500)), toUInt8(0), toUInt8(0), cast(null as Nullable(Int64)), cast(null as Nullable(Int64)), toUInt8(0)

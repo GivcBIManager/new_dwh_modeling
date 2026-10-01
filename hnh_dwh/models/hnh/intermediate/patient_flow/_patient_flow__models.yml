@@ -14,3 +14,16 @@ models:
         tests: [not_null]
       - name: episode_seq
         tests: [not_null]
+  - name: int_bed_segment
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bed_detail_id]
+    columns:
+      - name: admission_no
+        tests: [not_null]
+      - name: started_at
+        tests: [not_null]
+  - name: int_bed_day
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bed_location, date_day]
