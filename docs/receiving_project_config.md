@@ -64,6 +64,15 @@ Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar
 
 `dim_date` offset columns: a positive value means the date is in the past (for example a day offset of 1 is yesterday).
 
+## Run log
+
+Add this to the receiving `dbt_project.yml` so every run appends a row to `gold.etl_run_log`. SSAS processing should start only when the latest row has `status = 'success'`.
+
+```yaml
+on-run-end:
+  - "{{ hnh_log_run(results) }}"
+```
+
 ## Running
 
 ```bash

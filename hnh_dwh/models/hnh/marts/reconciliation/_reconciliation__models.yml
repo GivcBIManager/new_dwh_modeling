@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: rec_patient_flow_monthly
+    description: New KPI values beside the values the old warehouse rules would give, per branch and month.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+    columns:
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}

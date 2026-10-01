@@ -36,3 +36,6 @@ data_tests:
   hnh_dwh:
     hnh:
       +tags: ["hnh"]
+
+on-run-end:
+  - "{{ hnh_log_run(results) }}"
