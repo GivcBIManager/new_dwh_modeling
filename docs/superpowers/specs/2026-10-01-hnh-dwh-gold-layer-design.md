@@ -17,7 +17,7 @@ Build a dbt-managed golden layer on ClickHouse over three staging databases — 
 2. Phase 1 reproduces the patient-flow content of the existing *Executive Dashboard* and *Outpatient Dashboard* Power BI models.
 3. Every number that differs from the old warehouse is explainable: a `legacy_*` field reproduces the old rule, so the difference is provably the rule and not the data.
 4. Branch-level and specialty-level row security supplied by the warehouse and failing closed.
-5. A full nightly build with tests, orchestrated by Dagster, that leaves yesterday's SSAS model in place if any test fails.
+5. A full nightly build with tests, run by the existing dbt instance, that leaves yesterday's SSAS model in place if any test fails.
 
 ### Non-goals
 
@@ -65,7 +65,7 @@ Build a dbt-managed golden layer on ClickHouse over three staging databases — 
 | F5 | `appointments` has 372M rows; about 4.9M (1.3%) have a patient. The rest are empty slots. | Booked rows feed the encounter fact; all rows feed a capacity aggregate. |
 | F6 | `patient_episodes.admitted_flag` and `emergency_flag` are never set. | Care type comes from `patient_eligibility.attendance_type` (O, E, I, D). |
 | F7 | History windows differ: `patient_episodes`, `appointments`, ER from 2022-01-01 (ER later for branches 6–8); `patient_eligibility` from 2012; `patient_ad` from 2008. | Facts start at 2022-01-01. Older admissions and eligibility rows are used only for look-back flags. |
-| F8 | `codes_data` codes 93, 94, 107, 108 (code type 21) mean the same in all 8 branches. Custom codes differ per branch (three different codes for "DNA"). Code 106 is "OPD CLINIC TEAM", code type 24 — not an outcome. | Outcome grouping is by description through a seed, not by hard-coded code lists. |
+| F8 | `codes_data` codes 93, 94, 107, 108 (code type 21) mean the same in all 8 branches. Custom codes differ per branch (three different codes for "DNA"). Code 106 is "OPD CLINIC TEAM", code type 24 — not an outcome. | Outcome grouping is by description through `ref_outcome_group`, not by hard-coded code lists. |
 | F9 | In branches 6–8, about 0.25% of `codes_data.code` values repeat across code types. | Decode lookups specify `code_type` wherever the type is known. |
 | F10 | `patient_eligibility` has 10,009,298 rows with responsibility 1 for 9,962,301 episodes. | Picking the primary eligibility row needs a deterministic tie-break. |
 | F11 | The latest source row is about three hours behind the load time on every table checked. | Observation only; does not affect a nightly build. Listed in open items. |
@@ -79,7 +79,7 @@ Build a dbt-managed golden layer on ClickHouse over three staging databases — 
 
 ### 2.5 Tooling
 
-Python 3.13.6, dbt-core 1.11.12, dbt-clickhouse 1.9.8, Dagster 1.13.23 are installed on the build machine. The workspace `D:\new_dwh_modeling` is not yet a git repository.
+Python 3.13.6, dbt-core 1.11.12, dbt-clickhouse 1.9.8, Dagster 1.13.23 are installed on the build machine. The models are developed here and then moved into an existing dbt instance (section 3.6).
 
 ---
 
@@ -93,7 +93,7 @@ Python 3.13.6, dbt-core 1.11.12, dbt-clickhouse 1.9.8, Dagster 1.13.23 are insta
 | staging | `stg` | view | One model per source table. Latest version per key, type casts, timestamp re-labelling, renames, removal of credential columns. No joins, no status filters, no calculations. |
 | intermediate | `int` | table | Derivations reused by more than one mart, each built once. Not exposed to SSAS. |
 | marts | `gold` | table | Kimball stars: `dim_*`, `fact_*`, `agg_*`, `sec_*`. The only layer SSAS reads. |
-| seeds | `gold` | seed | Small hand-maintained mappings. |
+| reference | `default` | existing tables, loaded once | Hand-maintained mappings. Declared as dbt sources; not dbt seeds (section 4). |
 
 **Rule:** a `gold` model never selects from a source or from `stg` directly if an `int` model exists for that entity; an `int` model never selects from a source.
 
@@ -124,53 +124,81 @@ Python 3.13.6, dbt-core 1.11.12, dbt-clickhouse 1.9.8, Dagster 1.13.23 are insta
 ### 3.5 Project layout
 
 ```
-hnh_dwh/
+hnh_dwh/                      local development and test harness
   dbt_project.yml
   profiles.yml.example
-  macros/            surrogate_key, ksa_wall_clock, julian_to_date, decode, unknown_member
-  seeds/             mapping CSVs + schema.yml
-  models/
+  macros/hnh/                 hnh_surrogate_key, hnh_ksa_wall_clock, hnh_julian_to_date, hnh_decode, hnh_unknown_row
+  models/hnh/
     staging/
-      oasis/         _oasis__sources.yml, stg_oasis__*.sql
-      fusion/        (Phase 3+)
-      press_ganey/   (Phase 6)
-      mapping/       _mapping__sources.yml, stg_mapping__*.sql
+      oasis/                  _oasis__sources.yml, stg_oasis__*.sql
+      reference/              _reference__sources.yml, stg_ref__*.sql, ref_outcome_group.sql, ref_entity_type.sql
+      fusion/                 (Phase 3+)
+      press_ganey/            (Phase 6)
     intermediate/
-      core/          int_code_decode, int_department_conformed
-      patient_flow/  int_episode, int_encounter, int_bed_segment, int_bed_day
+      core/                   int_code_decode, int_department_conformed
+      patient_flow/           int_episode, int_encounter, int_bed_segment, int_bed_day
     marts/
-      conformed/     dim_*, sec_user_access
-      patient_flow/  fact_*, agg_*
-      reconciliation/ rec_*
-  tests/             singular tests
-  orchestration/     Dagster project (dagster-dbt)
-  docs/
+      conformed/              dim_*, sec_user_access
+      patient_flow/           fact_*, agg_*
+      reconciliation/         rec_*
+  tests/hnh/                  singular tests
+scripts/                      one-off loaders (reference data, Hijri calendar)
+docs/
 ```
+
+### 3.6 Portability
+
+The model scripts will be moved into an existing dbt instance that already runs against this ClickHouse server. The local project exists to develop and test them. To make the move a folder copy:
+
+- Everything to be moved lives under three folders: `models/hnh/`, `macros/hnh/`, `tests/hnh/`.
+- No dbt packages. No dependency on `dbt_utils` or any other package.
+- Every macro is prefixed `hnh_`, so it cannot collide with a macro in the receiving project.
+- Every model carries the tag `hnh` and one layer tag (`hnh_stg`, `hnh_int`, `hnh_gold`), so the receiving project selects them with `--select tag:hnh`.
+- Target databases are set per folder with `+schema` (`stg`, `int`, `gold`). The receiving project must resolve a custom schema to exactly that name. If it uses dbt's default naming (`<target>_<custom>`), the supplied macro `hnh_generate_schema_name` shows the one-line override; it is not installed automatically, because it would change naming for the whole receiving project.
+- Source tables are referenced only through `source()` in the two `_sources.yml` files. If the receiving project already models a source table, that file is the single place to change.
+- No seeds. Small lists authored for this project (outcome groups, entity types) are SQL models with inline rows, so they are versioned as code and move with the models.
+- dbt unit tests need dbt-core 1.8 or later. They sit in their own YAML files (`*_unit_tests.yml`) so they can be left out if the receiving instance is older.
+- The folder-level configuration needed in the receiving `dbt_project.yml` is kept in `docs/receiving_project_config.md`.
 
 ---
 
-## 4. Seeds and static sources
+## 4. Reference data
 
-| Name | From | Rows | Used by |
-|---|---|---|---|
-| `seed_branch` | `default.branch_dict_source` | 8 (+ group row) | `dim_branch` |
-| `seed_unified_department` | `static_mappings/master_unified_department.csv` | 192 | `dim_department`, `dim_staff` (unified specialty, `not_admitting`, `high_value`) |
-| `seed_bed_classification` | `static_mappings/bed_mapping.csv` | 5,053 | `dim_bed` |
-| `seed_ward_tower` | `static_mappings/m_wards.csv` | 82 | `dim_department`. Complete: only branches 1 and 4 have two towers. |
-| `seed_clinic_duration` | `static_mappings/clinic_duration_mapping.csv` | 108 | `agg_clinic_capacity_daily` (legacy capacity) |
-| `seed_clinic_count` | `static_mappings/clinics_mapping.csv` | 7 | `dim_branch` |
-| `seed_home_care_entity` | `static_mappings/home_care_entities.csv` | 9 | `dim_department` |
-| `seed_termination_reason` | `static_mappings/termination_reason_mapping.csv` | 82 | `dim_staff` |
-| `seed_claim_status` | `static_mappings/claim_status_mapping.csv` | 14 | Phase 2 |
-| `seed_outcome_group` | new, authored in Phase 1 | ~60 | Maps an outcome description to a group-level label and flags (section 6.3) |
-| `seed_entity_type` | new | 17 | Work-entity type letter → label and care setting |
-| `seed_hijri_calendar` | generated | one row per day | `dim_date`. Produced by a checked-in script from the Umm al-Qura calendar (Python `hijridate`), covering the `dim_date` range. |
-| `seed_public_holiday` | new | small | `dim_date`. Saudi official holidays; Eid dates derived from the Hijri calendar, fixed-date holidays listed. Reviewed yearly against the official announcement. |
+Mapping files are loaded **once** into ClickHouse tables in `default` and maintained there. They are not dbt seeds and are not in git (`*.csv` is ignored). Loader: `scripts/load_reference_data.py`, which never overwrites a table that has rows.
 
-Tables that stay in ClickHouse and are declared as sources (database `default`): `map_purchasers`, `map_referral_policies`, `map_product_category`, plus two to be loaded:
+### 4.1 Loaded on 2026-10-01
 
-- **`default.budget_data`** — 2,166,331 rows (daily targets for 2026, three scenarios). Too large for a seed. Loaded once from `static_mappings/budget_data.csv` as part of Phase 1; later versions are maintained by the BI manager directly in the table.
-- **`default.bi_users`** — loaded **without** the `Password` column. The exported `static_mappings/_BI_USERS_.csv` contains password values and must not be committed to the repository.
+| Table | Rows | Used by |
+|---|---|---|
+| `default.budget_data` | 2,166,330 | `fact_target_daily`. Daily targets for 2026, three scenarios. Maintained by the BI manager. |
+| `default.bi_users` | 313 | `sec_user_access`. Loaded without the `Password` column. |
+| `default.map_unified_department_v2` | 192 | `dim_department`, `dim_staff` (unified specialty, `NOT_ADMITTING`, `High_Value`). Supersedes `default.map_unified_department`, whose `NOT_ADMITTING` is 0 on every row. |
+| `default.map_bed_classification` | 5,053 | `dim_bed`. Joins on `(branch_id, bed_location)`; 94.7% of beds match. |
+| `default.map_ward_tower` | 82 | `dim_department`. Complete: only branches 1 and 4 have two towers. |
+| `default.map_clinic_duration` | 108 | `agg_clinic_capacity_daily` (legacy capacity), `dim_staff` |
+| `default.map_clinic_count` | 7 | `dim_branch` |
+| `default.map_home_care_entity` | 9 | `dim_department` |
+| `default.map_termination_reason` | 82 | `dim_staff` |
+| `default.map_claim_status` | 14 | Phase 2 |
+| `default.income_statement_budget` | 576 | Phase 3 |
+
+### 4.2 Already present
+
+`default.branch_dict_source` (branch crosswalk), `default.map_purchasers`, `default.map_referral_policies`, `default.map_product_category`.
+
+### 4.3 To be loaded in Phase 1
+
+| Table | Content | Loader |
+|---|---|---|
+| `default.map_hijri_calendar` | One row per Gregorian date in the `dim_date` range with Hijri year, month, day and month name, on the Umm al-Qura calendar | `scripts/load_hijri_calendar.py`, using the Python `hijridate` package |
+| `default.map_public_holiday` | Saudi official holidays: Founding Day, National Day, and the Eid al-Fitr and Eid al-Adha periods derived from the Hijri calendar | Same script. Reviewed yearly against the official announcement. |
+
+### 4.4 Authored as SQL models
+
+| Model | Rows | Content |
+|---|---|---|
+| `ref_outcome_group` | about 60 | Outcome description → group-level label and flags (section 6.3) |
+| `ref_entity_type` | 17 | Work-entity type letter → label and care setting |
 
 ---
 
@@ -196,10 +224,10 @@ Key `(branch_id, patient_id)`. MRN (lowest `patient_file_master.user_file_id`), 
 Same key. Names in English and Arabic, national id, iqama, passport, mobile, email. Exposed only to a restricted SSAS role.
 
 ### dim_staff
-Key `(branch_id, staff_id)`. Name EN and AR, gender, nationality and Saudi flag, staff grade (`staff_types_data`), classification, category and medical flag (`staff_type_classification`), position and home work entity (latest `staff_posts` by `date_started`, tie-break highest `posts_id`), specialty (first non-empty of: doctor list department, service department of the home work entity, work entity description), unified specialty with `not_admitting` and `high_value` (seed), SCFHS licence number, clinic duration and slots per hour (seed), contract status (`Active` / `Terminated` / `No contract`), termination date and unified reason. Role-plays as consultant, treating doctor, surgeon and anaesthetist.
+Key `(branch_id, staff_id)`. Name EN and AR, gender, nationality and Saudi flag, staff grade (`staff_types_data`), classification, category and medical flag (`staff_type_classification`), position and home work entity (latest `staff_posts` by `date_started`, tie-break highest `posts_id`), specialty (first non-empty of: doctor list department, service department of the home work entity, work entity description), unified specialty with `not_admitting` and `high_value` (`map_unified_department_v2`), SCFHS licence number, clinic duration and slots per hour (`map_clinic_duration`), contract status (`Active` / `Terminated` / `No contract`), termination date and unified reason. Role-plays as consultant, treating doctor, surgeon and anaesthetist.
 
 ### dim_department
-Key `(branch_id, work_entity)`. Description, short name, entity type and label, care setting (`OP`, `IP`, `ER`, `Theatre`, `Ancillary`, `Support`), service department code and description, department type, unified department, cost centre (`gl_section_code` → `control_contexts_data.heading`), tower (`OLD` / `NEW` from the seed for branches 1 and 4, the only branches with two towers; `Main` for all others), maximum beds, flags: `is_excluded_ward` (description contains `NURS`, `BOOKING` or `PRE OP`), `is_home_care`, `is_virtual_clinic`.
+Key `(branch_id, work_entity)`. Description, short name, entity type and label, care setting (`OP`, `IP`, `ER`, `Theatre`, `Ancillary`, `Support`), service department code and description, department type, unified department, cost centre (`gl_section_code` → `control_contexts_data.heading`), tower (`OLD` / `NEW` from `map_ward_tower` for branches 1 and 4, the only branches with two towers; `Main` for all others), maximum beds, flags: `is_excluded_ward` (description contains `NURS`, `BOOKING` or `PRE OP`), `is_home_care`, `is_virtual_clinic`.
 
 ### dim_payer
 Key `(branch_id, purchaser_code)`. Description, account code, company, creditor, category, billing type, manual-submission flag (from `map_purchasers`), purchaser type (`CASH POLICY` when listed as a cash purchaser; `INSURANCE` when the account code starts with `INS` or the description contains `GOSI`; else `NOT INSURANCE`), TPA flag, CCHI and NPHIES licence, MOH flag (`creditor = 'Government'` in the purchaser mapping, which is the single source for MOH classification in every branch; the old per-branch MOH account list is not used). Synthetic members for every branch: `9999` Cash and `8888` Deductible. Unmapped values read `Not Mapped`.
@@ -208,13 +236,13 @@ Key `(branch_id, purchaser_code)`. Description, account code, company, creditor,
 Static. `OP`, `ER`, `IP`, `DAYCASE`, `Unknown`. Source mapping: `O` → OP, `E` → ER, `I` → IP, `D` → DAYCASE, anything else → Unknown.
 
 ### dim_bed
-Key `(branch_id, work_entity, bed_location)`. Ward, room, bed number, bed class, room class, bed gender, classification from the seed (`Critical`, `Intermediate Care`, `Non Critical`, `Non-Admitting Unit`, else `Not Mapped`), `is_critical`, current status, `is_currently_available`.
+Key `(branch_id, work_entity, bed_location)`. Ward, room, bed number, bed class, room class, bed gender, classification from `map_bed_classification` (`Critical`, `Intermediate Care`, `Non Critical`, `Non-Admitting Unit`, else `Not Mapped`), `is_critical`, current status, `is_currently_available`.
 
 ### dim_eligibility_type
 Key `(branch_id, eligibility_type)`. Description, attendance type, free follow-up days.
 
 ### Decode dimensions
-`dim_appointment_outcome`, `dim_discharge_outcome`, `dim_admission_source`, `dim_er_priority`, `dim_procedure_type`. Each: branch-level code and description, plus the group-level label and flags from `seed_outcome_group`.
+`dim_appointment_outcome`, `dim_discharge_outcome`, `dim_admission_source`, `dim_er_priority`, `dim_procedure_type`. Each: branch-level code and description, plus the group-level label and flags from `ref_outcome_group`.
 
 ### sec_user_access
 One row per user and permitted branch. Columns: `user_name`, `login_name`, `branch_key`, `unified_specialty` (nullable — no restriction), `is_admin`. Users are local accounts on the SSAS server, so `login_name` is the SSAS machine name (`var('ssas_machine_name')`), a backslash, then `user_name` — the value SSAS `USERNAME()` returns. An admin has one row per branch. A source row with no branch and `is_admin = 0` produces **no** access row. See section 9.
@@ -252,7 +280,7 @@ Grain: one encounter. `encounter_type` ∈ `OP`, `ER`, `IP`. Natural key `(branc
 
 Rules:
 
-- **Outcome group** (from `seed_outcome_group`, matched on the upper-cased trimmed description of code type 21): `Attended`, `Cancelled`, `Rescheduled`, `No-show recorded`, `Left without being seen`, `Admitted`, `Referred`, `Other`.
+- **Outcome group** (from `ref_outcome_group`, matched on the upper-cased trimmed description of code type 21): `Attended`, `Cancelled`, `Rescheduled`, `No-show recorded`, `Left without being seen`, `Admitted`, `Referred`, `Other`.
 - **`is_cancelled`** = outcome group is `Cancelled` or `Rescheduled` (codes 93, 107, 94, 108).
 - **`is_no_show`** (OP only) = not walk-in, not cancelled, not arrived, appointment date before the build date, and no other arrived OP or ER encounter for the same patient in the same branch on the same day.
 - **`is_walk_in`** = `walkin_flag = 'Y'`. **`is_follow_up`** = `new_followup_flag = 'F'`. **`is_virtual`**, **`is_online_booking`** from their flags.
@@ -269,7 +297,7 @@ Grain: one `bed_detail_id` with `admission_no > 0` and a non-empty `bed_location
 Grain: `(branch_id, work_entity, bed_location, date)` from `history_start_date` to the build date. A bed is **occupied** on a date if a non-excluded segment covers 23:59:59 of that date (midnight census). A bed is **available** on a date if it existed and its status on that date was not `NO BED IN SLOT` or `NOT AVAILABLE`. Availability history comes from `bed_details` status rows; where no status history exists before a bed's first row, the bed is treated as not yet existing.
 
 ### 6.6 int_department_conformed
-Grain `(branch_id, work_entity)`. Joins work entity → service department → unified department seed, cost centre, tower seed, entity-type seed, home-care seed.
+Grain `(branch_id, work_entity)`. Joins work entity → service department → `map_unified_department_v2`, cost centre, `map_ward_tower`, `ref_entity_type`, `map_home_care_entity`.
 
 ---
 
@@ -322,7 +350,7 @@ Legacy: `legacy_current_available_beds` on `dim_branch` holds today's available-
 
 ### 7.5 agg_clinic_capacity_daily
 Grain: `(branch_id, slot_date, work_entity, consultant)` over **all** appointment rows.
-Measures: `slots_total`, `slots_booked`, `slots_attended`, `slots_no_show`, `slots_cancelled_by_hospital`, `slots_cancelled_by_patient`, `slots_rescheduled`, `slots_walk_in`, `scheduled_minutes` (sum of `appt_length`), `break_slots`. `legacy_capacity_slots` = clinic duration × slots per hour from the seed, for a doctor-day with at least one arrived appointment.
+Measures: `slots_total`, `slots_booked`, `slots_attended`, `slots_no_show`, `slots_cancelled_by_hospital`, `slots_cancelled_by_patient`, `slots_rescheduled`, `slots_walk_in`, `scheduled_minutes` (sum of `appt_length`), `break_slots`. `legacy_capacity_slots` = clinic duration × slots per hour from `map_clinic_duration`, for a doctor-day with at least one arrived appointment.
 Incremental (section 3.2).
 
 ### 7.6 fact_surgery
@@ -409,6 +437,8 @@ Each row is a deliberate change; the named legacy field reproduces the old behav
 - Unmapped-value monitors (warn): bed classification `Not Mapped`, unified department `Not Mapped`, payer `Not Mapped`, outcome group `Other`, access rows without a branch.
 
 ### 10.2 dbt unit tests (rule-heavy models)
+Require dbt-core 1.8 or later; kept in separate `*_unit_tests.yml` files.
+
 Fixtures with expected output for: outcome grouping and cancellation; no-show with and without a same-day arrival; duration guard; primary eligibility tie-break; payer tie-break; first-episode rank across the 2022 boundary; short stay; LTC at 30 and 31 days; readmission at 30 and 31 days; ICU readmission at 47 and 49 hours; midnight-census occupancy for a stay that crosses midnight; excluded-ward segment handling; procedure type.
 
 ### 10.3 Reconciliation (`gold.rec_*`)
@@ -419,10 +449,13 @@ Fixtures with expected output for: outcome grouping and cancellation; no-show wi
 
 ## 11. Orchestration
 
-- A Dagster project using `dagster-dbt` loads the dbt project as assets.
-- One daily schedule after the staging loads complete: source freshness → `dbt build` → on success, trigger SSAS processing → write `gold.etl_run_log` (run id, start, end, status, row counts per model).
-- On any test failure the run stops before SSAS processing; the previous SSAS data remains.
-- Trigger time and the SSAS processing mechanism (TMSL via XMLA or SQL Agent job) are agreed with infrastructure before the orchestration task starts.
+Scheduling belongs to the existing dbt instance that will run these models. This project supplies what that instance needs:
+
+- **Selection:** `dbt build --select tag:hnh` builds and tests everything in dependency order. Layer tags allow partial runs.
+- **Order of a nightly run:** source freshness → `dbt build --select tag:hnh` → on success, SSAS processing.
+- **Failure rule:** if any test with severity `error` fails, SSAS is not processed, so the previous day's data stays in place.
+- **Run log:** `gold.etl_run_log` is written by an `on-run-end` hook supplied as the macro `hnh_log_run` (run id, start, end, status, model count). The receiving project adds one line to its `on-run-end` to call it.
+- The SSAS processing trigger (TMSL through XMLA, or a SQL Agent job) and the run time are set up with infrastructure and are outside Phase 1.
 
 ---
 
@@ -440,7 +473,7 @@ Fixtures with expected output for: outcome grouping and cancellation; no-show wi
 | Phase | Domain | Main facts | Notes |
 |---|---|---|---|
 | 2 | Revenue cycle | `fact_charge_line`, `fact_invoice`, `fact_claim_line`, `fact_preauth_line` | Fix discount fan-out, deductible purchaser logic, "submitted" claims total, partial approvals without a reason code. The LTC ICU revenue split (old `icu_services` list) is dropped. |
-| 3 | Finance | `fact_gl_journal_line`, `fact_gl_balance`, `fact_ap_invoice_line`, `fact_budget_monthly` | Fusion star is the source; branch via COA segment 1. A proposed `seed_fusion_department_unified` (Fusion department → unified department) is drafted in this phase for the BI manager to review. |
+| 3 | Finance | `fact_gl_journal_line`, `fact_gl_balance`, `fact_ap_invoice_line`, `fact_budget_monthly` | Fusion star is the source; branch via COA segment 1. A proposed `default.map_fusion_department_unified` (Fusion department → unified department) is drafted in this phase for the BI manager to review. |
 | 4 | Workforce | `fact_headcount_monthly`, `fact_payroll_cost`, `fact_absence`, `fact_worker_movement` | `dim_employee` linked to `dim_staff` by national id. |
 | 5 | Supply chain | `fact_inventory_transaction`, `fact_inventory_onhand`, `fact_purchase_order_line` | |
 | 6 | Patient experience | `fact_survey_response`, `fact_survey_answer` | Surveys must be analysable by doctor and clinic, so each response links to `fact_encounter` / `fact_episode`. See 13.1. |
@@ -464,11 +497,11 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
-| O1 | A write-capable ClickHouse account for dbt and the one-off loads (creates `stg`, `int`, `gold`; writes `default.budget_data`, `default.bi_users`) | First build | Nothing can be built or loaded |
+| O1 | dbt-core and dbt-clickhouse versions of the receiving instance, and how it resolves custom schema names | Moving the models | Developed on dbt-core 1.11 / dbt-clickhouse 1.9; unit tests and the schema macro may need adjusting |
 | O2 | 88 access rows have no branch | Go-live | Those users see nothing |
 | O3 | Branch 8 has no budget rows and no clinic count | Scorecards for branch 8 | Targets and clinic count show as missing |
 | O4 | Machine name of the SSAS server, for `ssas_machine_name` | SSAS role test | Variable left at a placeholder; the role cannot be tested |
-| O5 | Join key between `bed_mapping.BED` and `bed_details` is assumed to be `bed_location` | `dim_bed` | Verified in the first implementation task; a mismatch surfaces as `Not Mapped` |
+| O5 | 284 of 5,375 beds (5.3%) have no classification in `map_bed_classification` | `dim_bed` | Those beds report `Not Mapped` and are never counted as Critical |
 | O6 | Hard deletes in Oasis are not propagated to staging | — | Deleted source rows remain in the warehouse |
 | O7 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build |
 | O8 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row |
@@ -481,13 +514,16 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 |---|---|
 | User-name format for SSAS security | Local users on the SSAS server; `login_name` is machine name, backslash, user name. |
 | MOH account mapping missing for branches 7 and 8 | Not needed. MOH is classified through the purchaser mapping in all branches. |
-| Ward tower seed covers branches 1 and 4 only | Correct as is; only those branches have two towers. Others report `Main`. |
+| Ward tower mapping covers branches 1 and 4 only | Correct as is; only those branches have two towers. Others report `Main`. |
 | Budget file load and ownership | Loaded once in Phase 1. The BI manager maintains later versions. |
 | Hijri calendar and public holidays | Umm al-Qura calendar generated by script from a reliable published implementation; holidays reviewed yearly. |
 | Group-wide patient identity | Trusted. National id, iqama, passport and border number are mandatory and validated in the HIS; all are used for `person_key`. |
 | Fusion department to unified department | A proposed mapping is drafted in Phase 3 for review. |
 | Press Ganey link to Oasis | Required at doctor and clinic level. Feasibility confirmed (section 13.1). |
 | ICU service list | Not needed. |
+| Write access for the build | The `default` account is used. Databases `stg`, `int` and `gold` were created and the reference tables loaded on 2026-10-01. |
+| Reference data and git | Loaded once into ClickHouse tables; no dbt seeds; all CSV files stay out of git. |
+| Bed classification join key | Confirmed as `(branch_id, bed_location)`. |
 
 ---
 
@@ -499,7 +535,7 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 | First domain | Patient flow | Revenue cycle, Finance, thin slice across systems |
 | Semantic layer | SSAS Tabular on-prem, Import | Power BI datasets, DirectQuery |
 | Security source | Warehouse-supplied user access table | SSAS/AD groups only |
-| Refresh | Nightly, Dagster | Intra-day; plain scheduler |
+| Refresh | Nightly, run by the existing dbt instance | Intra-day |
 | Build policy | Full rebuild; two incremental models | Incremental everywhere |
 | Surrogate keys | Deterministic hash | Sequence with lookup |
 | Patient grain | Per branch, with `person_key` | Master patient index |
@@ -507,3 +543,5 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 | ICU | `Critical` classification from the bed mapping, any segment | Ward-name pattern, last ward only |
 | Legacy defects | Corrected, with `legacy_*` fields | Replicated as-is |
 | Decode dimensions | One per code type, with group labels | One generic code dimension |
+| Reference data | ClickHouse tables loaded once, declared as sources | dbt seeds (CSV files would have to be in git) |
+| Delivery | Portable model, macro and test folders moved into the existing dbt instance | A standalone dbt project with its own orchestration |
