@@ -86,8 +86,9 @@ on-run-end:
 - `fact_admission` does not yet carry critical-bed timestamps, the admission request reason or the discharging ward (planned).
 - `fact_target_daily`: `target_cost_total` and `target_patient_days` are additive; `target_cost_per_episode` and `target_alos` are episode-weighted averages for one row and must not be summed. Compute cost per episode as `SUM(target_cost_total) / SUM(target_episodes)`.
 - `fact_charge_line` relates to `dim_payer` twice: `billed_payer_key` (who the line is billed to; co-pay is 8888 Deductible) and `episode_payer_key` (the episode's payer). Revenue is `SUM(revenue_amount)`; never sum `net_amount` for revenue, it includes package components and cancelled rows.
-- `fact_charge_line` is rebuilt in full every night (about 2.5 minutes, 66M rows); it was planned as incremental but an incremental build could not stay equal to a full refresh.
-- Pre-authorisation approval and rejection rates divide by lines with `has_final_response = 1`; the RCM Authorization report's all-lines denominator is reproduced by `rec_preauth_monthly.legacy_*`.
+- `fact_charge_line` is rebuilt in full every night (about 3 minutes, 66M rows); it was planned as incremental but an incremental build could not stay equal to a full refresh.
+- Pre-authorisation approval and rejection rates restrict both the numerator and the denominator to lines with `has_final_response = 1` (approved: `is_approved = 1 and has_final_response = 1`; rejected: `preauth_outcome = 'Rejected' and has_final_response = 1`; denominator: `has_final_response = 1`; `rec_preauth_monthly.approved_final`, `rejected_final` and `final_responses`). The RCM Authorization report's all-lines denominator is reproduced by `rec_preauth_monthly.legacy_*`.
+- `fact_preauth_line.payer_comment` is payer free text and can echo member details; keep it out of general perspectives (treat like dim_patient_pii).
 
 ## Deployment checklist (Ubuntu server)
 
@@ -96,7 +97,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and a few warnings from `warn_*` tests.
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about a dozen warnings from `warn_*` tests.
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.

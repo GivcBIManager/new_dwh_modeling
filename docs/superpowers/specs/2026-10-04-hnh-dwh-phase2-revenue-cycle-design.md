@@ -160,7 +160,7 @@ All facts carry `branch_key`, `_loaded_at`, never-null dimension keys (`-1` for 
 
 **Encounter resolution (R18).** `encounter_id` is looked up in `int_encounter` on branch, `source_id = encounter_id` and the same patient. The encounter type is chosen from the charge: an inpatient charge (`attendance_type = 'I'`) → `IP`; `encounter_type = 'E'` → `ER`; `encounter_type = 'O'` → `OP`; no type → `OP` if an appointment matches, else `ER`. `encounter_key = hnh_surrogate_key([branch_id, resolved type, encounter_id])`, the Phase 1 key; unresolved → `-1`. `admission_key`, `admission_no` and `is_ltc` (from `int_admission`) are set only when the resolved type is `IP`. Facts are not related to each other in SSAS (receiving notes), so `encounter_key` serves SQL analysis and later aggregates such as revenue per visit.
 
-**Attributes:** `charge_status`, `cancel_reason_code`, `bill_to`, `invoice_doc_no`, `package_id`, `encounter_id`, `encounter_type` (as charged), `resolved_encounter_type`, `is_package_component`, `is_patient_share`, `is_cash_billed` (bill-to 3 without a purchaser sibling), `is_medication`, `is_ltc`.
+**Attributes:** `charge_status`, `cancel_reason_code`, `bill_to`, `invoice_doc_no`, `package_id`, `encounter_id`, `encounter_type` (as charged), `resolved_encounter_type`, `is_package_component`, `is_patient_share`, `is_cash_billed` (bill-to 2 or 3 without a purchaser sibling — patient-paid with no insurer on the line, outpatient or inpatient), `is_medication`, `is_ltc`.
 
 **Measures:**
 
@@ -189,7 +189,7 @@ Net revenue after adjustments = Σ `fact_charge_line.revenue_amount` + Σ `fact_
 
 ### 7.3 fact_cash_receipt
 
-**Grain:** one `doc_type = 'RECEIPT'` document (`CSH…` cashier receipts, `RCT…` AR cash receipts), `receipt_type` from the prefix.
+**Grain:** one patient receipt: a `doc_type = 'RECEIPT'` document on account `CASHACC` or with no account (`CSH…` cashier receipts, `RCT…` AR cash receipts), `receipt_type` from the prefix. Receipts on insurer, contract and other accounts are excluded (D3) and listed by `warn_excluded_receipt_accounts`.
 **Keys:** `receipt_date_key`; patient (`ext_ref`), episode (`ext_acc_doc_no`), user.
 **Measures:** `receipt_amount` (`-total_doc_price`, so receipts are positive).
 `CSH…` `CREDITAR` documents are not treated as refunds: cash charges are also re-billed (`R` rows with bill-to 3), so these credit notes are at least partly reversals of superseded charges (open item O-P2-7). Insurer collections are out of scope (D3).
@@ -284,8 +284,8 @@ When nothing was sent, from the Oasis line: request status `S`/`P` with `authori
 | Patient collections | Σ `receipt_amount` | `fact_cash_receipt` |
 | Pre-auth services | Count of lines | `fact_preauth_line` |
 | Pre-auth requests | Distinct `(branch, request_no)` | `fact_preauth_line` |
-| Pre-auth approval rate | Lines with `is_approved` outcome ÷ lines sent with a final non-pended, non-error response | `fact_preauth_line` |
-| Pre-auth rejection rate | `Rejected` ÷ the same denominator | `fact_preauth_line` |
+| Pre-auth approval rate | Lines with `is_approved` **and** `has_final_response` ÷ lines with `has_final_response` (sent with a final non-pended, non-error response) | `fact_preauth_line` |
+| Pre-auth rejection rate | `Rejected` and `has_final_response` ÷ the same denominator | `fact_preauth_line` |
 | Approved first time | `is_first_response_approved` ÷ approved lines | `fact_preauth_line` |
 | Resubmission rate | Requests with `is_resubmitted` ÷ requests | `fact_preauth_line` |
 | Transfer rate | `is_transfer` ÷ lines | `fact_preauth_line` |
