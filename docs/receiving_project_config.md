@@ -58,7 +58,7 @@ With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `
 
 ## Reference tables that must exist in `default`
 
-Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_hijri_calendar`, `map_public_holiday`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
 
 ## Security table and dim_date
 
@@ -85,6 +85,9 @@ on-run-end:
 - Run `dbt build --full-refresh --select agg_clinic_capacity_daily` weekly: no-show flips and late dimension members change past days that the incremental load does not revisit.
 - `fact_admission` does not yet carry critical-bed timestamps, the admission request reason or the discharging ward (planned).
 - `fact_target_daily`: `target_cost_total` and `target_patient_days` are additive; `target_cost_per_episode` and `target_alos` are episode-weighted averages for one row and must not be summed. Compute cost per episode as `SUM(target_cost_total) / SUM(target_episodes)`.
+- `fact_charge_line` relates to `dim_payer` twice: `billed_payer_key` (who the line is billed to; co-pay is 8888 Deductible) and `episode_payer_key` (the episode's payer). Revenue is `SUM(revenue_amount)`; never sum `net_amount` for revenue, it includes package components and cancelled rows.
+- `fact_charge_line` is rebuilt in full every night (about 2.5 minutes, 66M rows); it was planned as incremental but an incremental build could not stay equal to a full refresh.
+- Pre-authorisation approval and rejection rates divide by lines with `has_final_response = 1`; the RCM Authorization report's all-lines denominator is reproduced by `rec_preauth_monthly.legacy_*`.
 
 ## Deployment checklist (Ubuntu server)
 

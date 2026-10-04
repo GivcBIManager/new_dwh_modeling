@@ -56,7 +56,7 @@ Measured on 2026-10-04 against ClickHouse 26.5 (`172.22.25.214`).
 | R5 | What the payer is billed (Alrabwah, episodes invoiced 1–7 May 2026, all invoices of each episode): OP 1,994 of 1,994 episodes and IP 207 of 244 have invoice net = Σ live, non-component, bill-to-1 `price_paid_purchaser`. Including package components, IP matches drop to 66. | Confirms D5 and the claimable-revenue rule. |
 | R6 | The 37 IP mismatches in R5 are all long-stay contract episodes (`DIR-` accounts, 20–50 fixed monthly invoices). Invoices exceed charges (episode 902748-1: 1,994,622 invoiced vs 1,797,479 charged). The gap is not `R` lines. About 6% of the sample's IP invoiced value. | `fact_invoice` is the source for billed amounts; the gap is shown by reconciliation (open item O-P2-2). |
 | R7 | The patient's co-pay is on bill-to **3** (`CSH`) for OP and bill-to **2** (`PAT`) for IP. | Patient share is identified by a sibling bill-to-1 row on the same delivery line, not by bill-to value alone. |
-| R8 | No delivery line spans more than one delivery date (0 of 220,120 lines, branches 1 and 4, 1–14 June 2026). | Date-batched incremental builds keep a co-pay and its purchaser row together. |
+| R8 | No delivery line spans more than one delivery date (0 of 220,120 lines, branches 1 and 4, 1–14 June 2026). | A co-pay and its purchaser row always share a delivery date. |
 | R9 | Post-invoice discounts are `CREDITAR` documents numbered `<invoice doc_no>D` (Alrabwah June 2026: 1,667 documents, −50,141). `SYSDPRC` documents also end in `D` but are fixed-asset depreciation. | Only `CREDITAR …D` documents whose base is a charge invoice are revenue adjustments. |
 | R10 | Package components (`package_deal_flag = 'Y'`) carry item prices (~74M SAR in June 2026) and are invoiced on their own documents; headers and components never share a document. | Component value is kept as `package_content_amount`. |
 | R11 | Statements: `cancelled_flag` is never `Y`; `unalloc_amount` ≈ `stat_total` in every branch and year except branch 5. Insurer payments are not allocated in Oasis. | No insurer AR from Oasis (D3). |
@@ -87,7 +87,7 @@ macros/hnh/hnh_rules_revenue.sql
 tests/hnh/              + revenue singular tests; intermediate/revenue/_revenue_unit_tests.yml
 ```
 
-**Exception to parent spec 3.1.** `fact_charge_line` (about 105M rows) reads staging directly, with no `int_charge_line`: a 105M-row intermediate rebuilt every night would double the heaviest work of the build. The rules live in `hnh_` macros, so they are still defined once.
+**Exception to parent spec 3.1.** `fact_charge_line` (about 66M rows after superseded rows are dropped) reads staging directly, with no `int_charge_line`: a 105M-row intermediate rebuilt every night would double the heaviest work of the build. The rules live in `hnh_` macros, so they are still defined once.
 
 **Build.** `fact_charge_line` is rebuilt in full every night like the other Phase 2 models. It was planned as incremental, but a full build measured about 2.5 minutes (66M rows) and an incremental build cannot stay equal to a full refresh: the LTC flag of open stays changes daily and episodes can arrive after their charges.
 

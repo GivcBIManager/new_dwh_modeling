@@ -22,8 +22,7 @@ in_scope as (
 
 purchaser_lines as (
     -- Delivery lines with a live row billed to a purchaser. A patient-paid row on such a line is the
-    -- co-pay (bill-to 3 for outpatients, 2 for inpatients). A delivery line never spans two dates
-    -- (spec finding R8), so one day batch always holds both rows.
+    -- co-pay (bill-to 3 for outpatients, 2 for inpatients).
     select branch_id, delivery_line, min(purchaser_code) as sibling_purchaser_code
     from in_scope
     where cancel_flag is null and bill_to = '1' and delivery_line is not null
