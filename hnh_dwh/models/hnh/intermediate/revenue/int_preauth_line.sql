@@ -60,7 +60,7 @@ sent_items as (
 
 sends as (
     select
-        branch_id, line_natural_id, latest,
+        branch_id, line_natural_id,
         request_send_count, first_sent_at,
         tupleElement(latest, 1)  as oasis_request_no,
         tupleElement(latest, 2)  as patient_id,
@@ -98,14 +98,24 @@ responses as (
         r.response_id                                  as response_id,
         r.responded_at                                 as responded_at,
         ifNull(r.responded_at, toDateTime(0, 'Asia/Riyadh')) as responded_sort,
-        coalesce(ri.status, r.auth_status)             as nphies_status,
-        ri.approved_amount                             as approved_amount,
-        ri.approved_quantity                           as approved_quantity,
-        ri.payer_comment                               as payer_comment
+        s.request_item_id                              as request_item_id,
+        ifNull(ri.kept_response_item_id, 0)            as response_item_id,
+        coalesce(tupleElement(ri.ri_t, 1), r.auth_status) as nphies_status,
+        tupleElement(ri.ri_t, 3)                       as approved_amount,
+        tupleElement(ri.ri_t, 2)                       as approved_quantity,
+        tupleElement(ri.ri_t, 4)                       as payer_comment
     from sent_items as s
     inner join {{ ref('stg_oasis__preauth_api_responses') }} as r
         on r.branch_id = s.branch_id and r.api_trans_id = s.api_trans_id
-    left join {{ ref('stg_oasis__preauth_api_response_items') }} as ri
+    left join (
+        -- response items are not unique on (response, item_no): keep the row with the highest id
+        select
+            branch_id, response_id, item_no,
+            argMax(tuple(status, approved_quantity, approved_amount, payer_comment), response_item_id) as ri_t,
+            max(response_item_id) as kept_response_item_id
+        from {{ ref('stg_oasis__preauth_api_response_items') }}
+        group by branch_id, response_id, item_no
+    ) as ri
         on ri.branch_id = r.branch_id and ri.response_id = r.response_id and ri.item_no = s.item_no
 ),
 
@@ -120,14 +130,17 @@ response_summary as (
     from (
         select
             branch_id, line_natural_id,
-            count()                                                        as response_count,
-            argMin(nphies_status, tuple(responded_sort, response_id))      as nphies_first_status,
-            argMax(nphies_status, tuple(responded_sort, response_id))      as nphies_last_status,
+            uniqExact(response_id)                                         as response_count,
+            -- wrapped in a tuple so a NULL status is still picked rather than skipped
+            tupleElement(argMin(tuple(nphies_status),
+                                tuple(responded_sort, response_id, request_item_id, response_item_id)), 1) as nphies_first_status,
+            tupleElement(argMax(tuple(nphies_status),
+                                tuple(responded_sort, response_id, request_item_id, response_item_id)), 1) as nphies_last_status,
             max(responded_at)                                              as last_responded_at,
             -- final answer: the latest that is not pended, queued or an error; else the latest of any kind
             argMax(tuple(nphies_status, responded_at, approved_amount, approved_quantity, payer_comment),
                    tuple(toUInt8({{ hnh_preauth_outcome('nphies_status', null_s, null_s) }} not in {{ not_final }}),
-                         responded_sort, response_id))                      as final_answer
+                         responded_sort, response_id, request_item_id, response_item_id)) as final_answer
         from responses
         group by branch_id, line_natural_id
     )
