@@ -27,10 +27,10 @@ base_lines as (
 ),
 
 base_picked as (
-    -- The most frequent key combination on the invoice (ties go to the lowest episode key).
+    -- The most frequent key combination on the invoice (ties go to the lowest episode, patient, payer, care type keys).
     select
         branch_key, invoice_doc_no,
-        argMax(tuple(episode_key, patient_key, billed_payer_key, care_type_key), tuple(n, -episode_key)) as keys,
+        argMax(tuple(episode_key, patient_key, billed_payer_key, care_type_key), tuple(n, -episode_key, -patient_key, -billed_payer_key, -care_type_key)) as keys,
         sum(net) as base_invoice_net_amount
     from base_lines
     group by branch_key, invoice_doc_no

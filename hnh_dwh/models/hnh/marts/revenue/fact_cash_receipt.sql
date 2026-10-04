@@ -23,6 +23,7 @@ select
     multiIf(startsWith(ifNull(r.doc_no, ''), 'CSH'), 'Cashier',
             startsWith(ifNull(r.doc_no, ''), 'RCT'), 'AR cash receipt', 'Other') as receipt_type,
     -r.total_doc_price                                                     as receipt_amount,
+    toUInt8(-r.total_doc_price < 0)                                        as is_reversal,
     now()                                                                  as _loaded_at
 from receipts as r
 left join (select patient_key from {{ ref('dim_patient') }}) as dp

@@ -47,7 +47,9 @@ models:
               values: ['1', '2', '3']
               config: {severity: warn}
   - name: fact_revenue_adjustment
-    description: Post-invoice discounts (CREDITAR documents numbered <charge invoice>D), dated on the credit date.
+    description: >
+      Post-invoice discounts (CREDITAR documents numbered <charge invoice>D), dated on the credit date.
+      Keys are -1 when the base invoice has no live charge line in the window.
     columns:
       - name: adjustment_key
         tests: [unique, not_null]
@@ -61,7 +63,9 @@ models:
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
   - name: fact_cash_receipt
-    description: Oasis patient receipts (CSH cashier, RCT AR cash). Insurer collections are Phase 3.
+    description: >
+      Oasis patient receipts (CSH cashier, RCT AR cash). Insurer collections are Phase 3.
+      Receipts are net of reversals; is_reversal marks receipt documents with a negative amount.
     columns:
       - name: receipt_key
         tests: [unique, not_null]

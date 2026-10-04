@@ -120,7 +120,8 @@ unit_tests:
     description: >
       CRD100D is a post-invoice discount on charge invoice CRD100. MD55D is a depreciation document and
       CRD999D has no charge invoice; neither is an adjustment. The keys come from the most frequent
-      combination on the base invoice (episode 11, two lines) rather than episode 12 (one line).
+      combination on the base invoice (episode 11, two lines) rather than episode 12 (one line). CRD200 ties
+      on line count between episodes 40 and 41 and resolves to the lowest episode key.
     model: fact_revenue_adjustment
     given:
       - input: ref('stg_oasis__ar_documents')
@@ -130,14 +131,17 @@ unit_tests:
                  toNullable(toDateTime('2026-06-20 12:00:00', 'Asia/Riyadh')) as doc_at, toFloat64(amt) as total_doc_price
           from values('id UInt32, no String, t String, amt Float64',
               (1, 'CRD100', 'INVOICEAR', 250), (2, 'CRD100D', 'CREDITAR', -30),
-              (3, 'MD55D', 'SYSDPRC', 500), (4, 'CRD999D', 'CREDITAR', -10))
+              (3, 'MD55D', 'SYSDPRC', 500), (4, 'CRD999D', 'CREDITAR', -10),
+              (5, 'CRD200D', 'CREDITAR', -20), (6, 'CRD200', 'INVOICEAR', 60))
       - input: ref('fact_charge_line')
         format: sql
         rows: |
-          select toUInt8(1) as branch_key, toNullable('CRD100') as invoice_doc_no, toInt64(ep) as episode_key,
+          select toUInt8(1) as branch_key, toNullable(inv) as invoice_doc_no, toInt64(ep) as episode_key,
                  toInt64(21) as patient_key, toInt64(31) as billed_payer_key, toInt8(1) as care_type_key,
                  'Live' as charge_status, toFloat64(net) as net_amount
-          from values('ep Int64, net Float64', (11, 100), (11, 100), (12, 50))
+          from values('inv String, ep Int64, net Float64',
+              ('CRD100', 11, 100), ('CRD100', 11, 100), ('CRD100', 12, 50), ('CRD200', 41, 30), ('CRD200', 40, 30))
     expect:
       rows:
         - {doc_id: 2, base_doc_no: CRD100, adjustment_amount: -30, base_invoice_net_amount: 250, episode_key: 11, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
+        - {doc_id: 5, base_doc_no: CRD200, adjustment_amount: -20, base_invoice_net_amount: 60, episode_key: 40, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
