@@ -71,7 +71,7 @@ select
     dateDiff('minute', k.first_sent_at, k.last_responded_at)                    as legacy_sent_to_response_minutes,
     k.* except (branch_id, patient_id, episode_no, ios, requesting_staff_id, purchaser_code,
                 request_date_key, preauth_line_key, episode_key, patient_key_raw, service_key_raw,
-                staff_key_raw, care_type, nphies_first_outcome),
+                staff_key_raw, care_type, nphies_first_outcome, payer_purchaser_code, nphies_outcome),
     now()                                                      as _loaded_at
 from keyed as k
 left join deliveries as dv
