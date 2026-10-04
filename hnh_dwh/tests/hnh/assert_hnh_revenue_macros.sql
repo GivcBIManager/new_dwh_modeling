@@ -72,6 +72,9 @@ where not ifNull({{ hnh_preauth_outcome("'APPROVED'", null_s, null_s) }} = 'Appr
    or not ifNull({{ hnh_preauth_outcome(null_s, "'N'", "'P'") }} = 'Not sent', 0)
    or not ifNull({{ hnh_preauth_outcome(null_s, null_s, "'S'") }} = 'Pended', 0)
    or not ifNull({{ hnh_preauth_outcome(null_s, null_s, "'O'") }} = 'Not sent', 0)
+   or not ifNull({{ hnh_preauth_outcome("'SENT'", "'Y'", "'S'") }} = 'Approved', 0)
+   or not ifNull({{ hnh_preauth_outcome("'COMPLETE'", null_s, "'O'") }} = 'Not sent', 0)
+   or not ifNull({{ hnh_preauth_outcome("'SENT'", null_s, null_s) }} = 'Not sent', 0)
 
 union all
 select 'preauth outcome key wrong'

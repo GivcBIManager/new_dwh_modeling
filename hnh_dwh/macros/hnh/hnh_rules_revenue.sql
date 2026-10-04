@@ -39,7 +39,8 @@ multiIf(
     {{ nphies_status }} = 'REJECTED',                                        'Rejected',
     {{ nphies_status }} in ('PENDED', 'QUEUED', 'QUEUED BY NPHIES'),         'Pended',
     startsWith(ifNull({{ nphies_status }}, ''), 'ERROR'),                    'Error',
-    {{ nphies_status }} is not null,                                         'Unknown',
+    -- SENT and COMPLETE are transport states, not payer decisions: fall through to the Oasis line
+    {{ nphies_status }} is not null and {{ nphies_status }} not in ('SENT', 'COMPLETE'), 'Unknown',
     ifNull({{ request_status }}, '') in ('S', 'P') and {{ authorised_flag }} = 'Y', 'Approved',
     ifNull({{ request_status }}, '') in ('S', 'P') and {{ authorised_flag }} = 'R', 'Rejected',
     {{ authorised_flag }} = 'Z',                                             'Not required',

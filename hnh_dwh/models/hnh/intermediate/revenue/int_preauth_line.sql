@@ -1,6 +1,6 @@
 {{ config(order_by='(branch_id, line_natural_id)') }}
 
-{% set not_final = "('Pended', 'Error', 'Unknown')" %}
+{% set not_final = "('Pended', 'Error', 'Unknown', 'Not sent')" %}
 {% set null_s = "cast(null as Nullable(String))" %}
 
 with oasis_lines as (
