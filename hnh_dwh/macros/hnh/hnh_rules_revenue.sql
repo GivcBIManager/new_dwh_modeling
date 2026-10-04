@@ -18,7 +18,7 @@ toUInt8(ifNull({{ product_category_code }}, '') in ('MD', 'MED', 'PH', 'CSM', 'R
 {# Who a charge row is billed to. A patient-paid row (bill-to 2 or 3) on a delivery line that also
    has a live purchaser row is the co-pay: 8888 Deductible. Otherwise the row's purchaser; none is 9999 Cash. #}
 {% macro hnh_billed_purchaser(bill_to, purchaser_code, has_purchaser_sibling) -%}
-toInt64(if(ifNull({{ bill_to }}, '') != '1' and {{ has_purchaser_sibling }} = 1,
+toInt64(if(ifNull({{ bill_to }}, '') != '1' and ifNull({{ has_purchaser_sibling }}, 0) = 1,
            8888, ifNull({{ purchaser_code }}, 9999)))
 {%- endmacro %}
 
