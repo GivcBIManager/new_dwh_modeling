@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: int_invoice_payer
+    description: Invoice account code to purchaser, through policies.account_no. Lowest policy code wins.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, account_code]
