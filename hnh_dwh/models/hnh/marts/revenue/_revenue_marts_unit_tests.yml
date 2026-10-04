@@ -6,7 +6,8 @@ unit_tests:
       Line 10 (outpatient): purchaser row, co-pay on bill-to 3, and a superseded R row that must be dropped.
       Line 20 (inpatient): purchaser row and co-pay on bill-to 2. Line 30: pure cash. Line 40: a package
       component (not revenue). Line 50: a cancelled row. Line 60: a patient row whose purchaser row is
-      superseded, so it is pure cash, not a co-pay. Encounters: line 10 charges carry appointment 9001 in
+      superseded, so it is pure cash, not a co-pay. Line 70: an unknown cancel flag (I), kept as
+      Unknown with no revenue. Encounters: line 10 charges carry appointment 9001 in
       both encounter_id and admission_no and resolve to the OP encounter with no admission; ER visit 9001
       belongs to another patient and must not link. Lines 20 and 40 resolve to admission 7001 (LTC).
     model: fact_charge_line
@@ -46,7 +47,8 @@ unit_tests:
               (7, 40, 200, '1', '',  'Y', 300, 'I', 70,  0,  7001, '', 7001),
               (8, 50, 200, '1', 'C', '',  300, 'I', 60,  0,  0,    '', 0),
               (9, 60, 100, '1', 'R', '',  300, 'O', 90,  0,  0,    '', 0),
-              (10, 60, 100, '3', '', '',  0,   'O', 15,  0,  0,    '', 0))
+              (10, 60, 100, '3', '', '',  0,   'O', 15,  0,  0,    '', 0),
+              (11, 70, 100, '1', 'I', '', 300, 'O', 5,   0,  0,    '', 0))
       - input: ref('stg_oasis__delivery_lines')
         format: sql
         rows: |
@@ -108,3 +110,4 @@ unit_tests:
         - {delivery_charge_id: 7,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 70,  package_content_amount: 70, is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
         - {delivery_charge_id: 8,  charge_status: Cancelled, billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 60,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
         - {delivery_charge_id: 10, charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 15,  gross_amount: 15,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 11, charge_status: Unknown,   billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 5,   package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: null, admission_no: null, is_ltc: 0}

@@ -88,7 +88,8 @@ lines as (
     ) as dl on dl.branch_id = c.branch_id and dl.delivery_line = c.delivery_line
     left join {{ ref('stg_oasis__master_deliveries') }} as md
         on md.branch_id = dl.branch_id and md.master_delivery_no = dl.master_delivery_no
-    where c.cancel_flag is null or c.cancel_flag = 'C'
+    -- Only superseded (R) rows are left out; unexpected flags are kept with status Unknown.
+    where c.cancel_flag is null or c.cancel_flag != 'R'
 ),
 
 encounter_lookup as (

@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: fact_charge_line
-    description: One live or cancelled Oasis charge row. Superseded (R) rows are excluded. Incremental by delivery day.
+    description: One live, cancelled or unknown-flag Oasis charge row. Superseded (R) rows are excluded. Incremental by delivery day.
     columns:
       - name: charge_line_key
         tests: [unique, not_null]
@@ -40,7 +40,7 @@ models:
       - name: charge_status
         tests:
           - accepted_values:
-              values: ['Live', 'Cancelled']
+              values: ['Live', 'Cancelled', 'Unknown']
       - name: bill_to
         tests:
           - accepted_values:
