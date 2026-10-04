@@ -476,7 +476,7 @@ Scheduling belongs to the existing dbt instance that will run these models. This
 
 | Phase | Domain | Main facts | Notes |
 |---|---|---|---|
-| 2 | Revenue cycle | `fact_charge_line`, `fact_invoice`, `fact_claim_line`, `fact_preauth_line` | Fix discount fan-out, deductible purchaser logic, "submitted" claims total, partial approvals without a reason code. The LTC ICU revenue split (old `icu_services` list) is dropped. |
+| 2 | Revenue cycle | `fact_charge_line`, `fact_invoice`, `fact_claim_line`, `fact_preauth_line` | Fix discount fan-out, deductible purchaser logic, "submitted" claims total, partial approvals without a reason code. The LTC ICU revenue split (old `icu_services` list) is dropped. Detailed in `specs/2026-10-04-hnh-dwh-phase2-revenue-cycle-design.md`. |
 | 3 | Finance | `fact_gl_journal_line`, `fact_gl_balance`, `fact_ap_invoice_line`, `fact_budget_monthly` | Fusion star is the source; branch via COA segment 1. A proposed `default.map_fusion_department_unified` (Fusion department → unified department) is drafted in this phase for the BI manager to review. |
 | 4 | Workforce | `fact_headcount_monthly`, `fact_payroll_cost`, `fact_absence`, `fact_worker_movement` | `dim_employee` linked to `dim_staff` by national id. |
 | 5 | Supply chain | `fact_inventory_transaction`, `fact_inventory_onhand`, `fact_purchase_order_line` | |
