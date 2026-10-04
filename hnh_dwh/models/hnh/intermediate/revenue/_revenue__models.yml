@@ -6,3 +6,14 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, account_code]
+
+  - name: int_preauth_line
+    description: One Oasis authorisation line, or one NPHIES item without an Oasis line, with its final NPHIES answer.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, line_natural_id]
+    columns:
+      - name: preauth_outcome
+        tests:
+          - accepted_values:
+              values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Error', 'Cancelled', 'Not sent', 'Unknown']
