@@ -128,3 +128,40 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, ios_main]
+  - name: stg_oasis__charges
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, delivery_charge_id]
+  - name: stg_oasis__delivery_lines
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, delivery_line]
+  - name: stg_oasis__master_deliveries
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, master_delivery_no]
+  - name: stg_oasis__ar_documents
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, doc_id]
+    columns:
+      - name: doc_type
+        tests:
+          - accepted_values:
+              values: ['INVOICEAR', 'CREDITAR', 'DEBITAR', 'RECEIPT']
+  - name: stg_oasis__episode_invoices
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, invoice_no]
+  - name: stg_oasis__invoice_statements
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, stat_invoice_no]
+  - name: stg_oasis__ios_master
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, ios]
+  - name: stg_oasis__policies
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, policy_code]
