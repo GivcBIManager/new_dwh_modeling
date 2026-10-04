@@ -70,7 +70,8 @@ models:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
   - name: fact_cash_receipt
     description: >
-      Oasis patient receipts (account CASHACC or none). Insurer and contract receipts are excluded (Phase 3).
+      Oasis patient receipts: account CASHACC, none, or the patient's own account. Insurer and contract
+      receipts are excluded (Phase 3).
       Receipts are net of reversals; is_reversal marks receipt documents with a negative amount.
     columns:
       - name: receipt_key
@@ -87,7 +88,7 @@ models:
       - name: receipt_type
         tests:
           - accepted_values:
-              values: ['Cashier', 'AR cash receipt', 'Other']
+              values: ['Cashier', 'AR cash receipt', 'Receipt (REC)', 'Other']
   - name: fact_invoice
     description: One Oasis episode invoice with its statement. net_amount is what the payer is billed.
     columns:

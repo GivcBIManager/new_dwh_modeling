@@ -189,7 +189,7 @@ Net revenue after adjustments = Σ `fact_charge_line.revenue_amount` + Σ `fact_
 
 ### 7.3 fact_cash_receipt
 
-**Grain:** one patient receipt: a `doc_type = 'RECEIPT'` document on account `CASHACC` or with no account (`CSH…` cashier receipts, `RCT…` AR cash receipts), `receipt_type` from the prefix. Receipts on insurer, contract and other accounts are excluded (D3) and listed by `warn_excluded_receipt_accounts`.
+**Grain:** one patient receipt: a `doc_type = 'RECEIPT'` document on account `CASHACC`, with no account, or on the patient's own account (account code equal to the patient number in `ext_ref`) (`CSH…` cashier receipts, `RCT…` AR cash receipts, `REC…` receipts), `receipt_type` from the prefix. Receipts on insurer, contract and other accounts are excluded (D3) and listed by `warn_excluded_receipt_accounts`.
 **Keys:** `receipt_date_key`; patient (`ext_ref`), episode (`ext_acc_doc_no`), user.
 **Measures:** `receipt_amount` (`-total_doc_price`, so receipts are positive).
 `CSH…` `CREDITAR` documents are not treated as refunds: cash charges are also re-billed (`R` rows with bill-to 3), so these credit notes are at least partly reversals of superseded charges (open item O-P2-7). Insurer collections are out of scope (D3).

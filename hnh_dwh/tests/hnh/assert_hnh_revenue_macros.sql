@@ -88,3 +88,13 @@ where not ifNull({{ hnh_preauth_outcome_key("'Approved'") }} = 1, 0)
    or not ifNull({{ hnh_preauth_outcome_key("'Not sent'") }} = 8, 0)
    or not ifNull({{ hnh_preauth_outcome_key("'Unknown'") }} = -1, 0)
    or not ifNull({{ hnh_preauth_outcome_key(null_s) }} = -1, 0)
+
+union all
+select 'patient receipt wrong'
+where not ifNull({{ hnh_is_patient_receipt("'CASHACC'", "'100'") }} = 1, 0)
+   or not ifNull({{ hnh_is_patient_receipt(null_s, null_s) }} = 1, 0)
+   or not ifNull({{ hnh_is_patient_receipt("' 102 '", "'102'") }} = 1, 0)
+   or not ifNull({{ hnh_is_patient_receipt("'INS-1001-0001'", null_s) }} = 0, 0)
+   or not ifNull({{ hnh_is_patient_receipt("'DIR-0006-004'", "'DIR-0006-004'") }} = 0, 0)
+   or not ifNull({{ hnh_is_patient_receipt("'102'", "'103'") }} = 0, 0)
+   or not ifNull({{ hnh_is_patient_receipt("'102'", null_s) }} = 0, 0)

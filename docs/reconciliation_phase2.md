@@ -31,7 +31,7 @@ Full build of `tag:hnh` after the final-review fixes: PASS=424 WARN=13 ERROR=0, 
 | warn_unmapped_invoice_approval_status | 0 | |
 | warn_preauth_outcome_unknown | 0 | |
 | warn_op_billing_mismatch | 160 | Branch and invoice-month groups: 2 to 10 episodes a month from January to June 2026, then the July to September 2026 surge (finding 1) |
-| warn_excluded_receipt_accounts | 57,406 | Branch and account-prefix groups of receipts left out of `fact_cash_receipt` (124,637 documents, 5.25 billion SAR); most groups are single patient-number accounts (finding 6) |
+| warn_excluded_receipt_accounts | 84 | Branch and account-prefix groups of payer and contract receipts left out of `fact_cash_receipt` (23,096 documents, 4.84 billion SAR; finding 6) |
 | warn_unresolved_charge_encounter | 5 | Branch and care-type groups above 2% unresolved over the last 90 days: branches 7 and 8 (finding 2); branch 2 is about 1.5% since August |
 
 The build's other warnings come from Phase 1 monitors and `warn_unexpected_charge_cancel_flag` (3 groups, the 14 `I`/`F` rows of finding 4).
@@ -43,7 +43,7 @@ The build's other warnings come from Phase 1 monitors and `warn_unexpected_charg
 3. **Product categories.** 254 of 899 category codes are not in `map_product_category`. Only 4 branches have unmapped codes on live charges, with negligible revenue (`warn_unmapped_product_category`).
 4. **Unexpected cancel flags.** 14 charge rows carry cancel flags `I` or `F` (about 125 SAR). They are kept with status Unknown and zero revenue.
 5. **Test data in cancelled charges.** About 10 cancelled charge rows have units of 4,444,444,444 and net amounts up to 310 billion SAR (test data in Oasis). `rec_revenue_monthly.cancelled_charges` is meaningless for their months.
-6. **Patient collections.** `fact_cash_receipt` holds patient receipts only (account CASHACC or no account), net of reversals (`is_reversal = 1`, 5.5% of its documents). Insurer and contract receipts (DIR-, INS, GOV, MOHSP and other accounts) are excluded (Phase 3, Fusion AR) and listed by `warn_excluded_receipt_accounts`. The filter also leaves out receipts posted to a patient-number account (the account is the patient number; about 101,700 documents, 407 million SAR); they make up most of the monitor's rows.
+6. **Patient collections.** `fact_cash_receipt` holds patient receipts only (patient receipts: account CASHACC, none, or the patient's own account), net of reversals (`is_reversal = 1`, 5.5% of its documents); about 985 million SAR since 2022. Insurer and contract receipts (DIR-, INS, GOV, MOHSP and other accounts) are excluded (Phase 3, Fusion AR) and listed by `warn_excluded_receipt_accounts`.
 7. **Post-invoice discounts without a charge line.** 17% of post-invoice discount documents have no live charge line on their base invoice (episode, patient and payer unknown in fact_revenue_adjustment).
 8. **Pre-authorisation counting.** Lost Revenue uses the latest request per service; the unutilised and delivered-without-approval counts include every request.
 9. **Last-status naming.** Spec 7.6 calls the old report's last status `legacy_last_service_status`; in the fact it is `nphies_last_status`.

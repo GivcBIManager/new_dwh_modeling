@@ -56,3 +56,12 @@ toInt8(multiIf({{ expr }} = 'Approved', 1, {{ expr }} = 'Partially approved', 2,
                {{ expr }} = 'Rejected', 4, {{ expr }} = 'Pended', 5, {{ expr }} = 'Error', 6,
                {{ expr }} = 'Cancelled', 7, {{ expr }} = 'Not sent', 8, -1))
 {%- endmacro %}
+
+{# Patient receipt: on the cash account CASHACC, with no account, or on the patient's own account
+   (account code equal to the numeric patient number in ext_ref). Other accounts are payers and
+   contracts (Phase 3, Fusion AR). #}
+{% macro hnh_is_patient_receipt(account_code, ext_ref) -%}
+toUInt8(ifNull(trimBoth({{ account_code }}), 'CASHACC') in ('CASHACC', '')
+        or (match(trimBoth(ifNull({{ ext_ref }}, '')), '^[0-9]+$')
+            and trimBoth(ifNull({{ account_code }}, '')) = trimBoth(ifNull({{ ext_ref }}, ''))))
+{%- endmacro %}

@@ -4,14 +4,14 @@
 {% set last_day = "toDate(concat(toString(toYear(today()) + 2), '-12-31'))" %}
 
 with receipts as (
-    -- Patient receipts only: account CASHACC or no account. Insurer, contract and other-account
-    -- receipts are Phase 3 (Fusion AR); warn_excluded_receipt_accounts lists them.
+    -- Patient receipts only: account CASHACC, none, or the patient's own account. Insurer, contract
+    -- and other-account receipts are Phase 3 (Fusion AR); warn_excluded_receipt_accounts lists them.
     select branch_id, doc_id, doc_no, doc_at, total_doc_price,
            toInt64OrNull(ext_ref)        as patient_id,
            toInt64OrNull(ext_acc_doc_no) as episode_no
     from {{ ref('stg_oasis__ar_documents') }}
     where doc_type = 'RECEIPT' and doc_at >= {{ first_at }} and toDate(doc_at) <= {{ last_day }}
-      and ifNull(account_code, 'CASHACC') = 'CASHACC'
+      and {{ hnh_is_patient_receipt('account_code', 'ext_ref') }} = 1
 )
 
 select
@@ -24,7 +24,8 @@ select
     r.doc_id                                                               as doc_id,
     r.doc_no                                                               as doc_no,
     multiIf(startsWith(ifNull(r.doc_no, ''), 'CSH'), 'Cashier',
-            startsWith(ifNull(r.doc_no, ''), 'RCT'), 'AR cash receipt', 'Other') as receipt_type,
+            startsWith(ifNull(r.doc_no, ''), 'RCT'), 'AR cash receipt',
+            startsWith(ifNull(r.doc_no, ''), 'REC'), 'Receipt (REC)', 'Other') as receipt_type,
     -r.total_doc_price                                                     as receipt_amount,
     toUInt8(-r.total_doc_price < 0)                                        as is_reversal,
     now()                                                                  as _loaded_at
