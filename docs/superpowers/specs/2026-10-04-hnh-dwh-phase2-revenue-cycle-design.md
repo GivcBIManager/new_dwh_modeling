@@ -89,7 +89,7 @@ tests/hnh/              + revenue singular tests; intermediate/revenue/_revenue_
 
 **Exception to parent spec 3.1.** `fact_charge_line` (about 105M rows) reads staging directly, with no `int_charge_line`: a 105M-row intermediate rebuilt every night would double the heaviest work of the build. The rules live in `hnh_` macros, so they are still defined once.
 
-**Incremental.** `fact_charge_line` is the Phase 2 incremental model already provided for in parent spec 3.2: `delete+insert` keyed on `(branch_key, delivery_date_key)` for every date with a `delivery_charge` row whose `recorded_updated_at` is later than the previous run's watermark. A re-bill that marks an old row `R` updates that row, so its date is rebuilt. `--full-refresh` gives the same result. All other Phase 2 models are full rebuilds.
+**Build.** `fact_charge_line` is rebuilt in full every night like the other Phase 2 models. It was planned as incremental, but a full build measured about 2.5 minutes (66M rows) and an incremental build cannot stay equal to a full refresh: the LTC flag of open stays changes daily and episodes can arrive after their charges.
 
 ---
 

@@ -101,7 +101,7 @@ Python 3.13.6, dbt-core 1.11.12, dbt-clickhouse 1.9.8, Dagster 1.13.23 are insta
 ### 3.2 Build policy
 
 - `gold` and `int` are rebuilt in full every night.
-- Two models are incremental: `agg_clinic_capacity_daily` (372M input rows) in Phase 1, and `fact_charge_line` in Phase 2. Strategy: `delete+insert` keyed on `(branch_key, date_key)` for every date that has a source row with `recorded_updated_at` later than the previous run's watermark. A `--full-refresh` must produce the same result.
+- One model is incremental: `agg_clinic_capacity_daily` (372M input rows) in Phase 1 (`fact_charge_line` was planned as the second; Phase 2 measured a full build at about 2.5 minutes and kept it a full rebuild). Strategy: `delete+insert` keyed on `(branch_key, date_key)` for every date that has a source row with `recorded_updated_at` later than the previous run's watermark. A `--full-refresh` must produce the same result.
 - All fact tables honour `var('history_start_date')`, default `2022-01-01`.
 
 ### 3.3 Keys

@@ -1,9 +1,4 @@
-{{ config(
-    materialized='incremental',
-    incremental_strategy='delete+insert',
-    unique_key=['branch_key', 'delivery_date_key'],
-    order_by='(branch_key, delivery_date_key, charge_line_key)'
-) }}
+{{ config(order_by='(branch_key, delivery_date_key, charge_line_key)') }}
 
 {% set first_at = "toDateTime('" ~ var('hnh_history_start_date') ~ " 00:00:00', 'Asia/Riyadh')" %}
 {% set last_day = "toDate(concat(toString(toYear(today()) + 2), '-12-31'))" %}
@@ -20,21 +15,9 @@ with charges as (
     where delivered_at >= {{ first_at }} and toDate(delivered_at) <= {{ last_day }}
 ),
 
-{% if is_incremental() %}
-changed_days as (
-    -- Rebuild whole days. A re-bill updates the old row (now R), so the old day is rebuilt too.
-    select distinct branch_id, delivery_day
-    from charges
-    where updated_at > (select max(_loaded_at) - toIntervalDay(1) from {{ this }})
-),
-{% endif %}
-
 in_scope as (
     select c.*
     from charges as c
-    {% if is_incremental() %}
-    inner join changed_days as d on d.branch_id = c.branch_id and d.delivery_day = c.delivery_day
-    {% endif %}
 ),
 
 purchaser_lines as (
@@ -82,9 +65,6 @@ lines as (
         on pl.branch_id = c.branch_id and pl.delivery_line = c.delivery_line
     left join (
         select branch_id, delivery_line, master_delivery_no from {{ ref('stg_oasis__delivery_lines') }}
-        {% if is_incremental() %}
-        where (branch_id, delivery_line) in (select branch_id, delivery_line from in_scope where delivery_line is not null)
-        {% endif %}
     ) as dl on dl.branch_id = c.branch_id and dl.delivery_line = c.delivery_line
     left join {{ ref('stg_oasis__master_deliveries') }} as md
         on md.branch_id = dl.branch_id and md.master_delivery_no = dl.master_delivery_no
@@ -98,9 +78,6 @@ encounter_lookup as (
     -- tables cannot link another patient's encounter.
     select branch_id, source_id, patient_id, groupUniqArray(encounter_type) as encounter_types
     from {{ ref('int_encounter') }}
-    {% if is_incremental() %}
-    where (branch_id, source_id) in (select branch_id, encounter_id from in_scope where encounter_id is not null)
-    {% endif %}
     group by branch_id, source_id, patient_id
 ),
 
@@ -189,7 +166,7 @@ select
     w.cancel_reason_code                                as cancel_reason_code,
     toUInt8(ifNull(w.package_deal_flag, 'N') = 'Y')     as is_package_component,
     toUInt8(ifNull(w.bill_to, '') != '1' and w.has_purchaser_sibling = 1) as is_patient_share,
-    toUInt8(w.bill_to = '3' and w.has_purchaser_sibling = 0)              as is_cash_billed,
+    toUInt8(ifNull(w.bill_to, '') = '3' and w.has_purchaser_sibling = 0) as is_cash_billed,
     {{ hnh_is_medication('w.product_category_code', 'dd.entity_type') }}  as is_medication,
     w.is_ltc                                            as is_ltc,
     w.units_delivered                                   as units,
@@ -200,7 +177,7 @@ select
     {{ hnh_is_recognised_revenue('w.cancel_flag', 'w.package_deal_flag') }} as is_recognised_revenue,
     if(is_recognised_revenue = 1, w.price_paid_purchaser, 0)               as revenue_amount,
     if(w.cancel_flag is null and ifNull(w.package_deal_flag, 'N') = 'Y', w.price_paid_purchaser, 0) as package_content_amount,
-    toUInt8(is_recognised_revenue = 1 and w.bill_to = '1')                 as is_claimable,
+    toUInt8(is_recognised_revenue = 1 and ifNull(w.bill_to, '') = '1')    as is_claimable,
     if(is_claimable = 1, w.price_paid_purchaser, 0)                        as claimable_amount,
     -- old mv_revenue_dataset: package N, cancel flag X (live), invoiced
     toUInt8(ifNull(w.package_deal_flag, 'N') = 'N' and w.cancel_flag is null and ifNull(w.doc_id, 0) != 0) as legacy_in_revenue,
