@@ -165,3 +165,27 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, policy_code]
+  - name: stg_oasis__authorisation_requests
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, request_no]
+  - name: stg_oasis__authorisations
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, authorisation_no]
+  - name: stg_oasis__preauth_api_requests
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, api_trans_id]
+  - name: stg_oasis__preauth_api_request_items
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, request_item_id]
+  - name: stg_oasis__preauth_api_responses
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, response_id]
+  - name: stg_oasis__preauth_api_response_items
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, response_item_id]
