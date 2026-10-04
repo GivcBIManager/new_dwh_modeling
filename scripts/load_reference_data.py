@@ -5,14 +5,12 @@ mapping files from static_mappings/ into tables in `default`.
 
 - Never drops or overwrites: a table that already has rows is skipped.
 - The Password column of the BI users export is never read into ClickHouse.
-- Connection comes from the environment: CLICKHOUSE_HOST, CLICKHOUSE_PORT,
-  CLICKHOUSE_USER, CLICKHOUSE_PASSWORD.
+- Connection comes from scripts/ch_env.py (HNH_CH_* variables or the clickhouse MCP entry).
 
 Usage:  python scripts/load_reference_data.py [--only table_name ...]
 """
 import argparse
 import csv
-import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -99,6 +97,11 @@ SMALL_TABLES = {
         [("DetailedStatus", "String", s), ("SubmitionStatus", "String", s), ("ValidationStatus", "String", s)],
         "DetailedStatus",
     ),
+    "map_nphies_reason": (
+        "nphies_reason_mapping.csv",
+        [("CODE", "String", s), ("REASON", "String", s), ("CATEGORY", "LowCardinality(String)", s)],
+        "CODE",
+    ),
     "map_unified_department_v2": (
         "master_unified_department.csv",
         [("DEPARTMENT", "String", s), ("UNIFIED_DEPARTMENT", "String", s), ("NOT_ADMITTING", "UInt8", i), ("High_Value", "UInt8", i)],
@@ -137,13 +140,9 @@ BUDGET_COLUMNS = ["BranchId", "TableDate", "Year", "Quarter", "Scenario", "CareT
 
 
 def connect():
-    return clickhouse_connect.get_client(
-        host=os.environ.get("CLICKHOUSE_HOST", "172.22.25.214"),
-        port=int(os.environ.get("CLICKHOUSE_PORT", "8123")),
-        username=os.environ.get("CLICKHOUSE_USER", "default"),
-        password=os.environ["CLICKHOUSE_PASSWORD"],
-        send_receive_timeout=900,
-    )
+    # HNH_CH_* settings (or the clickhouse MCP entry), never the machine-wide CLICKHOUSE_* variables.
+    from ch_env import client
+    return client()
 
 
 def rows_in(client, table):

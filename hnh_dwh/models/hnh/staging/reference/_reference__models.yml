@@ -60,3 +60,19 @@ models:
     columns:
       - name: date_day
         tests: [unique, not_null]
+  - name: stg_ref__product_category
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, category_code]
+  - name: stg_ref__claim_status
+    columns:
+      - name: detailed_status
+        tests: [unique, not_null]
+  - name: stg_ref__nphies_reason
+    columns:
+      - name: reason_code
+        tests: [unique, not_null]
+      - name: reason_category
+        tests:
+          - accepted_values:
+              values: ['Technical and contractual', 'Appropriateness of care', 'Pharmacy Benefit Management', 'Duplicated Service', 'Fraud']
