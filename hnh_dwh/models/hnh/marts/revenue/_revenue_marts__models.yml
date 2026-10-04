@@ -46,3 +46,32 @@ models:
           - accepted_values:
               values: ['1', '2', '3']
               config: {severity: warn}
+  - name: fact_revenue_adjustment
+    description: Post-invoice discounts (CREDITAR documents numbered <charge invoice>D), dated on the credit date.
+    columns:
+      - name: adjustment_key
+        tests: [unique, not_null]
+      - name: adjustment_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: billed_payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+  - name: fact_cash_receipt
+    description: Oasis patient receipts (CSH cashier, RCT AR cash). Insurer collections are Phase 3.
+    columns:
+      - name: receipt_key
+        tests: [unique, not_null]
+      - name: receipt_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: receipt_type
+        tests:
+          - accepted_values:
+              values: ['Cashier', 'AR cash receipt', 'Other']

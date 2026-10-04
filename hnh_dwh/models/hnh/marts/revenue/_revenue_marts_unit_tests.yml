@@ -115,3 +115,29 @@ unit_tests:
         - {delivery_charge_id: 11, charge_status: Unknown,   billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 5,   package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
         - {delivery_charge_id: 12, charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 30,  gross_amount: 30,  package_content_amount: 0,  is_claimable: 1, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: ER, admission_no: null, is_ltc: 0}
         - {delivery_charge_id: 13, charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 10,  gross_amount: 10,  package_content_amount: 0,  is_claimable: 1, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: OP, admission_no: null, is_ltc: 0}
+
+  - name: fact_revenue_adjustment_matches_discount_documents
+    description: >
+      CRD100D is a post-invoice discount on charge invoice CRD100. MD55D is a depreciation document and
+      CRD999D has no charge invoice; neither is an adjustment. The keys come from the most frequent
+      combination on the base invoice (episode 11, two lines) rather than episode 12 (one line).
+    model: fact_revenue_adjustment
+    given:
+      - input: ref('stg_oasis__ar_documents')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(id) as doc_id, toNullable(no) as doc_no, toNullable(t) as doc_type,
+                 toNullable(toDateTime('2026-06-20 12:00:00', 'Asia/Riyadh')) as doc_at, toFloat64(amt) as total_doc_price
+          from values('id UInt32, no String, t String, amt Float64',
+              (1, 'CRD100', 'INVOICEAR', 250), (2, 'CRD100D', 'CREDITAR', -30),
+              (3, 'MD55D', 'SYSDPRC', 500), (4, 'CRD999D', 'CREDITAR', -10))
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_key, toNullable('CRD100') as invoice_doc_no, toInt64(ep) as episode_key,
+                 toInt64(21) as patient_key, toInt64(31) as billed_payer_key, toInt8(1) as care_type_key,
+                 'Live' as charge_status, toFloat64(net) as net_amount
+          from values('ep Int64, net Float64', (11, 100), (11, 100), (12, 50))
+    expect:
+      rows:
+        - {doc_id: 2, base_doc_no: CRD100, adjustment_amount: -30, base_invoice_net_amount: 250, episode_key: 11, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
