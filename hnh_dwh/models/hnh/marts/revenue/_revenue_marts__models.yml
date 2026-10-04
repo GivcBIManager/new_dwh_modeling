@@ -106,3 +106,30 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, episode_key]
+  - name: fact_preauth_line
+    description: One pre-authorisation line with its final NPHIES answer, turnaround and delivery.
+    columns:
+      - name: preauth_line_key
+        tests: [unique, not_null]
+      - name: request_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: requesting_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: service_key
+        tests:
+          - relationships: {to: ref('dim_service'), field: service_key}
+      - name: payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: preauth_outcome_key
+        tests:
+          - relationships: {to: ref('dim_preauth_outcome'), field: preauth_outcome_key}

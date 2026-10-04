@@ -145,3 +145,58 @@ unit_tests:
       rows:
         - {doc_id: 2, base_doc_no: CRD100, adjustment_amount: -30, base_invoice_net_amount: 250, episode_key: 11, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
         - {doc_id: 5, base_doc_no: CRD200, adjustment_amount: -20, base_invoice_net_amount: 60, episode_key: 40, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
+
+  - name: fact_preauth_line_counts_delivery_after_request_only
+    description: >
+      A1 (service 500) was approved; its only charge was on 5 June, before the 10 June request, so it is
+      approved and not delivered. A2 (service 600) was rejected but delivered on 12 June.
+    model: fact_preauth_line
+    given:
+      - input: ref('int_preauth_line')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, line as line_natural_id, toNullable(toInt64(100)) as patient_id,
+                 toNullable(toInt64(1)) as episode_no, toNullable(toInt64(ios)) as ios,
+                 cast(null as Nullable(String)) as requesting_staff_id, toNullable(toInt64(300)) as purchaser_code,
+                 toNullable(toDateTime('2026-06-10 09:00:00', 'Asia/Riyadh')) as requested_at,
+                 toNullable(toDateTime('2026-06-10 09:10:00', 'Asia/Riyadh')) as first_sent_at,
+                 toNullable(toDateTime('2026-06-10 09:40:00', 'Asia/Riyadh')) as final_responded_at,
+                 toNullable(toDateTime('2026-06-10 09:40:00', 'Asia/Riyadh')) as last_responded_at,
+                 outcome as preauth_outcome, toNullable(st) as nphies_final_status, toNullable(st) as nphies_first_status,
+                 toNullable(flag) as authorised_flag, toUInt64(1) as request_send_count,
+                 toNullable(toFloat64(2)) as requested_qty, toNullable(toFloat64(2)) as approved_qty,
+                 toNullable(toFloat64(200)) as estimated_amount
+          from values('line String, ios UInt32, outcome String, st String, flag String',
+              ('A1', 500, 'Approved', 'APPROVED', 'Y'), ('A2', 600, 'Rejected', 'REJECTED', 'R'))
+      - input: ref('int_episode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(1) as episode_no,
+                 'OP' as care_type, toInt64(300) as purchaser_code
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_key, toInt64(bitShiftRight(cityHash64('1|100|1|'), 1)) as episode_key,
+                 toInt64(bitShiftRight(cityHash64(svc), 1)) as service_key, toInt32(d) as delivery_date_key,
+                 'Live' as charge_status
+          from values('svc String, d UInt32', ('1|500|', 20260605), ('1|600|', 20260612))
+      - input: ref('dim_patient')
+        format: sql
+        rows: |
+          select toInt64(-1) as patient_key
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(-1) as staff_key
+      - input: ref('dim_service')
+        format: sql
+        rows: |
+          select toInt64(-1) as service_key
+      - input: ref('dim_payer')
+        format: sql
+        rows: |
+          select toInt64(-1) as payer_key
+    expect:
+      rows:
+        - {line_natural_id: A1, is_delivered: 0, is_approved_not_delivered: 1, is_delivered_not_approved: 0, approved_estimated_amount: 200, is_approved: 1, has_final_response: 1, care_type_key: 1}
+        - {line_natural_id: A2, is_delivered: 1, is_approved_not_delivered: 0, is_delivered_not_approved: 1, approved_estimated_amount: 200, is_approved: 0, has_final_response: 1, care_type_key: 1}
