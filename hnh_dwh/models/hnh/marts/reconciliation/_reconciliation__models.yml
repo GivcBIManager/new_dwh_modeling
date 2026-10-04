@@ -10,3 +10,15 @@ models:
       - name: branch_key
         tests:
           - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: rec_revenue_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+  - name: rec_billing_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start, care_type_key]
+  - name: rec_preauth_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
