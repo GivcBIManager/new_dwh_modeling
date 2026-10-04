@@ -32,8 +32,7 @@
 |---|---|---|
 | `staff_id` cast to `Int64` | `hnh_code(staff_id)` text | Phase 1 `dim_staff` keys staff by text code; 10% of charge staff ids are not numeric. |
 | `stg_oasis__ios_main` | Reuse existing `stg_oasis__service_items` (same table) | Avoids a second view of `ios_main_data`. |
-| Encounter key on charges | `encounter_id` and `encounter_type` kept as attributes only | `delivery_charge.encounter_id` is the Oasis encounter id, not the Phase 1 appointment/ER/admission key (parent spec 13.1). |
-| `is_ltc` from `fact_admission` | From `int_admission` (`is_ltc` or `is_ltc_to_date`) | A gold model reads `int`, not another fact, when an `int` exists. |
+| `is_ltc` (spec 7.1) | From `int_admission` (`is_ltc` or `is_ltc_to_date`) of the resolved inpatient encounter | A gold model reads `int`, not another fact, when an `int` exists. |
 | Request status `S` with flag `N` and no NPHIES response: not specified | `Pended` | The request was sent and is awaiting a decision (legacy label "Sent"). |
 | Requesting department as a key | `service_dept` code kept as an attribute | It is a service department code, not a work entity, so it cannot key `dim_department`. |
 | Receipt user key | Not included | `doc` has no cashier column in scope. |
@@ -42,11 +41,12 @@
 
 ## Review Focus
 
-1. **A co-pay row whose purchaser row was cancelled or superseded** (the only live row on the delivery line is the patient's): it must be treated as pure cash (`9999`, `is_cash_billed = 1`), not as Deductible. Pinned in Task 6 (`fact_charge_line` unit test, delivery line 60).
-2. **A pre-authorisation answered APPROVED and later re-answered with an ERROR or PENDED response**: the final outcome must stay Approved while `nphies_last_status` shows the later response. Pinned in Task 9 (`int_preauth_line` unit test, line A1).
-3. **A service delivered before its pre-authorisation request** (same patient, episode and service): it must not count as delivered for that request, so an approved request stays "approved, not delivered". Pinned in Task 10 (`fact_preauth_line` unit test, line A1).
-4. **A fixed-asset depreciation document whose number ends in `D`** (`SYSDPRC`), and a credit document ending in `D` whose base is not a charge invoice: neither may become a revenue adjustment. Pinned in Task 7 (`fact_revenue_adjustment` unit test, documents 3 and 4).
-5. **A second request for a different service in the same episode**: earlier approved, undelivered lines for another service must stay in Lost Revenue (`is_latest_request_for_service = 1`), unlike the legacy per-episode rule. Pinned in Task 9 (`int_preauth_line` unit test, lines A2 and A3).
+1. **An outpatient charge whose `admission_no` holds its appointment id, while an ER visit of another patient has the same number**: it must link to the OP encounter and get no admission and no LTC flag. Pinned in Task 6 (`fact_charge_line` unit test, rows 1 and 2).
+2. **A co-pay row whose purchaser row was cancelled or superseded** (the only live row on the delivery line is the patient's): it must be treated as pure cash (`9999`, `is_cash_billed = 1`), not as Deductible. Pinned in Task 6 (`fact_charge_line` unit test, delivery line 60).
+3. **A pre-authorisation answered APPROVED and later re-answered with an ERROR or PENDED response**: the final outcome must stay Approved while `nphies_last_status` shows the later response. Pinned in Task 9 (`int_preauth_line` unit test, line A1).
+4. **A service delivered before its pre-authorisation request** (same patient, episode and service): it must not count as delivered for that request, so an approved request stays "approved, not delivered". Pinned in Task 10 (`fact_preauth_line` unit test, line A1).
+5. **A fixed-asset depreciation document whose number ends in `D`** (`SYSDPRC`), and a credit document ending in `D` whose base is not a charge invoice: neither may become a revenue adjustment. Pinned in Task 7 (`fact_revenue_adjustment` unit test, documents 3 and 4).
+6. **A second request for a different service in the same episode**: earlier approved, undelivered lines for another service must stay in Lost Revenue (`is_latest_request_for_service = 1`), unlike the legacy per-episode rule. Pinned in Task 9 (`int_preauth_line` unit test, lines A2 and A3).
 
 ## File Structure
 
@@ -60,7 +60,7 @@ hnh_dwh/
   tests/hnh/assert_fact_charge_line_matches_staging.sql
   tests/hnh/assert_fact_invoice_matches_staging.sql
   tests/hnh/assert_preauth_line_conservation.sql
-  tests/hnh/warn_*.sql                       six revenue monitors (Task 11)
+  tests/hnh/warn_*.sql                       seven revenue monitors (Task 11)
   models/hnh/staging/reference/              + stg_ref__product_category, stg_ref__claim_status, stg_ref__nphies_reason
   models/hnh/staging/oasis/                  + 14 staging views (Tasks 3 and 4)
   models/hnh/intermediate/revenue/
@@ -1010,8 +1010,8 @@ git commit -m "Add service, product category and pre-authorisation outcome dimen
 - Test: `hnh_dwh/tests/hnh/assert_fact_charge_line_matches_staging.sql`
 
 **Interfaces:**
-- Consumes: Task 2 macros; Task 3 staging; `int_episode(branch_id, patient_id, episode_no, care_type, purchaser_code)`; `int_admission(branch_id, admission_no, is_ltc, is_ltc_to_date)`; `dim_patient(patient_key)`, `dim_staff(staff_key)`, `hnh_dim_department(department_key, entity_type)`, `dim_service(service_key)`, `dim_product_category(product_category_key)`, `dim_payer(payer_key, creditor)`.
-- Produces `gold.fact_charge_line` columns used later: `charge_line_key, branch_key, delivery_date_key, episode_key, patient_key, service_key, billed_payer_key, care_type_key, invoice_doc_no, charge_status, is_recognised_revenue, is_claimable, is_patient_share, is_cash_billed, is_medication, net_amount, gross_amount, line_discount_amount, vat_amount, revenue_amount, claimable_amount, package_content_amount, legacy_revenue_amount`. `episode_key = hnh_surrogate_key(['branch_id','patient_id','episode_no'])` (same as Phase 1); `service_key` is dimension-checked (`-1` when unknown).
+- Consumes: Task 2 macros; Task 3 staging; `int_episode(branch_id, patient_id, episode_no, care_type, purchaser_code)`; `int_encounter(branch_id, encounter_type, source_id, patient_id)`; `int_admission(branch_id, admission_no, is_ltc, is_ltc_to_date)`; `dim_patient(patient_key)`, `dim_staff(staff_key)`, `hnh_dim_department(department_key, entity_type)`, `dim_service(service_key)`, `dim_product_category(product_category_key)`, `dim_payer(payer_key, creditor)`.
+- Produces `gold.fact_charge_line` columns used later: `charge_line_key, branch_key, delivery_date_key, episode_key, encounter_key, resolved_encounter_type, admission_no, patient_key, service_key, billed_payer_key, care_type_key, invoice_doc_no, charge_status, is_recognised_revenue, is_claimable, is_patient_share, is_cash_billed, is_medication, net_amount, gross_amount, line_discount_amount, vat_amount, revenue_amount, claimable_amount, package_content_amount, legacy_revenue_amount`. `episode_key = hnh_surrogate_key(['branch_id','patient_id','episode_no'])` and `encounter_key = hnh_surrogate_key(['branch_id', <resolved type>, 'encounter_id'])` (same as Phase 1 `fact_encounter`); `service_key` is dimension-checked (`-1` when unknown).
 
 - [ ] **Step 1: Write the failing unit test**
 
@@ -1026,7 +1026,9 @@ unit_tests:
       Line 10 (outpatient): purchaser row, co-pay on bill-to 3, and a superseded R row that must be dropped.
       Line 20 (inpatient): purchaser row and co-pay on bill-to 2. Line 30: pure cash. Line 40: a package
       component (not revenue). Line 50: a cancelled row. Line 60: a patient row whose purchaser row is
-      superseded, so it is pure cash, not a co-pay.
+      superseded, so it is pure cash, not a co-pay. Encounters: line 10 charges carry appointment 9001 in
+      both encounter_id and admission_no and resolve to the OP encounter with no admission; ER visit 9001
+      belongs to another patient and must not link. Lines 20 and 40 resolve to admission 7001 (LTC).
     model: fact_charge_line
     overrides:
       macros:
@@ -1038,8 +1040,10 @@ unit_tests:
           select toUInt8(1) as branch_id, toInt64(id) as delivery_charge_id, toNullable(toInt64(line)) as delivery_line,
                  toNullable(toDateTime('2026-06-01 10:00:00', 'Asia/Riyadh')) as delivered_at,
                  toNullable(toInt64(patient)) as patient_id, toNullable(toInt64(1)) as episode_no,
-                 cast(null as Nullable(Int64)) as admission_no, cast(null as Nullable(Int64)) as encounter_id,
-                 cast(null as Nullable(String)) as encounter_type, cast(null as Nullable(String)) as staff_id,
+                 if(adm = 0, cast(null as Nullable(Int64)), toNullable(toInt64(adm))) as admission_no,
+                 if(eid = 0, cast(null as Nullable(Int64)), toNullable(toInt64(eid))) as encounter_id,
+                 if(et = '', cast(null as Nullable(String)), toNullable(et)) as encounter_type,
+                 cast(null as Nullable(String)) as staff_id,
                  toNullable(toInt64(500)) as ios,
                  if(purchaser = 0, cast(null as Nullable(Int64)), toNullable(toInt64(purchaser))) as purchaser_code,
                  cast(null as Nullable(Int64)) as package_id, toNullable(toInt64(77)) as doc_id,
@@ -1052,17 +1056,17 @@ unit_tests:
                  toFloat64(1) as units_delivered, toFloat64(price) as price_paid_purchaser,
                  toFloat64(disc) as discount_given, toFloat64(0) as vat_value,
                  toDateTime64('2026-06-02 00:00:00', 6, 'UTC') as updated_at
-          from values('id UInt32, line UInt32, patient UInt32, bill_to String, cf String, pkg String, purchaser UInt32, att String, price Float64, disc Float64',
-              (1, 10, 100, '1', '',  '',  300, 'O', 80,  20),
-              (2, 10, 100, '3', '',  '',  0,   'O', 20,  0),
-              (3, 10, 100, '1', 'R', '',  300, 'O', 80,  20),
-              (4, 20, 200, '1', '',  '',  300, 'I', 500, 0),
-              (5, 20, 200, '2', '',  '',  300, 'I', 50,  0),
-              (6, 30, 100, '3', '',  '',  0,   'O', 40,  0),
-              (7, 40, 200, '1', '',  'Y', 300, 'I', 70,  0),
-              (8, 50, 200, '1', 'C', '',  300, 'I', 60,  0),
-              (9, 60, 100, '1', 'R', '',  300, 'O', 90,  0),
-              (10, 60, 100, '3', '', '',  0,   'O', 15,  0))
+          from values('id UInt32, line UInt32, patient UInt32, bill_to String, cf String, pkg String, purchaser UInt32, att String, price Float64, disc Float64, eid UInt32, et String, adm UInt32',
+              (1, 10, 100, '1', '',  '',  300, 'O', 80,  20, 9001, '', 9001),
+              (2, 10, 100, '3', '',  '',  0,   'O', 20,  0,  9001, '', 9001),
+              (3, 10, 100, '1', 'R', '',  300, 'O', 80,  20, 9001, '', 9001),
+              (4, 20, 200, '1', '',  '',  300, 'I', 500, 0,  7001, '', 7001),
+              (5, 20, 200, '2', '',  '',  300, 'I', 50,  0,  7001, '', 7001),
+              (6, 30, 100, '3', '',  '',  0,   'O', 40,  0,  0,    '', 0),
+              (7, 40, 200, '1', '',  'Y', 300, 'I', 70,  0,  7001, '', 7001),
+              (8, 50, 200, '1', 'C', '',  300, 'I', 60,  0,  0,    '', 0),
+              (9, 60, 100, '1', 'R', '',  300, 'O', 90,  0,  0,    '', 0),
+              (10, 60, 100, '3', '', '',  0,   'O', 15,  0,  0,    '', 0))
       - input: ref('stg_oasis__delivery_lines')
         format: sql
         rows: |
@@ -1078,10 +1082,18 @@ unit_tests:
                  'OP' as care_type, toInt64(300) as purchaser_code
           union all
           select toUInt8(1), toInt64(200), toInt64(1), 'IP', toInt64(300)
+      - input: ref('int_encounter')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, 'OP' as encounter_type, toInt64(9001) as source_id, toNullable(toInt64(100)) as patient_id
+          union all
+          select toUInt8(1), 'IP', toInt64(7001), toNullable(toInt64(200))
+          union all
+          select toUInt8(1), 'ER', toInt64(9001), toNullable(toInt64(555))
       - input: ref('int_admission')
         format: sql
         rows: |
-          select toUInt8(1) as branch_id, toInt64(-5) as admission_no, toUInt8(0) as is_ltc, toUInt8(0) as is_ltc_to_date
+          select toUInt8(1) as branch_id, toInt64(7001) as admission_no, toUInt8(1) as is_ltc, toUInt8(0) as is_ltc_to_date
       - input: ref('dim_patient')
         format: sql
         rows: |
@@ -1108,14 +1120,14 @@ unit_tests:
           select toInt64(-1) as payer_key, 'Unknown' as creditor
     expect:
       rows:
-        - {delivery_charge_id: 1,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 80,  gross_amount: 100, package_content_amount: 0,  is_claimable: 1, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300}
-        - {delivery_charge_id: 2,  charge_status: Live,      billed_purchaser_code: 8888, is_patient_share: 1, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 20,  gross_amount: 20,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 8888, legacy_patient_purchaser: 300}
-        - {delivery_charge_id: 4,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 500, gross_amount: 500, package_content_amount: 0,  is_claimable: 1, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300}
-        - {delivery_charge_id: 5,  charge_status: Live,      billed_purchaser_code: 8888, is_patient_share: 1, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 50,  gross_amount: 50,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 8888, legacy_patient_purchaser: 300}
-        - {delivery_charge_id: 6,  charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 40,  gross_amount: 40,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999}
-        - {delivery_charge_id: 7,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 70,  package_content_amount: 70, is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300}
-        - {delivery_charge_id: 8,  charge_status: Cancelled, billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 60,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300}
-        - {delivery_charge_id: 10, charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 15,  gross_amount: 15,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999}
+        - {delivery_charge_id: 1,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 80,  gross_amount: 100, package_content_amount: 0,  is_claimable: 1, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: OP, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 2,  charge_status: Live,      billed_purchaser_code: 8888, is_patient_share: 1, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 20,  gross_amount: 20,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 8888, legacy_patient_purchaser: 300, resolved_encounter_type: OP, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 4,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 500, gross_amount: 500, package_content_amount: 0,  is_claimable: 1, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
+        - {delivery_charge_id: 5,  charge_status: Live,      billed_purchaser_code: 8888, is_patient_share: 1, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 50,  gross_amount: 50,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 8888, legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
+        - {delivery_charge_id: 6,  charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 40,  gross_amount: 40,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 7,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 70,  package_content_amount: 70, is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
+        - {delivery_charge_id: 8,  charge_status: Cancelled, billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 60,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 10, charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 15,  gross_amount: 15,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
 ```
 
 Run: `python scripts/run_dbt.py test --select "fact_charge_line,test_type:unit"`
@@ -1138,7 +1150,7 @@ with charges as (
     select
         branch_id, delivery_charge_id, delivery_line, delivered_at,
         assumeNotNull(toDate(delivered_at)) as delivery_day,
-        patient_id, episode_no, admission_no, encounter_id, encounter_type, staff_id, ios, purchaser_code,
+        patient_id, episode_no, encounter_id, encounter_type, staff_id, ios, purchaser_code,
         package_id, doc_id, invoice_doc_no, cancel_flag, cancel_reason_code, bill_to, package_deal_flag,
         attendance_type, product_category_code, units_delivered, price_paid_purchaser, discount_given,
         vat_value, updated_at
@@ -1182,7 +1194,6 @@ lines as (
         c.delivery_day              as delivery_day,
         c.patient_id                as patient_id,
         c.episode_no                as episode_no,
-        c.admission_no              as admission_no,
         c.encounter_id              as encounter_id,
         c.encounter_type            as encounter_type,
         c.staff_id                  as staff_id,
@@ -1218,27 +1229,58 @@ lines as (
     where c.cancel_flag is null or c.cancel_flag = 'C'
 ),
 
-keyed as (
+encounter_lookup as (
+    -- The Oasis encounter id is an appointment id, admission number or ER visit id (Oasis view
+    -- PATIENT_VALID_ENCOUNTERS). The same patient is required, so a number used by two of those
+    -- tables cannot link another patient's encounter.
+    select branch_id, source_id, patient_id, groupUniqArray(encounter_type) as encounter_types
+    from {{ ref('int_encounter') }}
+    {% if is_incremental() %}
+    where (branch_id, source_id) in (select branch_id, encounter_id from in_scope where encounter_id is not null)
+    {% endif %}
+    group by branch_id, source_id, patient_id
+),
+
+resolved as (
     select
         l.*,
+        multiIf(
+            l.attendance_type = 'I', if(has(el.encounter_types, 'IP'), 'IP', null),
+            l.encounter_type = 'E',  if(has(el.encounter_types, 'ER'), 'ER', null),
+            l.encounter_type = 'O',  if(has(el.encounter_types, 'OP'), 'OP', null),
+            has(el.encounter_types, 'OP'), 'OP',
+            has(el.encounter_types, 'ER'), 'ER',
+            null)                                                 as resolved_encounter_type,
+        -- On outpatient charges admission_no holds the encounter id, so the admission is taken
+        -- only from a resolved inpatient encounter.
+        if(resolved_encounter_type = 'IP', l.encounter_id, cast(null as Nullable(Int64))) as resolved_admission_no
+    from lines as l
+    left join encounter_lookup as el
+        on el.branch_id = l.branch_id and el.source_id = l.encounter_id and el.patient_id = l.patient_id
+),
+
+keyed as (
+    select
+        r.*,
         ep.care_type                                              as episode_care_type,
         ifNull(ep.purchaser_code, toInt64(9999))                  as episode_purchaser_code,
         toUInt8(ifNull(ad.is_ltc, 0) = 1 or ifNull(ad.is_ltc_to_date, 0) = 1) as is_ltc,
-        {{ hnh_charge_care_type('ep.care_type', 'l.attendance_type') }}       as care_type,
-        {{ hnh_billed_purchaser('l.bill_to', 'l.purchaser_code', 'l.has_purchaser_sibling') }} as billed_purchaser_code,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.delivery_charge_id']) }}      as charge_line_key,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.patient_id', 'l.episode_no']) }} as episode_key,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.admission_no']) }}            as admission_key,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.patient_id']) }}              as patient_key_raw,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.staff_id']) }}                as staff_key_raw,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.work_entity']) }}             as department_key_raw,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.ios']) }}                     as service_key_raw,
-        {{ hnh_surrogate_key(['l.branch_id', 'l.product_category_code']) }}   as product_category_key_raw
-    from lines as l
+        {{ hnh_charge_care_type('ep.care_type', 'r.attendance_type') }}       as care_type,
+        {{ hnh_billed_purchaser('r.bill_to', 'r.purchaser_code', 'r.has_purchaser_sibling') }} as billed_purchaser_code,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.delivery_charge_id']) }}      as charge_line_key,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.patient_id', 'r.episode_no']) }} as episode_key,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.resolved_encounter_type', 'r.encounter_id']) }} as encounter_key,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.resolved_admission_no']) }}   as admission_key,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.patient_id']) }}              as patient_key_raw,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.staff_id']) }}                as staff_key_raw,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.work_entity']) }}             as department_key_raw,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.ios']) }}                     as service_key_raw,
+        {{ hnh_surrogate_key(['r.branch_id', 'r.product_category_code']) }}   as product_category_key_raw
+    from resolved as r
     left join (select branch_id, patient_id, episode_no, care_type, purchaser_code from {{ ref('int_episode') }}) as ep
-        on ep.branch_id = l.branch_id and ep.patient_id = l.patient_id and ep.episode_no = l.episode_no
+        on ep.branch_id = r.branch_id and ep.patient_id = r.patient_id and ep.episode_no = r.episode_no
     left join (select branch_id, admission_no, is_ltc, is_ltc_to_date from {{ ref('int_admission') }}) as ad
-        on ad.branch_id = l.branch_id and ad.admission_no = l.admission_no
+        on ad.branch_id = r.branch_id and ad.admission_no = r.resolved_admission_no
 ),
 
 with_payers as (
@@ -1255,6 +1297,7 @@ select
     toInt32(toYYYYMMDD(w.delivery_day))                 as delivery_date_key,
     {{ hnh_time_key('w.delivered_at') }}                as delivery_time_key,
     w.episode_key                                       as episode_key,
+    w.encounter_key                                     as encounter_key,
     w.admission_key                                     as admission_key,
     ifNull(dp.patient_key, toInt64(-1))                 as patient_key,
     ifNull(ds.staff_key, toInt64(-1))                   as staff_key,
@@ -1268,6 +1311,8 @@ select
     w.delivery_line                                     as delivery_line,
     w.encounter_id                                      as encounter_id,
     w.encounter_type                                    as encounter_type,
+    w.resolved_encounter_type                           as resolved_encounter_type,
+    w.resolved_admission_no                             as admission_no,
     w.invoice_doc_no                                    as invoice_doc_no,
     w.package_id                                        as package_id,
     w.bill_to                                           as bill_to,
@@ -1314,7 +1359,7 @@ left join (select payer_key, creditor from {{ ref('dim_payer') }}) as dep on dep
 - [ ] **Step 3: Run the unit test**
 
 Run: `python scripts/run_dbt.py test --select "fact_charge_line,test_type:unit"`
-Expected: PASS. (Row 3 and row 9 are absent because they are `R`; row 10 is pure cash because its line's only purchaser row is superseded.)
+Expected: PASS. (Row 3 and row 9 are absent because they are `R`; row 10 is pure cash because its line's only purchaser row is superseded; rows 1 and 2 resolve to the OP encounter although `admission_no` holds 9001.)
 
 - [ ] **Step 4: Write the conservation test and the model YAML**
 
@@ -2499,7 +2544,7 @@ git commit -m "Add pre-authorisation fact with delivery and turnaround measures"
 **Files:**
 - Create in `hnh_dwh/models/hnh/marts/reconciliation/`: `rec_revenue_monthly.sql`, `rec_billing_monthly.sql`, `rec_preauth_monthly.sql`
 - Modify: `hnh_dwh/models/hnh/marts/reconciliation/_reconciliation__models.yml`
-- Create in `hnh_dwh/tests/hnh/`: `warn_unmapped_product_category.sql`, `warn_invoice_without_payer.sql`, `warn_invoice_account_many_purchasers.sql`, `warn_unmapped_invoice_approval_status.sql`, `warn_preauth_outcome_unknown.sql`, `warn_op_billing_mismatch.sql`
+- Create in `hnh_dwh/tests/hnh/`: `warn_unmapped_product_category.sql`, `warn_invoice_without_payer.sql`, `warn_invoice_account_many_purchasers.sql`, `warn_unmapped_invoice_approval_status.sql`, `warn_preauth_outcome_unknown.sql`, `warn_op_billing_mismatch.sql`, `warn_unresolved_charge_encounter.sql`
 
 **Interfaces:**
 - Consumes: Task 6–10 facts, `agg_episode_billing`, `int_invoice_payer`, `stg_oasis__ar_documents`.
@@ -2645,7 +2690,7 @@ from {{ ref('fact_preauth_line') }}
 group by branch_key, month_start
 ```
 
-- [ ] **Step 4: Write the six warn monitors**
+- [ ] **Step 4: Write the seven warn monitors**
 
 Each file starts with `{{ config(severity='warn') }}`.
 
@@ -2715,9 +2760,23 @@ where care_type_key = 1 and invoice_count > 0
 group by branch_key
 ```
 
+`warn_unresolved_charge_encounter.sql`:
+
+```sql
+{{ config(severity='warn') }}
+-- About 98% of outpatient and 100% of inpatient and ER charges resolve to an encounter (spec R18).
+select branch_key, care_type_key, count() as live_rows, countIf(encounter_key = -1) as unresolved,
+       round(unresolved / live_rows, 4) as unresolved_share
+from {{ ref('fact_charge_line') }}
+where charge_status = 'Live' and delivery_date_key >= toInt32(toYYYYMMDD(today() - 90))
+  and delivery_date_key < toInt32(toYYYYMMDD(today()))
+group by branch_key, care_type_key
+having unresolved_share > 0.02
+```
+
 - [ ] **Step 5: Build and test**
 
-Run: `python scripts/run_dbt.py build --select rec_revenue_monthly rec_billing_monthly rec_preauth_monthly warn_unmapped_product_category warn_invoice_without_payer warn_invoice_account_many_purchasers warn_unmapped_invoice_approval_status warn_preauth_outcome_unknown warn_op_billing_mismatch`
+Run: `python scripts/run_dbt.py build --select rec_revenue_monthly rec_billing_monthly rec_preauth_monthly warn_unmapped_product_category warn_invoice_without_payer warn_invoice_account_many_purchasers warn_unmapped_invoice_approval_status warn_preauth_outcome_unknown warn_op_billing_mismatch warn_unresolved_charge_encounter`
 Expected: 3 models and 3 tests PASS; the `warn_*` tests may report WARN, never ERROR. Record each warning's row count in `docs/reconciliation_phase2.md` (Task 12).
 
 - [ ] **Step 6: Commit**
@@ -2801,6 +2860,7 @@ Run after a successful `dbt build --select tag:hnh`. Choose one closed month wit
 | warn_unmapped_invoice_approval_status | | |
 | warn_preauth_outcome_unknown | | |
 | warn_op_billing_mismatch | | |
+| warn_unresolved_charge_encounter | | |
 ```
 
 Fill the Rows column with the counts from Task 11 Step 5 and Step 1 of this task before committing.

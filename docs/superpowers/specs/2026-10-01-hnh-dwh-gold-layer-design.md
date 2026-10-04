@@ -493,7 +493,9 @@ Scheduling belongs to the existing dbt instance that will run these models. This
 | `o` | `appointments.appointment_id` | 32% (46,725 of 145,479) |
 | `o` | `delivery_charge.encounter_id` (1–14 August sample) | 85% (23,008 of 27,026) |
 
-Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `appointment_id`, else through `delivery_charge.encounter_id` to the episode, which supplies doctor and clinic. Unresolved outpatient surveys remain analysable by branch and service only. The outpatient id is the Oasis encounter id; ingesting the Oasis encounter table into `oasis` would let every outpatient survey link directly and is recommended before Phase 6.
+Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `appointment_id`, else through `delivery_charge.encounter_id` to the episode, which supplies doctor and clinic. Unresolved outpatient surveys remain analysable by branch and service only.
+
+**Revised 2026-10-04.** The Oasis view `PATIENT_VALID_ENCOUNTERS` shows that the Oasis encounter id *is* the `appointment_id` (outpatient), `admission_no` (inpatient) or `er_visit_id` (ER); there is no separate encounter table. Charge `encounter_id` values resolve to Phase 1 encounters for 98–100% of charges (Phase 2 spec, finding R18) once appointments are matched without a date window. The 32% outpatient match above probably came from a date-limited appointment lookup; re-test it at the start of Phase 6 before planning any ingestion.
 
 ---
 
@@ -510,7 +512,7 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 | O7 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build |
 | O8 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row |
 | O9 | Trigger time and SSAS processing mechanism | Orchestration | Manual run |
-| O10 | The Oasis encounter table is not ingested (section 13.1) | Phase 6 | About 15% of outpatient surveys link to branch and service only |
+| O10 | Outpatient survey link rate (section 13.1, revised 2026-10-04: the encounter id is the appointment id, so the low match rate is probably a measurement artefact) | Phase 6 | Re-test before Phase 6; no ingestion planned |
 
 ### Resolved on review (2026-10-01)
 

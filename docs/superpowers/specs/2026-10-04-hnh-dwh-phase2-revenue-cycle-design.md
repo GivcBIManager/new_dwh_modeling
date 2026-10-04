@@ -66,6 +66,7 @@ Measured on 2026-10-04 against ClickHouse 26.5 (`172.22.25.214`).
 | R15 | Pre-auth: NPHIES request items link to the Oasis authorisation line for 96% (`authorisation_no`) and to a response for 98% (`api_trans_id`). June 2026 had 597K responses for 324K requests. Response line `outcome_reason_code` is never filled; payer comments are free text in `error_text`. `authorisations.amount_authorised` sums to 1.58B SAR for June requests (implausible). | Deterministic final-response pick; no reason codes for pre-auth; the NPHIES `approved_amount` is used. |
 | R16 | `authorised_flag` values: `Y`, `N`, `R`, `Z`, `C`, `H`, null. The legacy CASE handles only `S`+Y/H/N/R, `P`+N, `O`+N. | `Z` and `C` meanings to be confirmed (open item O-P2-1). |
 | R17 | Pharmacy work entities are entity type `P`. | Used by the medication rule. |
+| R18 | `delivery_charge.encounter_id` is the Oasis encounter id, which (Oasis view `PATIENT_VALID_ENCOUNTERS`) is the `appointment_id` (type `O`), the `admission_no` (the admission's attendance type) or the `er_visit_id` (type `E`) — the same three ids Phase 1 keys encounters on. Alrabwah live charges, 1–2 June 2026, same patient required: inpatient 14,890 of 14,890 match an admission; type `E` 145 of 145 an ER visit; type `O` 2,022 of 2,046 an appointment; untyped outpatient 9,507 of 9,676 an appointment (8,133) or ER visit (1,374). On outpatient charges `admission_no` usually holds the encounter id (9,279 of 9,676), not an admission. | Charges carry `encounter_key`; the admission and LTC flag come from the resolved inpatient encounter, never from `admission_no`. |
 
 ---
 
@@ -155,9 +156,11 @@ All facts carry `branch_key`, `_loaded_at`, never-null dimension keys (`-1` for 
 
 **Grain:** one `(branch_id, delivery_charge_id)` with `delivery_date >= history_start_date` and `cancel_flag` null or `C`. `R` rows are excluded.
 
-**Keys:** `charge_line_key`; `delivery_date_key`, `delivery_time_key`; patient, episode, admission (the line's `admission_no`), encounter (`encounter_id` + `encounter_type`); ordering staff (`staff_id`); performing department (`master_deliveries.delivery_work_entity`); service (`ios`); product category (line `product_category_code`); `billed_payer_key`, `episode_payer_key` (from `int_episode`); care type.
+**Keys:** `charge_line_key`; `delivery_date_key`, `delivery_time_key`; patient, episode, encounter, admission; ordering staff (`staff_id`); performing department (`master_deliveries.delivery_work_entity`); service (`ios`); product category (line `product_category_code`); `billed_payer_key`, `episode_payer_key` (from `int_episode`); care type.
 
-**Attributes:** `charge_status`, `cancel_reason_code`, `bill_to`, `invoice_doc_no`, `package_id`, `is_package_component`, `is_patient_share`, `is_cash_billed` (bill-to 3 without a purchaser sibling), `is_medication`, `is_ltc` (from `fact_admission` through `admission_no`; no episode-level join).
+**Encounter resolution (R18).** `encounter_id` is looked up in `int_encounter` on branch, `source_id = encounter_id` and the same patient. The encounter type is chosen from the charge: an inpatient charge (`attendance_type = 'I'`) → `IP`; `encounter_type = 'E'` → `ER`; `encounter_type = 'O'` → `OP`; no type → `OP` if an appointment matches, else `ER`. `encounter_key = hnh_surrogate_key([branch_id, resolved type, encounter_id])`, the Phase 1 key; unresolved → `-1`. `admission_key`, `admission_no` and `is_ltc` (from `int_admission`) are set only when the resolved type is `IP`. Facts are not related to each other in SSAS (receiving notes), so `encounter_key` serves SQL analysis and later aggregates such as revenue per visit.
+
+**Attributes:** `charge_status`, `cancel_reason_code`, `bill_to`, `invoice_doc_no`, `package_id`, `encounter_id`, `encounter_type` (as charged), `resolved_encounter_type`, `is_package_component`, `is_patient_share`, `is_cash_billed` (bill-to 3 without a purchaser sibling), `is_medication`, `is_ltc`.
 
 **Measures:**
 
@@ -301,7 +304,7 @@ When nothing was sent, from the Oasis line: request status `S`/`P` with `authori
 | Co-pay attributed to the insurer in some reports and to Deductible in others; trigger differs between views; deductible match can duplicate lines | Two payer keys; one sibling rule for OP (bill-to 3) and IP (bill-to 2) | `legacy_trans_purchaser`, `legacy_patient_purchaser` |
 | Four different care-type mappings for revenue | Episode care type | `legacy_care_type` |
 | `MD` override for four IOS codes | Dropped; the line's category | — |
-| LTC flag from LOS to `now()`, joined by episode (duplicates multi-admission episodes) | `is_ltc` from `fact_admission` by `admission_no` | — |
+| LTC flag from LOS to `now()`, joined by episode (duplicates multi-admission episodes) | `is_ltc` from the charge's resolved inpatient encounter | — |
 | Medication lists differ between views | One macro | — |
 | LTC ICU revenue split (`icu_services`) | Dropped (parent spec 13) | — |
 | Pre-auth: last response wins even when PENDED or ERROR | Final non-pended response | `legacy_last_service_status` |
@@ -331,10 +334,10 @@ Starts when `DEVDBA.API_PULL_RESPONSE_DETAILS` is ingested into `oasis` (with `a
 - `unique`, `not_null` on every new grain and dimension key; `relationships` for every fact foreign key.
 - `accepted_values`: `charge_status`, `bill_to`, `preauth_outcome`, `submission_status`, `receipt_type`.
 - Conservation (singular): `fact_charge_line` rows = staged rows with `cancel_flag` null or `C` in the window, and every staged row left out has `cancel_flag = 'R'`; `fact_invoice` = de-duplicated `ar_episode_invoices` in the window; `fact_preauth_line` = authorisation lines in the window plus unmatched NPHIES items.
-- Warn monitors: product category `Not Mapped`; invoice account without a payer; account mapping to several purchasers; `preauth_outcome = 'Unknown'`; OP episodes where invoice net ≠ claimable charges (expected 0).
+- Warn monitors: product category `Not Mapped`; invoice account without a payer; account mapping to several purchasers; `preauth_outcome = 'Unknown'`; OP episodes where invoice net ≠ claimable charges (expected 0); live charges of the last 90 days without an encounter above 2% for a care type.
 
 ### 11.2 Rule tests
-Macro tests with literal inputs for every macro in section 5. Unit tests (`_revenue_unit_tests.yml`): deductible sibling match for OP (bill-to 3) and IP (bill-to 2) and for pure cash; final-response selection (PENDED then APPROVED; APPROVED then ERROR); `is_latest_request_for_service` with two services in one episode; post-invoice discount matched to its base document and not to `SYSDPRC`.
+Macro tests with literal inputs for every macro in section 5. Unit tests (`_revenue_unit_tests.yml`): deductible sibling match for OP (bill-to 3) and IP (bill-to 2) and for pure cash; encounter resolution, including an outpatient charge whose `admission_no` holds its appointment id (resolves to the OP encounter, no admission); final-response selection (PENDED then APPROVED; APPROVED then ERROR); `is_latest_request_for_service` with two services in one episode; post-invoice discount matched to its base document and not to `SYSDPRC`.
 
 ### 11.3 Reconciliation
 - `rec_revenue_monthly` (branch × month): legacy charge revenue (Σ `legacy_revenue_amount`), legacy discount documents, new revenue, adjustments, medication revenue, revenue by care type. **Acceptance:** for a closed month agreed with the business, the legacy charge revenue matches the charge part of the old `mv_revenue_dataset` export within 0.5%; the difference between old and new totals is attributed to the corrections in section 9.
