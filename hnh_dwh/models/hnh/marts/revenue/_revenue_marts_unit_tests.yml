@@ -1,0 +1,110 @@
+version: 2
+
+unit_tests:
+  - name: fact_charge_line_applies_billing_rules
+    description: >
+      Line 10 (outpatient): purchaser row, co-pay on bill-to 3, and a superseded R row that must be dropped.
+      Line 20 (inpatient): purchaser row and co-pay on bill-to 2. Line 30: pure cash. Line 40: a package
+      component (not revenue). Line 50: a cancelled row. Line 60: a patient row whose purchaser row is
+      superseded, so it is pure cash, not a co-pay. Encounters: line 10 charges carry appointment 9001 in
+      both encounter_id and admission_no and resolve to the OP encounter with no admission; ER visit 9001
+      belongs to another patient and must not link. Lines 20 and 40 resolve to admission 7001 (LTC).
+    model: fact_charge_line
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('stg_oasis__charges')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(id) as delivery_charge_id, toNullable(toInt64(line)) as delivery_line,
+                 toNullable(toDateTime('2026-06-01 10:00:00', 'Asia/Riyadh')) as delivered_at,
+                 toNullable(toInt64(patient)) as patient_id, toNullable(toInt64(1)) as episode_no,
+                 if(adm = 0, cast(null as Nullable(Int64)), toNullable(toInt64(adm))) as admission_no,
+                 if(eid = 0, cast(null as Nullable(Int64)), toNullable(toInt64(eid))) as encounter_id,
+                 if(et = '', cast(null as Nullable(String)), toNullable(et)) as encounter_type,
+                 cast(null as Nullable(String)) as staff_id,
+                 toNullable(toInt64(500)) as ios,
+                 if(purchaser = 0, cast(null as Nullable(Int64)), toNullable(toInt64(purchaser))) as purchaser_code,
+                 cast(null as Nullable(Int64)) as package_id, toNullable(toInt64(77)) as doc_id,
+                 toNullable('CRD1') as invoice_doc_no,
+                 if(cf = '', cast(null as Nullable(String)), toNullable(cf)) as cancel_flag,
+                 cast(null as Nullable(Int64)) as cancel_reason_code,
+                 toNullable(bill_to) as bill_to,
+                 if(pkg = '', cast(null as Nullable(String)), toNullable(pkg)) as package_deal_flag,
+                 toNullable(att) as attendance_type, toNullable('LAB') as product_category_code,
+                 toFloat64(1) as units_delivered, toFloat64(price) as price_paid_purchaser,
+                 toFloat64(disc) as discount_given, toFloat64(0) as vat_value,
+                 toDateTime64('2026-06-02 00:00:00', 6, 'UTC') as updated_at
+          from values('id UInt32, line UInt32, patient UInt32, bill_to String, cf String, pkg String, purchaser UInt32, att String, price Float64, disc Float64, eid UInt32, et String, adm UInt32',
+              (1, 10, 100, '1', '',  '',  300, 'O', 80,  20, 9001, '', 9001),
+              (2, 10, 100, '3', '',  '',  0,   'O', 20,  0,  9001, '', 9001),
+              (3, 10, 100, '1', 'R', '',  300, 'O', 80,  20, 9001, '', 9001),
+              (4, 20, 200, '1', '',  '',  300, 'I', 500, 0,  7001, '', 7001),
+              (5, 20, 200, '2', '',  '',  300, 'I', 50,  0,  7001, '', 7001),
+              (6, 30, 100, '3', '',  '',  0,   'O', 40,  0,  0,    '', 0),
+              (7, 40, 200, '1', '',  'Y', 300, 'I', 70,  0,  7001, '', 7001),
+              (8, 50, 200, '1', 'C', '',  300, 'I', 60,  0,  0,    '', 0),
+              (9, 60, 100, '1', 'R', '',  300, 'O', 90,  0,  0,    '', 0),
+              (10, 60, 100, '3', '', '',  0,   'O', 15,  0,  0,    '', 0))
+      - input: ref('stg_oasis__delivery_lines')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(-1) as delivery_line, toNullable(toInt64(-1)) as master_delivery_no
+      - input: ref('stg_oasis__master_deliveries')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(-1) as master_delivery_no, cast(null as Nullable(Int64)) as work_entity
+      - input: ref('int_episode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(1) as episode_no,
+                 'OP' as care_type, toInt64(300) as purchaser_code
+          union all
+          select toUInt8(1), toInt64(200), toInt64(1), 'IP', toInt64(300)
+      - input: ref('int_encounter')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, 'OP' as encounter_type, toInt64(9001) as source_id, toNullable(toInt64(100)) as patient_id
+          union all
+          select toUInt8(1), 'IP', toInt64(7001), toNullable(toInt64(200))
+          union all
+          select toUInt8(1), 'ER', toInt64(9001), toNullable(toInt64(555))
+      - input: ref('int_admission')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(7001) as admission_no, toUInt8(1) as is_ltc, toUInt8(0) as is_ltc_to_date
+      - input: ref('dim_patient')
+        format: sql
+        rows: |
+          select toInt64(-1) as patient_key
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(-1) as staff_key
+      - input: ref('hnh_dim_department')
+        format: sql
+        rows: |
+          select toInt64(-1) as department_key, cast(null as Nullable(String)) as entity_type
+      - input: ref('dim_service')
+        format: sql
+        rows: |
+          select toInt64(-1) as service_key
+      - input: ref('dim_product_category')
+        format: sql
+        rows: |
+          select toInt64(-1) as product_category_key
+      - input: ref('dim_payer')
+        format: sql
+        rows: |
+          select toInt64(-1) as payer_key, 'Unknown' as creditor
+    expect:
+      rows:
+        - {delivery_charge_id: 1,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 80,  gross_amount: 100, package_content_amount: 0,  is_claimable: 1, care_type_key: 1, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: OP, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 2,  charge_status: Live,      billed_purchaser_code: 8888, is_patient_share: 1, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 20,  gross_amount: 20,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 8888, legacy_patient_purchaser: 300, resolved_encounter_type: OP, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 4,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 500, gross_amount: 500, package_content_amount: 0,  is_claimable: 1, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
+        - {delivery_charge_id: 5,  charge_status: Live,      billed_purchaser_code: 8888, is_patient_share: 1, is_cash_billed: 0, is_recognised_revenue: 1, revenue_amount: 50,  gross_amount: 50,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 8888, legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
+        - {delivery_charge_id: 6,  charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 40,  gross_amount: 40,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 7,  charge_status: Live,      billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 70,  package_content_amount: 70, is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: IP, admission_no: 7001, is_ltc: 1}
+        - {delivery_charge_id: 8,  charge_status: Cancelled, billed_purchaser_code: 300,  is_patient_share: 0, is_cash_billed: 0, is_recognised_revenue: 0, revenue_amount: 0,   gross_amount: 60,  package_content_amount: 0,  is_claimable: 0, care_type_key: 3, legacy_trans_purchaser: 300,  legacy_patient_purchaser: 300, resolved_encounter_type: null, admission_no: null, is_ltc: 0}
+        - {delivery_charge_id: 10, charge_status: Live,      billed_purchaser_code: 9999, is_patient_share: 0, is_cash_billed: 1, is_recognised_revenue: 1, revenue_amount: 15,  gross_amount: 15,  package_content_amount: 0,  is_claimable: 0, care_type_key: 1, legacy_trans_purchaser: 9999, legacy_patient_purchaser: 9999, resolved_encounter_type: null, admission_no: null, is_ltc: 0}

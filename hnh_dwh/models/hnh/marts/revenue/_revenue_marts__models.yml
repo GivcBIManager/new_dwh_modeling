@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: fact_charge_line
+    description: One live or cancelled Oasis charge row. Superseded (R) rows are excluded. Incremental by delivery day.
+    columns:
+      - name: charge_line_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: delivery_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: service_key
+        tests:
+          - relationships: {to: ref('dim_service'), field: service_key}
+      - name: product_category_key
+        tests:
+          - relationships: {to: ref('dim_product_category'), field: product_category_key}
+      - name: billed_payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: episode_payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: charge_status
+        tests:
+          - accepted_values:
+              values: ['Live', 'Cancelled']
+      - name: bill_to
+        tests:
+          - accepted_values:
+              values: ['1', '2', '3']
+              config: {severity: warn}
