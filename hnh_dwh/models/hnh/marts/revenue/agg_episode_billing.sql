@@ -2,7 +2,7 @@
 
 with charges as (
     select branch_key, episode_key, any(patient_key) as patient_key, any(care_type_key) as care_type_key,
-           sum(claimable_amount) as claimable_amount
+           sum(claimable_amount) as claimable_amount, max(delivery_date_key) as max_delivery_date_key
     from {{ ref('fact_charge_line') }}
     where is_claimable = 1 and episode_key != -1
     group by branch_key, episode_key
@@ -22,11 +22,12 @@ both_sides as (
     select branch_key, episode_key, patient_key, care_type_key, claimable_amount as claimable_in,
            toFloat64(0) as invoiced_in, toUInt64(0) as invoices_in,
            cast(null as Nullable(Int32)) as first_invoice_date_key, cast(null as Nullable(Int32)) as last_invoice_date_key,
-           toUInt64(0) as contract_invoices
+           toUInt64(0) as contract_invoices, toNullable(toInt32(max_delivery_date_key)) as last_delivery_in
     from charges
     union all
     select branch_key, episode_key, patient_key, care_type_key, toFloat64(0), invoiced_net_amount, invoice_count,
-           toNullable(first_invoice_date_key), toNullable(last_invoice_date_key), contract_invoices
+           toNullable(first_invoice_date_key), toNullable(last_invoice_date_key), contract_invoices,
+           cast(null as Nullable(Int32))
     from invoices
 )
 
@@ -42,6 +43,7 @@ select
     sum(invoices_in)                                    as invoice_count,
     min(first_invoice_date_key)                           as first_invoice_date_key,
     max(last_invoice_date_key)                            as last_invoice_date_key,
+    max(last_delivery_in)                                 as last_delivery_date_key,
     toUInt8(sum(contract_invoices) > 0 and sum(invoices_in) > 12) as is_long_stay_contract,
     now()                                                 as _loaded_at
 from both_sides

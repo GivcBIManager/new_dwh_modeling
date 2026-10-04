@@ -87,7 +87,7 @@ select
     toUInt8(e.approval_status_code is null or e.submission_status is not null) as is_submission_status_mapped,
     toUInt8(e.approved_by is not null)                                      as is_verified,
     toUInt8(e.statement_sent_at is not null)                                as is_sent,
-    toUInt8(e.cancelled_flag = 'Y')                                         as is_cancelled_statement,
+    toUInt8(ifNull(e.cancelled_flag, '') = 'Y')                             as is_cancelled_statement,
     e.claim_type                                                            as claim_type,
     toUInt8(e.approved_by is not null)                                      as legacy_is_verified,
     now()                                                                   as _loaded_at

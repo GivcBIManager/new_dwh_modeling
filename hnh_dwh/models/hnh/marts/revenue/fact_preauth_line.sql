@@ -55,8 +55,8 @@ select
             and k.nphies_outcome in ('Approved', 'Partially approved', 'Not required', 'Rejected')) as has_final_response,
     toUInt8(k.nphies_first_outcome = 'Approved')               as is_first_response_approved,
     toUInt8(k.request_send_count > 1)                          as is_resubmitted,
-    toUInt8((k.authorised_flag = 'Y' and k.nphies_outcome = 'Rejected')
-            or (k.authorised_flag = 'R' and k.nphies_outcome in {{ approved_set }})) as is_status_override,
+    toUInt8(ifNull((k.authorised_flag = 'Y' and k.nphies_outcome = 'Rejected')
+            or (k.authorised_flag = 'R' and k.nphies_outcome in {{ approved_set }}), 0)) as is_status_override,
     toUInt8(ifNull(dv.last_delivery_date_key, 0) >= k.request_date_key)          as is_delivered,
     toUInt8(k.preauth_outcome = 'Approved' and is_delivered = 0)                as is_approved_not_delivered,
     toUInt8(k.preauth_outcome = 'Rejected' and is_delivered = 1)                as is_delivered_not_approved,

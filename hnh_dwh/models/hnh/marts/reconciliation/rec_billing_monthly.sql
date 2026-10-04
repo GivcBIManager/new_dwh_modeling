@@ -26,12 +26,13 @@ from (
 
     union all
 
-    -- Episode billing gaps land in the month of the episode's last invoice.
-    select branch_key, toStartOfMonth(YYYYMMDDToDate(toUInt32(assumeNotNull(last_invoice_date_key)))), care_type_key,
+    -- Episode billing gaps land in the month of the episode's last invoice, or of its last claimable
+    -- charge when it was never invoiced.
+    select branch_key, toStartOfMonth(YYYYMMDDToDate(toUInt32(assumeNotNull(coalesce(last_invoice_date_key, last_delivery_date_key))))), care_type_key,
            toFloat64(0), toFloat64(0), toFloat64(0),
            sum(unbilled_amount), sum(overbilled_amount), sumIf(overbilled_amount, is_long_stay_contract = 1)
     from {{ ref('agg_episode_billing') }}
-    where last_invoice_date_key is not null
-    group by branch_key, toStartOfMonth(YYYYMMDDToDate(toUInt32(assumeNotNull(last_invoice_date_key)))), care_type_key
+    where coalesce(last_invoice_date_key, last_delivery_date_key) is not null
+    group by branch_key, toStartOfMonth(YYYYMMDDToDate(toUInt32(assumeNotNull(coalesce(last_invoice_date_key, last_delivery_date_key))))), care_type_key
 )
 group by branch_key, month_start, care_type_key

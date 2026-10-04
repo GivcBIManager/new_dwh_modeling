@@ -53,9 +53,15 @@ models:
     columns:
       - name: adjustment_key
         tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
       - name: adjustment_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
       - name: billed_payer_key
         tests:
           - relationships: {to: ref('dim_payer'), field: payer_key}
@@ -64,11 +70,14 @@ models:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
   - name: fact_cash_receipt
     description: >
-      Oasis patient receipts (CSH cashier, RCT AR cash). Insurer collections are Phase 3.
+      Oasis patient receipts (account CASHACC or none). Insurer and contract receipts are excluded (Phase 3).
       Receipts are net of reversals; is_reversal marks receipt documents with a negative amount.
     columns:
       - name: receipt_key
         tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
       - name: receipt_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
@@ -84,6 +93,9 @@ models:
     columns:
       - name: invoice_key
         tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
       - name: invoice_date_key
         tests:
           - not_null
@@ -111,6 +123,9 @@ models:
     columns:
       - name: preauth_line_key
         tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
       - name: request_date_key
         tests:
           - not_null

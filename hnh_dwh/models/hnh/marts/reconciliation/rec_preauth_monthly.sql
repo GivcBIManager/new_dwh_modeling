@@ -7,6 +7,9 @@ select
     countIf(is_approved = 1)                                                    as approved,
     countIf(preauth_outcome = 'Rejected')                                       as rejected,
     countIf(has_final_response = 1)                                             as final_responses,
+    -- approval and rejection rates: these numerators over final_responses
+    countIf(is_approved = 1 and has_final_response = 1)                         as approved_final,
+    countIf(preauth_outcome = 'Rejected' and has_final_response = 1)            as rejected_final,
     countIf(is_approved_not_delivered = 1)                                      as unutilised,
     sumIf(approved_estimated_amount, is_approved_not_delivered = 1 and is_latest_request_for_service = 1) as lost_revenue,
     countIf(is_delivered_not_approved = 1)                                      as delivered_not_approved,

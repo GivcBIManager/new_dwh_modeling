@@ -165,7 +165,7 @@ select
     w.cancel_reason_code                                as cancel_reason_code,
     toUInt8(ifNull(w.package_deal_flag, 'N') = 'Y')     as is_package_component,
     toUInt8(ifNull(w.bill_to, '') != '1' and w.has_purchaser_sibling = 1) as is_patient_share,
-    toUInt8(ifNull(w.bill_to, '') = '3' and w.has_purchaser_sibling = 0) as is_cash_billed,
+    toUInt8(ifNull(w.bill_to, '') in ('2', '3') and w.has_purchaser_sibling = 0) as is_cash_billed,
     {{ hnh_is_medication('w.product_category_code', 'dd.entity_type') }}  as is_medication,
     w.is_ltc                                            as is_ltc,
     w.units_delivered                                   as units,

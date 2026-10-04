@@ -9,6 +9,9 @@ with codes as (
         union all
         select branch_id, assumeNotNull(product_category_code) from {{ ref('stg_oasis__service_items') }}
         where product_category_code is not null
+        union all
+        select distinct branch_id, assumeNotNull(product_category_code) from {{ ref('stg_oasis__charges') }}
+        where product_category_code is not null
     )
 )
 
