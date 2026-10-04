@@ -153,3 +153,19 @@ models:
           - relationships:
               to: ref('hnh_dim_branch')
               field: branch_key
+  - name: dim_service
+    columns:
+      - name: service_key
+        tests: [unique, not_null]
+  - name: dim_product_category
+    columns:
+      - name: product_category_key
+        tests: [unique, not_null]
+  - name: dim_preauth_outcome
+    columns:
+      - name: preauth_outcome_key
+        tests: [unique, not_null]
+      - name: preauth_outcome
+        tests:
+          - accepted_values:
+              values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Error', 'Cancelled', 'Not sent', 'Unknown']
