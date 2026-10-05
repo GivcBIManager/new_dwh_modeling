@@ -319,7 +319,7 @@ When nothing was sent, from the Oasis line: request status `S`/`P` with `authori
 
 ## 10. Phase 2B outline (claims)
 
-Starts when `DEVDBA.API_PULL_RESPONSE_DETAILS` is ingested into `oasis` (with `api_trans_id`, `about_api_trans_id`, `response_type`, `res_status`, `response_bundle`).
+Detailed in `2026-10-05-hnh-dwh-phase2b-claims-design.md` (pull responses ingested 2026-10-05; scope extended to claim remittance and pre-authorisation responses). Original outline: starts when `DEVDBA.API_PULL_RESPONSE_DETAILS` is ingested into `oasis` (with `api_trans_id`, `about_api_trans_id`, `response_type`, `res_status`, `response_bundle`).
 
 - Staging: `stg_oasis__claim_visits`, `stg_oasis__claim_services`, `stg_oasis__pull_responses`.
 - `int_claim_adjudication`: the response bundle exploded with `LEFT ARRAY JOIN` into item × adjudication category (submitted, eligible, benefit, copay, tax) with reason codes, so items without a reason are kept. Final response per item chosen deterministically.
