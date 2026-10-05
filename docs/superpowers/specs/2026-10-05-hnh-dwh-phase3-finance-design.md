@@ -275,3 +275,14 @@ The old report cannot be reproduced from this server (G13), so no `legacy_*` fie
 | O-P3-9 | Review of the drafted `map_fs_line_order`, `map_budget_fs_line`, `map_fusion_specialty_unified` | Build | Drafts used |
 | O-P3-10 | Old-server export of the Financial Statements report for each go-live month | Go-live tie | — |
 | O-P3-11 | Insurer AR ageing (Oasis statements less NPHIES remittance) | Later phase | Not built |
+| O-P3-12 | Khamis' go-live batch (source Spreadsheet, category Adjustment, 521 lines, about 1.37bn SAR debits, unposted, August 2026) is not categorised MRC Open Balances, so it is not flagged as an opening-balance journal and Khamis' August revenue includes the year to date before go-live (GL/Oasis revenue ratio 6.76) | Khamis monthly trend | Shown as delivered; finance to re-categorise the batch or confirm it as opening balance |
+
+---
+
+## 12. Changes during implementation (2026-10-05)
+
+- ClickHouse applies a SETTINGS clause after `union all` only to the last branch, so models whose left joins sit in CTEs feeding a union end those CTEs with `hnh_settings()` (`hnh_dim_gl_account`, `fact_gl_balance_monthly`, `fact_income_statement_monthly`, `rec_gl_balance_monthly`, `rec_gl_revenue_monthly`).
+- `rec_income_statement_budget`'s tolerance is 1 SAR, not 0.01: the budget file stores its subtotal rows rounded (differences up to 0.12 SAR measured on 2026-10-05).
+- `warn_intercompany_mismatch` evaluates every unordered branch pair once (least/greatest), so a flow booked on one side only is reported.
+- `rec_gl_revenue_monthly` includes Oasis-only months from each branch's first GL month onward, so a month with Oasis revenue and no GL revenue is visible.
+- The draft specialty mapping proposes a unified department for 206 of 324 Fusion specialties; administrative departments are left blank (Unknown).

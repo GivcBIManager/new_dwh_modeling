@@ -22,6 +22,10 @@ vars:
   hnh_oasis_source_only: []               # every Oasis table used has an oasis_lake model on the server
   hnh_history_start_date: "2022-01-01"
   hnh_ssas_machine_name: "SSAS-SERVER"   # machine name of the SSAS server
+  hnh_fusion_as_ref: true                # staging reads the project's own Fusion models via ref()
+  hnh_head_office_fusion_branch_code: 101
+  hnh_head_office_ledger_id: 300000005003375
+  hnh_fusion_oasis_feed_source: "300000007046804"   # Fusion journal source id of the Oasis integration
 
 models:
   oasis:
@@ -46,19 +50,25 @@ data_tests:                              # top level; makes --select tag:hnh run
       +tags: ["hnh"]
 ```
 
-Merge into the existing keys: `vars:` already holds `iceberg_root` — keep it and add the four `hnh_` vars under it; put the `hnh:` block under `models: oasis:` next to `fusion:` and `oasis_lake:`. The server project has no `data_tests:` or `on-run-end:` key yet, so add those at top level. The project default is `+materialized: table`; the `hnh` block overrides it for staging (views).
+Merge into the existing keys: `vars:` already holds `iceberg_root` — keep it and add the eight `hnh_` vars under it; put the `hnh:` block under `models: oasis:` next to `fusion:` and `oasis_lake:`. The server project has no `data_tests:` or `on-run-end:` key yet, so add those at top level. The project default is `+materialized: table`; the `hnh` block overrides it for staging (views).
 
 ## How the models read Oasis
 
 With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so dbt knows the `hnh` models depend on them. `dbt build --select tag:hnh` builds only the `hnh` models and reads the `oasis_lake` tables as they are; it never rebuilds them. (`--select +tag:hnh` would also build the `oasis_lake` models first; `tag:hnh+` means `hnh` and everything downstream of it.) With `false` the staging models use `source('oasis', ...)` instead. Var `hnh_oasis_source_only` lists tables to read with `source('oasis', ...)` even when `hnh_oasis_as_ref` is true; it is empty on the server because `operating_diary_slots` and `operating_slot_details` now have `oasis_lake` models (the GitHub copy of the repo does not have them yet — if you deploy from a revision without those two models, set the var to `['operating_diary_slots', 'operating_slot_details']`). `api_pull_response_details` was ingested on 2026-10-05. If the server's `oasis_lake` project has no model of that name, add `'api_pull_response_details'` to `hnh_oasis_source_only` so staging reads it with `source()`; `claim_visit_detail` and `claim_service_detail` already have `oasis_lake` models. Order fulfilment reads `orders_master`, `order_lines` and `generics`. If the server's `oasis_lake` project has no model of those names, add them to `hnh_oasis_source_only`. The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
 
+## How the models read Fusion
+
+With `hnh_fusion_as_ref: true`, `hnh_fusion_source('<table>')` calls `ref('<table>')` on the project's Fusion models (`models/fusion/staging/...`, same names as the tables: `fact_gl_journal_line`, `dim_gl_account`, `dim_coa_segment_value`, `dim_gl_period`, `fact_gl_balance`, `fact_ap_invoice_distribution`, `fact_ap_payment`, `fact_ap_payment_schedule`, `dim_supplier`, `dim_business_unit`). They are ReplacingMergeTree, so staging reads them with `final`. The hnh YAML declares a source named `fusion`; the project's own Fusion sources are named `ofusion_*`, so there is no clash.
+
 ## Aliased models
 
-`hnh_dim_branch` and `hnh_dim_department` are built into `gold.dim_branch` and `gold.dim_department` (`alias`). The model names carry the `hnh_` prefix because `dim_branch` and `dim_department` already exist in `models/fusion/staging/conformed/`; dbt model names must be unique per project. Always `ref('hnh_dim_branch')` / `ref('hnh_dim_department')` in dbt code.
+`hnh_dim_branch` and `hnh_dim_department` are built into `gold.dim_branch` and `gold.dim_department` (`alias`). The model names carry the `hnh_` prefix because `dim_branch` and `dim_department` already exist in `models/fusion/staging/conformed/`; dbt model names must be unique per project. Always `ref('hnh_dim_branch')` / `ref('hnh_dim_department')` in dbt code. `hnh_dim_gl_period`, `hnh_dim_gl_account`, `hnh_dim_supplier`, `hnh_fact_gl_journal_line` and `hnh_fact_ap_payment` are built into `gold.dim_gl_period`, `gold.dim_gl_account`, `gold.dim_supplier`, `gold.fact_gl_journal_line` and `gold.fact_ap_payment` for the same reason (the project's Fusion models already use those names).
 
 ## Reference tables that must exist in `default`
 
-Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`, `map_fs_account`, `map_oasis_fs_account`, `map_fs_line_order`, `map_budget_fs_line`, `map_fusion_specialty_unified`, `income_statement_budget`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+
+The finance tables are loaded with `python scripts/load_reference_data.py --only <table>`; `fusion_specialty_unified.csv` is drafted by `scripts/draft_fusion_specialty_map.py` for the BI manager to complete.
 
 `map_order_fulfilment_packages` (46 rows, from `static_mappings/order_fulfilment_packages.csv`) is loaded with `python scripts/load_reference_data.py --only map_order_fulfilment_packages`.
 
@@ -108,6 +118,12 @@ on-run-end:
   - Orders and Cancellation rate: over all lines (cancelled lines are out of leak scope) with `is_inpatient = 0` by default.
   - Order-to-delivery time (turnaround): median of `order_to_delivery_minutes` over delivered, non-inpatient lines, per category, leaving out the Consultation and Package categories (their charge is posted at order time, so the value is always 0). Negative values are kept and monitored.
 - `fact_order_line.first_delivery_date_key` is NULL (not -1) for undelivered lines. `charged_amount` includes patient co-pay rows. `urgency_code` is the raw Oasis `urgent_flag` (R, S, H, A; meaning unconfirmed).
+- Finance statements: multiply `fact_gl_balance_monthly` and journal amounts by `dim_fs_line.display_sign`. Default `balance_view = 'posted'` (ties to the Fusion trial balance); offer an "including unposted" measure set, because most Oasis-feed batches are unposted. Relate `fact_gl_balance_monthly` to `dim_gl_account`, `dim_gl_period` and `dim_branch`; filter one `balance_view` in every measure.
+- Monthly trends use `period_movement_excl_opening`; each branch's go-live month carries one opening-balance journal with the year to date before go-live. Balances and year-to-date use the full measures.
+- EBITDA, gross profit, net profit and every budget comparison come from `fact_income_statement_monthly` (`budget_line_code`); do not re-derive subtotals in DAX. Never sum across `budget_line_code` without `dim_budget_line.is_subtotal = 0`.
+- Budget covers branches 1–6; Ghirnata, Muhayil and Head Office have actuals only.
+- `fact_ap_open_item` is a snapshot at the last refresh (`snapshot_date`); payables ageing at a past date is not available.
+- Head Office is `branch_key = 100`; the branch role must list it explicitly; admins receive it in `sec_user_access`.
 
 ## Deployment checklist (Ubuntu server)
 
