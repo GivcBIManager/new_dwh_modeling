@@ -40,7 +40,7 @@ Decisions the user made on 2026-10-05:
   - A line with `ORIGINAL_ORDER_LINE != 0` is `Alternative`.
   - So is an original line that has any alternative.
   - The report's M query then replaces `Alternative` with `Delivered`.
-- **Excluded packages:** product category `PK`, except 45 packages listed by description in `vw_excluded_pakages_order_fulfillment`.
+- **Excluded packages:** product category `PK`, except 46 packages listed by description in `vw_excluded_pakages_order_fulfillment`.
 - **Generic rule (DAX `Final_Status`):** a pharmacy line is `Delivered` whenever the same episode has more than one line with the same generic name.
 - **Episode attributes:**
   - An inner join to `mv_eligibility` supplies care type and payer. Orders whose episode has no eligibility row are dropped.
@@ -79,7 +79,7 @@ Each defect keeps a `legacy_*` field so the old numbers can be reconciled.
 | F5 | IP has 66,240 open (R) lines in June 2026, mostly standing medication orders. This is why leak KPIs default to non-inpatient. |
 | F6 | Each charge reaches its order line through `delivery_charge.delivery_line` → `delivery_lines.order_line`. 30.5M of 30.5M branch 1 delivery lines carry an order line. A few order lines have several delivery lines (5,523 of 169K IP D lines in June). |
 | F7 | `order_lines.line_order_date` carries a time for 99.5% of rows. Order and delivery times are stored as UTC-typed KSA wall clock, the same convention as other Oasis timestamps. |
-| F8 | `order_lines.generic_id` is populated on pharmacy lines. `oasis.generics` holds the generic names. |
+| F8 | Corrected 2026-10-05: `order_lines.generic_id` is only about 0.03% populated. The generic of a line is the IOS master's generic (`stg_oasis__ios_master.generic_id`), else the line's own (89% of 2026 pharmacy lines have one). `oasis.generics` holds the generic names. |
 
 ## 3. Architecture
 
@@ -118,7 +118,7 @@ int_episode (Phase 1), stg_oasis__ios_master ─┤
 | `stg_oasis__orders` | `orders_master` | `branch_id`, `master_order_no`, `patient_id`, `episode_no`, `admission_no`, `orderer_staff_id`, `order_at` (KSA wall clock), header `status`, `attendance_type`, `service_dept`. **`patient_name` is never selected.** |
 | `stg_oasis__order_lines` | `order_lines` | `order_line`, `master_order_no`, `ios`, `generic_id`, `units_ordered`, `units_given`, `units_scheduled`, `units_completed`, `status`, `status_reason`, `original_order_line` (0 → null), `urgent_flag`, `order_work_entity`, `line_order_at` (KSA wall clock), `std_price`. Ids cast to `Int64` with `hnh_id`. |
 | `stg_oasis__generics` | `generics` | `generic_id`, `generic_name`. |
-| `stg_ref__order_fulfilment_packages` | `default.map_order_fulfilment_packages` | One row per included package description (the 45 names). Loaded once by `scripts/load_reference_data.py` from `static_mappings/order_fulfilment_packages.csv` (git-ignored, like the other mapping files). |
+| `stg_ref__order_fulfilment_packages` | `default.map_order_fulfilment_packages` | One row per included package description (the 46 names). Loaded once by `scripts/load_reference_data.py` from `static_mappings/order_fulfilment_packages.csv` (git-ignored, like the other mapping files). |
 
 Unique tests: `(branch_id, master_order_no)` and `(branch_id, order_line)`.
 
@@ -183,8 +183,8 @@ The legacy fields ignore the old one-year window and the eligibility inner join.
 | Group | Columns |
 |---|---|
 | Keys | `order_line_key` (branch, order_line), `order_key` (branch, master_order_no), `branch_key`, `order_date_key`, `order_time_key`, `first_delivery_date_key` (`hnh_date_key_in_range`), `patient_key`, `episode_key` (same hash as the other facts), `payer_key` (episode payer, as `fact_charge_line.episode_payer_key`), `ordering_staff_key` (`dim_staff`), `ordering_department_key` (`order_work_entity` → `hnh_dim_department`), `service_key` (`dim_service`), `product_category_key` (`dim_product_category`), `care_type_key` |
-| Attributes | `order_category`, `line_status`, `fulfilment_status`, `status_reason`, `generic_name`, `is_alternative`, `is_urgent`, `is_excluded_package`, `is_inpatient`, `is_in_leak_scope`, `is_lost`, `is_partially_delivered` |
-| Measures | `units_ordered`, `units_delivered`, `ordered_value` (`units_ordered × std_price`), `charged_amount`, `live_charge_count`, `order_to_delivery_minutes` |
+| Attributes | `order_category`, `line_status`, `fulfilment_status`, `status_reason`, `generic_name`, `is_alternative`, `urgency_code` (raw Oasis `urgent_flag`: R, S, H, A; meaning unconfirmed), `is_excluded_package`, `is_inpatient`, `is_in_leak_scope`, `is_lost`, `is_partially_delivered` |
+| Measures | `units_ordered`, `units_delivered`, `unit_fulfilment_ratio`, `is_unit_outlier`, `ordered_value` (`units_ordered × std_price`), `charged_amount`, `live_charge_count`, `order_to_delivery_minutes` |
 | Legacy | `legacy_status`, `legacy_in_scope`, `legacy_is_lost` |
 | Audit | `_loaded_at` |
 
@@ -199,13 +199,13 @@ Leak KPIs default to `is_inpatient = 0`.
 | Order lines | count of lines with `is_in_leak_scope = 1` |
 | Lost lines | count of lines with `is_lost = 1` |
 | Leak rate | Lost lines ÷ Order lines |
-| Lost value | Σ `ordered_value` of lost lines |
-| Unit fulfilment rate | Σ `units_delivered` ÷ Σ `units_ordered` (in scope) |
+| Lost value | Σ `ordered_value` of lost lines, excluding `is_unit_outlier` lines |
+| Unit fulfilment rate | average of `unit_fulfilment_ratio` over in-scope lines |
 | Partially delivered lines | count of `is_partially_delivered = 1` |
 | Census | distinct `episode_key` among in-scope lines |
 | Contribution | episodes with at least one in-scope line of the category ÷ all episodes with in-scope lines |
 | Share of total lost | lost lines in context ÷ lost lines over all selected filters except speciality |
-| Order-to-delivery time | median `order_to_delivery_minutes` of delivered lines, per category |
+| Order-to-delivery time | median `order_to_delivery_minutes` of delivered lines, per category; Consultation and Package are excluded (their charge is posted at order time) |
 | Orders | distinct `order_key` |
 | Cancellation rate | lines with `line_status = 'Cancelled'` ÷ all lines |
 
@@ -253,3 +253,22 @@ Leak KPIs default to `is_inpatient = 0`.
 | O-OF-1 | **Status A.** Its meaning is unknown (3 lines in branch 1, 2026). | Line status | Closed 2026-10-05: the user confirmed it stays out of leak scope (`Unknown`) |
 | O-OF-2 | **Eligibility join.** The old report also dropped orders whose episode had no `mv_eligibility` row; that view is not in this warehouse. | Legacy reconciliation | Closed 2026-10-05: the user accepted the gap; it is explained in the reconciliation notes |
 | O-OF-3 | **Inpatient standing orders.** Open R lines may be scheduled doses, not leakage. | IP leak rate | Closed 2026-10-05: the user confirmed inpatient is excluded from leak calculations, and all inpatient lines stay in the fact for later analysis |
+| O-OF-4 | **Branch 8 data gaps.** `dim_patient` holds only 2,554 branch 8 patients, registered from mid-2025, so 61,758 branch 8 order lines from January to May 2026 have `patient_key` -1. 40,400 branch 8 delivered-status lines in 2026 have no live charge. Branch 8 charge and patient data look incomplete. | Branch 8 patient attributes, leak rate | Open |
+| O-OF-5 | **Branches 3 and 6 clock skew.** Delivery time precedes order time on 21% (branch 3) and 27% (branch 6) of 2026 lines, by minutes. | Order-to-delivery time | Open; `warn_negative_order_turnaround` flags only gaps above 60 minutes |
+
+## 12. Changes during implementation (2026-10-05)
+
+1. The old view lists 46 included packages, not 45.
+2. `fact_order_line` carries the raw `urgency_code` instead of `is_urgent`; the code meanings are unconfirmed.
+3. The intermediate layer is two tables: `int_order_line_base` (line, header, episode, category, live-charge summary) and `int_order_line` (alternatives, substitutes, packages, statuses, legacy fields), so the charge join runs once.
+4. `rec_orders_monthly` names its unit columns `scope_units_ordered` and `scope_units_delivered`.
+5. `warn_unresolved_order_packages` lists package names that match a PK product in no branch.
+6. Units delivered per delivery line = sum of live insurer rows (`bill_to` 1) when any exist, else the largest live row (insurers split one delivery into tier rows; a patient co-pay row is a share of the same unit).
+7. Leak scope also requires `units_ordered > 0` (non-positive lines are reversals).
+8. Partial delivery uses a tolerance of 0.0001 unit.
+9. Finding F8 was wrong: `order_lines.generic_id` is about 0.03% populated. The generic of a line is the IOS master's generic (`stg_oasis__ios_master.generic_id`), else the line's own (89% of 2026 pharmacy lines have one). Section 2.3 is corrected.
+10. `legacy_status`'s duplicate-generic rule groups the pharmacy lines of an episode by generic name and matches blank with blank, as the old DAX did; the new substitution rule matches by generic id only.
+11. `int_order_line` and `fact_order_line` add `unit_fulfilment_ratio` (`least(units_delivered / units_ordered, 1)`) and `is_unit_outlier` (`units_ordered > 1,000`; pharmacy lines ordered in ml or mg while delivered in packs).
+12. KPI changes (section 8): Unit fulfilment rate is the average of `unit_fulfilment_ratio` over in-scope lines; Lost value excludes `is_unit_outlier` lines; order-to-delivery time excludes Consultation and Package (charge posted at order time).
+13. `rec_orders_monthly`'s unit sums exclude unit outliers, and it adds `avg_unit_fulfilment_ratio` and `unit_outlier_lines`.
+14. Monitors: `warn_delivered_status_without_charge` counts lines with `units_ordered > 0` only; `warn_negative_order_turnaround` flags lines delivered more than 60 minutes before the order; a fifth monitor, `warn_order_unit_outliers`, lists outlier lines.

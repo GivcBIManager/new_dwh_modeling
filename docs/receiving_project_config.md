@@ -50,7 +50,7 @@ Merge into the existing keys: `vars:` already holds `iceberg_root` — keep it a
 
 ## How the models read Oasis
 
-With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so dbt knows the `hnh` models depend on them. `dbt build --select tag:hnh` builds only the `hnh` models and reads the `oasis_lake` tables as they are; it never rebuilds them. (`--select +tag:hnh` would also build the `oasis_lake` models first; `tag:hnh+` means `hnh` and everything downstream of it.) With `false` the staging models use `source('oasis', ...)` instead. Var `hnh_oasis_source_only` lists tables to read with `source('oasis', ...)` even when `hnh_oasis_as_ref` is true; it is empty on the server because `operating_diary_slots` and `operating_slot_details` now have `oasis_lake` models (the GitHub copy of the repo does not have them yet — if you deploy from a revision without those two models, set the var to `['operating_diary_slots', 'operating_slot_details']`). `api_pull_response_details` was ingested on 2026-10-05. If the server's `oasis_lake` project has no model of that name, add `'api_pull_response_details'` to `hnh_oasis_source_only` so staging reads it with `source()`; `claim_visit_detail` and `claim_service_detail` already have `oasis_lake` models. The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
+With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `oasis_lake` incremental models (`appointments`, `codes_data`, ...; the names match the raw tables), so dbt knows the `hnh` models depend on them. `dbt build --select tag:hnh` builds only the `hnh` models and reads the `oasis_lake` tables as they are; it never rebuilds them. (`--select +tag:hnh` would also build the `oasis_lake` models first; `tag:hnh+` means `hnh` and everything downstream of it.) With `false` the staging models use `source('oasis', ...)` instead. Var `hnh_oasis_source_only` lists tables to read with `source('oasis', ...)` even when `hnh_oasis_as_ref` is true; it is empty on the server because `operating_diary_slots` and `operating_slot_details` now have `oasis_lake` models (the GitHub copy of the repo does not have them yet — if you deploy from a revision without those two models, set the var to `['operating_diary_slots', 'operating_slot_details']`). `api_pull_response_details` was ingested on 2026-10-05. If the server's `oasis_lake` project has no model of that name, add `'api_pull_response_details'` to `hnh_oasis_source_only` so staging reads it with `source()`; `claim_visit_detail` and `claim_service_detail` already have `oasis_lake` models. Order fulfilment reads `orders_master`, `order_lines` and `generics`. If the server's `oasis_lake` project has no model of those names, add them to `hnh_oasis_source_only`. The `hnh` YAML declares a source named `oasis` and one named `reference`; the project's own sources are `oasis_lake` and `ofusion_conformed`, so there is no clash.
 
 ## Aliased models
 
@@ -58,7 +58,9 @@ With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `
 
 ## Reference tables that must exist in `default`
 
-Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+
+`map_order_fulfilment_packages` (46 rows, from `static_mappings/order_fulfilment_packages.csv`) is loaded with `python scripts/load_reference_data.py --only map_order_fulfilment_packages`.
 
 ## Security table and dim_date
 
@@ -98,6 +100,9 @@ on-run-end:
 - `rec_claims_monthly.first_pass_*` include cancelled claims (submission 1 as sent); this is the one exception to the `is_cancelled_claim = 0` rule.
 - A Rejected claim line can keep a token payer benefit in `approved_amount` (9,635 lines, about 123K SAR in total); it still counts as rejected in full.
 - Reason codes of 2022 to October 2023 are mostly legacy `N-DC-0xx` codes and show as Unknown (open item O-P2B-8).
+- `fact_order_line`: leak KPIs (Order lines, Lost lines, Leak rate, Lost value, Unit fulfilment rate, Census, Contribution) filter `is_in_leak_scope = 1` and `is_inpatient = 0`; inpatient lines stay in the fact for separate analysis. Lost = `is_lost = 1`. Turnaround is the median of `order_to_delivery_minutes` over delivered lines, per category; negative values are kept and monitored. Speciality comes from `dim_staff` through `ordering_staff_key`.
+- `fact_order_line` KPI refinements: Unit fulfilment rate is the average of `unit_fulfilment_ratio` over in-scope lines (not a ratio of sums); Lost value excludes `is_unit_outlier = 1` lines (pharmacy orders in ml or mg that are delivered in packs); the turnaround median leaves out the Consultation and Package categories (their charge is posted at order time, so the value is always 0).
+- `fact_order_line.first_delivery_date_key` is NULL (not -1) for undelivered lines. `charged_amount` includes patient co-pay rows. `urgency_code` is the raw Oasis `urgent_flag` (R, S, H, A; meaning unconfirmed).
 
 ## Deployment checklist (Ubuntu server)
 
@@ -106,7 +111,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about 20 warnings (19 `warn_*` monitors and the warn-severity relationship `fact_claim_line.invoice_key` to `fact_invoice`; 20 at the 2026-10-05 build).
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about 24 warnings (23 `warn_*` monitors and the warn-severity relationship `fact_claim_line.invoice_key` to `fact_invoice`; 24 at the order-fulfilment build of 2026-10-05, PASS=517 WARN=24 ERROR=0 in about 12 minutes).
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.
