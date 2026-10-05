@@ -26,3 +26,8 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start]
+  - name: rec_orders_monthly
+    description: Order leakage per branch and order month, new rules (non-inpatient) against the old Order Fulfillment report's scope and status.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
