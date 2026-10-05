@@ -169,3 +169,7 @@ models:
         tests:
           - accepted_values:
               values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Error', 'Cancelled', 'Not sent', 'Unknown']
+  - name: dim_nphies_reason
+    columns:
+      - name: nphies_reason_key
+        tests: [unique, not_null]
