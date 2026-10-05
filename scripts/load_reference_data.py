@@ -128,6 +128,26 @@ SMALL_TABLES = {
          ("FS_CAPTION", "String", s), ("FS_LINE", "String", s)],
         "(BRANCH_ID, CODE)",
     ),
+    # FS presentation order and the statement group of each income-statement category (drafted 2026-10-05).
+    "map_fs_line_order": (
+        "fs_line_order.csv",
+        [("LEVEL", "LowCardinality(String)", s), ("VALUE", "String", s), ("SORT_ORDER", "UInt16", i),
+         ("STATEMENT_GROUP", "String", s)],
+        "(LEVEL, VALUE)",
+    ),
+    # Budget line code -> FS position (account, line, caption or category), revenue codes also by care type.
+    "map_budget_fs_line": (
+        "budget_fs_line_mapping.csv",
+        [("LINE_ITEM_CODE", "LowCardinality(String)", s), ("MATCH_LEVEL", "LowCardinality(String)", s),
+         ("MATCH_VALUE", "String", s), ("CARE_TYPE", "String", s)],
+        "(LINE_ITEM_CODE, MATCH_LEVEL, MATCH_VALUE, CARE_TYPE)",
+    ),
+    # Fusion GL specialty (COA segment 3) -> unified department; drafted by scripts/draft_fusion_specialty_map.py.
+    "map_fusion_specialty_unified": (
+        "fusion_specialty_unified.csv",
+        [("SPECIALTY_CODE", "String", s), ("SPECIALTY_NAME", "String", s), ("UNIFIED_DEPARTMENT", "String", s)],
+        "SPECIALTY_CODE",
+    ),
     "map_unified_department_v2": (
         "master_unified_department.csv",
         [("DEPARTMENT", "String", s), ("UNIFIED_DEPARTMENT", "String", s), ("NOT_ADMITTING", "UInt8", i), ("High_Value", "UInt8", i)],

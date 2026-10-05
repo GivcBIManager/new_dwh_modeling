@@ -80,3 +80,47 @@ models:
     columns:
       - name: package_description
         tests: [unique, not_null]
+  - name: stg_ref__fs_account
+    columns:
+      - name: natural_account
+        tests: [unique, not_null]
+      - name: fs_type
+        tests:
+          - accepted_values:
+              values: ['BS', 'IS']
+  - name: stg_ref__oasis_fs_account
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, code]
+          config: {severity: warn}
+  - name: stg_ref__fs_line_order
+    tests:
+      - hnh_unique_combination:
+          columns: [level, value_lower]
+    columns:
+      - name: level
+        tests:
+          - accepted_values:
+              values: ['type', 'element', 'category', 'caption']
+      - name: statement_group
+        tests:
+          - accepted_values:
+              values: ['Balance sheet', 'Revenue', 'Revenue discounts', 'Direct cost', 'G&A', 'Selling and marketing',
+                       'Charges from head office', 'Other income', 'Depreciation and amortisation', 'Finance cost', 'Zakat', 'OCI']
+  - name: stg_ref__budget_fs_line
+    tests:
+      - hnh_unique_combination:
+          columns: [match_level, match_value_lower, care_type]
+    columns:
+      - name: match_level
+        tests:
+          - accepted_values:
+              values: ['account', 'line', 'caption', 'category']
+  - name: stg_ref__fusion_specialty_unified
+    columns:
+      - name: specialty_code
+        tests: [unique, not_null]
+  - name: stg_ref__income_statement_budget
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, fiscal_year, scenario, line_item_code, id]
