@@ -35,3 +35,14 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, response_id, detail_index]
+
+  - name: int_claim_submission
+    description: One claim submission (claim visit) with its submission number and final NPHIES claim response.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, visit_id]
+    columns:
+      - name: adjudication_status
+        tests:
+          - accepted_values:
+              values: ['Not sent', 'No response', 'Adjudicated', 'Pended', 'Error']
