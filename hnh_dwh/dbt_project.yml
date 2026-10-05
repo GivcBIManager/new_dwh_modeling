@@ -14,6 +14,10 @@ vars:
   hnh_ssas_machine_name: "SSAS-SERVER"
   hnh_oasis_as_ref: false
   hnh_oasis_source_only: ['operating_diary_slots', 'operating_slot_details']
+  hnh_fusion_as_ref: false
+  hnh_head_office_fusion_branch_code: 101
+  hnh_head_office_ledger_id: 300000005003375
+  hnh_fusion_oasis_feed_source: "300000007046804"
 
 models:
   hnh_dwh:

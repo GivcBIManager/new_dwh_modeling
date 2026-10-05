@@ -80,3 +80,9 @@ settings join_use_nulls = 1
 {% macro hnh_user_name(col) -%}
 lower(trimBoth(arrayElement(splitByChar(char(92), trimBoth({{ col }})), -1)))
 {%- endmacro %}
+
+{# Read a Fusion table. In this project it is a source; in the receiving project the fusion database is built by
+   dbt models of the same names, so set var hnh_fusion_as_ref: true there. #}
+{% macro hnh_fusion_source(table_name) -%}
+{%- if var('hnh_fusion_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('fusion', table_name) }}{%- endif -%}
+{%- endmacro %}
