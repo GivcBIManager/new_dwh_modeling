@@ -183,3 +183,35 @@ models:
     columns:
       - name: supplier_key
         tests: [unique, not_null]
+  - name: dim_fs_line
+    columns:
+      - name: fs_line_key
+        tests: [unique, not_null]
+      - name: statement_group
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Balance sheet', 'Revenue', 'Revenue discounts', 'Direct cost', 'G&A', 'Selling and marketing',
+                       'Charges from head office', 'Other income', 'Depreciation and amortisation', 'Finance cost',
+                       'Zakat', 'OCI', 'Not mapped expenses']
+  - name: dim_budget_line
+    columns:
+      - name: budget_line_key
+        tests: [unique, not_null]
+      - name: budget_line_code
+        tests: [unique, not_null]
+  - name: hnh_dim_gl_account
+    columns:
+      - name: gl_account_key
+        tests: [unique, not_null]
+      - name: fs_line_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_fs_line'), field: fs_line_key}
+      - name: budget_line_code
+        tests:
+          - relationships: {to: ref('dim_budget_line'), field: budget_line_code}
+      - name: fs_mapping_source
+        tests:
+          - accepted_values:
+              values: ['supplied', 'inferred', 'not mapped', 'prior-year roll']
