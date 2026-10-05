@@ -1,7 +1,7 @@
 # HNH DWH: order fulfilment (Phase 1 extension) design
 
 - **Date:** 2026-10-05
-- **Status:** draft for review
+- **Status:** approved 2026-10-05
 - **Parents:** `2026-10-01-hnh-dwh-gold-layer-design.md` (architecture, keys, conventions), `2026-10-04-hnh-dwh-phase2-revenue-cycle-design.md` (charges, live-charge rule, product categories)
 - **Replaces:** the *Order Fulfillment* Power BI report's dataset `default.mv_orders_fulfillment` (old warehouse). Its model is saved, git-ignored, in `powerbi_tmdl/Order Fulfillment/`.
 
@@ -250,6 +250,6 @@ Leak KPIs default to `is_inpatient = 0`.
 
 | # | Item | Affects | Until resolved |
 |---|---|---|---|
-| O-OF-1 | **Status A.** Its meaning is unknown (3 lines in branch 1, 2026). | Line status | Mapped to `Unknown`, out of leak scope |
-| O-OF-2 | **Eligibility join.** The old report also dropped orders whose episode had no `mv_eligibility` row; that view is not in this warehouse. | Legacy reconciliation | Gap explained in `rec_orders_monthly` notes |
-| O-OF-3 | **Inpatient standing orders.** Open R lines may be scheduled doses, not leakage. | IP leak rate | Inpatient is excluded from leak KPIs by default |
+| O-OF-1 | **Status A.** Its meaning is unknown (3 lines in branch 1, 2026). | Line status | Closed 2026-10-05: the user confirmed it stays out of leak scope (`Unknown`) |
+| O-OF-2 | **Eligibility join.** The old report also dropped orders whose episode had no `mv_eligibility` row; that view is not in this warehouse. | Legacy reconciliation | Closed 2026-10-05: the user accepted the gap; it is explained in the reconciliation notes |
+| O-OF-3 | **Inpatient standing orders.** Open R lines may be scheduled doses, not leakage. | IP leak rate | Closed 2026-10-05: the user confirmed inpatient is excluded from leak calculations, and all inpatient lines stay in the fact for later analysis |
