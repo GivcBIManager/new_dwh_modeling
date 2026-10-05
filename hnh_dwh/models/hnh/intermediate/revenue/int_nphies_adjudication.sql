@@ -19,8 +19,10 @@ items as (
     select
         branch_id, response_id, about_api_trans_id, response_type, res_status, responded_at,
         nullIf(JSONExtractString(entry, 'resource', 'preAuthRef'), '')                       as preauth_reference,
-        toDateOrNull(JSONExtractString(entry, 'resource', 'preAuthPeriod', 'start'))          as preauth_valid_from,
-        toDateOrNull(JSONExtractString(entry, 'resource', 'preAuthPeriod', 'end'))            as preauth_valid_to,
+        toDateOrNull(substring(JSONExtractString(entry, 'resource', 'preAuthPeriod', 'start'), 1, 10)) as preauth_valid_from,
+        toDateOrNull(substring(JSONExtractString(entry, 'resource', 'preAuthPeriod', 'end'), 1, 10)) as preauth_valid_to,
+        -- Fallback for responses whose pull row has no about_api_trans_id: the request identifier.
+        toInt64OrNull(JSONExtractString(entry, 'resource', 'request', 'identifier', 'value'))  as request_trans_id,
         arrayJoin(JSONExtractArrayRaw(entry, 'resource', 'item'))                             as item
     from claim_responses
 ),
@@ -28,7 +30,7 @@ items as (
 parsed as (
     select
         branch_id, response_id, about_api_trans_id, response_type, res_status, responded_at,
-        preauth_reference, preauth_valid_from, preauth_valid_to,
+        preauth_reference, preauth_valid_from, preauth_valid_to, request_trans_id,
         toInt64(JSONExtractInt(item, 'itemSequence'))                                        as item_sequence,
         JSONExtractArrayRaw(item, 'adjudication')                                            as adjudications,
         arrayMap(a -> JSONExtractString(a, 'category', 'coding', 1, 'code'), adjudications)  as categories,
@@ -49,7 +51,7 @@ select
     item_sequence,
     if(response_type = 'claim-response', 'Claim', 'Pre-authorisation')                  as response_kind,
     response_type,
-    about_api_trans_id,
+    coalesce(about_api_trans_id, request_trans_id)                                      as about_api_trans_id,
     res_status,
     responded_at,
     {{ hnh_nphies_outcome('outcome_code') }}                                            as outcome,

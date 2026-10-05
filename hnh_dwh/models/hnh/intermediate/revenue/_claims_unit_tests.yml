@@ -20,13 +20,18 @@ unit_tests:
           union all
           select toUInt8(1), toInt64(9101), toNullable(toInt64(2)), toNullable(toInt64(8001)), 'priorauth-response',
                  toNullable('REJECTED'), toNullable('P'), toNullable(toDateTime('2026-06-03 09:00:00', 'Asia/Riyadh')),
-                 '{"entry":[{"resource":{"resourceType":"ClaimResponse","preAuthRef":"PA-77","preAuthPeriod":{"start":"2026-06-03","end":"2026-07-03"},"item":[{"itemSequence":1,"extension":[{"url":"x/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"rejected"}]}}],"adjudication":[{"category":{"coding":[{"code":"benefit"}]},"reason":{"coding":[{"code":"CV-1-5"}]},"amount":{"value":0}}]}]}}]}'
+                 '{"entry":[{"resource":{"resourceType":"ClaimResponse","preAuthRef":"PA-77","preAuthPeriod":{"start":"2026-06-03T00:00:00+03:00","end":"2026-07-03T00:00:00+03:00"},"item":[{"itemSequence":1,"extension":[{"url":"x/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"rejected"}]}}],"adjudication":[{"category":{"coding":[{"code":"benefit"}]},"reason":{"coding":[{"code":"CV-1-5"}]},"amount":{"value":0}}]}]}}]}'
+          union all
+          select toUInt8(1), toInt64(9002), toNullable(toInt64(4)), cast(null as Nullable(Int64)), 'claim-response',
+                 toNullable('APPROVED'), toNullable('SUCCEEDED'), toNullable(toDateTime('2026-06-04 10:00:00', 'Asia/Riyadh')),
+                 '{"entry":[{"resource":{"resourceType":"ClaimResponse","request":{"identifier":{"value":"7009"}},"item":[{"itemSequence":1,"extension":[{"url":"x/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"approved"}]}}],"adjudication":[{"category":{"coding":[{"code":"submitted"}]},"amount":{"value":10}},{"category":{"coding":[{"code":"eligible"}]},"amount":{"value":10}},{"category":{"coding":[{"code":"benefit"}]},"amount":{"value":8}}]}]}}]}'
           union all
           select toUInt8(1), toInt64(9201), toNullable(toInt64(3)), toNullable(toInt64(7001)), 'payment-reconciliation',
                  toNullable('COMPLETE'), toNullable('SUCCEEDED'), toNullable(toDateTime('2026-06-20 09:00:00', 'Asia/Riyadh')),
                  '{"entry":[{"resource":{"resourceType":"PaymentReconciliation","detail":[]}}]}'
     expect:
       rows:
-        - {response_id: 9001, item_sequence: 1, response_kind: Claim, about_api_trans_id: 7001, outcome: Partially approved, submitted: 100, eligible: 80, benefit: 64, copay: 16, approved_qty: 2, primary_reason_code: BE-1-7, legacy_reason_amount: 64, preauth_reference: null}
-        - {response_id: 9001, item_sequence: 2, response_kind: Claim, about_api_trans_id: 7001, outcome: Approved, submitted: 30, eligible: 30, benefit: 24, copay: 6, approved_qty: null, primary_reason_code: null, legacy_reason_amount: null, preauth_reference: null}
-        - {response_id: 9101, item_sequence: 1, response_kind: Pre-authorisation, about_api_trans_id: 8001, outcome: Rejected, submitted: null, eligible: null, benefit: 0, copay: null, approved_qty: null, primary_reason_code: CV-1-5, legacy_reason_amount: 0, preauth_reference: PA-77}
+        - {response_id: 9001, item_sequence: 1, response_kind: Claim, about_api_trans_id: 7001, outcome: Partially approved, submitted: 100, eligible: 80, benefit: 64, copay: 16, approved_qty: 2, reason_codes: ['BE-1-7', 'MN-1-1'], primary_reason_code: BE-1-7, legacy_reason_amount: 64, preauth_reference: null, preauth_valid_from: null, preauth_valid_to: null}
+        - {response_id: 9001, item_sequence: 2, response_kind: Claim, about_api_trans_id: 7001, outcome: Approved, submitted: 30, eligible: 30, benefit: 24, copay: 6, approved_qty: null, reason_codes: [], primary_reason_code: null, legacy_reason_amount: null, preauth_reference: null, preauth_valid_from: null, preauth_valid_to: null}
+        - {response_id: 9101, item_sequence: 1, response_kind: Pre-authorisation, about_api_trans_id: 8001, outcome: Rejected, submitted: null, eligible: null, benefit: 0, copay: null, approved_qty: null, reason_codes: ['CV-1-5'], primary_reason_code: CV-1-5, legacy_reason_amount: 0, preauth_reference: PA-77, preauth_valid_from: 2026-06-03, preauth_valid_to: 2026-07-03}
+        - {response_id: 9002, item_sequence: 1, response_kind: Claim, about_api_trans_id: 7009, outcome: Approved, submitted: 10, eligible: 10, benefit: 8, copay: null, approved_qty: null, reason_codes: [], primary_reason_code: null, legacy_reason_amount: null, preauth_reference: null, preauth_valid_from: null, preauth_valid_to: null}
