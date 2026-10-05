@@ -215,6 +215,9 @@ models:
         tests:
           - not_null
           - relationships: {to: ref('dim_date'), field: date_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
       - name: payer_key
         tests:
           - relationships: {to: ref('dim_payer'), field: payer_key}

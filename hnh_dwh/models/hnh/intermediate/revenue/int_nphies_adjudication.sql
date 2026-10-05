@@ -3,7 +3,7 @@
 with responses as (
     select branch_id, response_id, about_api_trans_id, response_type, res_status, responded_at, response_bundle
     from {{ ref('stg_oasis__pull_responses') }}
-    where response_type in ('claim-response', 'priorauth-response', 'advanced-authorization')
+    where response_type in ('claim-response', 'priorauth-response')
 ),
 
 claim_responses as (
