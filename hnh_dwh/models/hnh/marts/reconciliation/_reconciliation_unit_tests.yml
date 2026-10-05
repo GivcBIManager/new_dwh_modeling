@@ -47,7 +47,7 @@ unit_tests:
     description: >
       June, branch 1: an OP lost line, an OP delivered line (3 of 4 units), an OP line delivered by
       alternative that the old report also counted, an IP lost line (in new leak scope but excluded
-      from the non-inpatient KPI and from legacy scope), and an OP excluded package.
+      from the non-inpatient KPI and from legacy scope), and an OP excluded package, and an OP delivered unit outlier (5000 ordered, 1 delivered)
     model: rec_orders_monthly
     given:
       - input: ref('fact_order_line')
@@ -56,13 +56,16 @@ unit_tests:
           select toUInt8(1) as branch_key, toInt32(20260615) as order_date_key, toUInt8(sc) as is_in_leak_scope,
                  toUInt8(lo) as is_lost, toUInt8(ip) as is_inpatient, toUInt8(xp) as is_excluded_package,
                  fs as fulfilment_status, toFloat64(uo) as units_ordered, toFloat64(ud) as units_delivered,
-                 toUInt8(lsc) as legacy_in_scope, toUInt8(llo) as legacy_is_lost
-          from values('sc UInt8, lo UInt8, ip UInt8, xp UInt8, fs String, uo Float64, ud Float64, lsc UInt8, llo UInt8',
-              (1, 1, 0, 0, 'Undelivered', 1, 0, 1, 1),
-              (1, 0, 0, 0, 'Delivered', 4, 3, 1, 0),
-              (1, 0, 0, 0, 'Delivered by alternative', 1, 0, 1, 0),
-              (1, 1, 1, 0, 'Undelivered', 2, 0, 0, 0),
-              (0, 0, 0, 1, 'Undelivered', 1, 0, 0, 0))
+                 toUInt8(lsc) as legacy_in_scope, toUInt8(llo) as legacy_is_lost,
+                 toUInt8(uout) as is_unit_outlier,
+                 if(uo > 0, least(ud / uo, 1), cast(null as Nullable(Float64))) as unit_fulfilment_ratio
+          from values('sc UInt8, lo UInt8, ip UInt8, xp UInt8, fs String, uo Float64, ud Float64, lsc UInt8, llo UInt8, uout UInt8',
+              (1, 1, 0, 0, 'Undelivered', 1, 0, 1, 1, 0),
+              (1, 0, 0, 0, 'Delivered', 4, 3, 1, 0, 0),
+              (1, 0, 0, 0, 'Delivered by alternative', 1, 0, 1, 0, 0),
+              (1, 1, 1, 0, 'Undelivered', 2, 0, 0, 0, 0),
+              (0, 0, 0, 1, 'Undelivered', 1, 0, 0, 0, 0),
+              (1, 0, 0, 0, 'Delivered', 5000, 1, 1, 0, 1))
     expect:
       rows:
-        - {branch_key: 1, month_start: '2026-06-01', legacy_lines: 3, legacy_lost: 1, lines: 3, lost: 1, delivered_by_alternative: 1, delivered_by_substitute: 0, excluded_package_lines: 1, scope_units_ordered: 6, scope_units_delivered: 3}
+        - {branch_key: 1, month_start: '2026-06-01', legacy_lines: 4, legacy_lost: 1, lines: 4, lost: 1, delivered_by_alternative: 1, delivered_by_substitute: 0, excluded_package_lines: 1, scope_units_ordered: 6, scope_units_delivered: 3, avg_unit_fulfilment_ratio: 0.18755, unit_outlier_lines: 1}
