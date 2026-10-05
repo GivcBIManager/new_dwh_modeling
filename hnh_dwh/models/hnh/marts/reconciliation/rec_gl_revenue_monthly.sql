@@ -22,6 +22,10 @@ with gl as (
     group by j.branch_key, month_start
 ),
 
+first_gl as (
+    select branch_key, min(month_start) as first_month from gl group by branch_key
+),
+
 oasis as (
     select
         c.branch_key                                            as branch_key,
@@ -33,18 +37,28 @@ oasis as (
         sumIf(c.revenue_amount, ifNull(ct.care_type, 'Unknown') = 'Unknown') as oasis_revenue_unknown,
         sum(c.revenue_amount)                                   as oasis_revenue_total
     from {{ ref('fact_charge_line') }} as c
+    inner join first_gl as fg on fg.branch_key = c.branch_key
     left join (select care_type_key, care_type from {{ ref('dim_care_type') }}) as ct on ct.care_type_key = c.care_type_key
-    where (c.branch_key, toStartOfMonth(toDate(toString(c.delivery_date_key)))) in (select branch_key, month_start from gl)
+    where toStartOfMonth(toDate(toString(c.delivery_date_key))) >= fg.first_month
     group by c.branch_key, month_start
     {{ hnh_settings() }} -- CTE-level setting: an unmatched care type must be NULL so ifNull maps it to 'Unknown'
+),
+
+spine as (
+    select branch_key, month_start from gl
+    union distinct
+    select branch_key, month_start from oasis
 )
 
 select
-    g.branch_key as branch_key, g.month_start as month_start,
-    g.gl_revenue_op as gl_revenue_op, g.gl_revenue_ip as gl_revenue_ip, g.gl_revenue_er as gl_revenue_er,
-    g.gl_revenue_other as gl_revenue_other, g.gl_revenue_unallocated as gl_revenue_unallocated,
-    g.gl_contractual_discount as gl_contractual_discount,
-    g.gl_revenue_op + g.gl_revenue_ip + g.gl_revenue_er + g.gl_revenue_other + g.gl_revenue_unallocated - g.gl_contractual_discount as gl_net_revenue,
+    s.branch_key as branch_key, s.month_start as month_start,
+    ifNull(g.gl_revenue_op, 0)           as gl_revenue_op,
+    ifNull(g.gl_revenue_ip, 0)           as gl_revenue_ip,
+    ifNull(g.gl_revenue_er, 0)           as gl_revenue_er,
+    ifNull(g.gl_revenue_other, 0)        as gl_revenue_other,
+    ifNull(g.gl_revenue_unallocated, 0)  as gl_revenue_unallocated,
+    ifNull(g.gl_contractual_discount, 0) as gl_contractual_discount,
+    gl_revenue_op + gl_revenue_ip + gl_revenue_er + gl_revenue_other + gl_revenue_unallocated - gl_contractual_discount as gl_net_revenue,
     ifNull(o.oasis_revenue_op, 0)      as oasis_revenue_op,
     ifNull(o.oasis_revenue_ip, 0)      as oasis_revenue_ip,
     ifNull(o.oasis_revenue_er, 0)      as oasis_revenue_er,
@@ -53,6 +67,7 @@ select
     ifNull(o.oasis_revenue_total, 0)   as oasis_revenue_total,
     gl_net_revenue - oasis_revenue_total                                            as difference,
     if(oasis_revenue_total = 0, cast(null as Nullable(Float64)), gl_net_revenue / oasis_revenue_total) as ratio
-from gl as g
-left join oasis as o on o.branch_key = g.branch_key and o.month_start = g.month_start
+from spine as s
+left join gl as g on g.branch_key = s.branch_key and g.month_start = s.month_start
+left join oasis as o on o.branch_key = s.branch_key and o.month_start = s.month_start
 {{ hnh_settings() }}

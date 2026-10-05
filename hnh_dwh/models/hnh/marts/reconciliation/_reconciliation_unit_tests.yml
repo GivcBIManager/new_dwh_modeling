@@ -99,8 +99,8 @@ unit_tests:
       - input: ref('fact_charge_line')
         format: sql
         rows: |
-          select toUInt8(6) as branch_key, toInt32(20260615) as delivery_date_key, toInt8(ct) as care_type_key, toFloat64(r) as revenue_amount
-          from values('ct Int8, r Float64', (1, 880), (4, 20))
+          select toUInt8(6) as branch_key, toInt32(dk) as delivery_date_key, toInt8(ct) as care_type_key, toFloat64(r) as revenue_amount
+          from values('dk Int32, ct Int8, r Float64', (20260615, 1, 880), (20260615, 4, 20), (20260710, 1, 500), (20260510, 1, 999))
       - input: ref('dim_care_type')
         format: sql
         rows: |
@@ -108,3 +108,4 @@ unit_tests:
     expect:
       rows:
         - {branch_key: 6, month_start: 2026-06-01, gl_revenue_op: 1000, gl_contractual_discount: 100, gl_net_revenue: 900, oasis_revenue_op: 880, oasis_revenue_daycase: 20, oasis_revenue_total: 900, difference: 0}
+        - {branch_key: 6, month_start: 2026-07-01, gl_revenue_op: 0, gl_contractual_discount: 0, gl_net_revenue: 0, oasis_revenue_op: 500, oasis_revenue_daycase: 0, oasis_revenue_total: 500, difference: -500}
