@@ -29,12 +29,15 @@ generics as (
 
 legacy_names as (
     -- Old report: pharmacy lines of one episode with the same generic NAME (blank matches blank).
+    -- The old DAX ran over an import that had already dropped statuses P/Q/X/Cancelled and inpatient care.
     select
         branch_id, patient_id, episode_no,
         ifNull(generic_name, '')    as name_key,
         count()                     as name_lines
     from base
     where {{ hnh_order_category('product_category_code') }} = 'Pharmacy'
+      and ifNull(line_status_code, '') not in ('P', 'Q', 'X', 'C')
+      and care_type != 'IP'
       and patient_id is not null and episode_no is not null
     group by branch_id, patient_id, episode_no, name_key
 )

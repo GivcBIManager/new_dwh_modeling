@@ -646,6 +646,9 @@ unit_tests:
       old report still counted it. Line 17 is charged 0.99999999 of 1 unit (float noise from insurer
       tier rows): not partially delivered. Line 22 orders 5000 units of generic 77 (a unit-of-measure
       outlier) and delivers 1: partially delivered, ratio 0.0002, flagged as an outlier.
+      Lines 23 and 24 (episode 300-5, OP) are uncharged amoxicillin lines (generic 99), 23 ordered and
+      24 cancelled: the cancelled sibling no longer makes line 23 legacy Delivered (the old report
+      had already dropped cancelled lines before counting same-name rows).
     model: int_order_line
     given:
       - input: ref('int_order_line_base')
@@ -656,7 +659,7 @@ unit_tests:
                  cast(null as Nullable(Int64)) as admission_no, toNullable('D1') as orderer_staff_id,
                  toNullable(toInt64(700)) as order_work_entity, toNullable(toInt64(ios)) as ios,
                  if(gen = 0, cast(null as Nullable(Int64)), toNullable(toInt64(gen))) as generic_id,
-                 multiIf(gen = 77, toNullable('PARACETAMOL'), gen = 88, toNullable('IBUPROFEN'), cast(null as Nullable(String))) as generic_name,
+                 multiIf(gen = 77, toNullable('PARACETAMOL'), gen = 88, toNullable('IBUPROFEN'), gen = 99, toNullable('AMOXICILLIN'), cast(null as Nullable(String))) as generic_name,
                  toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as order_at,
                  toNullable('R') as urgency_code, cast(null as Nullable(String)) as status_reason,
                  toNullable(st) as line_status_code,
@@ -689,7 +692,9 @@ unit_tests:
               (19, 100, 1, 507, 0, 'R', 0, 1, 'PH', 'UNKNOWN DRUG', 'OP', 0, 0, 0, ''),
               (20, 100, 1, 501, 0, 'C', 0, 1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
               (21, 100, 1, 501, 0, 'D', 20, 1, 'LAB', 'CBC', 'OP', 1, 1, 50, '2026-06-01 09:10:00'),
-              (22, 100, 1, 503, 77, 'D', 0, 5000, 'PH', 'PARACETAMOL 500', 'OP', 1, 1, 5, '2026-06-01 09:20:00'))
+              (22, 100, 1, 503, 77, 'D', 0, 5000, 'PH', 'PARACETAMOL 500', 'OP', 1, 1, 5, '2026-06-01 09:20:00'),
+              (23, 300, 5, 508, 99, 'R', 0, 1, 'PH', 'AMOXICILLIN 500', 'OP', 0, 0, 0, ''),
+              (24, 300, 5, 508, 99, 'C', 0, 1, 'PH', 'AMOXICILLIN 500', 'OP', 0, 0, 0, ''))
       - input: ref('stg_ref__order_fulfilment_packages')
         format: sql
         rows: |
@@ -718,3 +723,5 @@ unit_tests:
         - {order_line: 20, order_category: Lab, line_status: Cancelled, fulfilment_status: Cancelled, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, unit_fulfilment_ratio: 0, is_unit_outlier: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 0, legacy_is_lost: 0}
         - {order_line: 21, order_category: Lab, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, unit_fulfilment_ratio: 1, is_unit_outlier: 0, ordered_value: 10, order_to_delivery_minutes: 10, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
         - {order_line: 22, order_category: Pharmacy, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 1, unit_fulfilment_ratio: 0.0002, is_unit_outlier: 1, ordered_value: 50000, order_to_delivery_minutes: 20, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 23, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, unit_fulfilment_ratio: 0, is_unit_outlier: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 1, legacy_is_lost: 1}
+        - {order_line: 24, order_category: Pharmacy, line_status: Cancelled, fulfilment_status: Cancelled, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, unit_fulfilment_ratio: 0, is_unit_outlier: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 0, legacy_is_lost: 0}
