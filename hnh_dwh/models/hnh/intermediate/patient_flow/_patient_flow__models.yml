@@ -68,3 +68,21 @@ models:
     columns:
       - name: order_at
         tests: [not_null]
+  - name: int_order_line
+    description: One order line with its fulfilment status (spec section 6) and the old report's legacy status.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, order_line]
+    columns:
+      - name: fulfilment_status
+        tests:
+          - accepted_values:
+              values: ['Cancelled', 'Not applicable', 'Delivered', 'Delivered by alternative', 'Delivered by substitute', 'Undelivered']
+      - name: line_status
+        tests:
+          - accepted_values:
+              values: ['Delivered', 'Ordered', 'Cancelled', 'Not applicable', 'Unknown']
+      - name: order_category
+        tests:
+          - accepted_values:
+              values: ['Package', 'Lab', 'Radiology', 'Consultation', 'Pharmacy', 'Others']

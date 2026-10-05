@@ -624,3 +624,81 @@ unit_tests:
         - {order_line: 3, patient_id: null, order_at: '2026-06-01 09:00:00', care_type: Unknown, episode_purchaser_code: 9999, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
         - {order_line: 4, patient_id: 200, order_at: '2026-06-01 09:00:00', care_type: IP, episode_purchaser_code: 9999, product_category_code: PH, service_description_upper: PARACETAMOL 500, generic_name: PARACETAMOL, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
         - {order_line: 6, patient_id: 100, order_at: '2026-06-02 08:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
+  - name: int_order_line_applies_fulfilment_rules
+    description: >
+      Episode 100-1 (OP), ordered 09:00.
+      Line 1 charged; line 2 not charged.
+      Line 3 not charged but its alternative 4 was; line 5 not charged and its alternative 6 not
+      charged either (old rule: both delivered).
+      Pharmacy lines 7 and 8 share generic 77 and only 8 was charged (3 of 5 units, delivered
+      before the order time); lines 9 and 10 share generic 88 and neither was charged (old rule:
+      both delivered).
+      Line 11 is an included package, line 12 an excluded one.
+      Line 13 is cancelled; line 14 has status A.
+      Line 15 is generic 77 in another, inpatient episode (no substitute credit; old report
+      excluded inpatient).
+      Line 16 is a delivered-status reversal (negative units, no charge): out of leak scope, but the
+      old report still counted it. Line 17 is charged 0.99999999 of 1 unit (float noise from insurer
+      tier rows): not partially delivered.
+    model: int_order_line
+    given:
+      - input: ref('int_order_line_base')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(ol) as order_line, toNullable(toInt64(10)) as master_order_no,
+                 toNullable(toInt64(pat)) as patient_id, toNullable(toInt64(ep)) as episode_no,
+                 cast(null as Nullable(Int64)) as admission_no, toNullable('D1') as orderer_staff_id,
+                 toNullable(toInt64(700)) as order_work_entity, toNullable(toInt64(ios)) as ios,
+                 if(gen = 0, cast(null as Nullable(Int64)), toNullable(toInt64(gen))) as generic_id,
+                 cast(null as Nullable(String)) as generic_name,
+                 toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as order_at,
+                 toNullable('R') as urgency_code, cast(null as Nullable(String)) as status_reason,
+                 toNullable(st) as line_status_code,
+                 if(orig = 0, cast(null as Nullable(Int64)), toNullable(toInt64(orig))) as original_order_line,
+                 toFloat64(uo) as units_ordered, toFloat64(10) as std_price,
+                 toNullable(cat) as product_category_code, toNullable(descr) as service_description_upper,
+                 ct as care_type, toInt64(9999) as episode_purchaser_code,
+                 toUInt64(lc) as live_charge_count, toUInt8(lc > 0) as has_live_charge,
+                 toFloat64(ud) as units_delivered, toFloat64(amt) as charged_amount,
+                 if(fd = '', cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime(fd, 'Asia/Riyadh'))) as first_delivered_at
+          from values('ol UInt32, pat UInt32, ep UInt32, ios UInt32, gen UInt32, st String, orig UInt32, uo Float64, cat String, descr String, ct String, lc UInt32, ud Float64, amt Float64, fd String',
+              (1, 100, 1, 501, 0, 'D', 0, 2, 'LAB', 'CBC', 'OP', 2, 2, 100, '2026-06-01 09:30:00'),
+              (2, 100, 1, 501, 0, 'R', 0, 1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
+              (3, 100, 1, 502, 0, 'R', 0, 1, 'RAD', 'XRAY', 'OP', 0, 0, 0, ''),
+              (4, 100, 1, 502, 0, 'D', 3, 1, 'RAD', 'XRAY', 'OP', 1, 1, 200, '2026-06-01 10:00:00'),
+              (5, 100, 1, 502, 0, 'R', 0, 1, 'RAD', 'XRAY', 'OP', 0, 0, 0, ''),
+              (6, 100, 1, 502, 0, 'R', 5, 1, 'RAD', 'XRAY', 'OP', 0, 0, 0, ''),
+              (7, 100, 1, 503, 77, 'R', 0, 1, 'PH', 'PARACETAMOL 500', 'OP', 0, 0, 0, ''),
+              (8, 100, 1, 503, 77, 'D', 0, 5, 'PH', 'PARACETAMOL 500', 'OP', 1, 3, 30, '2026-06-01 08:50:00'),
+              (9, 100, 1, 506, 88, 'R', 0, 1, 'PH', 'IBUPROFEN 400', 'OP', 0, 0, 0, ''),
+              (10, 100, 1, 506, 88, 'R', 0, 1, 'PH', 'IBUPROFEN 400', 'OP', 0, 0, 0, ''),
+              (11, 100, 1, 504, 0, 'R', 0, 1, 'PK', 'GENERAL CHECK UP (PROMO)', 'OP', 0, 0, 0, ''),
+              (12, 100, 1, 505, 0, 'R', 0, 1, 'PK', 'OTHER PACKAGE', 'OP', 0, 0, 0, ''),
+              (13, 100, 1, 501, 0, 'C', 0, 1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
+              (14, 100, 1, 501, 0, 'A', 0, 1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
+              (15, 200, 9, 503, 77, 'R', 0, 1, 'PH', 'PARACETAMOL 500', 'IP', 0, 0, 0, ''),
+              (16, 100, 1, 501, 0, 'D', 0, -1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
+              (17, 100, 1, 501, 0, 'D', 0, 1, 'LAB', 'CBC', 'OP', 2, 0.99999999, 10, '2026-06-01 09:05:00'))
+      - input: ref('stg_ref__order_fulfilment_packages')
+        format: sql
+        rows: |
+          select 'GENERAL CHECK UP (PROMO)' as package_description
+    expect:
+      rows:
+        - {order_line: 1, order_category: Lab, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 20, order_to_delivery_minutes: 30, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 2, order_category: Lab, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 1, legacy_is_lost: 1}
+        - {order_line: 3, order_category: Radiology, line_status: Ordered, fulfilment_status: Delivered by alternative, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 4, order_category: Radiology, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: 60, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 5, order_category: Radiology, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 6, order_category: Radiology, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 7, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Delivered by substitute, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 8, order_category: Pharmacy, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 1, ordered_value: 50, order_to_delivery_minutes: -10, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 9, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 10, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 11, order_category: Package, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 1, legacy_is_lost: 1}
+        - {order_line: 12, order_category: Package, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 1, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 0, legacy_is_lost: 0}
+        - {order_line: 13, order_category: Lab, line_status: Cancelled, fulfilment_status: Cancelled, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 0, legacy_is_lost: 0}
+        - {order_line: 14, order_category: Lab, line_status: Unknown, fulfilment_status: Not applicable, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 1, legacy_is_lost: 1}
+        - {order_line: 15, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 1, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 0, legacy_is_lost: 0}
+        - {order_line: 16, order_category: Lab, line_status: Delivered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, ordered_value: -10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 1, legacy_is_lost: 1}
+        - {order_line: 17, order_category: Lab, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: 5, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
