@@ -39,3 +39,50 @@ unit_tests:
         - {je_header_id: 1, je_line_num: 1, branch_key: 100, gl_account_key: 555, period_key: 202601, is_posted: 1, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: 100}
         - {je_header_id: 1, je_line_num: 2, branch_key: 100, gl_account_key: 555, period_key: 202601, is_posted: 1, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: -100}
         - {je_header_id: 2, je_line_num: 1, branch_key: 6, gl_account_key: 555, period_key: 202601, is_posted: 0, is_opening_balance_journal: 0, is_oasis_feed: 1, je_source_label: Oasis feed, amount: 50}
+
+  - name: fact_gl_balance_monthly_densifies_and_rolls_years
+    description: >
+      Account 10 (balance sheet) is posted only in January, with an unposted credit in March: it has a row in every
+      period, and March differs between the views. Account 20 (revenue) has a January opening-balance credit, a
+      February credit and a posting in January 2027, a period not yet started: the grid extends to 2027, the
+      income-statement balance restarts at 2027 and the 2026 result appears once on branch 6's prior-year roll account.
+    model: fact_gl_balance_monthly
+    given:
+      - input: ref('hnh_fact_gl_journal_line')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toInt64(a) as gl_account_key, toInt32(p) as period_key, toUInt8(ps) as is_posted,
+                 toUInt8(ob) as is_opening_balance_journal, toFloat64(dr) as debit, toFloat64(cr) as credit
+          from values('a UInt32, p UInt32, ps UInt8, ob UInt8, dr Float64, cr Float64',
+              (10, 202601, 1, 0, 100, 0), (10, 202603, 0, 0, 0, 30),
+              (20, 202601, 1, 1, 0, 100), (20, 202602, 1, 0, 0, 50), (20, 202701, 1, 0, 0, 10))
+      - input: ref('hnh_dim_gl_account')
+        format: sql
+        rows: |
+          select toInt64(a) as gl_account_key, s as balance_side from values('a UInt32, s String', (10, 'BS'), (20, 'IS'))
+      - input: ref('hnh_dim_gl_period')
+        format: sql
+        rows: |
+          select toInt32(p) as period_key, toUInt16(y) as fiscal_year, toDate(d) as start_date
+          from values('p UInt32, y UInt16, d String', (202601, 2026, '2026-01-01'), (202602, 2026, '2026-02-01'),
+                      (202603, 2026, '2026-03-01'), (202701, 2027, '2027-01-01'))
+    expect:
+      rows:
+        - {balance_view: posted, gl_account_key: 10, period_key: 202601, period_movement: 100, period_movement_excl_opening: 100, opening_balance: 0, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 10, period_key: 202602, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 10, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 10, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 20, period_key: 202601, period_movement: -100, period_movement_excl_opening: 0, opening_balance: 0, closing_balance: -100}
+        - {balance_view: posted, gl_account_key: 20, period_key: 202602, period_movement: -50, period_movement_excl_opening: -50, opening_balance: -100, closing_balance: -150}
+        - {balance_view: posted, gl_account_key: 20, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: posted, gl_account_key: 20, period_key: 202701, period_movement: -10, period_movement_excl_opening: -10, opening_balance: 0, closing_balance: -10}
+        - {balance_view: posted, gl_account_key: 8342949216454285929, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202601, period_movement: 100, period_movement_excl_opening: 100, opening_balance: 0, closing_balance: 100}
+        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202602, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202603, period_movement: -30, period_movement_excl_opening: -30, opening_balance: 100, closing_balance: 70}
+        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 70, closing_balance: 70}
+        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202601, period_movement: -100, period_movement_excl_opening: 0, opening_balance: 0, closing_balance: -100}
+        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202602, period_movement: -50, period_movement_excl_opening: -50, opening_balance: -100, closing_balance: -150}
+        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202701, period_movement: -10, period_movement_excl_opening: -10, opening_balance: 0, closing_balance: -10}
+        - {balance_view: including_unposted, gl_account_key: 8342949216454285929, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}

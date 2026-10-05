@@ -18,3 +18,22 @@ models:
       - name: accounting_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
+
+  - name: fact_gl_balance_monthly
+    description: >
+      Code combination × period × balance view (posted, including_unposted), densified from the account's first
+      posting to the latest period with a posting or already started. Opening and closing balances stored.
+    tests:
+      - hnh_unique_combination:
+          columns: [balance_view, gl_account_key, period_key]
+    columns:
+      - name: balance_view
+        tests:
+          - accepted_values:
+              values: ['posted', 'including_unposted']
+      - name: gl_account_key
+        tests:
+          - relationships: {to: ref('hnh_dim_gl_account'), field: gl_account_key}
+      - name: period_key
+        tests:
+          - relationships: {to: ref('hnh_dim_gl_period'), field: period_key}
