@@ -22,3 +22,7 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start]
+  - name: rec_claims_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]

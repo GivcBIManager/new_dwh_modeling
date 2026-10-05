@@ -1,0 +1,44 @@
+version: 2
+
+unit_tests:
+  - name: rec_claims_monthly_ignores_cancelled_claims_and_counts_recovery_once
+    description: >
+      Invoice 1000 was submitted three times (1 rejected, 2 partially approved, 3 latest and fully approved):
+      the recovery is submission 3's approved amount only, not the sum over submissions 2 and 3. Invoice 2000's
+      latest submission is cancelled (one line adjudicated, one pended), so it adds nothing to submitted,
+      approved, rejected, adjudicated or pending. Invoice 3000 is a live pended claim. One payment has no
+      statement date and is left out of the month.
+    model: rec_claims_monthly
+    given:
+      - input: ref('fact_claim_line')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_key, toInt32(20260630) as statement_end_date_key,
+                 toFloat64(0) as legacy_submitted_amount, toFloat64(0) as legacy_approved_amount, toFloat64(0) as legacy_rejected_amount,
+                 toFloat64(cl) as claimed_amount, toUInt8(1) as is_sent, toUInt64(sn) as submission_number,
+                 toUInt8(lt) as is_latest_submission, toUInt8(cx) as is_cancelled_claim, st as adjudication_status,
+                 toNullable(toFloat64(sub)) as submitted_amount, toNullable(toFloat64(ap)) as approved_amount,
+                 toNullable(toFloat64(rj)) as rejected_amount
+          from values('cl Float64, sn UInt32, lt UInt8, cx UInt8, st String, sub Float64, ap Float64, rj Float64',
+              (100, 1, 0, 0, 'Adjudicated', 100, 0, 100),
+              (100, 2, 0, 0, 'Adjudicated', 100, 40, 60),
+              (100, 3, 1, 0, 'Adjudicated', 100, 100, 0),
+              (500, 1, 1, 1, 'Adjudicated', 500, 300, 200),
+              (70, 1, 1, 1, 'Pended', 0, 0, 0),
+              (50, 1, 1, 0, 'Pended', 0, 0, 0))
+      - input: ref('fact_claim_payment')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_key, sk as statement_end_date_key,
+                 toFloat64(amt) as payment_amount, toFloat64(ef) as early_fee, toFloat64(nf) as nphies_fee
+          from values('sk Nullable(Int32), amt Float64, ef Float64, nf Float64',
+              (20260630, 80, 1, 2), (NULL, 999, 9, 9))
+    expect:
+      format: sql
+      rows: |
+        select toUInt8(1) as branch_key, toDate('2026-06-01') as month_start,
+               toFloat64(0) as legacy_submitted, toFloat64(0) as legacy_approved, toFloat64(0) as legacy_rejected,
+               toFloat64(150) as submitted, toFloat64(100) as approved, toFloat64(0) as rejected,
+               toFloat64(100) as adjudicated_submitted, toFloat64(300) as first_pass_rejected,
+               toFloat64(600) as first_pass_adjudicated_submitted, toFloat64(100) as resubmission_recovery,
+               toFloat64(50) as pending, toFloat64(80) as remitted, toFloat64(3) as remittance_fees

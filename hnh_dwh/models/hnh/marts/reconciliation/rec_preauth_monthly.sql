@@ -16,6 +16,16 @@ select
     -- the RCM Authorization report: last response of any kind, all services as denominator
     countIf(nphies_last_status in ('APPROVED', 'NOT-REQUIRED', 'PARTIAL'))      as legacy_approved,
     countIf(nphies_last_status = 'REJECTED')                                    as legacy_rejected,
-    sumIf(approved_estimated_amount, nphies_last_status = 'APPROVED' and is_delivered = 0 and legacy_is_last_request = 1) as legacy_lost_revenue
-from {{ ref('fact_preauth_line') }}
-group by branch_key, month_start
+    sumIf(approved_estimated_amount, nphies_last_status = 'APPROVED' and is_delivered = 0 and legacy_is_last_request = 1) as legacy_lost_revenue,
+    -- rejections by the NPHIES reason category of the line's primary reason
+    countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Technical and contractual')   as rejected_technical_contractual,
+    countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Appropriateness of care')     as rejected_appropriateness,
+    countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Pharmacy Benefit Management') as rejected_pharmacy,
+    countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Duplicated Service')          as rejected_duplicated,
+    countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Fraud')                       as rejected_fraud,
+    countIf(preauth_outcome = 'Rejected' and f.nphies_reason_key = 0)                           as rejected_reason_not_given
+from {{ ref('fact_preauth_line') }} as f
+left join (select nphies_reason_key, reason_category from {{ ref('dim_nphies_reason') }}) as r
+    on r.nphies_reason_key = f.nphies_reason_key
+group by f.branch_key, month_start
+{{ hnh_settings() }}
