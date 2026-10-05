@@ -81,6 +81,9 @@ select
     toUInt8(is_in_leak_scope = 1 and fulfilment_status = 'Undelivered')          as is_lost,
     -- tolerance: insurer tier rows summing to fractions leave float noise
     toUInt8(b.has_live_charge = 1 and b.units_delivered < b.units_ordered - 0.0001) as is_partially_delivered,
+    -- Per-line fill rate capped at 1; the sum of units is distorted by ml/mg-unit lines (units_ordered in the thousands).
+    if(b.units_ordered > 0, least(b.units_delivered / b.units_ordered, 1), cast(null as Nullable(Float64))) as unit_fulfilment_ratio,
+    toUInt8(b.units_ordered > 1000)                     as is_unit_outlier,
     if(b.first_delivered_at is null or b.order_at is null, cast(null as Nullable(Int64)),
        dateDiff('minute', b.order_at, b.first_delivered_at))                     as order_to_delivery_minutes,
     -- old mv_orders_fulfillment + report: any alternative relation or a duplicated generic counted as delivered

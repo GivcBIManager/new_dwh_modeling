@@ -236,3 +236,8 @@ models:
         tests:
           - accepted_values:
               values: ['Cancelled', 'Not applicable', 'Delivered', 'Delivered by alternative', 'Delivered by substitute', 'Undelivered']
+      - name: is_unit_outlier
+        tests:
+          - accepted_values:
+              values: [0, 1]
+              quote: false
