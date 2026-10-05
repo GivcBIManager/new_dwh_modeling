@@ -33,7 +33,10 @@ models:
   - name: int_claim_payment
     description: >
       One NPHIES payment-reconciliation detail line (claim-level remittance), from the latest pull of each
-      reconciliation (the same reconciliation is pulled repeatedly, each pull is a new response_id).
+      reconciliation (the same reconciliation is pulled repeatedly, each pull is a new response_id). A reconciliation
+      is identified by its content, not its fullUrl: payment identifier, payment date and amount; without a payment
+      identifier, payment date, amount and a hash of the sorted detail claim identifiers and amounts (payers re-issue
+      a new fullUrl on every pull, and some reuse one id for different payments or for pages of one payment).
     tests:
       - hnh_unique_combination:
           columns: [branch_id, response_id, detail_index]

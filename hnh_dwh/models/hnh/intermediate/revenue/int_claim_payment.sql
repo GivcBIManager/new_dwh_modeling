@@ -1,52 +1,49 @@
 {{ config(order_by='(branch_id, reconciliation_id, detail_index)') }}
 
-with pulls as (
-    -- Only PaymentReconciliation resources are read. The same reconciliation is pulled many times
-    -- (each pull is a new response_id) and is identified by its bundle entry fullUrl (resource id, then the response itself, as fallback).
-    select
-        branch_id, response_id, responded_at,
-        coalesce(nullIf(JSONExtractString(entry, 'fullUrl'), ''), nullIf(JSONExtractString(entry, 'resource', 'id'), ''), concat('response:', toString(response_id))) as reconciliation_id
-    from (
-        select
-            branch_id, response_id, responded_at,
-            arrayJoin(arrayFilter(e -> JSONExtractString(e, 'resource', 'resourceType') = 'PaymentReconciliation',
-                                  JSONExtractArrayRaw(response_bundle, 'entry'))) as entry
-        from {{ ref('stg_oasis__pull_responses') }}
-        where response_type = 'payment-reconciliation'
-    )
+{#- A reconciliation is identified by its content, not by its fullUrl or resource id: some payers re-issue a new
+    fullUrl/id on every pull of the same payment, and others reuse one id for different payments or for the pages
+    of one payment. With a payment identifier: identifier, payment date and amount. Without one: payment date,
+    amount and a hash of the sorted detail claim identifiers and amounts. One pull holds one PaymentReconciliation. -#}
+{%- set reconciliation_identity -%}
+if(JSONExtractString(entry, 'resource', 'paymentIdentifier', 'value') != '',
+   concat('pid:', JSONExtractString(entry, 'resource', 'paymentIdentifier', 'value'),
+          '|', substring(JSONExtractString(entry, 'resource', 'paymentDate'), 1, 10),
+          '|', toString(JSONExtractFloat(entry, 'resource', 'paymentAmount', 'value'))),
+   concat('hash:', substring(JSONExtractString(entry, 'resource', 'paymentDate'), 1, 10),
+          '|', toString(JSONExtractFloat(entry, 'resource', 'paymentAmount', 'value')),
+          '|', toString(cityHash64(arraySort(arrayMap(d -> concat(JSONExtractString(d, 'request', 'identifier', 'value'), ':',
+                                                                  toString(JSONExtractFloat(d, 'amount', 'value'))),
+                                                      JSONExtractArrayRaw(entry, 'resource', 'detail')))))))
+{%- endset -%}
+
+{%- set reconciliation_entry -%}
+arrayJoin(arrayFilter(e -> JSONExtractString(e, 'resource', 'resourceType') = 'PaymentReconciliation',
+                      JSONExtractArrayRaw(response_bundle, 'entry')))
+{%- endset -%}
+
+with pull_entries as (
+    select branch_id, response_id, responded_at, {{ reconciliation_entry }} as entry
+    from {{ ref('stg_oasis__pull_responses') }}
+    where response_type = 'payment-reconciliation'
 ),
 
-latest_pull as (
-    -- The latest pull of each reconciliation (latest responded_at, then highest response_id) is the one kept.
-    select
-        branch_id, reconciliation_id,
-        argMax(response_id, tuple(ifNull(responded_at, toDateTime(0)), response_id)) as response_id
-    from pulls
+kept_pulls as (
+    -- One pass over every pull: its reconciliation identity, then the latest pull of each identity
+    -- (latest responded_at, then highest response_id) is the one kept.
+    select branch_id, argMax(response_id, tuple(ifNull(responded_at, toDateTime(0, 'Asia/Riyadh')), response_id)) as response_id
+    from (
+        select branch_id, response_id, responded_at, {{ reconciliation_identity }} as reconciliation_id
+        from pull_entries
+    )
     group by branch_id, reconciliation_id
 ),
 
-reconciliations as (
-    -- Only the responses that hold a kept pull are expanded.
+details as (
+    -- Only the kept pulls are expanded. Payer dates may be ISO datetimes with an offset: the first 10 characters
+    -- are the calendar date.
     select
         branch_id, response_id,
-        coalesce(nullIf(JSONExtractString(entry, 'fullUrl'), ''), nullIf(JSONExtractString(entry, 'resource', 'id'), ''), concat('response:', toString(response_id))) as reconciliation_id,
-        entry
-    from (
-        select
-            branch_id, response_id,
-            arrayJoin(arrayFilter(e -> JSONExtractString(e, 'resource', 'resourceType') = 'PaymentReconciliation',
-                                  JSONExtractArrayRaw(response_bundle, 'entry'))) as entry
-        from {{ ref('stg_oasis__pull_responses') }}
-        where response_type = 'payment-reconciliation'
-          and (branch_id, response_id) in (select branch_id, response_id from latest_pull)
-    )
-    where (branch_id, response_id, reconciliation_id) in (select branch_id, response_id, reconciliation_id from latest_pull)
-),
-
-details as (
-    -- Payer dates may be ISO datetimes with an offset: the first 10 characters are the calendar date.
-    select
-        branch_id, response_id, reconciliation_id,
+        {{ reconciliation_identity }}                                                            as reconciliation_id,
         toDateOrNull(substring(JSONExtractString(entry, 'resource', 'paymentDate'), 1, 10))     as payment_date,
         JSONExtractFloat(entry, 'resource', 'paymentAmount', 'value')                            as payment_amount_total,
         nullIf(JSONExtractString(entry, 'resource', 'paymentIdentifier', 'value'), '')           as payment_reference,
@@ -55,7 +52,12 @@ details as (
         -- Each detail is extracted once; no detail row carries the whole list.
         arrayJoin(arrayZip(arrayEnumerate(JSONExtractArrayRaw(entry, 'resource', 'detail')),
                            JSONExtractArrayRaw(entry, 'resource', 'detail')))                    as indexed_detail
-    from reconciliations
+    from (
+        select branch_id, response_id, {{ reconciliation_entry }} as entry
+        from {{ ref('stg_oasis__pull_responses') }}
+        where response_type = 'payment-reconciliation'
+          and (branch_id, response_id) in (select branch_id, response_id from kept_pulls)
+    )
 ),
 
 parsed as (
