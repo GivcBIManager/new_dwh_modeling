@@ -133,7 +133,9 @@ One row per Fusion employee whose worker number matches an Oasis staff id in the
 `fact_absence`: one Fusion absence entry; keys branch, employee, staff, absence type, start and end date; `absence_status`, `is_counted`, `absence_days` (unit C), `absence_hours` (unit H). `fact_absence_daily`: one row per counted entry per calendar day (unit C entries only), with branch, employee, staff, absence type and date keys, `absence_days` = 1.
 
 ### 6.6 fact_leave_balance_monthly
-One row per Fusion balance entry (person × absence plan × accrual period): branch, employee, absence plan, accrual period date; `begin_balance`, `accrued`, `used`, `end_balance` (days).
+One row per Fusion balance entry (person × absence plan × accrual period): branch, employee, absence plan, accrual period date; `begin_balance`, `accrued`, `used`, `end_balance` (days); `monthly_salary`, `daily_rate` and `leave_liability_amount` for annual-leave plans.
+
+**Leave liability (decided 2026-10-06):** `daily_rate` = `monthly_salary` ÷ 30; `leave_liability_amount` = `end_balance` × `daily_rate`. `monthly_salary` is the person's recurring monthly pay in the latest payroll month on or before the accrual period: Σ `amount` of pay categories Basic, Housing, Transport, Food, Clinical allowances and Other allowances in `fact_payroll_monthly` (overtime, leave pay, end of service and awards excluded). Null when the person has no payroll month yet (the liability is then null and monitored). Sick, unpaid and other non-annual plans carry no liability.
 
 ### 6.7 agg_staff_productivity_monthly
 **Grain:** Oasis staff (linked through the bridge) × month, months from 2026-01. **Measures:** encounters seen as treating doctor (`fact_encounter`, arrived and not cancelled), recognised revenue (`fact_charge_line.revenue_amount` by its staff key), `cost_amount` and `gross_pay` (`fact_payroll_monthly`), month-end FTE (`fact_headcount_monthly`), counted absence days (`fact_absence_daily`). Ratios are left to SSAS as sums over this table.
@@ -154,6 +156,7 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 | Cost per FTE | payroll cost ÷ average FTE | payroll and headcount facts |
 | Sick-leave rate | counted sick days ÷ (FTE × calendar days) | `fact_absence_daily`, `fact_headcount_monthly` |
 | Leave balance | Σ `end_balance` of the latest accrual period | `fact_leave_balance_monthly` |
+| Leave liability | Σ `leave_liability_amount` of the latest accrual period per person | `fact_leave_balance_monthly` |
 | Revenue per payroll SAR, visits per FTE, cost per visit | sums over `agg_staff_productivity_monthly` | `agg_staff_productivity_monthly` |
 
 ---
@@ -167,14 +170,14 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 - Unit tests: month-end assignment pick with overlapping rows and an INACTIVE gap; a transfer between branches (branch before/after); the payroll cutover including a parallel-run month; an absence spanning a month-end (daily split); a staff id present in two branches (bridge picks the employee's branch).
 - `rec_payroll_monthly` (branch × month): payroll cost and gross pay from the fact; GL payroll cost (Phase 3 `fact_gl_journal_line` with `je_source_label = 'Payroll'`, and the employee-cost FS captions from `fact_income_statement_monthly`); Oasis and Fusion side by side in parallel-run months.
 - `rec_headcount_monthly` (branch × month, 2026): Fusion headcount beside Oasis paid headcount while Oasis payroll still ran.
-- Warn monitors: unmapped pay codes; hospital employees without a bridge match; worker numbers matching several staff records; branch 8 Oasis payroll identical to branch 7; FTE values outside (0, 1.5]; absence entries of unit C with zero days.
+- Warn monitors: annual-leave balances with no monthly salary (liability null); unmapped pay codes; hospital employees without a bridge match; worker numbers matching several staff records; branch 8 Oasis payroll identical to branch 7; FTE values outside (0, 1.5]; absence entries of unit C with zero days.
 
 ---
 
 ## 9. Security and SSAS handoff
 
 - Every HR fact relates to `dim_branch`; Head Office is branch 100 in the branch role.
-- Pay is sensitive: `fact_payroll_monthly`, `agg_staff_productivity_monthly` and `fact_leave_balance_monthly` go in a separate perspective with an HR/finance role; headcount, movements and absence counts can be in the general perspective.
+- Pay is sensitive: `fact_payroll_monthly`, `agg_staff_productivity_monthly` and `fact_leave_balance_monthly` (it carries salary and liability) go in a separate perspective with an HR/finance role; headcount, movements and absence counts can be in the general perspective.
 - Headcount KPIs use the month-end snapshot; never sum `headcount` across months (use the last month or an average).
 - Payroll measures filter `is_parallel_run = 0`.
 - Turnover and headcount history start in 2026; earlier months show paid headcount only.
@@ -188,7 +191,7 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 | O-P4-1 | Review of `map_pay_category` (88 Oasis codes, 108 Fusion elements) | Payroll sign-off | Draft used; unmapped codes monitored |
 | O-P4-2 | Payroll cutover of Al-Rabwa, Khamis and Madinah | Their payroll after the move | Oasis until a cutover row is added |
 | O-P4-3 | Branch 8 Oasis payroll January–April 2026 duplicates branch 7 | Branch 8 early-2026 payroll | Counted as delivered; monitored |
-| O-P4-4 | Leave liability in SAR (needs a daily-rate rule) | Leave liability KPI | Not built |
+| O-P4-4 | Leave liability in SAR | — | Closed 2026-10-06: monthly salary ÷ 30 per day (6.6); "monthly salary" = recurring monthly pay, to be confirmed by HR |
 | O-P4-5 | Fusion FTE values are mostly empty or 0 | FTE KPIs | FTE 1 unless a value in (0, 1.5] exists |
-| O-P4-6 | Whether contingent workers count in any headcount KPI | Headcount KPIs | Excluded by default, flagged |
+| O-P4-6 | Whether contingent workers count in any headcount KPI | — | Closed 2026-10-06: excluded by default, flagged (`is_contingent`) |
 | O-P4-7 | Head Office employees have no Oasis staff record | Productivity of HO staff | Not linked |
