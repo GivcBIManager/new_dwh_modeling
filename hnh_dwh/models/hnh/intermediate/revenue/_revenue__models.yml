@@ -29,3 +29,9 @@ models:
           - accepted_values:
               values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Unknown']
               config: {severity: warn}
+
+  - name: int_claim_payment
+    description: One NPHIES payment-reconciliation detail line (claim-level remittance).
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, response_id, detail_index]
