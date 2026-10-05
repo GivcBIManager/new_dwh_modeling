@@ -542,9 +542,10 @@ unit_tests:
         - {encounter_type: "IP", source_id: 7001, care_type: "IP", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: null, service_minutes: null, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 2, is_returning: 1, booked_staff_id: "C1", purchaser_code: 200}
   - name: int_order_line_base_summarises_live_charges_once_per_delivery_line
     description: >
-      Line 1 has two delivery lines: 9001 is split between purchaser and patient (two live rows,
-      2 units each) and 9011 has one live row and one cancelled row. Units count once per delivery
-      line (2 + 1), amounts add up over live rows (60 + 40 + 25). Line 2 has only a cancelled charge.
+      Line 1 has two delivery lines: 9001 is a tier split (two live purchaser rows of 1.5 and 0.5
+      units) with a patient co-pay row of 0.3 units, and 9011 has one live purchaser row and one
+      cancelled row. Units add up over the purchaser rows of a delivery line and ignore the co-pay
+      (2 + 1), amounts add up over all live rows (60 + 40 + 10 + 25). Line 2 has only a cancelled charge.
       Line 3's order header is missing. Line 4 is an inpatient order of an episode int_episode does
       not know, with its category only on the service item. Line 5 has no own order time and a
       header before the window (excluded). Line 6 has no own order time and takes the header's.
@@ -589,11 +590,12 @@ unit_tests:
           select toUInt8(1) as branch_id, toNullable(toInt64(dl)) as delivery_line,
                  if(cf = '', cast(null as Nullable(String)), toNullable(cf)) as cancel_flag,
                  toFloat64(u) as units_delivered, toFloat64(p) as price_paid_purchaser,
-                 toNullable(toDateTime(at, 'Asia/Riyadh')) as delivered_at
-          from values('dl UInt32, cf String, u Float64, p Float64, at String',
-              (9001, '', 2, 60, '2026-06-01 09:30:00'), (9001, '', 2, 40, '2026-06-01 09:30:00'),
-              (9011, '', 1, 25, '2026-06-01 09:45:00'), (9011, 'C', 1, 99, '2026-06-01 09:20:00'),
-              (9002, 'C', 1, 50, '2026-06-01 09:40:00'))
+                 toNullable(toDateTime(at, 'Asia/Riyadh')) as delivered_at, toNullable(bt) as bill_to
+          from values('dl UInt32, cf String, u Float64, p Float64, at String, bt String',
+              (9001, '', 1.5, 60, '2026-06-01 09:30:00', '1'), (9001, '', 0.5, 40, '2026-06-01 09:30:00', '1'),
+              (9001, '', 0.3, 10, '2026-06-01 09:30:00', '3'),
+              (9011, '', 1, 25, '2026-06-01 09:45:00', '1'), (9011, 'C', 1, 99, '2026-06-01 09:20:00', '1'),
+              (9002, 'C', 1, 50, '2026-06-01 09:40:00', '1'))
       - input: ref('stg_oasis__ios_master')
         format: sql
         rows: |
@@ -617,7 +619,7 @@ unit_tests:
                  'OP' as care_type, toInt64(300) as purchaser_code
     expect:
       rows:
-        - {order_line: 1, patient_id: 100, order_at: '2026-06-01 09:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 3, has_live_charge: 1, units_delivered: 3, charged_amount: 125, first_delivered_at: '2026-06-01 09:30:00'}
+        - {order_line: 1, patient_id: 100, order_at: '2026-06-01 09:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 4, has_live_charge: 1, units_delivered: 3, charged_amount: 135, first_delivered_at: '2026-06-01 09:30:00'}
         - {order_line: 2, patient_id: 100, order_at: '2026-06-01 09:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
         - {order_line: 3, patient_id: null, order_at: '2026-06-01 09:00:00', care_type: Unknown, episode_purchaser_code: 9999, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
         - {order_line: 4, patient_id: 200, order_at: '2026-06-01 09:00:00', care_type: IP, episode_purchaser_code: 9999, product_category_code: PH, service_description_upper: PARACETAMOL 500, generic_name: PARACETAMOL, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}

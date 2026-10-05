@@ -65,3 +65,6 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, order_line]
+    columns:
+      - name: order_at
+        tests: [not_null]

@@ -34,19 +34,22 @@ with lines as (
 ),
 
 charge_lines as (
-    -- One row per delivery line that has a live charge. A charge split between purchaser and
-    -- patient puts several live rows on one delivery line, so its units are taken once (max).
+    -- One row per delivery line that has a live charge. A delivery line can carry several live
+    -- rows: insurer tier rows (bill_to '1') that each hold part of the quantity, and a patient
+    -- co-pay row (bill_to '2' or '3') that repeats a share of the same units. Units are the sum
+    -- over the purchaser rows; with no purchaser row, the largest row. Amounts add up over all live rows.
     select
         c.branch_id                         as branch_id,
         d.order_line                        as order_line,
         c.delivery_line                     as delivery_line,
         count()                             as live_rows,
-        max(c.units_delivered)              as line_units,
+        if(countIf(c.bill_to = '1') > 0, sumIf(c.units_delivered, c.bill_to = '1'),
+           max(c.units_delivered))          as line_units,
         sum(c.price_paid_purchaser)         as line_amount,
         min(c.delivered_at)                 as line_first_at
     from (
         select branch_id, assumeNotNull(delivery_line) as delivery_line, units_delivered,
-               price_paid_purchaser, delivered_at
+               price_paid_purchaser, delivered_at, bill_to
         from {{ ref('stg_oasis__charges') }}
         where cancel_flag is null and delivery_line is not null and delivered_at >= {{ first_at }}
     ) as c
