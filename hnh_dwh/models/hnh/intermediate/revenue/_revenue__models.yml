@@ -17,3 +17,15 @@ models:
         tests:
           - accepted_values:
               values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Error', 'Cancelled', 'Not sent', 'Unknown']
+
+  - name: int_nphies_adjudication
+    description: One item of one NPHIES ClaimResponse (claim or pre-authorisation) parsed from the pull-response bundle.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, response_id, item_sequence]
+    columns:
+      - name: outcome
+        tests:
+          - accepted_values:
+              values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Unknown']
+              config: {severity: warn}

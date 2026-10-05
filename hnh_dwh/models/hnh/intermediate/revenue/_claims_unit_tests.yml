@@ -1,0 +1,32 @@
+version: 2
+
+unit_tests:
+  - name: int_nphies_adjudication_parses_claim_items
+    description: >
+      One claim-response bundle with a MessageHeader, a ClaimResponse with two items and a Patient
+      resource (ignored). Item 1 is partial with two reason codes on the benefit adjudication; item 2
+      is approved. One priorauth-response with a preAuthRef and period. One payment reconciliation
+      (not an adjudication; must produce no row).
+    model: int_nphies_adjudication
+    given:
+      - input: ref('stg_oasis__pull_responses')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(9001) as response_id, toNullable(toInt64(1)) as api_trans_id,
+                 toNullable(toInt64(7001)) as about_api_trans_id, 'claim-response' as response_type,
+                 toNullable('PARTIAL') as res_status, toNullable('SUCCEEDED') as status,
+                 toNullable(toDateTime('2026-06-02 10:00:00', 'Asia/Riyadh')) as responded_at,
+                 '{"resourceType":"Bundle","entry":[{"resource":{"resourceType":"MessageHeader"}},{"resource":{"resourceType":"ClaimResponse","item":[{"itemSequence":1,"extension":[{"url":"http://nphies.sa/fhir/ksa/nphies-fs/StructureDefinition/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"partial"}]}}],"adjudication":[{"category":{"coding":[{"code":"submitted"}]},"amount":{"value":100}},{"category":{"coding":[{"code":"eligible"}]},"amount":{"value":80}},{"category":{"coding":[{"code":"benefit"}]},"reason":{"coding":[{"code":"BE-1-7"},{"code":"MN-1-1"}]},"amount":{"value":64}},{"category":{"coding":[{"code":"copay"}]},"amount":{"value":16}},{"category":{"coding":[{"code":"approved-quantity"}]},"value":2}]},{"itemSequence":2,"extension":[{"url":"x/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"approved"}]}}],"adjudication":[{"category":{"coding":[{"code":"submitted"}]},"amount":{"value":30}},{"category":{"coding":[{"code":"eligible"}]},"amount":{"value":30}},{"category":{"coding":[{"code":"benefit"}]},"amount":{"value":24}},{"category":{"coding":[{"code":"copay"}]},"amount":{"value":6}}]}]}},{"resource":{"resourceType":"Patient","name":[{"text":"MUST NOT APPEAR"}]}}]}' as response_bundle
+          union all
+          select toUInt8(1), toInt64(9101), toNullable(toInt64(2)), toNullable(toInt64(8001)), 'priorauth-response',
+                 toNullable('REJECTED'), toNullable('P'), toNullable(toDateTime('2026-06-03 09:00:00', 'Asia/Riyadh')),
+                 '{"entry":[{"resource":{"resourceType":"ClaimResponse","preAuthRef":"PA-77","preAuthPeriod":{"start":"2026-06-03","end":"2026-07-03"},"item":[{"itemSequence":1,"extension":[{"url":"x/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"rejected"}]}}],"adjudication":[{"category":{"coding":[{"code":"benefit"}]},"reason":{"coding":[{"code":"CV-1-5"}]},"amount":{"value":0}}]}]}}]}'
+          union all
+          select toUInt8(1), toInt64(9201), toNullable(toInt64(3)), toNullable(toInt64(7001)), 'payment-reconciliation',
+                 toNullable('COMPLETE'), toNullable('SUCCEEDED'), toNullable(toDateTime('2026-06-20 09:00:00', 'Asia/Riyadh')),
+                 '{"entry":[{"resource":{"resourceType":"PaymentReconciliation","detail":[]}}]}'
+    expect:
+      rows:
+        - {response_id: 9001, item_sequence: 1, response_kind: Claim, about_api_trans_id: 7001, outcome: Partially approved, submitted: 100, eligible: 80, benefit: 64, copay: 16, approved_qty: 2, primary_reason_code: BE-1-7, legacy_reason_amount: 64, preauth_reference: null}
+        - {response_id: 9001, item_sequence: 2, response_kind: Claim, about_api_trans_id: 7001, outcome: Approved, submitted: 30, eligible: 30, benefit: 24, copay: 6, approved_qty: null, primary_reason_code: null, legacy_reason_amount: null, preauth_reference: null}
+        - {response_id: 9101, item_sequence: 1, response_kind: Pre-authorisation, about_api_trans_id: 8001, outcome: Rejected, submitted: null, eligible: null, benefit: 0, copay: null, approved_qty: null, primary_reason_code: CV-1-5, legacy_reason_amount: 0, preauth_reference: PA-77}
