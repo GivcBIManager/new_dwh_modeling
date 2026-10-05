@@ -19,19 +19,37 @@ numbered as (
 ),
 
 claim_responses as (
-    -- The transaction a response answers: the pull row's own reference, else (parsed only for those rows)
-    -- the ClaimResponse request identifier, as int_nphies_adjudication does.
+    -- The transaction a response answers: the pull row's own reference, else the ClaimResponse request identifier,
+    -- as int_nphies_adjudication does. The status: the pull row's own, else (2022 pulls without one) the decision in
+    -- the ClaimResponse: its adjudication-outcome extension, then its outcome (queued, error). The bundle is parsed
+    -- only for rows missing one of the two.
     select
-        branch_id, response_id, res_status, responded_at,
+        branch_id, response_id, responded_at,
         coalesce(about_api_trans_id,
-                 if(about_api_trans_id is null,
-                    toInt64OrNull(JSONExtractString(
-                        arrayFirst(e -> JSONExtractString(e, 'resource', 'resourceType') = 'ClaimResponse',
-                                   JSONExtractArrayRaw(response_bundle, 'entry')),
-                        'resource', 'request', 'identifier', 'value')),
-                    cast(null as Nullable(Int64)))) as answered_trans_id
-    from {{ ref('stg_oasis__pull_responses') }}
-    where response_type = 'claim-response'
+                 toInt64OrNull(JSONExtractString(claim_response, 'resource', 'request', 'identifier', 'value'))) as answered_trans_id,
+        coalesce(res_status,
+                 multiIf(lower(bundle_outcome_code) in ('approved', 'partial', 'rejected', 'pended'), upper(bundle_outcome_code),
+                         lower(JSONExtractString(claim_response, 'resource', 'outcome')) = 'queued', 'QUEUED',
+                         lower(JSONExtractString(claim_response, 'resource', 'outcome')) = 'error', 'ERROR',
+                         cast(null as Nullable(String))))                                             as effective_status
+    from (
+        select
+            branch_id, response_id, about_api_trans_id, res_status, responded_at, claim_response,
+            JSONExtractString(
+                arrayFirst(x -> position(JSONExtractString(x, 'url'), 'extension-adjudication-outcome') > 0,
+                           JSONExtractArrayRaw(claim_response, 'resource', 'extension')),
+                'valueCodeableConcept', 'coding', 1, 'code')                                                  as bundle_outcome_code
+        from (
+            select
+                branch_id, response_id, about_api_trans_id, res_status, responded_at,
+                if(about_api_trans_id is null or res_status is null,
+                   arrayFirst(e -> JSONExtractString(e, 'resource', 'resourceType') = 'ClaimResponse',
+                              JSONExtractArrayRaw(response_bundle, 'entry')),
+                   '')                                                                                        as claim_response
+            from {{ ref('stg_oasis__pull_responses') }}
+            where response_type = 'claim-response'
+        )
+    )
 ),
 
 final_responses as (
@@ -39,8 +57,8 @@ final_responses as (
     select
         branch_id, answered_trans_id,
         count()                                                                                       as response_count,
-        argMax(tuple(response_id, res_status, responded_at),
-               tuple({{ hnh_is_decision_status('res_status') }},
+        argMax(tuple(response_id, effective_status, responded_at),
+               tuple({{ hnh_is_decision_status('effective_status') }},
                      ifNull(responded_at, toDateTime(0, 'Asia/Riyadh')), response_id))               as final_answer
     from claim_responses
     where answered_trans_id is not null

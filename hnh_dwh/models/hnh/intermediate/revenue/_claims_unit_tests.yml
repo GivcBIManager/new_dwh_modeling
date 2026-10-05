@@ -73,7 +73,9 @@ unit_tests:
       Invoice 500 is submitted twice (visits 1 then 2). Visit 2's transaction 7002 got PARTIAL and later
       ERROR: the final response is the PARTIAL one. Visit 3 (invoice 600) was sent but has no response.
       Visit 4 was never sent. Visit 5's response has no about_api_trans_id, so it is matched through the
-      ClaimResponse request identifier in the bundle.
+      ClaimResponse request identifier in the bundle. Visit 6's first response (a 2022-style pull) has no res_status;
+      its ClaimResponse adjudication-outcome extension says rejected, so it is a decision and wins over the later
+      ERROR pull.
     model: int_claim_submission
     given:
       - input: ref('stg_oasis__claim_visits')
@@ -89,20 +91,23 @@ unit_tests:
           from values('v UInt32, rq String, inv UInt32, t UInt32',
               (1, '2026-06-01 09:00:00', 500, 7001), (2, '2026-06-10 09:00:00', 500, 7002),
               (3, '2026-06-05 09:00:00', 600, 7003), (4, '2026-06-06 09:00:00', 700, 0),
-              (5, '2026-06-07 09:00:00', 800, 7005))
+              (5, '2026-06-07 09:00:00', 800, 7005), (6, '2026-06-08 09:00:00', 900, 7006))
       - input: ref('stg_oasis__pull_responses')
         format: sql
         rows: |
           select toUInt8(1) as branch_id, toInt64(r) as response_id,
                  if(t = 0, cast(null as Nullable(Int64)), toNullable(toInt64(t))) as about_api_trans_id,
-                 'claim-response' as response_type, toNullable(st) as res_status,
+                 'claim-response' as response_type, nullIf(st, '') as res_status,
                  toNullable(toDateTime(at, 'Asia/Riyadh')) as responded_at, bundle as response_bundle
           from values('r UInt32, t UInt32, st String, at String, bundle String',
               (9001, 7001, 'REJECTED', '2026-06-03 10:00:00', '{}'),
               (9002, 7002, 'PARTIAL',  '2026-06-12 10:00:00', '{}'),
               (9003, 7002, 'ERROR',    '2026-06-13 10:00:00', '{}'),
               (9004, 0,    'APPROVED', '2026-06-09 10:00:00',
-               '{"entry":[{"resource":{"resourceType":"ClaimResponse","request":{"identifier":{"value":"7005"}}}}]}'))
+               '{"entry":[{"resource":{"resourceType":"ClaimResponse","request":{"identifier":{"value":"7005"}}}}]}'),
+              (9005, 7006, '',         '2026-06-10 10:00:00',
+               '{"entry":[{"resource":{"resourceType":"MessageHeader"}},{"resource":{"resourceType":"ClaimResponse","outcome":"complete","extension":[{"url":"http://nphies.sa/fhir/ksa/nphies-fs/StructureDefinition/extension-batch-identifier"},{"url":"http://nphies.sa/fhir/ksa/nphies-fs/StructureDefinition/extension-adjudication-outcome","valueCodeableConcept":{"coding":[{"code":"rejected"}]}}]}}]}'),
+              (9006, 7006, 'ERROR',    '2026-06-11 10:00:00', '{}'))
     expect:
       rows:
         - {visit_id: 1, submission_number: 1, submission_count: 2, is_latest_submission: 0, is_sent: 1, final_response_id: 9001, final_status: REJECTED, response_count: 1, adjudication_status: Adjudicated}
@@ -110,3 +115,4 @@ unit_tests:
         - {visit_id: 3, submission_number: 1, submission_count: 1, is_latest_submission: 1, is_sent: 1, final_response_id: null, final_status: null, response_count: 0, adjudication_status: No response}
         - {visit_id: 4, submission_number: 1, submission_count: 1, is_latest_submission: 1, is_sent: 0, final_response_id: null, final_status: null, response_count: 0, adjudication_status: Not sent}
         - {visit_id: 5, submission_number: 1, submission_count: 1, is_latest_submission: 1, is_sent: 1, final_response_id: 9004, final_status: APPROVED, response_count: 1, adjudication_status: Adjudicated}
+        - {visit_id: 6, submission_number: 1, submission_count: 1, is_latest_submission: 1, is_sent: 1, final_response_id: 9005, final_status: REJECTED, response_count: 2, adjudication_status: Adjudicated}
