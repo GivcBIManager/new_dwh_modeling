@@ -34,13 +34,13 @@ Measured 2026-10-05 on `fusion` (ClickHouse 172.22.25.214).
 | G1 | All nine ledgers (Head Office and eight hospitals) use chart of accounts 2001. Segments: 1 entity (branch), 2 natural account, 3 specialty (324 values), 4 service location (OPD, IPD, LTC, OPD-PH, IPD-PH, ER, HHC, Telemedicine, Endoscopy, Cath, Kidney Dialysis, Academy on-site/online), 5 service group (Consultation, Lab, Medication, Radiology, Procedures, OR/Admission), 6 intercompany, 7–8 future. `dim_gl_account` has 9,500 code combinations. | One FS mapping on segment 2 serves the group; specialty and service location give department and care type. |
 | G2 | Fusion GL starts in 2026 and per branch: Ghirnata January, Abha February, Head Office April, Jazan and Muhayil June, Unaizah July, Khamis late August, Madinah September. **Alrabwah (102) has no journal lines.** Periods are defined from Jan-24. | Statements begin at go-live (F1). Alrabwah shows nothing until it posts. |
 | G3 | Each branch's go-live month has a large Spreadsheet journal, category *MRC Open Balances*, carrying the year-to-date and balance-sheet position from before go-live (e.g. revenue: Abha April 103M, Jazan June 247M, Unaizah July 234M, Khamis August 326M SAR). | Flag it; monthly trends can exclude it, year-to-date includes it. |
-| G4 | `fact_gl_journal_line`: 10.29M actual lines. Header status P (posted) 1.77M lines; U (unposted) 8.52M; small `u` (3,001) and `M` (60) groups. The integration source `300000007046804` (the Oasis feed) supplies 10.2M lines; most of its batches since May are unposted (Ghirnata revenue unposted since May, Abha since June, Jazan, Unaizah, Muhayil throughout). Khamis' and Jazan's opening-balance batches are unposted. | F4. A posted-only view would show Khamis empty and most recent revenue missing. |
+| G4 | `fact_gl_journal_line` read with `final` (the table holds unmerged versions: 10.29M rows, 9.72M distinct lines): 9,722,782 actual lines, header status P (posted) 1,766,863 and U (unposted) 7,955,919; no other statuses after `final`. The integration source `300000007046804` (the Oasis feed) supplies almost all lines; most of its batches since May are unposted (Ghirnata revenue unposted since May, Abha since June, Jazan, Unaizah, Muhayil throughout). Khamis' and Jazan's opening-balance batches are unposted. | F4. A posted-only view would show Khamis empty and most recent revenue missing. |
 | G5 | Posted journal debits equal `fusion.fact_gl_balance` period debits per ledger and period to the riyal (Ghirnata, every period including `Adj-Q2-26`). `fact_gl_balance` has no rows for Khamis and Alrabwah. | Balances can be derived from journals and reconciled to Fusion's table. |
 | G6 | Periods: monthly, plus quarterly adjustment periods (`Adj-Qn-yy`, start = end = quarter end, `adjustment_period_flag = 'Y'`), and one stray yearly period `2026` (`period_year` 1). | `dim_gl_period` keeps monthly and adjustment periods; drops the yearly one. |
 | G7 | FS mapping: Abha 205 accounts, Ghirnata 111; 77 shared, all identical; 34 Ghirnata-only. Merged 239. After sibling inference (section 4.1) 336 accounts. Share of journal value (debits + credits) on mapped accounts: Ghirnata 100%, Madinah 100%, Muhayil 100%, Abha 97.8%, Khamis 97.5%, Unaizah 97.3%, Jazan 97.0%, Head Office 62.2%. 69 posted accounts remain unmapped, 54 of them Head Office only (loans, investments, equity, CWIP). | Unmapped accounts are kept on a "Not mapped" line and monitored. |
 | G8 | The Oasis `fs_mapping` (19,400 rows, 8 branches) uses the same five FS levels, keyed by branch and Oasis sub-account (`MAIN_ACC‖SUB_ACC`); 18,931 of its keys exist in `oasis.gl_code`. Oasis and Oracle numbers are different spaces (9 coincidental overlaps, 8 on different lines). Vocabulary differs: Oasis splits revenue by care setting and has *Medical Consumables*, *Cost of Goods Sold*; Oracle splits revenue by payer and has *Cost of Medicines*. One conflicting duplicate: branch 5 code `1`. | Loaded as `default.map_oasis_fs_account` for the go-live reconciliation (section 9.3), not as a lookup for Oracle accounts. |
 | G9 | Fusion AR: 1,209 invoice lines and 211 receipts (April–September 2026, 5 business units). Insurer receivables exist only as GL balances (e.g. *Claimed A/R – Insurance Companies* 768M SAR from 120 opening lines). | F2: no insurer AR ageing from Fusion. |
-| G10 | Fusion AP: 5,899 invoices (5,545 standard, 63 credit, 291 prepayment), 1,269 suppliers, 38,338 distributions from March 2026; 1,293 payments; 5,930 schedule rows with 199M SAR remaining. Line types ITEM, ACCRUAL, IPV, TRV, PREPAY, REC_TAX, NONREC_TAX; cancelled invoices carry reversing distributions. | AP facts in section 7. Open payables exist only as a current snapshot. |
+| G10 | Fusion AP (with `final`): 5,899 invoices (5,545 standard, 63 credit, 291 prepayment), 1,269 suppliers, 37,421 distributions from March 2026; 1,293 payments; 5,930 payment-schedule rows, one per invoice (the table is keyed by `invoice_id` only), with 199M SAR remaining. Line types ITEM, ACCRUAL, IPV, TRV, PREPAY, REC_TAX, NONREC_TAX; cancelled invoices carry reversing distributions. | AP facts in section 7. Open payables exist only as a current snapshot. |
 | G11 | Revenue lines (natural accounts 411…) carry a service location on 5.03M of 5.03M integration lines; SAR 553M of revenue on 13K lines (opening and manual journals) has location `00`. | F5 with an Unallocated bucket. |
 | G12 | `default.income_statement_budget`: 576 rows, branches 1–6, FY2026, scenarios `most_likely` and `worst_case`, 48 line codes, months 1–12. Subtotals are consistent: REV_SUB = OP+IP+ER; DIS_REJECTION = INS+MOH; DIS_SETTLEMENT = REJECTION+EARLY_PAY+VOLUME; REV_NET = REV_SUB − DIS_SETTLEMENT; TOTAL_DC = Σ DC_*; TOTAL_GA = Σ GA_*; GROSS_PROFIT = REV_NET − TOTAL_DC; EBITDA = GROSS_PROFIT − TOTAL_GA + OTHER_INCOME; NET_PROFIT = EBITDA − DEPRECIATION − FINANCE_COST − ZAKAT; TOTAL_COMP_INCOME = NET_PROFIT + OCI. | Subtotals are recomputed, never summed (section 6.3). |
 | G13 | The old *Financial Statements* model reads the legacy Oasis GL (`tr_gl_distribution`, `master_gl_codes`, `fs_mapping`) on the old server, which is not in this ClickHouse. Its opening balance double counts when two years are open and is zero for closed periods; lines sort alphabetically; no budget, EBITDA or sign handling. `bsc.vw_financial` excludes other income from EBITDA and never matches ROU depreciation (`'depreciation On Rou'` against lower-cased captions). | Section 8 lists the corrections. |
@@ -57,15 +57,15 @@ models/hnh/staging/reference/    + stg_ref__fs_account, stg_ref__oasis_fs_accoun
                                    stg_ref__budget_fs_line, stg_ref__fusion_specialty_unified,
                                    stg_ref__income_statement_budget
 models/hnh/intermediate/finance/ int_gl_journal_line, int_gl_balance_monthly
-models/hnh/marts/conformed/      dim_branch (Head Office member), dim_gl_period, dim_gl_account,
-                                 dim_fs_line, dim_budget_line, dim_supplier
-models/hnh/marts/finance/        fact_gl_journal_line, fact_gl_balance_monthly, fact_income_statement_monthly,
-                                 fact_budget_monthly, fact_ap_invoice_line, fact_ap_payment, fact_ap_open_item
+models/hnh/marts/conformed/      hnh_dim_branch (Head Office member), hnh_dim_gl_period, hnh_dim_gl_account,
+                                 dim_fs_line, dim_budget_line, hnh_dim_supplier
+models/hnh/marts/finance/        hnh_fact_gl_journal_line, fact_gl_balance_monthly, fact_income_statement_monthly,
+                                 fact_budget_monthly, fact_ap_invoice_line, hnh_fact_ap_payment, fact_ap_open_item
 models/hnh/marts/reconciliation/ rec_gl_balance_monthly, rec_gl_revenue_monthly, rec_income_statement_budget
 macros/hnh/hnh_rules_finance.sql
 ```
 
-All models are full rebuilds (the journal fact is about 10.3M rows). The parent spec's portability rule ("sources only in the `_sources.yml` files") now covers three source files: Oasis, reference and Fusion.
+All models are full rebuilds (the journal fact is about 9.7M rows). Five model names exist in the receiving project's own Fusion models (`dim_gl_period`, `dim_gl_account`, `dim_supplier`, `fact_gl_journal_line`, `fact_ap_payment`), so those models carry the `hnh_` prefix and an `alias` to the gold table name, as `hnh_dim_branch` does. In the receiving project the `fusion` database is itself built by dbt, so Fusion tables are read through `hnh_fusion_source()`, which switches between `source()` and `ref()` like `hnh_oasis_source()`. The parent spec's portability rule ("sources only in the `_sources.yml` files") now covers three source files: Oasis, reference and Fusion.
 
 ---
 
@@ -122,7 +122,7 @@ One row per Fusion supplier site (`vendor_site_id`), plus Unknown: supplier numb
 ## 6. Facts
 
 ### 6.1 fact_gl_journal_line
-**Grain:** one Fusion actual journal line (`actual_flag = 'A'`), key (`je_header_id`, `je_line_num`). About 10.3M rows.
+**Grain:** one Fusion actual journal line (`actual_flag = 'A'`), key (`je_header_id`, `je_line_num`). About 9.7M rows.
 
 **Keys:** `gl_journal_line_key`; `branch_key` (from the account's segment 1; 101 → 100); `gl_account_key`; `period_key`; `accounting_date_key`; `posted_date_key` (`-1` when unposted); `intercompany_branch_key`.
 
@@ -179,7 +179,7 @@ Branches 1–6 have budgets; Ghirnata (7), Muhayil (8) and Head Office (100) hav
 **Measures:** `amount`; `days_invoice_to_payment`; `days_after_due` (payment date − due date of the paid instalment; negative = early).
 
 ### 7.3 fact_ap_open_item
-**Grain:** one invoice instalment (`invoice_id`, `payment_num`), 5,930 rows. **As-of-build snapshot** (Fusion keeps only the current remaining amount).
+**Grain:** one invoice (`invoice_id`; the source keeps one schedule row per invoice, `payment_num` is an attribute), 5,930 rows. **As-of-build snapshot** (Fusion keeps only the current remaining amount).
 
 **Keys:** `branch_key` (business unit → ledger), `supplier_key`, `invoice_date_key`, `due_date_key`.
 
@@ -267,7 +267,6 @@ The old report cannot be reproduced from this server (G13), so no `legacy_*` fie
 |---|---|---|---|
 | O-P3-1 | 69 posted accounts without an FS line (54 Head Office only); worklist `fs_account_unmapped.csv` | Statement sign-off | Not mapped line, monitored |
 | O-P3-2 | Review of the 97 inferred mappings; one is borderline: Withholding Tax Payables on the *VAT Payable* line (caption correct) | Statement sign-off | Used as inferred |
-| O-P3-3 | Meaning of header statuses `u` (3,001 lines) and `M` (60) | Unposted view | Treated as unposted |
 | O-P3-4 | Alrabwah's Fusion go-live date | Alrabwah statements | Branch shows no GL |
 | O-P3-5 | `fs_mapping` branch 5 code `1` maps to two positions | Go-live tie for branch 5 | Excluded from the tie |
 | O-P3-6 | Care type of Endoscopy, Cath and Kidney Dialysis revenue | Revenue against budget by care type | OP |
