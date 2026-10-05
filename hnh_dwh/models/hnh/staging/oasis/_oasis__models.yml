@@ -206,3 +206,15 @@ models:
         tests:
           - accepted_values:
               values: ['claim-response', 'priorauth-response', 'advanced-authorization', 'payment-reconciliation']
+  - name: stg_oasis__orders
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, master_order_no]
+  - name: stg_oasis__order_lines
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, order_line]
+  - name: stg_oasis__generics
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, generic_id]
