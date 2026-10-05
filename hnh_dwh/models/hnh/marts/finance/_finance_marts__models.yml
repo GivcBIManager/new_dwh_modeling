@@ -37,6 +37,9 @@ models:
       - name: period_key
         tests:
           - relationships: {to: ref('hnh_dim_gl_period'), field: period_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
   - name: fact_budget_monthly
     tests:
       - hnh_unique_combination:
@@ -45,6 +48,12 @@ models:
       - name: budget_line_key
         tests:
           - relationships: {to: ref('dim_budget_line'), field: budget_line_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
   - name: fact_income_statement_monthly
     tests:
       - hnh_unique_combination:
@@ -56,7 +65,9 @@ models:
       - name: branch_key
         tests:
           - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
-
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
   - name: fact_ap_invoice_line
     columns:
       - name: ap_invoice_line_key
@@ -70,6 +81,15 @@ models:
       - name: period_key
         tests:
           - relationships: {to: ref('hnh_dim_gl_period'), field: period_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: invoice_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: accounting_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
   - name: hnh_fact_ap_payment
     columns:
       - name: ap_payment_key
@@ -77,6 +97,12 @@ models:
       - name: supplier_key
         tests:
           - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: payment_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
   - name: fact_ap_open_item
     columns:
       - name: ap_open_item_key
@@ -85,3 +111,15 @@ models:
         tests:
           - accepted_values:
               values: ['Settled', 'Not due', '1-30', '31-60', '61-90', '91-180', 'Over 180']
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: invoice_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: due_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}

@@ -6,6 +6,8 @@ Run after a successful `dbt build --select tag:hnh`.
 
 Posted journal debits and credits per branch and period beside Fusion's `fact_gl_balance`, and the number of accounts whose posted closing balance differs from Fusion's (begin + debits − credits). Acceptance: all differences 0 for every period Fusion has. Khamis and Alrabwah have no rows in Fusion's balance table (Alrabwah has no journals at all).
 
+From January 2027 Fusion carries the 2026 result in the begin balance of the real retained-earnings combination, while gold keeps it on the synthetic prior-year roll account (excluded from the account comparison), so `accounts_with_closing_difference` will show the retained-earnings account(s) per branch from 2027. Before the 2027 build, compare retained earnings at branch level including the roll account.
+
 ## GL revenue against Oasis (`gold.rec_gl_revenue_monthly`)
 
 GL revenue by care type (service location; Oasis feed and manual journals, including unposted, opening-balance journals excluded) less contractual discounts, beside Oasis recognised revenue from `fact_charge_line`. `warn_gl_revenue_gap` lists closed months more than 2% apart. Most Oasis-feed batches were unposted at 2026-10-05, so compare the including-unposted GL figures. Khamis August 2026 (ratio 6.76) is explained by open item O-P3-12 in the design spec: the go-live batch is not categorised as an opening balance.
@@ -30,6 +32,8 @@ The old report reads the Oasis GL on the old server, so it is compared once per 
 | 5 Madinah | September 2026 | August 2026 |
 
 Khamis' go-live batch is not categorised MRC Open Balances (O-P3-12), so the opening-balance query returns no Khamis rows until finance re-categorises it; compare its Adjustment batch of August 2026 instead.
+
+Head Office has no counterpart in the old report's Oasis mapping (`map_oasis_fs_account` covers branches 1–8); tie it to Fusion's own opening balance only.
 
 New side, per branch and FS category (debit positive):
 

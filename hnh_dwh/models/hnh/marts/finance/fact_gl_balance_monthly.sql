@@ -53,7 +53,7 @@ filled as (
            ifNull(m.m_movement, 0) as period_movement, ifNull(m.m_movement_excl_opening, 0) as period_movement_excl_opening
     from grid as g
     left join movement as m
-        on m.balance_view = g.balance_view and m.gl_account_key = g.gl_account_key and m.period_key = g.period_key
+        on m.balance_view = g.balance_view and m.branch_key = g.branch_key and m.gl_account_key = g.gl_account_key and m.period_key = g.period_key
     left join (select gl_account_key, balance_side from {{ ref('hnh_dim_gl_account') }}) as a on a.gl_account_key = g.gl_account_key
     -- a SETTINGS clause binds to its own select only, so the left joins above carry it here, not at the end of the union
     {{ hnh_settings() }}
@@ -62,7 +62,7 @@ filled as (
 balances as (
     select *,
            sum(period_movement) over (
-               partition by balance_view, gl_account_key, if(balance_side = 'IS', fiscal_year, 0)
+               partition by balance_view, branch_key, gl_account_key, if(balance_side = 'IS', fiscal_year, 0)
                order by period_key rows between unbounded preceding and current row) as closing_balance
     from filled
 ),

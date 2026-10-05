@@ -19,7 +19,7 @@ select
     d.is_reversal                                               as is_reversal,
     toUInt8(d.po_distribution_id is not null)                   as is_po_matched,
     d.amount                                                    as amount,
-    if(ifNull(d.line_type, '') in ('ITEM', 'ACCRUAL', 'IPV', 'TRV', 'ERV', 'FREIGHT', 'MISCELLANEOUS'), d.amount, 0) as spend_amount,
+    if(ifNull(d.invoice_type_code, '') != 'PREPAYMENT' and ifNull(d.line_type, '') in ('ITEM', 'ACCRUAL', 'IPV', 'TRV', 'ERV', 'FREIGHT', 'MISCELLANEOUS'), d.amount, 0) as spend_amount,
     if(ifNull(d.line_type, '') in ('REC_TAX', 'NONREC_TAX'), d.amount, 0)                                         as tax_amount,
     if(ifNull(d.line_type, '') = 'PREPAY', d.amount, 0)                                                           as prepayment_amount,
     now()                                                       as _loaded_at

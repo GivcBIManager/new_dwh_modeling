@@ -68,24 +68,24 @@ unit_tests:
                       (202603, 2026, '2026-03-01'), (202701, 2027, '2027-01-01'))
     expect:
       rows:
-        - {balance_view: posted, gl_account_key: 10, period_key: 202601, period_movement: 100, period_movement_excl_opening: 100, opening_balance: 0, closing_balance: 100}
-        - {balance_view: posted, gl_account_key: 10, period_key: 202602, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
-        - {balance_view: posted, gl_account_key: 10, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
-        - {balance_view: posted, gl_account_key: 10, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
-        - {balance_view: posted, gl_account_key: 20, period_key: 202601, period_movement: -100, period_movement_excl_opening: 0, opening_balance: 0, closing_balance: -100}
-        - {balance_view: posted, gl_account_key: 20, period_key: 202602, period_movement: -50, period_movement_excl_opening: -50, opening_balance: -100, closing_balance: -150}
-        - {balance_view: posted, gl_account_key: 20, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
-        - {balance_view: posted, gl_account_key: 20, period_key: 202701, period_movement: -10, period_movement_excl_opening: -10, opening_balance: 0, closing_balance: -10}
-        - {balance_view: posted, gl_account_key: 8342949216454285929, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
-        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202601, period_movement: 100, period_movement_excl_opening: 100, opening_balance: 0, closing_balance: 100}
-        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202602, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
-        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202603, period_movement: -30, period_movement_excl_opening: -30, opening_balance: 100, closing_balance: 70}
-        - {balance_view: including_unposted, gl_account_key: 10, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 70, closing_balance: 70}
-        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202601, period_movement: -100, period_movement_excl_opening: 0, opening_balance: 0, closing_balance: -100}
-        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202602, period_movement: -50, period_movement_excl_opening: -50, opening_balance: -100, closing_balance: -150}
-        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
-        - {balance_view: including_unposted, gl_account_key: 20, period_key: 202701, period_movement: -10, period_movement_excl_opening: -10, opening_balance: 0, closing_balance: -10}
-        - {balance_view: including_unposted, gl_account_key: 8342949216454285929, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: posted, gl_account_key: 10, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202601, period_movement: 100, period_movement_excl_opening: 100, opening_balance: 0, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 10, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202602, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 10, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 10, fiscal_year: 2027, is_prior_year_roll: 0, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: posted, gl_account_key: 20, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202601, period_movement: -100, period_movement_excl_opening: 0, opening_balance: 0, closing_balance: -100}
+        - {balance_view: posted, gl_account_key: 20, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202602, period_movement: -50, period_movement_excl_opening: -50, opening_balance: -100, closing_balance: -150}
+        - {balance_view: posted, gl_account_key: 20, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: posted, gl_account_key: 20, fiscal_year: 2027, is_prior_year_roll: 0, period_key: 202701, period_movement: -10, period_movement_excl_opening: -10, opening_balance: 0, closing_balance: -10}
+        - {balance_view: posted, gl_account_key: 8342949216454285929, fiscal_year: 2027, is_prior_year_roll: 1, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: including_unposted, gl_account_key: 10, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202601, period_movement: 100, period_movement_excl_opening: 100, opening_balance: 0, closing_balance: 100}
+        - {balance_view: including_unposted, gl_account_key: 10, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202602, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 100, closing_balance: 100}
+        - {balance_view: including_unposted, gl_account_key: 10, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202603, period_movement: -30, period_movement_excl_opening: -30, opening_balance: 100, closing_balance: 70}
+        - {balance_view: including_unposted, gl_account_key: 10, fiscal_year: 2027, is_prior_year_roll: 0, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: 70, closing_balance: 70}
+        - {balance_view: including_unposted, gl_account_key: 20, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202601, period_movement: -100, period_movement_excl_opening: 0, opening_balance: 0, closing_balance: -100}
+        - {balance_view: including_unposted, gl_account_key: 20, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202602, period_movement: -50, period_movement_excl_opening: -50, opening_balance: -100, closing_balance: -150}
+        - {balance_view: including_unposted, gl_account_key: 20, fiscal_year: 2026, is_prior_year_roll: 0, period_key: 202603, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
+        - {balance_view: including_unposted, gl_account_key: 20, fiscal_year: 2027, is_prior_year_roll: 0, period_key: 202701, period_movement: -10, period_movement_excl_opening: -10, opening_balance: 0, closing_balance: -10}
+        - {balance_view: including_unposted, gl_account_key: 8342949216454285929, fiscal_year: 2027, is_prior_year_roll: 1, period_key: 202701, period_movement: 0, period_movement_excl_opening: 0, opening_balance: -150, closing_balance: -150}
 
   - name: fact_income_statement_monthly_matches_budget_and_subtotals
     description: >
@@ -160,7 +160,7 @@ unit_tests:
                  toNullable(toDate('2026-05-01')) as invoice_date, toNullable(toDate('2026-05-03')) as accounting_date, toFloat64(amt) as amount
           from values('d UInt32, inv UInt32, lt String, c UInt8, it String, vs UInt32, amt Float64',
               (1, 10, 'ITEM', 0, 'STANDARD', 7, 100), (2, 10, 'ITEM', 1, 'STANDARD', 7, -100), (3, 10, 'REC_TAX', 0, 'STANDARD', 7, 15),
-              (4, 11, 'PREPAY', 0, 'STANDARD', 9, -40))
+              (4, 11, 'PREPAY', 0, 'STANDARD', 9, -40), (5, 12, 'ITEM', 0, 'PREPAYMENT', 7, 300))
       - input: ref('hnh_dim_gl_account')
         format: sql
         rows: |
@@ -179,6 +179,7 @@ unit_tests:
         - {invoice_id: 10, line_type: ITEM, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: -100, tax_amount: 0, prepayment_amount: 0, is_cancelled: 1}
         - {invoice_id: 10, line_type: REC_TAX, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: 0, tax_amount: 15, prepayment_amount: 0, is_cancelled: 0}
         - {invoice_id: 11, line_type: PREPAY, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: 0, tax_amount: 0, prepayment_amount: -40, is_cancelled: 0}
+        - {invoice_id: 12, line_type: ITEM, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Prepayment, spend_amount: 0, tax_amount: 0, prepayment_amount: 0, is_cancelled: 0}
 
   - name: fact_ap_open_item_ages_open_invoices
     description: >

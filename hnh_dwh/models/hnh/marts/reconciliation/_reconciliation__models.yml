@@ -35,6 +35,22 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, period_key]
+    columns:
+      - name: debit_difference
+        tests:
+          - hnh_within_tolerance:
+              tolerance: 0.01
+              config: {severity: warn}
+      - name: credit_difference
+        tests:
+          - hnh_within_tolerance:
+              tolerance: 0.01
+              config: {severity: warn}
+      - name: accounts_with_closing_difference
+        tests:
+          - hnh_within_tolerance:
+              tolerance: 0
+              config: {severity: warn}
   - name: rec_gl_revenue_monthly
     tests:
       - hnh_unique_combination:
