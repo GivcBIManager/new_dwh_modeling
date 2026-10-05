@@ -69,3 +69,42 @@ unit_tests:
     expect:
       rows:
         - {branch_key: 1, month_start: '2026-06-01', legacy_lines: 4, legacy_lost: 1, lines: 4, lost: 1, delivered_by_alternative: 1, delivered_by_substitute: 0, excluded_package_lines: 1, scope_units_ordered: 6, scope_units_delivered: 3, avg_unit_fulfilment_ratio: 0.18755, unit_outlier_lines: 1}
+
+  - name: rec_gl_revenue_monthly_compares_gl_with_oasis
+    description: >
+      Branch 6, June 2026: GL OP revenue 1,000 less a contractual discount of 100 (net 900); an opening-balance
+      revenue line of 5,000 is excluded. Oasis recognised revenue: OP 880 and day case 20, so the difference is 0.
+    model: rec_gl_revenue_monthly
+    given:
+      - input: ref('hnh_fact_gl_journal_line')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toInt64(a) as gl_account_key, toInt32(202607) as period_key,
+                 toUInt8(ob) as is_opening_balance_journal, toFloat64(amt) as amount
+          from values('a UInt32, ob UInt8, amt Float64', (1, 0, -1000), (2, 0, 100), (1, 1, -5000))
+      - input: ref('hnh_dim_gl_account')
+        format: sql
+        rows: |
+          select toInt64(a) as gl_account_key, 'OP' as revenue_care_type, toInt64(f) as fs_line_key
+          from values('a UInt32, f UInt32', (1, 91), (2, 92))
+      - input: ref('dim_fs_line')
+        format: sql
+        rows: |
+          select toInt64(f) as fs_line_key, g as statement_group, c as fs_caption
+          from values('f UInt32, g String, c String', (91, 'Revenue', 'Revenue Cash'), (92, 'Revenue discounts', 'Revenue - Contractual Discounts'))
+      - input: ref('hnh_dim_gl_period')
+        format: sql
+        rows: |
+          select toInt32(202607) as period_key, toDate('2026-06-30') as end_date
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toInt32(20260615) as delivery_date_key, toInt8(ct) as care_type_key, toFloat64(r) as revenue_amount
+          from values('ct Int8, r Float64', (1, 880), (4, 20))
+      - input: ref('dim_care_type')
+        format: sql
+        rows: |
+          select toInt8(k) as care_type_key, c as care_type from values('k Int8, c String', (1, 'OP'), (2, 'ER'), (3, 'IP'), (4, 'DAYCASE'), (-1, 'Unknown'))
+    expect:
+      rows:
+        - {branch_key: 6, month_start: 2026-06-01, gl_revenue_op: 1000, gl_contractual_discount: 100, gl_net_revenue: 900, oasis_revenue_op: 880, oasis_revenue_daycase: 20, oasis_revenue_total: 900, difference: 0}

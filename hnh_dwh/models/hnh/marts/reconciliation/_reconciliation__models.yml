@@ -31,3 +31,21 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start]
+  - name: rec_gl_balance_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, period_key]
+  - name: rec_gl_revenue_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+  - name: rec_income_statement_budget
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, fiscal_year, scenario, budget_line_code]
+    columns:
+      - name: difference
+        tests:
+          - hnh_within_tolerance:
+              tolerance: 0.01
+              config: {severity: warn}
