@@ -37,3 +37,22 @@ models:
       - name: period_key
         tests:
           - relationships: {to: ref('hnh_dim_gl_period'), field: period_key}
+  - name: fact_budget_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, budget_line_code, scenario, month_start]
+    columns:
+      - name: budget_line_key
+        tests:
+          - relationships: {to: ref('dim_budget_line'), field: budget_line_key}
+  - name: fact_income_statement_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start, budget_line_code, revenue_care_type, statement_group]
+    columns:
+      - name: budget_line_key
+        tests:
+          - relationships: {to: ref('dim_budget_line'), field: budget_line_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
