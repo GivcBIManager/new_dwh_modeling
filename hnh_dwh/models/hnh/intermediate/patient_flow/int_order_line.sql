@@ -25,6 +25,18 @@ generics as (
     from base
     where generic_id is not null and patient_id is not null and episode_no is not null
     group by branch_id, patient_id, episode_no, generic_id
+),
+
+legacy_names as (
+    -- Old report: pharmacy lines of one episode with the same generic NAME (blank matches blank).
+    select
+        branch_id, patient_id, episode_no,
+        ifNull(generic_name, '')    as name_key,
+        count()                     as name_lines
+    from base
+    where {{ hnh_order_category('product_category_code') }} = 'Pharmacy'
+      and patient_id is not null and episode_no is not null
+    group by branch_id, patient_id, episode_no, name_key
 )
 
 select
@@ -73,7 +85,7 @@ select
        dateDiff('minute', b.order_at, b.first_delivered_at))                     as order_to_delivery_minutes,
     -- old mv_orders_fulfillment + report: any alternative relation or a duplicated generic counted as delivered
     if(b.has_live_charge = 1 or b.original_order_line is not null or ifNull(a.alternative_lines, 0) > 0
-       or (order_category = 'Pharmacy' and ifNull(gl.generic_lines, 0) > 1),
+       or (order_category = 'Pharmacy' and ifNull(ln.name_lines, 0) > 1),
        'Delivered', 'Undelivered')                                               as legacy_status,
     toUInt8(ifNull(b.line_status_code, '') not in ('P', 'Q', 'X', 'C')
             and is_excluded_package = 0 and b.care_type != 'IP')                 as legacy_in_scope,
@@ -83,6 +95,9 @@ left join alternatives as a on a.branch_id = b.branch_id and a.original_line = b
 left join generics as gl
     on gl.branch_id = b.branch_id and gl.patient_id = b.patient_id
    and gl.episode_no = b.episode_no and gl.generic_id = b.generic_id
+left join legacy_names as ln
+    on ln.branch_id = b.branch_id and ln.patient_id = b.patient_id
+   and ln.episode_no = b.episode_no and ln.name_key = ifNull(b.generic_name, '')
 left join (select distinct package_description from {{ ref('stg_ref__order_fulfilment_packages') }}) as pk
     on pk.package_description = b.service_description_upper
 {{ hnh_settings() }}

@@ -10,7 +10,7 @@ with lines as (
         l.order_line                                    as order_line,
         l.master_order_no                               as master_order_no,
         l.ios                                           as ios,
-        l.generic_id                                    as generic_id,
+        l.generic_id                                    as line_generic_id,
         l.units_ordered                                 as units_ordered,
         l.std_price                                     as std_price,
         l.line_status_code                              as line_status_code,
@@ -77,7 +77,8 @@ ios_info as (
         m.branch_id                                                     as branch_id,
         m.ios                                                           as ios,
         coalesce(m.product_category_code, si.product_category_code)     as product_category_code,
-        nullIf(upper(trimBoth(ifNull(si.description, ''))), '')         as service_description_upper
+        nullIf(upper(trimBoth(ifNull(si.description, ''))), '')         as service_description_upper,
+        m.generic_id                                                    as ios_generic_id
     from {{ ref('stg_oasis__ios_master') }} as m
     left join {{ ref('stg_oasis__service_items') }} as si
         on si.branch_id = m.branch_id and si.ios_main = m.ios_main
@@ -93,7 +94,8 @@ select
     l.orderer_staff_id                                  as orderer_staff_id,
     l.order_work_entity                                 as order_work_entity,
     l.ios                                               as ios,
-    l.generic_id                                        as generic_id,
+    -- The generic comes from the IOS master (as the old report did); the order line's own is rarely filled.
+    coalesce(ii.ios_generic_id, l.line_generic_id)      as generic_id,
     g.generic_name                                      as generic_name,
     l.order_at                                          as order_at,
     l.urgency_code                                      as urgency_code,
@@ -117,7 +119,7 @@ from lines as l
 left join line_delivery as ld on ld.branch_id = l.branch_id and ld.order_line = l.order_line
 left join ios_info as ii on ii.branch_id = l.branch_id and ii.ios = l.ios
 left join (select branch_id, generic_id, generic_name from {{ ref('stg_oasis__generics') }}) as g
-    on g.branch_id = l.branch_id and g.generic_id = l.generic_id
+    on g.branch_id = l.branch_id and g.generic_id = coalesce(ii.ios_generic_id, l.line_generic_id)
 left join (select branch_id, patient_id, episode_no, care_type, purchaser_code from {{ ref('int_episode') }}) as ep
     on ep.branch_id = l.branch_id and ep.patient_id = l.patient_id and ep.episode_no = l.episode_no
 {{ hnh_settings() }}

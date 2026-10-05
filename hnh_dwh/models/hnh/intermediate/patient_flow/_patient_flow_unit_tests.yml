@@ -549,6 +549,7 @@ unit_tests:
       Line 3's order header is missing. Line 4 is an inpatient order of an episode int_episode does
       not know, with its category only on the service item. Line 5 has no own order time and a
       header before the window (excluded). Line 6 has no own order time and takes the header's.
+      Line 4's own generic is empty; it takes generic 77 from the IOS master.
     model: int_order_line_base
     given:
       - input: ref('stg_oasis__order_lines')
@@ -565,7 +566,7 @@ unit_tests:
                  toFloat64(10) as std_price
           from values('ol UInt32, mo UInt32, ios UInt32, gen UInt32, oa String',
               (1, 10, 501, 0, '2026-06-01 09:00:00'), (2, 10, 501, 0, '2026-06-01 09:00:00'),
-              (3, 11, 501, 0, '2026-06-01 09:00:00'), (4, 12, 503, 77, '2026-06-01 09:00:00'),
+              (3, 11, 501, 0, '2026-06-01 09:00:00'), (4, 12, 503, 0, '2026-06-01 09:00:00'),
               (5, 13, 501, 0, ''), (6, 14, 501, 0, ''))
       - input: ref('stg_oasis__orders')
         format: sql
@@ -600,8 +601,9 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(1) as branch_id, toInt64(ios) as ios, toNullable(toInt64(im)) as ios_main,
-                 if(cat = '', cast(null as Nullable(String)), toNullable(cat)) as product_category_code
-          from values('ios UInt32, im UInt32, cat String', (501, 5010, 'LAB'), (503, 5030, ''))
+                 if(cat = '', cast(null as Nullable(String)), toNullable(cat)) as product_category_code,
+                 if(gen = 0, cast(null as Nullable(Int64)), toNullable(toInt64(gen))) as generic_id
+          from values('ios UInt32, im UInt32, cat String, gen UInt32', (501, 5010, 'LAB', 0), (503, 5030, '', 77))
       - input: ref('stg_oasis__service_items')
         format: sql
         rows: |
@@ -637,6 +639,9 @@ unit_tests:
       Line 13 is cancelled; line 14 has status A.
       Line 15 is generic 77 in another, inpatient episode (no substitute credit; old report
       excluded inpatient).
+      Generics carry names (77 PARACETAMOL, 88 IBUPROFEN). Lines 18 and 19 are pharmacy lines
+      without a generic or a name: no substitute, but the old report matched blank names with each
+      other (legacy Delivered). Line 20 is cancelled and replaced by charged alternative 21.
       Line 16 is a delivered-status reversal (negative units, no charge): out of leak scope, but the
       old report still counted it. Line 17 is charged 0.99999999 of 1 unit (float noise from insurer
       tier rows): not partially delivered.
@@ -650,7 +655,7 @@ unit_tests:
                  cast(null as Nullable(Int64)) as admission_no, toNullable('D1') as orderer_staff_id,
                  toNullable(toInt64(700)) as order_work_entity, toNullable(toInt64(ios)) as ios,
                  if(gen = 0, cast(null as Nullable(Int64)), toNullable(toInt64(gen))) as generic_id,
-                 cast(null as Nullable(String)) as generic_name,
+                 multiIf(gen = 77, toNullable('PARACETAMOL'), gen = 88, toNullable('IBUPROFEN'), cast(null as Nullable(String))) as generic_name,
                  toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as order_at,
                  toNullable('R') as urgency_code, cast(null as Nullable(String)) as status_reason,
                  toNullable(st) as line_status_code,
@@ -678,7 +683,11 @@ unit_tests:
               (14, 100, 1, 501, 0, 'A', 0, 1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
               (15, 200, 9, 503, 77, 'R', 0, 1, 'PH', 'PARACETAMOL 500', 'IP', 0, 0, 0, ''),
               (16, 100, 1, 501, 0, 'D', 0, -1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
-              (17, 100, 1, 501, 0, 'D', 0, 1, 'LAB', 'CBC', 'OP', 2, 0.99999999, 10, '2026-06-01 09:05:00'))
+              (17, 100, 1, 501, 0, 'D', 0, 1, 'LAB', 'CBC', 'OP', 2, 0.99999999, 10, '2026-06-01 09:05:00'),
+              (18, 100, 1, 507, 0, 'R', 0, 1, 'PH', 'UNKNOWN DRUG', 'OP', 0, 0, 0, ''),
+              (19, 100, 1, 507, 0, 'R', 0, 1, 'PH', 'UNKNOWN DRUG', 'OP', 0, 0, 0, ''),
+              (20, 100, 1, 501, 0, 'C', 0, 1, 'LAB', 'CBC', 'OP', 0, 0, 0, ''),
+              (21, 100, 1, 501, 0, 'D', 20, 1, 'LAB', 'CBC', 'OP', 1, 1, 50, '2026-06-01 09:10:00'))
       - input: ref('stg_ref__order_fulfilment_packages')
         format: sql
         rows: |
@@ -702,3 +711,7 @@ unit_tests:
         - {order_line: 15, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 1, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 0, legacy_is_lost: 0}
         - {order_line: 16, order_category: Lab, line_status: Delivered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, ordered_value: -10, order_to_delivery_minutes: null, legacy_status: Undelivered, legacy_in_scope: 1, legacy_is_lost: 1}
         - {order_line: 17, order_category: Lab, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: 5, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 18, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 19, order_category: Pharmacy, line_status: Ordered, fulfilment_status: Undelivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 1, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
+        - {order_line: 20, order_category: Lab, line_status: Cancelled, fulfilment_status: Cancelled, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 0, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: null, legacy_status: Delivered, legacy_in_scope: 0, legacy_is_lost: 0}
+        - {order_line: 21, order_category: Lab, line_status: Delivered, fulfilment_status: Delivered, is_excluded_package: 0, is_inpatient: 0, is_in_leak_scope: 1, is_lost: 0, is_partially_delivered: 0, ordered_value: 10, order_to_delivery_minutes: 10, legacy_status: Delivered, legacy_in_scope: 1, legacy_is_lost: 0}
