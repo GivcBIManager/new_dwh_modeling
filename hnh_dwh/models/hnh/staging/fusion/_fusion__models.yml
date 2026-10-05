@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: stg_fusion__gl_journal_lines
+    tests:
+      - hnh_unique_combination:
+          columns: [je_header_id, je_line_num]
+  - name: stg_fusion__gl_accounts
+    columns:
+      - name: code_combination_id
+        tests: [unique, not_null]
+  - name: stg_fusion__coa_segment_values
+    tests:
+      - hnh_unique_combination:
+          columns: [segment_column_name, segment_value]
+  - name: stg_fusion__gl_periods
+    columns:
+      - name: period_name
+        tests: [unique, not_null]
+  - name: stg_fusion__gl_balances
+    tests:
+      - hnh_unique_combination:
+          columns: [code_combination_id, period_name]
+  - name: stg_fusion__ap_invoice_distributions
+    columns:
+      - name: invoice_distribution_id
+        tests: [unique, not_null]
+  - name: stg_fusion__ap_payments
+    columns:
+      - name: invoice_payment_id
+        tests: [unique, not_null]
+  - name: stg_fusion__ap_payment_schedules
+    columns:
+      - name: invoice_id
+        tests: [unique, not_null]
+      - name: currency_code
+        tests:
+          - accepted_values:
+              values: ['SAR']
+              config: {severity: warn}
+  - name: stg_fusion__suppliers
+    tests:
+      - hnh_unique_combination:
+          columns: [vendor_id, vendor_site_id]
+  - name: stg_fusion__business_units
+    columns:
+      - name: business_unit_id
+        tests: [unique, not_null]

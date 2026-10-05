@@ -1,0 +1,20 @@
+version: 2
+
+sources:
+  - name: fusion
+    schema: fusion
+    description: >
+      Oracle Fusion star (dim_, fact_), ReplacingMergeTree on last_update_date. In the receiving project these are dbt
+      models of the same names (set var hnh_fusion_as_ref: true). last_update_date is the Fusion record time, not a load
+      time, so no freshness is declared.
+    tables:
+      - name: fact_gl_journal_line
+      - name: dim_gl_account
+      - name: dim_coa_segment_value
+      - name: dim_gl_period
+      - name: fact_gl_balance
+      - name: fact_ap_invoice_distribution
+      - name: fact_ap_payment
+      - name: fact_ap_payment_schedule
+      - name: dim_supplier
+      - name: dim_business_unit
