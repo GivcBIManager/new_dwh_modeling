@@ -540,3 +540,85 @@ unit_tests:
         - {encounter_type: "OP", source_id: 5, care_type: "OP", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: null, service_minutes: 25, booking_lead_days: null, visit_type: "Free follow-up", prior_encounters_4m: 1, is_returning: 1, booked_staff_id: "D2", purchaser_code: 200}
         - {encounter_type: "ER", source_id: 9001, care_type: "ER", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: 30, service_minutes: 150, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 2, is_returning: 1, booked_staff_id: "E9", purchaser_code: 9999}
         - {encounter_type: "IP", source_id: 7001, care_type: "IP", is_arrived: 1, is_cancelled: 0, is_no_show: 0, wait_minutes: null, service_minutes: null, booking_lead_days: null, visit_type: "Paid visit", prior_encounters_4m: 2, is_returning: 1, booked_staff_id: "C1", purchaser_code: 200}
+  - name: int_order_line_base_summarises_live_charges_once_per_delivery_line
+    description: >
+      Line 1 has two delivery lines: 9001 is split between purchaser and patient (two live rows,
+      2 units each) and 9011 has one live row and one cancelled row. Units count once per delivery
+      line (2 + 1), amounts add up over live rows (60 + 40 + 25). Line 2 has only a cancelled charge.
+      Line 3's order header is missing. Line 4 is an inpatient order of an episode int_episode does
+      not know, with its category only on the service item. Line 5 has no own order time and a
+      header before the window (excluded). Line 6 has no own order time and takes the header's.
+    model: int_order_line_base
+    given:
+      - input: ref('stg_oasis__order_lines')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(ol) as order_line, toNullable(toInt64(mo)) as master_order_no,
+                 toNullable(toInt64(ios)) as ios,
+                 if(gen = 0, cast(null as Nullable(Int64)), toNullable(toInt64(gen))) as generic_id,
+                 toFloat64(1) as units_ordered, toFloat64(0) as units_given, toFloat64(0) as units_scheduled,
+                 toFloat64(0) as units_completed, toNullable('R') as line_status_code,
+                 cast(null as Nullable(String)) as status_reason, cast(null as Nullable(Int64)) as original_order_line,
+                 toNullable('R') as urgent_flag, toNullable(toInt64(700)) as order_work_entity,
+                 if(oa = '', cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime(oa, 'Asia/Riyadh'))) as line_ordered_at,
+                 toFloat64(10) as std_price
+          from values('ol UInt32, mo UInt32, ios UInt32, gen UInt32, oa String',
+              (1, 10, 501, 0, '2026-06-01 09:00:00'), (2, 10, 501, 0, '2026-06-01 09:00:00'),
+              (3, 11, 501, 0, '2026-06-01 09:00:00'), (4, 12, 503, 77, '2026-06-01 09:00:00'),
+              (5, 13, 501, 0, ''), (6, 14, 501, 0, ''))
+      - input: ref('stg_oasis__orders')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(mo) as master_order_no, toNullable(toInt64(pat)) as patient_id,
+                 toNullable(toInt64(ep)) as episode_no, cast(null as Nullable(Int64)) as admission_no,
+                 toNullable('D1') as orderer_staff_id, toNullable(toDateTime(oa, 'Asia/Riyadh')) as ordered_at,
+                 toNullable('R') as order_status, toNullable(att) as attendance_type,
+                 cast(null as Nullable(Int64)) as service_dept
+          from values('mo UInt32, pat UInt32, ep UInt32, oa String, att String',
+              (10, 100, 1, '2026-06-01 08:55:00', 'O'), (12, 200, 9, '2026-06-01 08:55:00', 'I'),
+              (13, 100, 1, '2021-12-31 10:00:00', 'O'), (14, 100, 1, '2026-06-02 08:00:00', 'O'))
+      - input: ref('stg_oasis__delivery_lines')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(dl) as delivery_line, cast(null as Nullable(Int64)) as master_delivery_no,
+                 toNullable(toInt64(ol)) as order_line
+          from values('dl UInt32, ol UInt32', (9001, 1), (9011, 1), (9002, 2))
+      - input: ref('stg_oasis__charges')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toNullable(toInt64(dl)) as delivery_line,
+                 if(cf = '', cast(null as Nullable(String)), toNullable(cf)) as cancel_flag,
+                 toFloat64(u) as units_delivered, toFloat64(p) as price_paid_purchaser,
+                 toNullable(toDateTime(at, 'Asia/Riyadh')) as delivered_at
+          from values('dl UInt32, cf String, u Float64, p Float64, at String',
+              (9001, '', 2, 60, '2026-06-01 09:30:00'), (9001, '', 2, 40, '2026-06-01 09:30:00'),
+              (9011, '', 1, 25, '2026-06-01 09:45:00'), (9011, 'C', 1, 99, '2026-06-01 09:20:00'),
+              (9002, 'C', 1, 50, '2026-06-01 09:40:00'))
+      - input: ref('stg_oasis__ios_master')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(ios) as ios, toNullable(toInt64(im)) as ios_main,
+                 if(cat = '', cast(null as Nullable(String)), toNullable(cat)) as product_category_code
+          from values('ios UInt32, im UInt32, cat String', (501, 5010, 'LAB'), (503, 5030, ''))
+      - input: ref('stg_oasis__service_items')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(im) as ios_main, toNullable(d) as description,
+                 toNullable(cat) as product_category_code
+          from values('im UInt32, d String, cat String', (5010, 'cbc ', 'LAB'), (5030, 'Paracetamol 500', 'PH'))
+      - input: ref('stg_oasis__generics')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(77) as generic_id, toNullable('PARACETAMOL') as generic_name
+      - input: ref('int_episode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100) as patient_id, toInt64(1) as episode_no,
+                 'OP' as care_type, toInt64(300) as purchaser_code
+    expect:
+      rows:
+        - {order_line: 1, patient_id: 100, order_at: '2026-06-01 09:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 3, has_live_charge: 1, units_delivered: 3, charged_amount: 125, first_delivered_at: '2026-06-01 09:30:00'}
+        - {order_line: 2, patient_id: 100, order_at: '2026-06-01 09:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
+        - {order_line: 3, patient_id: null, order_at: '2026-06-01 09:00:00', care_type: Unknown, episode_purchaser_code: 9999, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
+        - {order_line: 4, patient_id: 200, order_at: '2026-06-01 09:00:00', care_type: IP, episode_purchaser_code: 9999, product_category_code: PH, service_description_upper: PARACETAMOL 500, generic_name: PARACETAMOL, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
+        - {order_line: 6, patient_id: 100, order_at: '2026-06-02 08:00:00', care_type: OP, episode_purchaser_code: 300, product_category_code: LAB, service_description_upper: CBC, generic_name: null, live_charge_count: 0, has_live_charge: 0, units_delivered: 0, charged_amount: 0, first_delivered_at: null}
