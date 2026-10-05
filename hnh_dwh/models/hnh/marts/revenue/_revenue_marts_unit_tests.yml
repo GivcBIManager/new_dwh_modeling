@@ -168,7 +168,9 @@ unit_tests:
                  outcome as preauth_outcome, toNullable(st) as nphies_final_status, toNullable(st) as nphies_first_status,
                  toNullable(flag) as authorised_flag, toUInt64(1) as request_send_count,
                  toNullable(toFloat64(2)) as requested_qty, toNullable(toFloat64(2)) as approved_qty,
-                 toNullable(toFloat64(200)) as estimated_amount
+                 toNullable(toFloat64(200)) as estimated_amount,
+                 cast(null as Nullable(String)) as primary_reason_code, cast(null as Nullable(Date)) as preauth_valid_from,
+                 cast(null as Nullable(Date)) as preauth_valid_to
           from values('line String, ios UInt32, outcome String, st String, flag String',
               ('A1', 500, 'Approved', 'APPROVED', 'Y'), ('A2', 600, 'Rejected', 'REJECTED', 'R'))
       - input: ref('int_episode')
@@ -199,10 +201,14 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(-1) as payer_key
+      - input: ref('dim_nphies_reason')
+        format: sql
+        rows: |
+          select toInt64(-1) as nphies_reason_key
     expect:
       rows:
-        - {line_natural_id: A1, is_delivered: 0, is_approved_not_delivered: 1, is_delivered_not_approved: 0, approved_estimated_amount: 200, is_approved: 1, has_final_response: 1, care_type_key: 1}
-        - {line_natural_id: A2, is_delivered: 1, is_approved_not_delivered: 0, is_delivered_not_approved: 1, approved_estimated_amount: 200, is_approved: 0, has_final_response: 1, care_type_key: 1}
+        - {line_natural_id: A1, is_delivered: 0, is_approved_not_delivered: 1, is_delivered_not_approved: 0, approved_estimated_amount: 200, is_approved: 1, has_final_response: 1, care_type_key: 1, nphies_reason_key: 0}
+        - {line_natural_id: A2, is_delivered: 1, is_approved_not_delivered: 0, is_delivered_not_approved: 1, approved_estimated_amount: 200, is_approved: 0, has_final_response: 1, care_type_key: 1, nphies_reason_key: 0}
 
   - name: fact_cash_receipt_keeps_patient_receipts_only
     description: >

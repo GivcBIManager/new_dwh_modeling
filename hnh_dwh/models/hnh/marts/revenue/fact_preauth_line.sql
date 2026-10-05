@@ -69,6 +69,9 @@ select
     dateDiff('minute', k.requested_at, k.final_responded_at)                    as total_turnaround_minutes_raw,
     -- old report: first sent to the last response of any kind
     dateDiff('minute', k.first_sent_at, k.last_responded_at)                    as legacy_sent_to_response_minutes,
+    if(k.primary_reason_code is null, toInt64(0), ifNull(dnr.nphies_reason_key, toInt64(-1))) as nphies_reason_key,
+    {{ hnh_date_key_in_range('k.preauth_valid_from') }}        as preauth_valid_from_date_key,
+    {{ hnh_date_key_in_range('k.preauth_valid_to') }}          as preauth_valid_to_date_key,
     k.* except (branch_id, patient_id, episode_no, ios, requesting_staff_id, purchaser_code,
                 request_date_key, preauth_line_key, episode_key, patient_key_raw, service_key_raw,
                 staff_key_raw, care_type, nphies_first_outcome, payer_purchaser_code, nphies_outcome),
@@ -81,4 +84,6 @@ left join (select staff_key from {{ ref('dim_staff') }}) as ds on ds.staff_key =
 left join (select service_key from {{ ref('dim_service') }}) as dsv on dsv.service_key = k.service_key_raw
 left join (select payer_key from {{ ref('dim_payer') }}) as dpy
     on dpy.payer_key = {{ hnh_surrogate_key(['k.branch_id', 'k.payer_purchaser_code']) }}
+left join (select nphies_reason_key from {{ ref('dim_nphies_reason') }}) as dnr
+    on dnr.nphies_reason_key = {{ hnh_surrogate_key(['k.primary_reason_code']) }}
 {{ hnh_settings() }}

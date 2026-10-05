@@ -146,6 +146,32 @@ response_summary as (
     )
 ),
 
+payer_adjudication as (
+    -- The payer's parsed pre-authorisation answer for the line: latest decision, else latest of any kind.
+    select
+        branch_id, line_natural_id,
+        tupleElement(pa, 1) as primary_reason_code,
+        tupleElement(pa, 2) as reason_codes,
+        tupleElement(pa, 3) as payer_eligible_amount,
+        tupleElement(pa, 4) as payer_approved_amount,
+        tupleElement(pa, 5) as preauth_reference,
+        tupleElement(pa, 6) as preauth_valid_from,
+        tupleElement(pa, 7) as preauth_valid_to
+    from (
+        select
+            s.branch_id as branch_id, s.line_natural_id as line_natural_id,
+            argMax(tuple(a.primary_reason_code, a.reason_codes, a.eligible, a.benefit,
+                         a.preauth_reference, a.preauth_valid_from, a.preauth_valid_to),
+                   tuple(toUInt8(a.outcome in ('Approved', 'Partially approved', 'Not required', 'Rejected')),
+                         ifNull(a.responded_at, toDateTime(0, 'Asia/Riyadh')), a.response_id)) as pa
+        from sent_items as s
+        inner join (select * from {{ ref('int_nphies_adjudication') }} where response_kind = 'Pre-authorisation') as a
+            on a.branch_id = s.branch_id and a.about_api_trans_id = s.api_trans_id
+           and toString(a.item_sequence) = s.item_no
+        group by s.branch_id, s.line_natural_id
+    )
+),
+
 all_lines as (
     select
         ol.branch_id                                     as branch_id,
@@ -239,8 +265,17 @@ select
     toUInt8(ifNull(l.request_no, 0) = max(ifNull(l.request_no, 0))
             over (partition by l.branch_id, l.patient_id, l.episode_no, l.ios))  as is_latest_request_for_service,
     toUInt8(ifNull(l.request_no, 0) = max(ifNull(l.request_no, 0))
-            over (partition by l.branch_id, l.patient_id, l.episode_no))         as legacy_is_last_request
+            over (partition by l.branch_id, l.patient_id, l.episode_no))         as legacy_is_last_request,
+    pa.primary_reason_code                               as primary_reason_code,
+    ifNull(pa.reason_codes, cast([] as Array(String)))   as reason_codes,
+    pa.payer_eligible_amount                             as payer_eligible_amount,
+    pa.payer_approved_amount                             as payer_approved_amount,
+    pa.preauth_reference                                 as preauth_reference,
+    pa.preauth_valid_from                                as preauth_valid_from,
+    pa.preauth_valid_to                                  as preauth_valid_to
 from all_lines as l
 left join response_summary as rs
     on rs.branch_id = l.branch_id and rs.line_natural_id = l.line_natural_id
+left join payer_adjudication as pa
+    on pa.branch_id = l.branch_id and pa.line_natural_id = l.line_natural_id
 {{ hnh_settings() }}

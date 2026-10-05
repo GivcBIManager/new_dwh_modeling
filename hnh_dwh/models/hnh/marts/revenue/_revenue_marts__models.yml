@@ -149,6 +149,9 @@ models:
       - name: preauth_outcome_key
         tests:
           - relationships: {to: ref('dim_preauth_outcome'), field: preauth_outcome_key}
+      - name: nphies_reason_key
+        tests:
+          - relationships: {to: ref('dim_nphies_reason'), field: nphies_reason_key}
   - name: fact_claim_line
     description: One NPHIES claim service line per submission, with the final adjudication of that submission. Default KPIs use is_latest_submission = 1.
     columns:
