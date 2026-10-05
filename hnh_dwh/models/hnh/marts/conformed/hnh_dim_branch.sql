@@ -30,5 +30,14 @@ select
     null, null, null,
     toUInt64((select count() from {{ ref('dim_bed') }} where is_currently_available = 1 and bed_key != -1))
 
+union all
+
+select
+    toUInt8(100), 'Head Office', 'Riyadh', toInt32(0), toInt32(0),
+    toNullable(toInt64({{ var('hnh_head_office_fusion_branch_code') }})),
+    toNullable(toInt64({{ var('hnh_head_office_ledger_id') }})),
+    null,
+    toUInt64(0)
+
 )
 {{ hnh_settings() }}

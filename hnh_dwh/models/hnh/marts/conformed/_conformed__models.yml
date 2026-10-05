@@ -173,3 +173,13 @@ models:
     columns:
       - name: nphies_reason_key
         tests: [unique, not_null]
+  - name: hnh_dim_gl_period
+    columns:
+      - name: period_key
+        tests: [unique, not_null]
+      - name: period_name
+        tests: [unique, not_null]
+  - name: hnh_dim_supplier
+    columns:
+      - name: supplier_key
+        tests: [unique, not_null]

@@ -31,7 +31,11 @@ admins as (
     select distinct u.user_name as user_name, b.branch_id as branch_key,
            u.unified_specialty as unified_specialty, toUInt8(1) as is_admin
     from users_clean as u
-    cross join {{ ref('stg_ref__branch') }} as b
+    cross join (
+        select branch_id from {{ ref('stg_ref__branch') }}
+        union all
+        select toUInt8(100)              -- Head Office (Phase 3): admins only, unless a source row grants it
+    ) as b
     where u.is_admin = 1
 ),
 
