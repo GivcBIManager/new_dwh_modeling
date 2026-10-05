@@ -29,6 +29,8 @@ The old report reads the Oasis GL on the old server, so it is compared once per 
 | 2 Khamis | August 2026 | July 2026 |
 | 5 Madinah | September 2026 | August 2026 |
 
+Khamis' go-live batch is not categorised MRC Open Balances (O-P3-12), so the opening-balance query returns no Khamis rows until finance re-categorises it; compare its Adjustment batch of August 2026 instead.
+
 New side, per branch and FS category (debit positive):
 
 ```sql
@@ -47,7 +49,7 @@ Old side: in the old Financial Statements model, filter the branch and the month
 
 | Monitor | Rows | Note |
 |---|---|---|
-| warn_unmapped_fs_accounts | 52 | Posted accounts on a Not mapped line; worklist `static_mappings/fs_account_unmapped.csv` (O-P3-1) |
+| warn_unmapped_fs_accounts | 52 | Posted accounts on a Not mapped line; worklist `static_mappings/fs_account_unmapped.csv` (O-P3-1); rows are branch × natural account with posted lines; the 69 accounts of O-P3-1 count accounts with any posting, posted or not, across branches |
 | warn_unposted_gl_batches | 31 | Branch-periods with unposted batches |
 | warn_unbalanced_journals | 19 | 19 unposted headers at 2026-10-05 |
 | warn_intercompany_mismatch | 20 | |

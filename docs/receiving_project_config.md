@@ -132,7 +132,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about 24 warnings (23 of the 26 `warn_*` monitors return rows, plus the warn-severity relationship `fact_claim_line.invoice_key` to `fact_invoice`; 24 at the order-fulfilment build of 2026-10-05, PASS=517 WARN=24 ERROR=0 in about 12 minutes).
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` (Phase 3 full build of 2026-10-05: PASS=642 WARN=31 ERROR=0 in about 12 minutes). The WARN count is the `warn_*` monitors and warn-severity tests that return data findings (Phase 1–3), so a few more or fewer is normal; only ERROR > 0 is a failure.
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.
