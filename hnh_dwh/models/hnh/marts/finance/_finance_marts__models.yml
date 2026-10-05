@@ -56,3 +56,32 @@ models:
       - name: branch_key
         tests:
           - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+
+  - name: fact_ap_invoice_line
+    columns:
+      - name: ap_invoice_line_key
+        tests: [unique, not_null]
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: gl_account_key
+        tests:
+          - relationships: {to: ref('hnh_dim_gl_account'), field: gl_account_key}
+      - name: period_key
+        tests:
+          - relationships: {to: ref('hnh_dim_gl_period'), field: period_key}
+  - name: hnh_fact_ap_payment
+    columns:
+      - name: ap_payment_key
+        tests: [unique, not_null]
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+  - name: fact_ap_open_item
+    columns:
+      - name: ap_open_item_key
+        tests: [unique, not_null]
+      - name: ageing_bucket
+        tests:
+          - accepted_values:
+              values: ['Settled', 'Not due', '1-30', '31-60', '61-90', '91-180', 'Over 180']

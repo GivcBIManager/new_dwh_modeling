@@ -142,3 +142,106 @@ unit_tests:
         - {budget_line_code: EBITDA, revenue_care_type: All, actual_posted: 950, actual_including_unposted: 650, budget_most_likely: 600}
         - {budget_line_code: NET_PROFIT, revenue_care_type: All, actual_posted: 950, actual_including_unposted: 650, budget_most_likely: 600}
         - {budget_line_code: TOTAL_COMP_INCOME, revenue_care_type: All, actual_posted: 950, actual_including_unposted: 650, budget_most_likely: 600}
+
+  - name: fact_ap_invoice_line_splits_spend_and_tax
+    description: >
+      Invoice 10: an item line of 100, its cancelling reversal of -100 and a recoverable tax line of 15 (spend nets
+      to zero, tax stays). Invoice 11: a prepayment application of -40. The supplier site 9 is unknown (-1).
+    model: fact_ap_invoice_line
+    given:
+      - input: ref('stg_fusion__ap_invoice_distributions')
+        format: sql
+        rows: |
+          select toInt64(d) as invoice_distribution_id, toNullable(toInt64(inv)) as invoice_id, toNullable(toString(inv)) as invoice_num,
+                 toNullable(lt) as line_type, cast(null as Nullable(Int64)) as po_distribution_id, toUInt8(1) as is_posted,
+                 toUInt8(c) as is_cancelled, toUInt8(c) as is_reversal, toNullable(it) as invoice_type_code,
+                 toNullable(toInt64(5)) as vendor_id, toNullable(toInt64(vs)) as vendor_site_id,
+                 toNullable(toInt64(300000005003384)) as ledger_id, toNullable(toInt64(10)) as code_combination_id,
+                 toNullable(toDate('2026-05-01')) as invoice_date, toNullable(toDate('2026-05-03')) as accounting_date, toFloat64(amt) as amount
+          from values('d UInt32, inv UInt32, lt String, c UInt8, it String, vs UInt32, amt Float64',
+              (1, 10, 'ITEM', 0, 'STANDARD', 7, 100), (2, 10, 'ITEM', 1, 'STANDARD', 7, -100), (3, 10, 'REC_TAX', 0, 'STANDARD', 7, 15),
+              (4, 11, 'PREPAY', 0, 'STANDARD', 9, -40))
+      - input: ref('hnh_dim_gl_account')
+        format: sql
+        rows: |
+          select toInt64(555) as gl_account_key, toNullable(toInt64(10)) as code_combination_id
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toNullable(toInt64(300000005003384)) as fusion_ledger_id
+      - input: ref('hnh_dim_supplier')
+        format: sql
+        rows: |
+          select toInt64(8962314910422976638) as supplier_key  -- hnh_surrogate_key of vendor 5, site 7
+    expect:
+      rows:
+        - {invoice_id: 10, line_type: ITEM, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: 100, tax_amount: 0, prepayment_amount: 0, is_cancelled: 0}
+        - {invoice_id: 10, line_type: ITEM, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: -100, tax_amount: 0, prepayment_amount: 0, is_cancelled: 1}
+        - {invoice_id: 10, line_type: REC_TAX, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: 0, tax_amount: 15, prepayment_amount: 0, is_cancelled: 0}
+        - {invoice_id: 11, line_type: PREPAY, branch_key: 6, gl_account_key: 555, period_key: 202606, invoice_type: Standard, spend_amount: 0, tax_amount: 0, prepayment_amount: -40, is_cancelled: 0}
+
+  - name: fact_ap_open_item_ages_open_invoices
+    description: >
+      Invoice 1 is 45 days past due (31-60). Invoice 2 is paid (Settled, 0 days). Invoice 3 is due in 10 days
+      (Not due). Invoice 4 is cancelled (Settled). Dates are relative to today, as the snapshot is.
+    model: fact_ap_open_item
+    given:
+      - input: ref('stg_fusion__ap_payment_schedules')
+        format: sql
+        rows: |
+          select toInt64(inv) as invoice_id, toNullable(toInt64(1)) as payment_num, toNullable(toInt64(5)) as vendor_id,
+                 toNullable(toInt64(7)) as vendor_site_id, toNullable(toString(inv)) as invoice_num, toNullable('STANDARD') as invoice_type_code,
+                 toNullable('APPROVED') as approval_status, toNullable(ps) as payment_status_flag, toUInt8(0) as is_on_hold,
+                 toNullable(today() - 60) as invoice_date, if(cx = 1, toNullable(today() - 5), cast(null as Nullable(Date))) as cancelled_date,
+                 toNullable(toInt64(300000005006010)) as business_unit_id, toNullable(today() + toIntervalDay(due)) as due_date,
+                 toNullable('SAR') as currency_code, toFloat64(100) as gross_amount, toFloat64(rem) as amount_remaining
+          from values('inv UInt32, ps String, cx UInt8, due Int32, rem Float64',
+              (1, 'N', 0, -45, 100), (2, 'Y', 0, -45, 0), (3, 'N', 0, 10, 50), (4, 'N', 1, -45, 100))
+      - input: ref('stg_fusion__business_units')
+        format: sql
+        rows: |
+          select toInt64(300000005006010) as business_unit_id, toNullable(toInt64(300000005003384)) as primary_ledger_id
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toNullable(toInt64(300000005003384)) as fusion_ledger_id
+      - input: ref('hnh_dim_supplier')
+        format: sql
+        rows: |
+          select toInt64(8962314910422976638) as supplier_key  -- hnh_surrogate_key of vendor 5, site 7
+    expect:
+      rows:
+        - {invoice_id: 1, branch_key: 6, ageing_bucket: 31-60, days_overdue: 45, payment_status: Unpaid, is_cancelled: 0}
+        - {invoice_id: 2, branch_key: 6, ageing_bucket: Settled, days_overdue: 0, payment_status: Paid, is_cancelled: 0}
+        - {invoice_id: 3, branch_key: 6, ageing_bucket: Not due, days_overdue: 0, payment_status: Unpaid, is_cancelled: 0}
+        - {invoice_id: 4, branch_key: 6, ageing_bucket: Settled, days_overdue: 0, payment_status: Unpaid, is_cancelled: 1}
+
+  - name: hnh_fact_ap_payment_measures_days
+    description: Paid on 2026-06-10 an invoice of 2026-05-01 due on 2026-06-01 (40 days, 9 days late). A voided payment is flagged.
+    model: hnh_fact_ap_payment
+    given:
+      - input: ref('stg_fusion__ap_payments')
+        format: sql
+        rows: |
+          select toInt64(p) as invoice_payment_id, toNullable(toInt64(1)) as invoice_id, toNullable(toInt64(1)) as payment_num,
+                 toNullable(toInt64(9001)) as check_number, toNullable('CHECK') as payment_method, toNullable(st) as payment_status,
+                 toUInt8(1) as is_posted, toNullable(toInt64(5)) as vendor_id, toNullable(toInt64(7)) as vendor_site_id,
+                 toNullable(toInt64(300000005003384)) as ledger_id, toNullable(toInt64(44)) as bank_account_id,
+                 toNullable(toDate('2026-06-10')) as payment_date, toFloat64(250) as amount
+          from values('p UInt32, st String', (1, 'NEGOTIABLE'), (2, 'VOIDED'))
+      - input: ref('stg_fusion__ap_payment_schedules')
+        format: sql
+        rows: |
+          select toInt64(1) as invoice_id, toNullable(toDate('2026-05-01')) as invoice_date, toNullable(toDate('2026-06-01')) as due_date
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toNullable(toInt64(300000005003384)) as fusion_ledger_id
+      - input: ref('hnh_dim_supplier')
+        format: sql
+        rows: |
+          select toInt64(8962314910422976638) as supplier_key  -- hnh_surrogate_key of vendor 5, site 7
+    expect:
+      rows:
+        - {invoice_payment_id: 1, branch_key: 6, is_voided: 0, days_invoice_to_payment: 40, days_after_due: 9}
+        - {invoice_payment_id: 2, branch_key: 6, is_voided: 1, days_invoice_to_payment: 40, days_after_due: 9}
