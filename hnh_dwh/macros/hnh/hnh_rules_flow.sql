@@ -42,3 +42,34 @@ multiIf(
 toInt8(multiIf({{ expr }} = 'Surgery', 1, {{ expr }} = 'Cesarean', 2, {{ expr }} = 'Cath Lab', 3,
                {{ expr }} = 'Endoscopy', 4, {{ expr }} = 'L&D', 5, -1))
 {%- endmacro %}
+
+{# Oasis order line status. P, Q and X are pending/queued/excluded states the old report left out;
+   anything else unrecognised (e.g. A) is Unknown and stays out of leak scope. #}
+{% macro hnh_order_line_status(status_code) -%}
+multiIf({{ status_code }} = 'D', 'Delivered',
+        {{ status_code }} in ('R', 'O'), 'Ordered',
+        {{ status_code }} = 'C', 'Cancelled',
+        {{ status_code }} in ('P', 'Q', 'X'), 'Not applicable',
+        'Unknown')
+{%- endmacro %}
+
+{# Category of an ordered product, as the old Order Fulfillment report grouped it. #}
+{% macro hnh_order_category(product_category_code) -%}
+multiIf(ifNull({{ product_category_code }}, '') = 'PK', 'Package',
+        ifNull({{ product_category_code }}, '') = 'LAB', 'Lab',
+        ifNull({{ product_category_code }}, '') = 'RAD', 'Radiology',
+        ifNull({{ product_category_code }}, '') = 'CON', 'Consultation',
+        {{ hnh_is_medication(product_category_code, "cast(null as Nullable(String))") }} = 1, 'Pharmacy',
+        'Others')
+{%- endmacro %}
+
+{# Fulfilment of an order line: its own live charge first, then a charged alternative, then a
+   charged same-generic substitute in the same episode (pharmacy). #}
+{% macro hnh_order_fulfilment_status(line_status, has_live_charge, has_charged_alternative, has_charged_substitute) -%}
+multiIf({{ line_status }} = 'Cancelled', 'Cancelled',
+        {{ line_status }} in ('Not applicable', 'Unknown'), 'Not applicable',
+        {{ has_live_charge }} = 1, 'Delivered',
+        {{ has_charged_alternative }} = 1, 'Delivered by alternative',
+        {{ has_charged_substitute }} = 1, 'Delivered by substitute',
+        'Undelivered')
+{%- endmacro %}
