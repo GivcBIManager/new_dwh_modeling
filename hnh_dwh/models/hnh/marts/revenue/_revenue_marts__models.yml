@@ -180,6 +180,11 @@ models:
         tests:
           - relationships: {to: ref('dim_nphies_reason'), field: nphies_reason_key}
       - name: invoice_key
+        description: >
+          Key of the fact_invoice row with the same branch and invoice number as claim_invoice_no, -1 when none.
+          Claim invoice numbers are partly a different number space from the AR invoices (about 25K claim invoices
+          are absent from AR and about 22K match only another branch's numbers), so the warn test below reports
+          those lines; it does not mean the invoice is outside the invoice window. Use for drill-through or SQL only.
         tests:
           - relationships:
               to: ref('fact_invoice')

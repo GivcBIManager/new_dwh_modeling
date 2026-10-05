@@ -19,9 +19,18 @@ Run after a successful `dbt build --select tag:hnh`. Choose one closed month wit
 2. Compare its Approved Services and Rejected Services with `legacy_approved` and `legacy_rejected`. Acceptance: within 0.5%. Lost Revenue (`legacy_lost_revenue`) is not expected to match, because the new model counts a delivery only on or after the request.
 3. The new `approved`, `rejected` and `lost_revenue` differ by design (final response, sent-line denominator, latest request per service). The approval and rejection rates are `approved_final` and `rejected_final` over `final_responses`.
 
+## Claims (`gold.rec_claims_monthly`)
+
+1. Export the claims model's Submitted Claims Amount, Approved Amount and Rejections for a closed month, and the same month from `bsc.vw_rcm`.
+2. Compare with `legacy_submitted`, `legacy_approved`, `legacy_rejected`. Acceptance: within 0.5% per branch.
+3. Explain the gap to `submitted`, `approved`, `rejected` with the corrections in the Phase 2B spec, section 8.
+4. Check `warn_claims_without_response` first: months with many unanswered claims are not comparable until the pull-response load is complete (open item O-P2B-1).
+
 ## Monitors at first build (2026-10-04)
 
 Full build of `tag:hnh` after the final-review fixes: PASS=424 WARN=13 ERROR=0, 8 min 32 s. Rows is the number of rows the monitor returned (its grouping is in the Note column).
+
+The five claims monitors come from the Phase 2B full build of `tag:hnh` on 2026-10-05: PASS=475 WARN=19 ERROR=0, 14 min 28 s (`int_nphies_adjudication` 187 s). That build's other new warning is the warn-severity relationship test `fact_claim_line.invoice_key` to `fact_invoice` (1,182,965 lines): claim invoice numbers are partly a different number space from the AR invoices, so it is not the invoice window.
 
 | Monitor | Rows | Note |
 |---|---|---|
@@ -33,6 +42,11 @@ Full build of `tag:hnh` after the final-review fixes: PASS=424 WARN=13 ERROR=0, 
 | warn_op_billing_mismatch | 160 | Branch and invoice-month groups: 2 to 10 episodes a month from January to June 2026, then the July to September 2026 surge (finding 1) |
 | warn_excluded_receipt_accounts | 84 | Branch and account-prefix groups of payer and contract receipts left out of `fact_cash_receipt` (23,096 documents, 4.84 billion SAR; finding 6) |
 | warn_unresolved_charge_encounter | 5 | Branch and care-type groups above 2% unresolved over the last 90 days: branches 7 and 8 (finding 2); branch 2 is about 1.5% since August |
+| warn_claims_without_response | 310 | Branch and statement-month groups of sent, non-cancelled latest-submission claim lines with no NPHIES answer (current month excluded; branches 6 and 8 have pull-response gaps, O-P2B-9) |
+| warn_unknown_nphies_reason | 309 | Branch and reason-code groups of claim lines whose reason code is not in `dim_nphies_reason`; mostly legacy `N-DC-0xx` codes (O-P2B-8) |
+| warn_unmatched_claim_response_items | 5 | Branches with claim-response items that match no claim line of the visit that sent the transaction |
+| warn_unmatched_claim_payments | 7 | Branches with remittance lines whose transaction matches no claim visit |
+| warn_advance_authorisations | 200 | Branch and month groups of payer-initiated advance authorisations, counted from the staged pull responses (not parsed; O-P2B-3) |
 
 The build's other warnings come from Phase 1 monitors and `warn_unexpected_charge_cancel_flag` (3 groups, the 14 `I`/`F` rows of finding 4).
 
