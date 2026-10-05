@@ -29,7 +29,9 @@ remittance as (
         branch_key,
         toStartOfMonth(YYYYMMDDToDate(toUInt32(assumeNotNull(statement_end_date_key))))          as month_start,
         sum(payment_amount)                                                                       as remitted,
-        sum(early_fee + nphies_fee)                                                               as remittance_fees
+        -- signed as received: payment_amount = payment component + early fee + nphies fee
+        sum(early_fee)                                                                            as remitted_early_fee,
+        sum(nphies_fee)                                                                           as remitted_nphies_fee
     from {{ ref('fact_claim_payment') }}
     where statement_end_date_key is not null
     group by branch_key, month_start
@@ -50,7 +52,8 @@ select
     c.resubmission_recovery             as resubmission_recovery,
     c.pending                           as pending,
     ifNull(r.remitted, 0)               as remitted,
-    ifNull(r.remittance_fees, 0)        as remittance_fees
+    ifNull(r.remitted_early_fee, 0)     as remitted_early_fee,
+    ifNull(r.remitted_nphies_fee, 0)    as remitted_nphies_fee
 from claims as c
 left join remittance as r on r.branch_key = c.branch_key and r.month_start = c.month_start
 {{ hnh_settings() }}

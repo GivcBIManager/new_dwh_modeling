@@ -23,7 +23,8 @@ select
     countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Pharmacy Benefit Management') as rejected_pharmacy,
     countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Duplicated Service')          as rejected_duplicated,
     countIf(preauth_outcome = 'Rejected' and r.reason_category = 'Fraud')                       as rejected_fraud,
-    countIf(preauth_outcome = 'Rejected' and f.nphies_reason_key = 0)                           as rejected_reason_not_given
+    countIf(preauth_outcome = 'Rejected' and f.nphies_reason_key = 0)                           as rejected_reason_not_given,
+    countIf(preauth_outcome = 'Rejected' and f.nphies_reason_key = -1)                          as rejected_reason_unknown
 from {{ ref('fact_preauth_line') }} as f
 left join (select nphies_reason_key, reason_category from {{ ref('dim_nphies_reason') }}) as r
     on r.nphies_reason_key = f.nphies_reason_key

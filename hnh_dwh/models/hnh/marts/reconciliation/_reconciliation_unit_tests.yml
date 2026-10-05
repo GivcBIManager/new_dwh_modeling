@@ -7,7 +7,7 @@ unit_tests:
       the recovery is submission 3's approved amount only, not the sum over submissions 2 and 3. Invoice 2000's
       latest submission is cancelled (one line adjudicated, one pended), so it adds nothing to submitted,
       approved, rejected, adjudicated or pending. Invoice 3000 is a live pended claim. One payment has no
-      statement date and is left out of the month.
+      statement date and is left out of the month. Early and nphies fees are summed with their sign.
     model: rec_claims_monthly
     given:
       - input: ref('fact_claim_line')
@@ -32,7 +32,7 @@ unit_tests:
           select toUInt8(1) as branch_key, sk as statement_end_date_key,
                  toFloat64(amt) as payment_amount, toFloat64(ef) as early_fee, toFloat64(nf) as nphies_fee
           from values('sk Nullable(Int32), amt Float64, ef Float64, nf Float64',
-              (20260630, 80, 1, 2), (NULL, 999, 9, 9))
+              (20260630, 80, 5, -2), (20260630, 20, -1, 3), (NULL, 999, 9, 9))
     expect:
       format: sql
       rows: |
@@ -41,4 +41,4 @@ unit_tests:
                toFloat64(150) as submitted, toFloat64(100) as approved, toFloat64(0) as rejected,
                toFloat64(100) as adjudicated_submitted, toFloat64(300) as first_pass_rejected,
                toFloat64(600) as first_pass_adjudicated_submitted, toFloat64(100) as resubmission_recovery,
-               toFloat64(50) as pending, toFloat64(80) as remitted, toFloat64(3) as remittance_fees
+               toFloat64(50) as pending, toFloat64(100) as remitted, toFloat64(4) as remitted_early_fee, toFloat64(1) as remitted_nphies_fee
