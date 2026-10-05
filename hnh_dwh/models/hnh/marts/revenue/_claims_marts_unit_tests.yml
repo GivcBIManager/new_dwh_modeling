@@ -113,7 +113,7 @@ unit_tests:
       - input: ref('int_claim_payment')
         format: sql
         rows: |
-          select toUInt8(b) as branch_id, toInt64(r) as response_id, toUInt64(1) as detail_index,
+          select toUInt8(b) as branch_id, toInt64(r) as response_id, concat('urn:rec:', toString(r)) as reconciliation_id, toUInt64(1) as detail_index,
                  if(t = 0, cast(null as Nullable(Int64)), toNullable(toInt64(t))) as claim_api_trans_id,
                  toNullable('PCR') as payer_claim_response_id, dt as detail_type, toNullable(ref) as payment_reference,
                  toNullable(toDate('2026-07-01')) as payment_date,
@@ -147,6 +147,6 @@ unit_tests:
               (-1), (1045677814304990889), (2553637903548178439))
     expect:
       rows:
-        - {payment_reference: REF-LINKED, visit_id: 20, claim_api_trans_id: 777, patient_key: 4713611487329175983, payer_key: 2553637903548178439, statement_end_date_key: 20260630, days_to_payment: 21}
-        - {payment_reference: REF-ADVANCE, visit_id: null, claim_api_trans_id: null, patient_key: -1, payer_key: -1, statement_end_date_key: null, days_to_payment: null}
-        - {payment_reference: REF-OTHER-BRANCH, visit_id: null, claim_api_trans_id: 777, patient_key: -1, payer_key: -1, statement_end_date_key: null, days_to_payment: null}
+        - {payment_reference: REF-LINKED, reconciliation_id: 'urn:rec:1', visit_id: 20, claim_api_trans_id: 777, patient_key: 4713611487329175983, payer_key: 2553637903548178439, statement_end_date_key: 20260630, days_to_payment: 21}
+        - {payment_reference: REF-ADVANCE, reconciliation_id: 'urn:rec:2', visit_id: null, claim_api_trans_id: null, patient_key: -1, payer_key: -1, statement_end_date_key: null, days_to_payment: null}
+        - {payment_reference: REF-OTHER-BRANCH, reconciliation_id: 'urn:rec:3', visit_id: null, claim_api_trans_id: 777, patient_key: -1, payer_key: -1, statement_end_date_key: null, days_to_payment: null}

@@ -30,7 +30,7 @@ claims as (
 )
 
 select
-    {{ hnh_surrogate_key(['p.branch_id', 'p.response_id', 'p.detail_index']) }}              as claim_payment_key,
+    {{ hnh_surrogate_key(['p.branch_id', 'p.reconciliation_id', 'p.detail_index']) }}              as claim_payment_key,
     p.branch_id                                                                             as branch_key,
     toInt32(toYYYYMMDD(assumeNotNull(p.payment_date)))                                      as payment_date_key,
     {{ hnh_date_key_in_range('c.statement_end_at') }}                                       as statement_end_date_key,
@@ -41,6 +41,7 @@ select
     c.visit_id                                                                              as visit_id,
     p.claim_api_trans_id                                                                    as claim_api_trans_id,
     p.payer_claim_response_id                                                               as payer_claim_response_id,
+    p.reconciliation_id                                                                     as reconciliation_id,
     p.detail_type                                                                           as detail_type,
     p.payment_reference                                                                     as payment_reference,
     p.period_start                                                                          as period_start,

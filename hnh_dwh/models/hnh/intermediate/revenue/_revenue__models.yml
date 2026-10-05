@@ -31,10 +31,14 @@ models:
               config: {severity: warn}
 
   - name: int_claim_payment
-    description: One NPHIES payment-reconciliation detail line (claim-level remittance).
+    description: >
+      One NPHIES payment-reconciliation detail line (claim-level remittance), from the latest pull of each
+      reconciliation (the same reconciliation is pulled repeatedly, each pull is a new response_id).
     tests:
       - hnh_unique_combination:
           columns: [branch_id, response_id, detail_index]
+      - hnh_unique_combination:
+          columns: [branch_id, reconciliation_id, detail_index]
 
   - name: int_claim_submission
     description: One claim submission (claim visit) with its submission number and final NPHIES claim response.
