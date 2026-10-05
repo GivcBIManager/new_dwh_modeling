@@ -194,3 +194,19 @@ models:
         tests:
           - accepted_values:
               values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Unknown', 'Not adjudicated']
+
+  - name: fact_claim_payment
+    description: One NPHIES remittance line (claim level). Non-NPHIES payers and AR ageing are Phase 3.
+    columns:
+      - name: claim_payment_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: payment_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
