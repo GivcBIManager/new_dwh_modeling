@@ -66,7 +66,8 @@ adjudicated as (
 keyed as (
     select
         d.*,
-        coalesce(d.response_reason_code, d.notes_reason_code)                                as primary_reason_code,
+        if(d.has_adjudication = 1, d.response_reason_code, cast(null as Nullable(String)))   as gated_response_reason_code,
+        coalesce(gated_response_reason_code, d.notes_reason_code)                            as primary_reason_code,
         {{ hnh_surrogate_key(['d.branch_id', 'd.visit_id', 'd.sequence_no']) }}             as claim_line_key,
         {{ hnh_surrogate_key(['d.branch_id', 'd.patient_id', 'd.episode_no']) }}             as episode_key,
         {{ hnh_surrogate_key(['d.branch_id', 'd.claim_invoice_no']) }}                       as invoice_key,
@@ -108,10 +109,10 @@ select
             'Not adjudicated')                                              as item_outcome,
     if(k.has_adjudication = 1, k.response_reason_codes, cast([] as Array(String))) as reason_codes,
     k.primary_reason_code                                                   as primary_reason_code,
-    multiIf(k.response_reason_code is not null, 'NPHIES response',
+    multiIf(k.gated_response_reason_code is not null, 'NPHIES response',
             k.notes_reason_code is not null, 'Claim notes', 'Not given')    as reason_source,
     k.net_amount                                                            as claimed_amount,
-    if(k.has_adjudication = 1, k.response_submitted, null)                  as submitted_amount,
+    if(k.has_adjudication = 1, ifNull(k.response_submitted, k.net_amount), null) as submitted_amount,
     if(k.has_adjudication = 1, k.response_eligible, null)                   as eligible_amount,
     if(k.has_adjudication = 1, ifNull(k.response_benefit, 0), null)         as approved_amount,
     if(k.has_adjudication = 1, k.response_copay, null)                      as copay_amount,
@@ -119,8 +120,14 @@ select
     if(k.has_adjudication = 1, k.response_patient_share, null)              as patient_share_amount,
     if(k.has_adjudication = 1, k.response_tax, null)                        as tax_amount,
     if(k.has_adjudication = 1, k.response_approved_qty, null)               as approved_qty,
+    -- payers omit eligible on approved items and send eligible = submitted on rejected ones, so go by outcome
     if(k.has_adjudication = 1,
-       greatest(ifNull(k.response_submitted, k.net_amount) - ifNull(k.response_eligible, 0), 0), null) as rejected_amount,
+       multiIf(k.response_outcome = 'Rejected', ifNull(k.response_submitted, k.net_amount),
+               k.response_outcome = 'Approved', 0,
+               greatest(ifNull(k.response_submitted, k.net_amount)
+                        - coalesce(nullIf(k.response_eligible, 0),
+                                   ifNull(k.response_benefit, 0) + coalesce(k.response_patient_share, k.response_copay, 0)), 0)),
+       null)                                                                as rejected_amount,
     -- old claims model and bsc.vw_rcm
     k.net_amount                                                            as legacy_submitted_amount,
     multiIf(ifNull(k.line_outcome, '') = 'REJECTED', 0,

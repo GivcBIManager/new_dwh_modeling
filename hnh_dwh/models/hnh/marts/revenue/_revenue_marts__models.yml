@@ -186,3 +186,11 @@ models:
         tests:
           - accepted_values:
               values: ['Not sent', 'No response', 'Adjudicated', 'Pended', 'Error']
+      - name: reason_source
+        tests:
+          - accepted_values:
+              values: ['NPHIES response', 'Claim notes', 'Not given']
+      - name: item_outcome
+        tests:
+          - accepted_values:
+              values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Unknown', 'Not adjudicated']
