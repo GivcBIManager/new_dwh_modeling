@@ -65,7 +65,7 @@ All models are full rebuilds. The JSON parse runs over ~4.3M bundles of the pars
 |---|---|---|
 | `stg_oasis__claim_visits` | `claim_visit_detail` | One claim submission. Keys and dates (`visit_id`, `request_date`, `visit_date`, `stat_end_date`, `creation_date`), `claim_invoice_no`, `stat_invoice_no`, `patient_id`, `episode_no`, `purchaser_code`, `contract_no`, `claim_type`, `doctor_code`, `doctor_license`, `provider_department_code`, `api_trans_id`, `status`, `res_status`, `submit_claim_outcome`, `canceled`, `cancel_date`, totals. Patient names, identity numbers, mobile, passport, membership and policy-holder fields are not staged. |
 | `stg_oasis__claim_services` | `claim_service_detail` | One claim line: `visit_id`, `sequence_no`, `service_id`, `invoice_number`, `ios`, `service_code`, `qty`, `line_claimed_amount`, `line_item_discount`, `net_amount`, `co_pay`, `co_insurance`, `net_vat_amount`, `patient_vat_amount`, `net_with_vat`, `outcome`, `approved_qunatity` (as `approved_qty_text`), `pre_auth_id`, `package_id`, `notes`. |
-| `stg_oasis__pull_responses` | `api_pull_response_details` | `response_id`, `api_trans_id`, `about_api_trans_id`, `response_type`, `res_status`, `status`, `responded_at`, `response_bundle` (`ifNull(…,'{}')`). Filtered to the parsed types: claim-response, priorauth-response, advanced-authorization, payment-reconciliation. |
+| `stg_oasis__pull_responses` | `api_pull_response_details` | `response_id`, `api_trans_id`, `about_api_trans_id`, `response_type`, `res_status`, `status`, `responded_at`, `response_bundle` (`ifNull(…,'{}')`). Filtered to the types used: claim-response, priorauth-response and payment-reconciliation (parsed) and advanced-authorization (monitored only). |
 
 Uniqueness tests: visits on (branch, visit_id); services on (branch, visit_id, sequence_no); pull responses on (branch, response_id).
 
@@ -94,13 +94,13 @@ Parse path: `JSONExtractArrayRaw(bundle, 'entry')` → resource where `resourceT
 
 ### 6.2 int_claim_payment
 
-**Grain:** one detail of one PaymentReconciliation — `(branch_id, reconciliation_id, detail_index)`. The payer re-sends the same reconciliation on every pull (up to about 1,848 times; 3.01bn loaded against 0.64bn distinct), so only the latest pull of each reconciliation is kept (latest `responded_at`, then `response_id`). `reconciliation_id` is the entry `fullUrl`, else the resource `id`. The detail identifier is an attribute.
+**Grain:** one detail of one PaymentReconciliation — `(branch_id, reconciliation_id, detail_index)`. The payer re-sends the same reconciliation on every pull (up to about 1,848 times; 3.01bn of payment details loaded against 0.63bn distinct), so only the latest pull of each reconciliation is kept (latest `responded_at`, then `response_id`). `reconciliation_id` is the reconciliation's content, not its `fullUrl` or resource `id`: some payers (Tawuniya, Al Rajhi) issue a new `fullUrl` and `id` on every pull of the same payment, Bupa reuses one numeric id for different payments, and one TPA sends a payment in pages of 50 details under one id. With a `paymentIdentifier`: `'pid:' || paymentIdentifier.value || '|' || paymentDate (first 10 characters) || '|' || paymentAmount.value`; without one: `'hash:' || paymentDate || '|' || paymentAmount.value || '|' || cityHash64(sorted detail request identifier ':' amount)`. No two pulls under one identity carry different details (checked on the 2026-10-05 data). One pull holds one PaymentReconciliation. The detail identifier is an attribute.
 
 **Columns:** `reconciliation_id`, `claim_api_trans_id` (detail `request.identifier.value`, as Int64), `payer_claim_response_id`, `detail_type`, `detail_date`, `amount`, `payment_component`, `early_fee`, `nphies_fee`, and from the reconciliation `payment_date`, `payment_amount_total`, `period_start`, `period_end`, `payment_reference`.
 
 ### 6.3 int_claim_submission
 
-**Grain:** one claim visit. `submission_number` = rank of the visit within `(branch_id, claim_invoice_no)` by `request_date`, then `visit_id`; `is_latest_submission` (the last submission of the invoice, whether cancelled or not; KPIs also filter `is_cancelled_claim = 0`); `is_sent` (`api_trans_id` present); the final claim response for the visit's transaction, matched on `about_api_trans_id`, else on the ClaimResponse `request.identifier` (latest by `responded_at`, then `response_id`, among decision statuses; else latest of any status) with its `response_id`, `final_status`, `responded_at`, `response_count`.
+**Grain:** one claim visit. `submission_number` = rank of the visit within `(branch_id, claim_invoice_no)` by `request_date`, then `visit_id`; `is_latest_submission` (the last submission of the invoice, whether cancelled or not; KPIs also filter `is_cancelled_claim = 0`); `is_sent` (`api_trans_id` present); the final claim response for the visit's transaction, matched on `about_api_trans_id`, else on the ClaimResponse `request.identifier` (latest by `responded_at`, then `response_id`, among decision statuses; else latest of any status) with its `response_id`, `final_status`, `responded_at`, `response_count`. The status of a response is its `res_status`; when that is null (early-2022 pulls), the decision in the ClaimResponse: its adjudication-outcome extension (approved, partial, rejected, pended, in upper case), else its `outcome` (queued → QUEUED, error → ERROR). The bundle is parsed only for those rows.
 
 ---
 
@@ -125,13 +125,15 @@ Key `hnh_surrogate_key([reason_code])` (group-wide; codes are national). From `s
 | `submitted_amount`, `eligible_amount`, `approved_amount` (benefit), `copay_amount`, `deductible_amount`, `patient_share_amount`, `tax_amount`, `approved_qty` | final response item; null unless `adjudication_status = 'Adjudicated'`. `submitted_amount` falls back to `claimed_amount` when the response omits it, so the rejection-rate numerator and denominator cover the same lines. |
 | `rejected_amount` | when adjudicated, by outcome: Rejected: `submitted_amount` (or `claimed_amount`); Approved: 0; otherwise (partial) `submitted − coalesce(nullIf(eligible, 0), benefit + patient share/copay)`, floored at 0; null when not adjudicated. Payers omit `eligible` on approved items and send `eligible = submitted` on rejected ones, so `submitted − eligible` is not usable. |
 
+A Rejected line keeps the payer's benefit in `approved_amount` when the payer sends one (9,635 lines, about 123K SAR in total): the amount is reported as received and the line still counts as rejected in full.
+
 Response reasons (`reason_codes`, `primary_reason_code`, `nphies_reason_key`, `reason_source`) apply only to adjudicated lines; the claim-line notes reason still applies to the others.
 
 **Legacy fields:** `legacy_submitted_amount` (`net_amount`, every line); `legacy_approved_amount` (`multiIf(outcome='REJECTED',0, outcome='PARTIAL', benefit of the reason-bearing adjudication or 0, net_amount)`); `legacy_rejected_amount` (`greatest(net_amount - legacy_approved_amount, 0)`).
 
 ### 7.3 fact_claim_payment
 
-**Grain:** one row of `int_claim_payment` with `payment_date >= history_start_date`.
+**Grain:** one row of `int_claim_payment` with `payment_date` in the fact window (from `history_start_date` to the end of the year after next). 213 details (about 144K SAR) carry payer payment dates in 2078 and 2115 and are dropped.
 
 **Keys:** `claim_payment_key` (branch, `reconciliation_id`, `detail_index`); `branch_key`; `payment_date_key`; the claim visit's patient, episode, payer and `invoice_key`; `claim_api_trans_id` and `visit_id` as attributes (`-1`/null when the transaction matches no claim visit).
 
@@ -157,7 +159,7 @@ Matched to `int_nphies_adjudication` (pre-authorisation kind) on the line's fina
 | Rejections by reason | Rejected by `dim_nphies_reason` category and code | `fact_claim_line` |
 | Remitted | Σ `payment_amount` | `fact_claim_payment` |
 | Payment fees | Σ `early_fee` and Σ `nphies_fee`, reported as two signed columns (`remitted_early_fee`, `remitted_nphies_fee`), never netted: the early fee is a payer component that adds to the paid amount (positive in 2024–25, negative in 2026; meaning to be confirmed by finance) | `fact_claim_payment` |
-| Days to payment | Average and median `days_to_payment`, by payer | `fact_claim_payment` |
+| Days to payment | Median `days_to_payment` per payment month, by payer (bulk back-settlements in 2025-05 and 2026-04 skew averages and yearly figures) | `fact_claim_payment` |
 | Pre-auth rejections by reason | Rejected pre-auth lines by `nphies_reason_key` | `fact_preauth_line` |
 
 ### Corrections relative to the old logic
@@ -178,9 +180,9 @@ Matched to `int_nphies_adjudication` (pre-authorisation kind) on the line's fina
 - Uniqueness and not-null on every grain key; relationships from every fact key to its dimension, including `invoice_key` to `fact_invoice` (warn: claim invoice numbers are partly a different number space from the AR invoices; about 25K claim invoices are absent from AR and about 22K match only another branch's numbers, so the warn is not the invoice window).
 - Conservation: `fact_claim_line` = staged claim lines of visits in the window; uniqueness of `(branch_id, response_id, item_sequence)` in `int_nphies_adjudication` plus the multi-item unit test (see the plan's refinements).
 - Macro tests with literal inputs for every macro in section 5.
-- Unit tests: JSON parse of a fixture bundle (two items, several categories, two reason codes, a Patient resource that must be ignored); final response pick (PENDED then PARTIAL; PARTIAL then ERROR); submission numbering for an invoice with two visits; rejected amount for approved, partial and rejected items; payment detail parse with fee components.
-- Warn monitors: sent, non-cancelled claims with no response by branch and month; claim-response items with no matching claim line; payment details whose transaction matches no claim; reason codes not in `dim_nphies_reason`; advance authorisations (count by branch and month, read from `stg_oasis__pull_responses`).
-- `rec_claims_monthly` (branch × statement month): legacy submitted, approved, rejected (from the legacy fields) beside new submitted, approved, rejected, adjudicated submitted, first-pass rejected and adjudicated submitted, resubmission recovery, pending, remitted, and the two signed fee columns `remitted_early_fee` and `remitted_nphies_fee`. Approved, rejected, adjudicated submitted and pending exclude cancelled claims. Acceptance: legacy columns match the claims model and `bsc.vw_rcm` for a closed month within 0.5%.
+- Unit tests: JSON parse of a fixture bundle (two items, several categories, two reason codes, a Patient resource that must be ignored); final response pick (PENDED then PARTIAL; PARTIAL then ERROR; a null status with a decision in the bundle); submission numbering for an invoice with two visits; rejected amount for approved, partial and rejected items; payment detail parse with fee components, a re-pull under a new `fullUrl` and a no-identifier pair with identical details (one reconciliation each).
+- Warn monitors: sent, non-cancelled claims with no response by branch and month; claim-response items with no matching claim line; payment details (other than advances) whose transaction matches no claim; the same payment detail in more than one kept reconciliation; reason codes not in `dim_nphies_reason`; advance authorisations (count by branch and month, read from `stg_oasis__pull_responses`).
+- `rec_claims_monthly` (branch × statement month): legacy submitted, approved, rejected (from the legacy fields) beside new submitted, approved, rejected, adjudicated submitted, first-pass rejected and adjudicated submitted, resubmission recovery, pending, remitted, and the two signed fee columns `remitted_early_fee` and `remitted_nphies_fee`. Approved, rejected, adjudicated submitted and pending exclude cancelled claims; the `first_pass_*` columns include cancelled claims (submission 1 as sent, an exception to the `is_cancelled_claim = 0` rule). Acceptance: legacy columns match the claims model and `bsc.vw_rcm` for a closed month within 0.5%.
 - `rec_preauth_monthly` gains rejected count by reason category, `rejected_reason_not_given` and `rejected_reason_unknown` (key -1), so the reason columns sum to rejected.
 
 ---
@@ -190,15 +192,17 @@ Matched to `int_nphies_adjudication` (pre-authorisation kind) on the line's fina
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
 | O-P2B-1 | The pull-response load was still running; coverage by branch (C8) to be re-measured when it completes | Acceptance | Warn monitor shows the gap |
-| O-P2B-2 | Branches 7 and 8 have pull responses only from 2026-10-04 | Their claim KPIs | Earlier claims show No response |
+| O-P2B-2 | Branches 7 and 8 start late in the pull table: branch 7 claim responses from 2026-04-07 and pre-authorisation responses from 2026-02-14 (remittance 2026-06-08 to 2026-09-29); branch 8 claim responses 2026-04-07 to 2026-05-07 only (86 pulls), pre-authorisation responses 2026-02-14 to 2026-10-04 (measured 2026-10-05) | Their claim KPIs | Earlier claims show No response |
 | O-P2B-3 | How to report payer-initiated advance authorisations (55K); their bundles have no `item[]` (35.6K have `addItem[]` without `itemSequence`) | Pre-auth reporting | Not parsed; monitored from `stg_oasis__pull_responses` |
 | O-P2B-4 | Payment detail types other than `payment` (adjustments, recoupments) and their sign | Remittance totals | Summed as delivered, type kept as an attribute |
 | O-P2B-5 | Closed month and exports of the claims model and `bsc.vw_rcm` | Reconciliation sign-off | — |
-| O-P2B-6 | Jan–Jul 2022 claim responses with a null `res_status` but a decision in the bundle show as Error (about 288K lines); a header-level parser would fix it | Claim KPIs for early 2022 | Left as Error |
+| O-P2B-6 | Resolved for null statuses: early-2022 claim responses with a null `res_status` take the decision from the ClaimResponse (section 6.3); 518,368 latest live 2022 lines (46.3M SAR claimed) moved from Error to Adjudicated and 1,898 to Pended. Remaining 2022 Error (latest live): 55,144 lines with a real ERROR status (7.2M SAR) and 11,645 lines whose final status is SENT or ADJUDICATION (1.06M SAR), which also carry a decision in the bundle | Claim KPIs for 2022 | SENT and ADJUDICATION left as Error |
 | O-P2B-7 | Claim-level answers without items show "Not adjudicated" (about 26K lines) | Claim KPIs | Left as is |
-| O-P2B-8 | Legacy `N-DC-0xx` pre-authorisation reason codes (2022 to October 2023, about 194K rejected lines) are not in `dim_nphies_reason` and map to Unknown | Pre-auth reasons for 2022–2023 | Left as Unknown; map or leave |
-| O-P2B-9 | Branch 6 has no claim-response pulls since 2025-11; branch 8's last pull response is 2026-05-07 (ingestion gap) | Their claim KPIs | Warn monitor shows the gap |
+| O-P2B-8 | Legacy `N-DC-0xx` reason codes (2022 to October 2023) are not in `dim_nphies_reason` and map to Unknown (`-1`): 2,133,373 `fact_claim_line` lines (97.5% of the 2022 latest live rejected value, 54.1% of 2023) and 237,346 pre-authorisation lines (193,980 rejected). Decision for the user: map the N-DC codes to NPHIES reasons through reference data, or leave them | Claim and pre-auth reasons for 2022–2023 | Left as Unknown |
+| O-P2B-9 | Branch 6 has claim-response pulls every month from 2025-06 to 2026-10 (first 2025-04-28), so it has no gap; branch 8's last claim-response pull is 2026-05-07 while its pre-authorisation pulls continue to 2026-10-04 (ingestion gap) | Branch 8 claim KPIs | Warn monitor shows the gap |
 | O-P2B-10 | Meaning of negative early fees (positive in 2024–25, negative in 2026); finance to confirm | Remittance fee reporting | Reported signed as received |
+| O-P2B-11 | Branch 8 February–March 2026 claim visits duplicate branch 7's: 811 visits (86 in February, 725 in March) carry the same `visit_id` and `api_trans_id` in both branches | Branch 7 and 8 claim KPIs for 2026-02 and 2026-03 | Counted in both branches |
+| O-P2B-12 | Some payers re-issue a revised reconciliation for the same payment date with a different total, so earlier details appear again (mostly payers without a payment identifier: Al Rajhi Takaful, GIG, SAICO; also one TPA page set); `warn_duplicate_claim_payments` lists them (2,661 details, about 0.98M SAR repeated in branches 1–5 at the 2026-10-05 build) | Remittance totals | Both versions counted |
 
 ---
 
@@ -206,7 +210,7 @@ Matched to `int_nphies_adjudication` (pre-authorisation kind) on the line's fina
 
 1. `fact_claim_line.rejected_amount` is outcome-aware (Rejected: submitted or claimed; Approved: 0; otherwise submitted − coalesce(nullIf(eligible, 0), benefit + patient share/copay), floored at 0), because payers omit `eligible` on approved items and send `eligible = submitted` on rejected ones.
 2. `submitted_amount` falls back to `claimed_amount` for adjudicated lines, and response reasons apply only to adjudicated lines.
-3. `int_claim_payment` keeps only the latest pull of each PaymentReconciliation (`reconciliation_id` = entry `fullUrl`, else resource `id`); `claim_payment_key` = (branch, `reconciliation_id`, `detail_index`), because the same reconciliation was re-pulled up to about 1,848 times (3.01bn loaded, 0.64bn distinct).
+3. `int_claim_payment` keeps only the latest pull of each PaymentReconciliation, identified by content (payment identifier, date and amount; without an identifier, date, amount and a hash of the sorted detail claim ids and amounts), because payers re-issue a new `fullUrl` per pull, reuse ids across payments and page large payments; `claim_payment_key` = (branch, `reconciliation_id`, `detail_index`). The same reconciliation was re-pulled up to about 1,848 times (3.01bn of payment details loaded, 0.63bn distinct). Remitted totals at the 2026-10-05 build: payment 634.4M SAR and advance 188.4M SAR (the earlier `fullUrl` identity gave 644.0M and 372.4M).
 4. Claim responses (`int_claim_submission`, `int_nphies_adjudication`) match their transaction by `about_api_trans_id`, falling back to the ClaimResponse `request.identifier`.
 5. Pre-authorisation validity dates parse the first 10 characters, because payers send ISO datetimes.
 6. `rec_claims_monthly`: approved, rejected, adjudicated submitted and pending exclude cancelled claims; `resubmission_recovery` is approved on the latest non-cancelled submission with `submission_number > 1`; remittance fees are two signed columns `remitted_early_fee` and `remitted_nphies_fee`. `rec_preauth_monthly` also has `rejected_reason_unknown`.
@@ -214,3 +218,8 @@ Matched to `int_nphies_adjudication` (pre-authorisation kind) on the line's fina
 8. The `invoice_key` warn is not the invoice window: claim invoice numbers are partly a different number space (about 25K invoices absent from AR, about 22K matching only another branch's numbers); section 9 and the column description are corrected.
 9. Advance authorisations are monitored from `stg_oasis__pull_responses` and not parsed.
 10. Open items O-P2B-6 to O-P2B-10 added: early-2022 null statuses, claim-level answers without items, legacy `N-DC-0xx` reason codes, branch 6 and 8 pull gaps, and negative early fees.
+11. Claim responses with a null `res_status` take their status from the ClaimResponse adjudication-outcome extension, else its `outcome` (section 6.3), for the final-response choice, `final_status` and `adjudication_status`.
+12. `int_nphies_adjudication` reads claim-response and priorauth-response pulls only; advanced-authorization pulls are not parsed (section 6.1).
+13. `warn_unmatched_claim_payments` leaves out advance lines; `warn_duplicate_claim_payments` added (O-P2B-12); `fact_claim_payment.patient_key` has a relationships test.
+14. `fact_claim_payment` drops 213 details with payment dates in 2078 and 2115 (outside the window); Rejected lines may keep a token benefit in `approved_amount` (section 7.2); days to payment is reported as medians per payment month; `rec_claims_monthly.first_pass_*` include cancelled claims.
+15. Open items O-P2B-2, O-P2B-6, O-P2B-8 and O-P2B-9 re-measured; O-P2B-11 (branch 8 visits duplicating branch 7) and O-P2B-12 (revised reconciliations) added.

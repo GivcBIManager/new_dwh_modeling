@@ -30,7 +30,7 @@ Run after a successful `dbt build --select tag:hnh`. Choose one closed month wit
 
 Full build of `tag:hnh` after the final-review fixes: PASS=424 WARN=13 ERROR=0, 8 min 32 s. Rows is the number of rows the monitor returned (its grouping is in the Note column).
 
-The five claims monitors come from the Phase 2B full build of `tag:hnh` on 2026-10-05: PASS=475 WARN=19 ERROR=0, 14 min 28 s (`int_nphies_adjudication` 187 s). That build's other new warning is the warn-severity relationship test `fact_claim_line.invoice_key` to `fact_invoice` (1,182,965 lines): claim invoice numbers are partly a different number space from the AR invoices, so it is not the invoice window.
+The six claims monitors come from the Phase 2B full build of `tag:hnh` after the final-review fixes on 2026-10-05: PASS=476 WARN=20 ERROR=0, 10 min 14 s (`int_nphies_adjudication` 199 s, `int_claim_payment` 131 s). That build's other new warning is the warn-severity relationship test `fact_claim_line.invoice_key` to `fact_invoice` (1,182,965 lines): claim invoice numbers are partly a different number space from the AR invoices, so it is not the invoice window.
 
 | Monitor | Rows | Note |
 |---|---|---|
@@ -42,10 +42,11 @@ The five claims monitors come from the Phase 2B full build of `tag:hnh` on 2026-
 | warn_op_billing_mismatch | 160 | Branch and invoice-month groups: 2 to 10 episodes a month from January to June 2026, then the July to September 2026 surge (finding 1) |
 | warn_excluded_receipt_accounts | 84 | Branch and account-prefix groups of payer and contract receipts left out of `fact_cash_receipt` (23,096 documents, 4.84 billion SAR; finding 6) |
 | warn_unresolved_charge_encounter | 5 | Branch and care-type groups above 2% unresolved over the last 90 days: branches 7 and 8 (finding 2); branch 2 is about 1.5% since August |
-| warn_claims_without_response | 310 | Branch and statement-month groups of sent, non-cancelled latest-submission claim lines with no NPHIES answer (current month excluded; branches 6 and 8 have pull-response gaps, O-P2B-9) |
-| warn_unknown_nphies_reason | 309 | Branch and reason-code groups of claim lines whose reason code is not in `dim_nphies_reason`; mostly legacy `N-DC-0xx` codes (O-P2B-8) |
+| warn_claims_without_response | 310 | Branch and statement-month groups of sent, non-cancelled latest-submission claim lines with no NPHIES answer (current month excluded; branch 7 claim responses start 2026-04-07 and branch 8's stop at 2026-05-07, O-P2B-2 and O-P2B-9) |
+| warn_unknown_nphies_reason | 317 | Branch and reason-code groups of claim lines whose reason code is not in `dim_nphies_reason`; mostly legacy `N-DC-0xx` codes (O-P2B-8) |
 | warn_unmatched_claim_response_items | 5 | Branches with claim-response items that match no claim line of the visit that sent the transaction |
-| warn_unmatched_claim_payments | 7 | Branches with remittance lines whose transaction matches no claim visit |
+| warn_unmatched_claim_payments | 2 | Branches with remittance lines (advances excluded) whose transaction matches no claim visit |
+| warn_duplicate_claim_payments | 5 | Branches with the same remittance detail (claim transaction, payer claim response, payment reference, payment date and amount) in more than one kept reconciliation: revised re-issues of a payment (O-P2B-12) |
 | warn_advance_authorisations | 200 | Branch and month groups of payer-initiated advance authorisations, counted from the staged pull responses (not parsed; O-P2B-3) |
 
 The build's other warnings come from Phase 1 monitors and `warn_unexpected_charge_cancel_flag` (3 groups, the 14 `I`/`F` rows of finding 4).
@@ -62,3 +63,4 @@ The build's other warnings come from Phase 1 monitors and `warn_unexpected_charg
 8. **Pre-authorisation counting.** Lost Revenue uses the latest request per service; the unutilised and delivered-without-approval counts include every request.
 9. **Last-status naming.** Spec 7.6 calls the old report's last status `legacy_last_service_status`; in the fact it is `nphies_last_status`.
 10. **Discounts on superseded invoices.** Post-invoice discounts whose base invoice has only superseded lines (about 9,900 documents, 554K SAR) have unknown episode, patient and payer.
+11. **Branch 8 claim visits duplicate branch 7's (Phase 2B, 2026-10-05).** 811 branch 8 claim visits with statement dates in February (86) and March (725) 2026 carry the same `visit_id` and `api_trans_id` as branch 7 visits, so they are counted in both branches (open item O-P2B-11). Branch 8's later visits (July to September 2026) do not overlap.

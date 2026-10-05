@@ -93,8 +93,11 @@ on-run-end:
 - Claim KPIs also filter `is_cancelled_claim = 0`: `is_latest_submission` is the last submission whether cancelled or not.
 - `fact_claim_payment` is claim-level remittance from NPHIES only; it is not insurer AR (Phase 3).
 - `fact_claim_line.invoice_key` and `fact_claim_payment.invoice_key` equal `fact_invoice.invoice_key`; do not relate facts to each other in SSAS, use them for drill-through or SQL.
-- Remittance money for advances (no claim link, about 372M SAR) is only in `fact_claim_payment` (`detail_type = 'advance'`); it is not in `rec_claims_monthly`.
-- `days_to_payment` is skewed by bulk back-settlements (2025-05 and 2026-04); report medians per month, not averages or per year.
+- Remittance totals at the 2026-10-05 build: payment lines 634.4M SAR, advances 188.4M SAR. Money for advances (not claim remittance) is only in `fact_claim_payment` (`detail_type = 'advance'`); it is not in `rec_claims_monthly`. Each payer reconciliation is counted once, identified by its content (payers re-issue a new `fullUrl` on every pull); revised re-issues of a payment are listed by `warn_duplicate_claim_payments`. 213 details with payer payment dates in 2078 and 2115 (about 144K SAR) are outside the window and not in the fact.
+- `days_to_payment` is skewed by bulk back-settlements (2025-05 and 2026-04); report medians per payment month, not averages or per year.
+- `rec_claims_monthly.first_pass_*` include cancelled claims (submission 1 as sent); this is the one exception to the `is_cancelled_claim = 0` rule.
+- A Rejected claim line can keep a token payer benefit in `approved_amount` (9,635 lines, about 123K SAR in total); it still counts as rejected in full.
+- Reason codes of 2022 to October 2023 are mostly legacy `N-DC-0xx` codes and show as Unknown (open item O-P2B-8).
 
 ## Deployment checklist (Ubuntu server)
 
@@ -103,7 +106,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about a dozen warnings from `warn_*` tests.
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about 20 warnings (19 `warn_*` monitors and the warn-severity relationship `fact_claim_line.invoice_key` to `fact_invoice`; 20 at the 2026-10-05 build).
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.
