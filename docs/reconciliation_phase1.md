@@ -69,7 +69,7 @@ Month: the calendar month before the build date (September 2026, built 2026-10-0
 
 1. Export No. Orders and Lost Orders from the old *Order Fulfillment* report for a closed month, per branch.
 2. Compare with `legacy_lines` and `legacy_lost`. Acceptance: within 1% per branch. The old report also dropped orders whose episode had no `mv_eligibility` row, so the legacy columns can be slightly higher (open item O-OF-2, accepted).
-3. Explain the gap to `lines` and `lost` with the spec's section 2.2: alternatives and duplicated generics count only when charged, status A is out of scope, and the old one-year window no longer applies.
+3. Explain the gap to `lines` and `lost` with the spec's section 2.2: alternatives and duplicated generics count only when charged, status A is out of scope, and the old one-year window no longer applies. Three further differences are negligible: the new scope also requires `units_ordered > 0` (reversal lines are out); the old report counted a line as delivered only with a delivery document id (`DOC_ID != 0`; 1 of 82,537 June charged lines lacks one); and the old report repeated a line once per delivery on multi-delivery lines (negligible outside inpatient).
 4. `avg_unit_fulfilment_ratio` is the average of the per-line ratio over in-scope non-inpatient lines (the Unit fulfilment rate KPI). `scope_units_ordered` and `scope_units_delivered` leave out unit outliers (lines ordered above 1,000 units, usually ml or mg ordered and packs delivered), which are counted in `unit_outlier_lines`.
 
 ## Monitors
@@ -79,7 +79,7 @@ Tests named `warn_*` report data gaps and never fail a run. The five order fulfi
 | Monitor | What it lists | Rows |
 |---|---|---|
 | `warn_delivered_status_without_charge` | Lines with status D, a positive ordered quantity and no live charge, by branch and month | 36 |
-| `warn_charges_without_order_line` | Live charges of the last 365 days whose delivery line has no order line, by branch | 1 |
+| `warn_charges_without_order_line` | Live charges of the last 365 days whose delivery line has no order line, or an order line not in Oasis `order_lines`, by branch | 1 |
 | `warn_unresolved_order_packages` | Included package names that match a PK product in no branch | 0 |
 | `warn_negative_order_turnaround` | Lines delivered more than 60 minutes before they were ordered, by branch and month | 282 |
 | `warn_order_unit_outliers` | Lines with more than 1,000 units ordered, by branch, month and category | 401 |

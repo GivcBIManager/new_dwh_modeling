@@ -192,22 +192,22 @@ The unknown member `-1` applies to every key. No patient PII is held.
 
 ## 8. KPI definitions (for SSAS)
 
-Leak KPIs default to `is_inpatient = 0`.
+Every KPI defaults to `is_inpatient = 0`; the leak KPIs also need `is_in_leak_scope = 1`.
 
 | KPI | Definition |
 |---|---|
 | Order lines | count of lines with `is_in_leak_scope = 1` |
 | Lost lines | count of lines with `is_lost = 1` |
 | Leak rate | Lost lines ÷ Order lines |
-| Lost value | Σ `ordered_value` of lost lines, excluding `is_unit_outlier` lines |
-| Unit fulfilment rate | average of `unit_fulfilment_ratio` over in-scope lines |
-| Partially delivered lines | count of `is_partially_delivered = 1` |
-| Census | distinct `episode_key` among in-scope lines |
-| Contribution | episodes with at least one in-scope line of the category ÷ all episodes with in-scope lines |
+| Lost value | Σ `ordered_value` of lines with `is_lost = 1` and `is_unit_outlier = 0` |
+| Unit fulfilment rate | average of `unit_fulfilment_ratio` over lines with `is_in_leak_scope = 1`; outlier lines are deliberately kept (the ratio is capped at 1 per line, so they cannot distort the average) |
+| Partially delivered lines | count of lines with `is_partially_delivered = 1`, `is_in_leak_scope = 1` and `is_unit_outlier = 0` |
+| Census | distinct `episode_key` among lines with `is_in_leak_scope = 1` |
+| Contribution | episodes with at least one `is_in_leak_scope = 1` line of the category ÷ all episodes with `is_in_leak_scope = 1` lines |
 | Share of total lost | lost lines in context ÷ lost lines over all selected filters except speciality |
 | Order-to-delivery time | median `order_to_delivery_minutes` of delivered lines, per category; Consultation and Package are excluded (their charge is posted at order time) |
-| Orders | distinct `order_key` |
-| Cancellation rate | lines with `line_status = 'Cancelled'` ÷ all lines |
+| Orders | distinct `order_key` over all lines (not only in-scope) |
+| Cancellation rate | lines with `line_status = 'Cancelled'` ÷ all lines (cancelled lines are out of leak scope, so no scope filter) |
 
 ## 9. Testing, reconciliation and monitors
 
@@ -272,3 +272,5 @@ Leak KPIs default to `is_inpatient = 0`.
 12. KPI changes (section 8): Unit fulfilment rate is the average of `unit_fulfilment_ratio` over in-scope lines; Lost value excludes `is_unit_outlier` lines; order-to-delivery time excludes Consultation and Package (charge posted at order time).
 13. `rec_orders_monthly`'s unit sums exclude unit outliers, and it adds `avg_unit_fulfilment_ratio` and `unit_outlier_lines`.
 14. Monitors: `warn_delivered_status_without_charge` counts lines with `units_ordered > 0` only; `warn_negative_order_turnaround` flags lines delivered more than 60 minutes before the order; a fifth monitor, `warn_order_unit_outliers`, lists outlier lines.
+15. `int_order_line.legacy_names` counts only the lines the old report had left after its import filters (line status not P, Q, X or Cancelled, care type not inpatient): the old DAX `Is_Same_Generic` ran over that already-filtered import, so cancelled and inpatient siblings must not turn a line into legacy Delivered. This restores `legacy_lost` to within the 1% band (the unfiltered count understated it by 1.3 to 2.3% a month).
+16. The average Unit fulfilment rate keeps unit-outlier lines, a deliberate choice: the per-line ratio is capped at 1, so outliers cannot distort it (the rate moves by about 0.0003 when they are removed). Lost value, Partially delivered lines and the reconciliation unit sums do exclude them.

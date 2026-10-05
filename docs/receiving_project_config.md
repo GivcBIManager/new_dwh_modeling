@@ -100,8 +100,13 @@ on-run-end:
 - `rec_claims_monthly.first_pass_*` include cancelled claims (submission 1 as sent); this is the one exception to the `is_cancelled_claim = 0` rule.
 - A Rejected claim line can keep a token payer benefit in `approved_amount` (9,635 lines, about 123K SAR in total); it still counts as rejected in full.
 - Reason codes of 2022 to October 2023 are mostly legacy `N-DC-0xx` codes and show as Unknown (open item O-P2B-8).
-- `fact_order_line`: leak KPIs (Order lines, Lost lines, Leak rate, Lost value, Unit fulfilment rate, Census, Contribution) filter `is_in_leak_scope = 1` and `is_inpatient = 0`; inpatient lines stay in the fact for separate analysis. Lost = `is_lost = 1`. Turnaround is the median of `order_to_delivery_minutes` over delivered lines, per category; negative values are kept and monitored. Speciality comes from `dim_staff` through `ordering_staff_key`.
-- `fact_order_line` KPI refinements: Unit fulfilment rate is the average of `unit_fulfilment_ratio` over in-scope lines (not a ratio of sums); Lost value excludes `is_unit_outlier = 1` lines (pharmacy orders in ml or mg that are delivered in packs); the turnaround median leaves out the Consultation and Package categories (their charge is posted at order time, so the value is always 0).
+- `fact_order_line` KPI filters (spec section 8). Lost = `is_lost = 1`; inpatient lines stay in the fact for separate analysis; speciality comes from `dim_staff` through `ordering_staff_key`.
+  - Order lines, Lost lines, Leak rate, Census, Contribution and Share of total lost: `is_in_leak_scope = 1` and `is_inpatient = 0`.
+  - Lost value: as Lost lines, plus `is_unit_outlier = 0` (pharmacy orders in ml or mg that are delivered in packs).
+  - Unit fulfilment rate: average of `unit_fulfilment_ratio` over `is_in_leak_scope = 1` and `is_inpatient = 0` lines (not a ratio of sums). Outlier lines are deliberately kept: the ratio is capped at 1 per line, so they cannot distort the average.
+  - Partially delivered lines: `is_partially_delivered = 1` and `is_in_leak_scope = 1` and `is_inpatient = 0` and `is_unit_outlier = 0`. Without the scope filter about 79% of flagged lines are inpatient or out of scope.
+  - Orders and Cancellation rate: over all lines (cancelled lines are out of leak scope) with `is_inpatient = 0` by default.
+  - Order-to-delivery time (turnaround): median of `order_to_delivery_minutes` over delivered, non-inpatient lines, per category, leaving out the Consultation and Package categories (their charge is posted at order time, so the value is always 0). Negative values are kept and monitored.
 - `fact_order_line.first_delivery_date_key` is NULL (not -1) for undelivered lines. `charged_amount` includes patient co-pay rows. `urgency_code` is the raw Oasis `urgent_flag` (R, S, H, A; meaning unconfirmed).
 
 ## Deployment checklist (Ubuntu server)
@@ -111,7 +116,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about 24 warnings (23 `warn_*` monitors and the warn-severity relationship `fact_claim_line.invoice_key` to `fact_invoice`; 24 at the order-fulfilment build of 2026-10-05, PASS=517 WARN=24 ERROR=0 in about 12 minutes).
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` and about 24 warnings (23 of the 26 `warn_*` monitors return rows, plus the warn-severity relationship `fact_claim_line.invoice_key` to `fact_invoice`; 24 at the order-fulfilment build of 2026-10-05, PASS=517 WARN=24 ERROR=0 in about 12 minutes).
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.
