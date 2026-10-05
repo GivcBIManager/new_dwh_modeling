@@ -76,3 +76,7 @@ models:
         tests:
           - accepted_values:
               values: ['Technical and contractual', 'Appropriateness of care', 'Pharmacy Benefit Management', 'Duplicated Service', 'Fraud']
+  - name: stg_ref__order_fulfilment_packages
+    columns:
+      - name: package_description
+        tests: [unique, not_null]

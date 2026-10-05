@@ -102,6 +102,11 @@ SMALL_TABLES = {
         [("CODE", "String", s), ("REASON", "String", s), ("CATEGORY", "LowCardinality(String)", s)],
         "CODE",
     ),
+    "map_order_fulfilment_packages": (
+        "order_fulfilment_packages.csv",
+        [("DESCRIPTION", "String", s)],
+        "DESCRIPTION",
+    ),
     "map_unified_department_v2": (
         "master_unified_department.csv",
         [("DEPARTMENT", "String", s), ("UNIFIED_DEPARTMENT", "String", s), ("NOT_ADMITTING", "UInt8", i), ("High_Value", "UInt8", i)],
