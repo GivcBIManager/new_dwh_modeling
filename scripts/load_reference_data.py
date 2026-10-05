@@ -107,6 +107,27 @@ SMALL_TABLES = {
         [("DESCRIPTION", "String", s)],
         "DESCRIPTION",
     ),
+    # Financial-statement line per Oracle natural account (COA segment 2). Supplied as
+    # abha_fs_mapping_oracle.xlsx, one sheet per branch (abha, ghirnata) merged into one list:
+    # the sheets agree on every shared account and all ledgers share chart 2001, so it applies
+    # group-wide. MAPPED_IN names the sheets that list the account.
+    "map_fs_account": (
+        "fs_account_mapping.csv",
+        [("ORACLE_CODE", "UInt32", i), ("FS_TYPE", "LowCardinality(String)", s), ("FS_ELEMENT", "LowCardinality(String)", s),
+         ("FS_CATEGORY", "LowCardinality(String)", s), ("FS_CAPTION", "String", s), ("FS_LINE", "String", s),
+         ("MAPPED_IN", "LowCardinality(String)", s)],
+        "ORACLE_CODE",
+    ),
+    # The old warehouse's Oasis chart mapping (default.fs_mapping, behind vw_account_tree): FS position
+    # per branch and Oasis sub-account (MAIN_ACC||SUB_ACC). Oasis and Oracle numbers are different
+    # spaces, so this is the legacy side of statement reconciliation, not a lookup for Oracle accounts.
+    "map_oasis_fs_account": (
+        "fs_mapping.csv",
+        [("BRANCH_ID", "UInt8", i), ("CODE", "String", s), ("TYPE", "LowCardinality(String)", s),
+         ("FS_ELEMENT", "LowCardinality(String)", s), ("FS_CATEGORY", "LowCardinality(String)", s),
+         ("FS_CAPTION", "String", s), ("FS_LINE", "String", s)],
+        "(BRANCH_ID, CODE)",
+    ),
     "map_unified_department_v2": (
         "master_unified_department.csv",
         [("DEPARTMENT", "String", s), ("UNIFIED_DEPARTMENT", "String", s), ("NOT_ADMITTING", "UInt8", i), ("High_Value", "UInt8", i)],
