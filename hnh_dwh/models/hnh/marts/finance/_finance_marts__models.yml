@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: hnh_fact_gl_journal_line
+    description: One Fusion actual journal line, posted or not (is_posted). Rebuilt in full every night.
+    columns:
+      - name: gl_journal_line_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: gl_account_key
+        tests:
+          - relationships: {to: ref('hnh_dim_gl_account'), field: gl_account_key}
+      - name: period_key
+        tests:
+          - relationships: {to: ref('hnh_dim_gl_period'), field: period_key}
+      - name: accounting_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}

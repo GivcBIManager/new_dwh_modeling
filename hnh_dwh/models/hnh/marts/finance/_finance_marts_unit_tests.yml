@@ -1,0 +1,41 @@
+version: 2
+
+unit_tests:
+  - name: hnh_fact_gl_journal_line_flags_lines
+    description: >
+      Header 1 is a posted Head Office opening-balance journal (branch 100, never Group 0). Header 2 is an unposted
+      Oasis-feed line at Abha. Header 3 is a budget line (actual flag B) and is left out.
+    model: hnh_fact_gl_journal_line
+    given:
+      - input: ref('stg_fusion__gl_journal_lines')
+        format: sql
+        rows: |
+          select toInt64(h) as je_header_id, toInt64(n) as je_line_num, toNullable(toInt64(1)) as je_batch_id,
+                 toNullable('J') as journal_name, cast(null as Nullable(String)) as doc_sequence_value,
+                 toNullable(toInt64(lg)) as ledger_id, toNullable(toInt64(10)) as code_combination_id, toNullable(p) as period_name,
+                 toNullable(toDate('2026-01-31')) as accounting_date, cast(null as Nullable(Date)) as posted_date,
+                 toNullable(src) as je_source, toNullable(cat) as je_category, toNullable(af) as actual_flag, toNullable(hs) as header_status,
+                 toFloat64(dr) as debit, toFloat64(cr) as credit, cast(null as Nullable(String)) as line_description
+          from values('h UInt32, n UInt32, lg UInt64, p String, src String, cat String, af String, hs String, dr Float64, cr Float64',
+              (1, 1, 300000005003375, 'Jan-26', 'Spreadsheet', 'MRC Open Balances', 'A', 'P', 100, 0),
+              (1, 2, 300000005003375, 'Jan-26', 'Spreadsheet', 'MRC Open Balances', 'A', 'P', 0, 100),
+              (2, 1, 300000005003384, 'Jan-26', '300000007046804', '300000005338519', 'A', 'U', 50, 0),
+              (3, 1, 300000005003384, 'Jan-26', 'Manual', 'Manual', 'B', 'P', 70, 0))
+      - input: ref('hnh_dim_gl_account')
+        format: sql
+        rows: |
+          select toInt64(555) as gl_account_key, toNullable(toInt64(10)) as code_combination_id, cast(null as Nullable(UInt8)) as intercompany_branch_key
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(k) as branch_key, toNullable(toInt64(l)) as fusion_ledger_id
+          from values('k UInt8, l UInt64', (100, 300000005003375), (6, 300000005003384))
+      - input: ref('hnh_dim_gl_period')
+        format: sql
+        rows: |
+          select toInt32(202601) as period_key, 'Jan-26' as period_name
+    expect:
+      rows:
+        - {je_header_id: 1, je_line_num: 1, branch_key: 100, gl_account_key: 555, period_key: 202601, is_posted: 1, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: 100}
+        - {je_header_id: 1, je_line_num: 2, branch_key: 100, gl_account_key: 555, period_key: 202601, is_posted: 1, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: -100}
+        - {je_header_id: 2, je_line_num: 1, branch_key: 6, gl_account_key: 555, period_key: 202601, is_posted: 0, is_opening_balance_journal: 0, is_oasis_feed: 1, je_source_label: Oasis feed, amount: 50}
