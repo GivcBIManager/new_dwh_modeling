@@ -19,18 +19,19 @@ details as (
         nullIf(JSONExtractString(entry, 'resource', 'paymentIdentifier', 'value'), '')           as payment_reference,
         toDateOrNull(substring(JSONExtractString(entry, 'resource', 'period', 'start'), 1, 10)) as period_start,
         toDateOrNull(substring(JSONExtractString(entry, 'resource', 'period', 'end'), 1, 10))   as period_end,
-        JSONExtractArrayRaw(entry, 'resource', 'detail')                                         as detail_list,
-        arrayJoin(arrayEnumerate(detail_list))                                                   as detail_index
+        -- Each detail is extracted once; no detail row carries the whole list.
+        arrayJoin(arrayZip(arrayEnumerate(JSONExtractArrayRaw(entry, 'resource', 'detail')),
+                           JSONExtractArrayRaw(entry, 'resource', 'detail')))                    as indexed_detail
     from reconciliations
 ),
 
 parsed as (
     select
         branch_id, response_id, payment_date, payment_amount_total, payment_reference, period_start, period_end,
-        toUInt64(detail_index)                                                          as detail_index,
-        detail_list[detail_index]                                                       as detail,
+        toUInt64(tupleElement(indexed_detail, 1))                                       as detail_index,
+        tupleElement(indexed_detail, 2)                                                 as detail,
         arrayMap(e -> tuple(JSONExtractString(e, 'url'), JSONExtractFloat(e, 'valueMoney', 'value')),
-                 JSONExtractArrayRaw(detail_list[detail_index], 'extension'))           as components
+                 JSONExtractArrayRaw(detail, 'extension'))                              as components
     from details
 )
 
