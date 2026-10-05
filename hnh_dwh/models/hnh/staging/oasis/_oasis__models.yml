@@ -189,3 +189,20 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, response_item_id]
+  - name: stg_oasis__claim_visits
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, visit_id]
+  - name: stg_oasis__claim_services
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, visit_id, sequence_no]
+  - name: stg_oasis__pull_responses
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, response_id]
+    columns:
+      - name: response_type
+        tests:
+          - accepted_values:
+              values: ['claim-response', 'priorauth-response', 'advanced-authorization', 'payment-reconciliation']

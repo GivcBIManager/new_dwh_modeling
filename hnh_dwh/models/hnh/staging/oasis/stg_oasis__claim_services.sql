@@ -1,0 +1,23 @@
+select
+    toUInt8(branch_id)                          as branch_id,
+    toInt64(visit_id)                           as visit_id,
+    toInt64(sequence_no)                        as sequence_no,
+    toInt64(service_id)                         as service_id,
+    {{ hnh_str('invoice_number') }}             as invoice_number,
+    {{ hnh_id('ios') }}                         as ios,
+    {{ hnh_code('service_code') }}              as service_code,
+    toFloat64OrNull(toString(qty))              as qty,
+    toFloat64(ifNull(line_claimed_amount, 0))   as line_claimed_amount,
+    toFloat64(ifNull(line_item_discount, 0))    as line_discount_amount,
+    toFloat64(ifNull(net_amount, 0))            as net_amount,
+    toFloat64(ifNull(co_pay, 0))                as co_pay,
+    toFloat64(ifNull(co_insurance, 0))          as co_insurance,
+    toFloat64(ifNull(net_vat_amount, 0))        as net_vat_amount,
+    toFloat64(ifNull(patient_vat_amount, 0))    as patient_vat_amount,
+    toFloat64(ifNull(net_with_vat, 0))          as net_with_vat,
+    {{ hnh_code('outcome') }}                   as outcome,
+    {{ hnh_str('approved_qunatity') }}          as approved_qty_text,
+    {{ hnh_str('pre_auth_id') }}                as pre_auth_id,
+    {{ hnh_id('package_id') }}                  as package_id,
+    {{ hnh_str('notes') }}                      as notes
+from {{ hnh_oasis_source('claim_service_detail') }} final
