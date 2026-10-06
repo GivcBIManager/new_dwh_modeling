@@ -1,0 +1,73 @@
+version: 2
+
+unit_tests:
+  - name: int_legal_employer_branch_resolves_names
+    description: '"HNH Abha" resolves through business unit "Abha" and its ledger to branch 6; Head Office to 100; an unknown employer to 0.'
+    model: int_legal_employer_branch
+    given:
+      - input: ref('stg_fusion__organizations')
+        format: sql
+        rows: |
+          select toInt64(o) as organization_id, toNullable(n) as organization_name, toNullable('HCM_LEMP,HCM_PSU') as classification_codes
+          from values('o UInt32, n String', (1, 'HNH Abha'), (2, 'HNH Head Office'), (3, 'HNH Nowhere'))
+      - input: ref('stg_fusion__business_units')
+        format: sql
+        rows: |
+          select toInt64(b) as business_unit_id, toNullable(n) as business_unit_name, toNullable(toInt64(l)) as primary_ledger_id
+          from values('b UInt32, n String, l UInt64', (10, 'Abha', 300000005003384), (11, 'Head Office', 300000005003375))
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(k) as branch_key, toNullable(toInt64(l)) as fusion_ledger_id
+          from values('k UInt8, l UInt64', (6, 300000005003384), (100, 300000005003375))
+    expect:
+      rows:
+        - {legal_employer_id: 1, branch_key: 6}
+        - {legal_employer_id: 2, branch_key: 100}
+        - {legal_employer_id: 3, branch_key: 0}
+
+  - name: int_assignment_month_end_picks_one_assignment
+    description: >
+      Window January–March 2026. Person 1 changes job on 2026-01-16 (two history rows): January takes the row valid on
+      31 January (job 20). Person 2 is INACTIVE in February (kept here with its status; the fact drops it). Person 3 has
+      two primary active assignments: the one with the later valid_from (assignment 31) wins. Person 1 has an FTE
+      measure of 0.5 from February; values outside (0, 1.5] or missing give 1.
+    model: int_assignment_month_end
+    overrides:
+      vars:
+        hnh_hr_snapshot_start: "2026-01-01"
+        hnh_hr_snapshot_end: "2026-03-31"
+    given:
+      - input: ref('stg_fusion__assignments')
+        format: sql
+        rows: |
+          select toInt64(a) as assignment_id, toDate32(vf) as valid_from, toDate32(vt) as valid_to, toNullable(toInt64(p)) as person_id,
+                 toNullable('E') as assignment_type, toNullable(st) as assignment_status, toUInt8(1) as is_primary,
+                 toNullable(toInt64(900)) as organization_id, toNullable(toInt64(j)) as job_id, cast(null as Nullable(Int64)) as position_id,
+                 cast(null as Nullable(Int64)) as grade_id, cast(null as Nullable(Int64)) as location_id, toNullable(toInt64(1)) as legal_employer_id
+          from values('a UInt32, vf String, vt String, p UInt32, st String, j UInt32',
+              (11, '2025-01-01', '2026-01-15', 1, 'ACTIVE', 10), (11, '2026-01-16', '2299-12-31', 1, 'ACTIVE', 20),
+              (21, '2025-01-01', '2026-01-31', 2, 'ACTIVE', 10), (21, '2026-02-01', '2026-02-28', 2, 'INACTIVE', 10),
+              (21, '2026-03-01', '2299-12-31', 2, 'ACTIVE', 10),
+              (30, '2024-01-01', '2299-12-31', 3, 'ACTIVE', 10), (31, '2025-06-01', '2299-12-31', 3, 'ACTIVE', 30))
+      - input: ref('stg_fusion__work_measures')
+        format: sql
+        rows: |
+          select toInt64(m) as assign_work_measure_id, toNullable(toInt64(a)) as assignment_id, toNullable(u) as unit,
+                 toFloat64(v) as value, toDate32(s) as effective_start_date, toDate32('2299-12-31') as effective_end_date
+          from values('m UInt32, a UInt32, u String, v Float64, s String', (1, 11, 'FTE', 0.5, '2026-02-01'), (2, 21, 'FTE', 0, '2025-01-01'))
+      - input: ref('int_legal_employer_branch')
+        format: sql
+        rows: |
+          select toInt64(1) as legal_employer_id, toUInt8(6) as branch_key
+    expect:
+      rows:
+        - {person_id: 1, month_end: 2026-01-31, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 1, month_end: 2026-02-28, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, fte: 0.5}
+        - {person_id: 1, month_end: 2026-03-31, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, fte: 0.5}
+        - {person_id: 2, month_end: 2026-01-31, assignment_id: 21, job_id: 10, assignment_status: ACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 2, month_end: 2026-02-28, assignment_id: 21, job_id: 10, assignment_status: INACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 2, month_end: 2026-03-31, assignment_id: 21, job_id: 10, assignment_status: ACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 3, month_end: 2026-01-31, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 3, month_end: 2026-02-28, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 3, month_end: 2026-03-31, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, fte: 1}

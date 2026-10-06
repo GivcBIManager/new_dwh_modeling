@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: int_legal_employer_branch
+    columns:
+      - name: legal_employer_id
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: int_employee_period
+    columns:
+      - name: person_id
+        tests: [unique, not_null]
+  - name: int_assignment_month_end
+    tests:
+      - hnh_unique_combination:
+          columns: [person_id, month_end]
