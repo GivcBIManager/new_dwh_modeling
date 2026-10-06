@@ -26,6 +26,8 @@ vars:
   hnh_head_office_fusion_branch_code: 101
   hnh_head_office_ledger_id: 300000005003375
   hnh_fusion_oasis_feed_source: "300000007046804"   # Fusion journal source id of the Oasis integration
+  hnh_hr_snapshot_start: "2026-01-01"    # first month-end of the workforce snapshot facts
+  hnh_hr_snapshot_end: ""                # empty = through the current month
 
 models:
   oasis:
@@ -50,7 +52,7 @@ data_tests:                              # top level; makes --select tag:hnh run
       +tags: ["hnh"]
 ```
 
-Merge into the existing keys: `vars:` already holds `iceberg_root` — keep it and add the eight `hnh_` vars under it; put the `hnh:` block under `models: oasis:` next to `fusion:` and `oasis_lake:`. The server project has no `data_tests:` or `on-run-end:` key yet, so add those at top level. The project default is `+materialized: table`; the `hnh` block overrides it for staging (views).
+Merge into the existing keys: `vars:` already holds `iceberg_root` — keep it and add the ten `hnh_` vars under it; put the `hnh:` block under `models: oasis:` next to `fusion:` and `oasis_lake:`. The server project has no `data_tests:` or `on-run-end:` key yet, so add those at top level. The project default is `+materialized: table`; the `hnh` block overrides it for staging (views).
 
 ## How the models read Oasis
 
@@ -58,17 +60,19 @@ With `hnh_oasis_as_ref: true`, staging models call `ref('<raw_table>')` on the `
 
 ## How the models read Fusion
 
-With `hnh_fusion_as_ref: true`, `hnh_fusion_source('<table>')` calls `ref('<table>')` on the project's Fusion models (`models/fusion/staging/...`, same names as the tables: `fact_gl_journal_line`, `dim_gl_account`, `dim_coa_segment_value`, `dim_gl_period`, `fact_gl_balance`, `fact_ap_invoice_distribution`, `fact_ap_payment`, `fact_ap_payment_schedule`, `dim_supplier`, `dim_business_unit`). They are ReplacingMergeTree, so staging reads them with `final`. The hnh YAML declares a source named `fusion`; the project's own Fusion sources are named `ofusion_*`, so there is no clash.
+With `hnh_fusion_as_ref: true`, `hnh_fusion_source('<table>')` calls `ref('<table>')` on the project's Fusion models (`models/fusion/staging/...`, same names as the tables: `fact_gl_journal_line`, `dim_gl_account`, `dim_coa_segment_value`, `dim_gl_period`, `fact_gl_balance`, `fact_ap_invoice_distribution`, `fact_ap_payment`, `fact_ap_payment_schedule`, `dim_supplier`, `dim_business_unit`) and, for the HCM (workforce) staging, 19 more: `dim_employee`, `dim_assignment`, `fact_period_of_service`, `fact_worker_movement`, `fact_assignment_work_measure`, `dim_department`, `dim_organization`, `dim_job`, `dim_grade`, `dim_position`, `dim_location`, `dim_worker_action`, `fact_payroll_run_result`, `dim_payroll_element`, `dim_payroll_input_value`, `fact_absence_entry`, `dim_absence_type`, `dim_absence_plan`, `fact_absence_balance`. They are ReplacingMergeTree, so staging reads them with `final`. Oasis payroll (`stg_oasis__payroll_transactions`) reads the Oasis `account_transactions` table through `hnh_oasis_source('account_transactions')` (an `oasis_lake` model of that name must exist, or add it to `hnh_oasis_source_only`). The hnh YAML declares a source named `fusion`; the project's own Fusion sources are named `ofusion_*`, so there is no clash.
 
 ## Aliased models
 
-`hnh_dim_branch` and `hnh_dim_department` are built into `gold.dim_branch` and `gold.dim_department` (`alias`). The model names carry the `hnh_` prefix because `dim_branch` and `dim_department` already exist in `models/fusion/staging/conformed/`; dbt model names must be unique per project. Always `ref('hnh_dim_branch')` / `ref('hnh_dim_department')` in dbt code. `hnh_dim_gl_period`, `hnh_dim_gl_account`, `hnh_dim_supplier`, `hnh_fact_gl_journal_line` and `hnh_fact_ap_payment` are built into `gold.dim_gl_period`, `gold.dim_gl_account`, `gold.dim_supplier`, `gold.fact_gl_journal_line` and `gold.fact_ap_payment` for the same reason (the project's Fusion models already use those names).
+`hnh_dim_branch` and `hnh_dim_department` are built into `gold.dim_branch` and `gold.dim_department` (`alias`). The model names carry the `hnh_` prefix because `dim_branch` and `dim_department` already exist in `models/fusion/staging/conformed/`; dbt model names must be unique per project. Always `ref('hnh_dim_branch')` / `ref('hnh_dim_department')` in dbt code. `hnh_dim_gl_period`, `hnh_dim_gl_account`, `hnh_dim_supplier`, `hnh_fact_gl_journal_line` and `hnh_fact_ap_payment` are built into `gold.dim_gl_period`, `gold.dim_gl_account`, `gold.dim_supplier`, `gold.fact_gl_journal_line` and `gold.fact_ap_payment` for the same reason (the project's Fusion models already use those names). Phase 4 adds eight more: `hnh_dim_employee`, `hnh_dim_job`, `hnh_dim_grade`, `hnh_dim_position`, `hnh_dim_location`, `hnh_dim_worker_action`, `hnh_dim_absence_type` and `hnh_fact_worker_movement` are built into `gold.dim_employee`, `gold.dim_job`, `gold.dim_grade`, `gold.dim_position`, `gold.dim_location`, `gold.dim_worker_action`, `gold.dim_absence_type` and `gold.fact_worker_movement`. Always `ref()` the `hnh_` names.
 
 ## Reference tables that must exist in `default`
 
-Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`, `map_fs_account`, `map_oasis_fs_account`, `map_fs_line_order`, `map_budget_fs_line`, `map_fusion_specialty_unified`, `income_statement_budget`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
+Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`, `map_pay_category`, `map_payroll_cutover`, `map_fs_account`, `map_oasis_fs_account`, `map_fs_line_order`, `map_budget_fs_line`, `map_fusion_specialty_unified`, `income_statement_budget`. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
 
 The finance tables are loaded with `python scripts/load_reference_data.py --only <table>`; `fusion_specialty_unified.csv` is drafted by `scripts/draft_fusion_specialty_map.py` for the BI manager to complete.
+
+`map_pay_category` is drafted by `scripts/draft_pay_category_map.py` for the BI manager to review (open item O-P4-1) and loaded with `--only map_pay_category`; `map_payroll_cutover` holds one row per branch when it moves payroll to Fusion (`branch_id`, `first_fusion_month`): add a row when Al-Rabwa, Khamis or Madinah move, and the models switch that branch from Oasis to Fusion payroll from that month.
 
 `map_order_fulfilment_packages` (46 rows, from `static_mappings/order_fulfilment_packages.csv`) is loaded with `python scripts/load_reference_data.py --only map_order_fulfilment_packages`.
 
@@ -129,6 +133,16 @@ on-run-end:
 - `fact_ap_open_item` is a snapshot at the last refresh (`snapshot_date`); payables ageing at a past date is not available.
 - Head Office is `branch_key = 100`; the branch role must list it explicitly; admins receive it in `sec_user_access`.
 
+- Headcount is a month-end snapshot from January 2026: use the last month of the selection or an average, never a sum across months; exclude contingent workers (`is_contingent = 0`) by default. Before 2026 only paid headcount (distinct `payee_key` with basic pay in `fact_payroll_monthly`) exists.
+- `fact_headcount_monthly.is_closed_month = 0` marks the projected current month-end (its snapshot includes scheduled changes); a "latest month" headcount KPI filters `is_closed_month = 1`.
+- Payroll measures filter `is_parallel_run = 0` (the cost columns already exclude parallel-run rows; `amount` does not).
+- Turnover = leavers ÷ average month-end headcount, from 2026.
+- Put `fact_payroll_monthly`, `fact_leave_balance_monthly` and `agg_staff_productivity_monthly` in an HR/finance-only perspective and role; they carry pay.
+- Leave balances are weekly running balances (about 3.7 accrual periods per month): summing `end_balance` or `leave_liability_amount` across a month overstates the liability about 4.4 times. Monthly KPIs filter `is_latest_in_month = 1` (the last accrual period of each employee and plan in the calendar month); the latest-position KPI filters `is_current_balance = 1` (the latest closed period). `is_closed_period = 0` marks future accrual periods (they run into 2027); do not count them in current-position KPIs.
+- Leave liability = end balance × monthly salary ÷ 30, monthly salary = recurring pay (basic, housing, transport, food, clinical and other allowances) of the latest payroll month with positive Basic pay; null where the person has not been paid yet. Negative liabilities (overdrawn balances) are kept.
+- `fact_absence_daily` keeps future-dated planned absence days (into 2027): year-to-date and trend measures must filter by `dim_date` (dates up to today).
+- `agg_staff_productivity_monthly` covers linked doctors and nurses; compute revenue per payroll SAR as Σ `revenue_amount` ÷ Σ `payroll_cost`, never an average of ratios. Its FTE is the highest FTE per staff and month over non-contingent employees.
+
 ## Deployment checklist (Ubuntu server)
 
 1. Copy `models/hnh/`, `macros/hnh/`, `tests/hnh/` into `dbt/` (commit them to the repo and pull on the server, so line endings and file-name case come from git).
@@ -136,7 +150,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` (Phase 3 full build of 2026-10-05: PASS=642 WARN=31 ERROR=0 in about 12 minutes). The WARN count is the `warn_*` monitors and warn-severity tests that return data findings (Phase 1–3), so a few more or fewer is normal; only ERROR > 0 is a failure.
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` (Phase 4 full build of 2026-10-06: PASS=813 WARN=38 ERROR=0 in about 12.5 minutes; Phase 3 of 2026-10-05 was PASS=642 WARN=31 ERROR=0). The WARN count is the `warn_*` monitors and warn-severity tests that return data findings (Phase 1–3), so a few more or fewer is normal; only ERROR > 0 is a failure.
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.

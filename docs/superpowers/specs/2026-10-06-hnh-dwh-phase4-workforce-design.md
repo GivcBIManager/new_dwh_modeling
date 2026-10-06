@@ -195,3 +195,22 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 | O-P4-5 | Fusion FTE values are mostly empty or 0 | FTE KPIs | FTE 1 unless a value in (0, 1.5] exists |
 | O-P4-6 | Whether contingent workers count in any headcount KPI | — | Closed 2026-10-06: excluded by default, flagged (`is_contingent`) |
 | O-P4-7 | Head Office employees have no Oasis staff record | Productivity of HO staff | Not linked |
+
+---
+
+## 11. Changes during implementation (2026-10-06)
+
+- Age and tenure (and the bands built from them) are exact whole years (`dateDiff('year')` less one before the anniversary), not days ÷ 365.25.
+- `map_pay_category` marks a base deduction element as *Not pay* only when, in completed payroll, at least half of its person-months also carry its "<name> Results" twin; otherwise the name rules apply (the blanket twin rule would have dropped about 430k SAR).
+- `hnh_fact_worker_movement.branch_key` is the branch of the legal employer on the assignment row valid on the action date, `previous_branch_key` the one valid the day before (falling back to the department prefix, then the employee's current branch); `is_branch_transfer` is a change of that branch. This supersedes the department-prefix refinement of the plan, which missed GLB_TRANSFER.
+- `fact_headcount_monthly` gains `is_closed_month` (month-end before today), so latest-month KPIs can exclude the projected current month-end.
+- Fusion payroll keeps, per person, element, legal employer and month, only the results of the latest regular payroll action (action type R), plus all QuickPay actions, because September 2026 holds repeated full regular runs.
+- A Fusion run result with no legal employer (GOSI and reference results) takes the employer of the same person and payroll action; unresolved results go to branch 0 and fail `assert_workforce_facts_have_branch`.
+- `fact_leave_balance_monthly` adds `is_closed_period`, `is_latest_in_month` and `is_current_balance` (balances are weekly running balances; ties resolved by the highest accrual entry id); monthly KPIs filter `is_latest_in_month`, latest-position KPIs `is_current_balance`.
+- The salary behind the leave liability (ASOF join) uses only payroll months with positive Basic pay, so adjustment-only months give no negative salary; negative liabilities of overdrawn balances are kept.
+- Future-dated absence days stay in `fact_absence_daily` (planned leave) with no flag; consumers filter by date.
+- `agg_staff_productivity_monthly` FTE is the maximum FTE per staff and month over non-contingent employees, and only months up to the current month are kept; the linked-staff set is one row per `staff_key` (the bridge stays one row per employee).
+- `rec_payroll_monthly.gl_employee_cost` uses `actual_excl_opening`, and a new column `gl_payroll_journal_credit` (Payroll-source credits on income-statement accounts) sits beside the debit column; the month spine stops at the current month.
+- `hnh_dim_employee` leaves the 21 CON contractors without period of service, assignment or legal employer on branch 0 (dimension only; never in a fact).
+- Paid headcount in `rec_headcount_monthly` counts people with Basic pay above zero (not any gross pay); the two differ by 0 to 6 people per branch-month.
+- Two extra warn monitors were added in Task 8: `assert_leave_balance_single_entry_per_period` and `assert_absence_daily_no_overlap`.
