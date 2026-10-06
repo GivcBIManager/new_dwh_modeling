@@ -1,7 +1,8 @@
 {{ config(order_by='(branch_key, month_end, store_key, item_key)') }}
 
 -- Month-end stock per branch, store and item (spec 6.4, S5). The source of a branch's month-end is the first that applies:
---   1 fusion_valuation: the branch is live on Fusion inventory (go-live on or before the month-end);
+--   1 fusion_valuation: the branch is live on Fusion inventory (go-live on or before the month-end) and Fusion valuation
+--     holds a layer for it dated on or before the month-end (otherwise Fusion would produce no rows);
 --   2 snapshot: an old-warehouse snapshot (bal_product_base) exists in the month (its last snapshot day);
 --   3 oasis_batch: an Oasis batch snapshot exists in the month (its last snapshot day);
 --   4 derived: a month after the branch's last old snapshot and before its first Oasis batch month, rolled back from
@@ -44,12 +45,25 @@ batch_days as (
     group by branch_id, month_end
 ),
 
+layers as (
+    select o.branch_key as branch_id, v.inventory_org_id as organization_id, v.inventory_item_id as inventory_item_id,
+           v.cost_date as cost_date, v.quantity as layer_quantity, v.quantity * v.unit_cost as layer_value
+    from {{ ref('stg_fusion__inventory_valuation') }} as v
+    inner join {{ ref('int_inventory_org_branch') }} as o on o.organization_id = v.inventory_org_id
+    where v.posted_flag in ('Y', 'E')
+),
+
+fusion_first_layer as (
+    select branch_id, min(cost_date) as first_layer_date from layers group by branch_id
+),
+
 fusion_month_ends as (
     select c.branch_id as branch_id,
            toDate(toLastDayOfMonth(addMonths(toStartOfMonth(c.go_live_date), toInt32(n.number)))) as month_end
     from cutover as c
     cross join numbers(240) as n
-    where month_end <= {{ last_month_end }}
+    inner join fusion_first_layer as f on f.branch_id = c.branch_id
+    where month_end <= {{ last_month_end }} and f.first_layer_date <= month_end
 ),
 
 derived_month_ends as (
@@ -190,14 +204,6 @@ oasis_rows as (
     left join crosswalk as x on x.branch_key = r.branch_id and x.product_code = r.product_code
     left join average_cost as c on c.branch_id = r.branch_id and c.product_code = r.product_code
     {{ hnh_settings() }}  -- left joins in a CTE that feeds a union: settings must sit here
-),
-
-layers as (
-    select o.branch_key as branch_id, v.inventory_org_id as organization_id, v.inventory_item_id as inventory_item_id,
-           v.cost_date as cost_date, v.quantity as layer_quantity, v.quantity * v.unit_cost as layer_value
-    from {{ ref('stg_fusion__inventory_valuation') }} as v
-    inner join {{ ref('int_inventory_org_branch') }} as o on o.organization_id = v.inventory_org_id
-    where v.posted_flag in ('Y', 'E')
 ),
 
 org_balances as (

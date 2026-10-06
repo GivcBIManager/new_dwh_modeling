@@ -45,7 +45,7 @@ receipts as (
 ),
 
 ap_match as (
-    select d.line_location_id as ap_line_location_id, sum(a.spend_amount) as matched_amount
+    select d.line_location_id as ap_line_location_id, sum(a.spend_amount) as matched_amount, countIf(a.spend_amount != 0) as spend_lines
     from {{ ref('fact_ap_invoice_line') }} as a
     inner join {{ ref('stg_fusion__po_distributions') }} as d on d.po_distribution_id = a.po_distribution_id
     where a.po_distribution_id is not null and d.line_location_id is not null
@@ -78,7 +78,7 @@ fusion_lines as (
         ifNull(s.document_status, 'UNKNOWN')                                    as po_status,
         multiIf(lt.line_type_name = 'Goods', 'Goods', ifNull(lt.line_type_name, '') like '%Services%', 'Services',
                 ifNull(lt.line_type_name, 'Unknown'))                           as line_type,
-        toUInt8(m.ap_line_location_id is not null)                              as is_ap_matched,
+        toUInt8(ifNull(m.spend_lines, 0) > 0)                                 as is_ap_matched,
         ifNull(m.matched_amount, 0)                                             as ap_matched_amount
     from fusion_schedules as s
     left join requisitions as q on q.req_line_location_id = s.line_location_id
@@ -171,7 +171,7 @@ select
     l.ordered_value                                             as ordered_value,
     l.received_value                                            as received_value,
     {{ hnh_date_key_in_range('l.first_receipt_date') }}         as first_receipt_date_key,
-    if(l.first_receipt_date is null, cast(null as Nullable(Int32)),
+    if(l.first_receipt_date is null or dateDiff('day', l.po_date, assumeNotNull(l.first_receipt_date)) < 0, cast(null as Nullable(Int32)),
        toInt32(dateDiff('day', l.po_date, assumeNotNull(l.first_receipt_date)))) as lead_time_days,
     l.po_status                                                 as po_status,
     l.line_type                                                 as line_type,

@@ -42,6 +42,7 @@ models:
       - name: is_cost_mismatch
         description: >
           1 when cost_amount and oasis_cost_amount are both non-zero and their absolute ratio lies outside [0.5, 2].
+          Also fires when Fusion and Oasis quantities differ on lines costed from the Oasis unit cost.
   - name: fact_patient_consumption
     columns:
       - name: movement_key
@@ -155,8 +156,17 @@ models:
               values: ['oasis', 'fusion']
       - name: quantity_received
         description: >
-          Fusion: the schedule's received quantity. Oasis: the GRN lines on the PO line in fact_goods_receipt's scope
-          (int_oasis_stock_line, movement 'Goods receipt'), in Oasis base units; returns to supplier are not netted.
+          Fusion: the schedule's received quantity, net of returns to vendor. Oasis: the GRN lines on the PO line in
+          fact_goods_receipt's scope (int_oasis_stock_line, movement 'Goods receipt'), in Oasis base units, counted
+          gross (returns to supplier are not netted).
+      - name: lead_time_days
+        description: >
+          Days from the PO date to the first receipt; null when there is no receipt or when the difference is negative
+          (4 Fusion lines were received before their PO date).
+      - name: is_ap_matched
+        description: >
+          1 when the schedule has a matched Fusion AP line with non-zero spend; schedules matched only by zero-spend
+          (tax) lines are 0. ap_matched_amount is the matched spend either way.
   - name: fact_goods_receipt
     columns:
       - name: goods_receipt_key
@@ -182,6 +192,15 @@ models:
               to: ref('fact_purchase_line')
               field: purchase_line_key
               config: {where: "purchase_line_key != -1"}
+      - name: unit_price
+        description: >
+          Fusion: the price per PO unit while quantity is in the primary unit, so quantity x unit_price is not the line
+          value (received_value is). Oasis: the line's unit cost.
+      - name: is_po_receipt
+        description: >
+          1 when the receipt links to a PO line (Fusion po_line_location_id not null; Oasis GRN or return with a resolved
+          purchase_line_key), else 0 (e.g. Fusion RECEIVE rows without a PO line are internal transfer receipts).
+          Supplier and purchasing KPIs filter is_po_receipt = 1.
       - name: receipt_type
         description: >
           RECEIVE / RETURN TO VENDOR (Fusion), GRN / RETURN TO VENDOR (Oasis STOCKISS RFN, returns to supplier).

@@ -334,3 +334,62 @@ unit_tests:
         - {month_end: 2026-08-31, stock_source: 'oasis_batch', source_system: 'oasis', quantity: 5, stock_value: 10, has_expired_lot: 0}
         - {month_end: 2026-09-30, stock_source: 'fusion_valuation', source_system: 'fusion', quantity: 20, stock_value: 100, has_expired_lot: 0}
         - {month_end: 2026-09-30, stock_source: 'fusion_valuation', source_system: 'fusion', quantity: 10, stock_value: 50, has_expired_lot: 1}
+
+  - name: int_stock_month_end_falls_back_when_fusion_has_no_layers
+    description: >
+      A branch with a go-live date (2026-09-05) but no Fusion valuation layer on or before the September month-end falls
+      back to its Oasis batch snapshot (7 in store 44) instead of choosing a Fusion month that produces no rows.
+    model: int_stock_month_end
+    overrides:
+      vars:
+        hnh_stock_month_end_last: "2026-09-30"
+    given:
+      - input: ref('stg_ref__scm_cutover')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toNullable(toDate('2026-09-05')) as inventory_go_live_date
+      - input: ref('int_item_crosswalk')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_key, 'P1' as product_code, toInt64(500) as inventory_item_id, toFloat64(1) as units_per_primary
+      - input: ref('stg_oasis__products')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, 'P1' as product_code, toFloat64(2) as average_cost
+      - input: ref('stg_ref__stock_snapshot')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(44) as store_id, 'P1' as product_code, toDate('2026-05-31') as snapshot_date, toFloat64(0) as qty_on_hand, toFloat64(2) as average_cost
+          where 0
+      - input: ref('stg_oasis__stock_batch_snapshots')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toDate32('2026-09-30') as snapshot_date, toInt64(44) as store_id, 'P1' as product_code, toNullable(toDate32('2027-01-01')) as expiry_date, toFloat64(7) as quantity
+      - input: ref('int_oasis_stock_line')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_key, toDate32('2026-09-01') as line_date, toNullable(toInt64(44)) as store_id, toInt64(1) as item_key,
+                 toNullable('P1') as product_code, toFloat64(1) as primary_quantity
+          where 0
+      - input: ref('stg_fusion__inventory_valuation')
+        format: sql
+        rows: |
+          select toNullable(toInt64(2004)) as inventory_org_id, toNullable(toInt64(500)) as inventory_item_id, toDate('2026-10-02') as cost_date, toFloat64(1) as quantity, toFloat64(5) as unit_cost, toNullable('Y') as posted_flag
+      - input: ref('int_inventory_org_branch')
+        format: sql
+        rows: |
+          select toInt64(2004) as organization_id, toUInt8(2) as branch_key
+      - input: ref('stg_fusion__inventory_onhand')
+        format: sql
+        rows: |
+          select toNullable(toDate('2026-09-30')) as snapshot_date, toNullable(toInt64(2004)) as organization_id, toNullable(toInt64(500)) as inventory_item_id,
+                 toNullable('IPH') as subinventory_code, toNullable('A') as lot_number, toFloat64(1) as primary_quantity
+          where 0
+      - input: ref('stg_fusion__lots')
+        format: sql
+        rows: |
+          select toInt64(500) as inventory_item_id, toInt64(2004) as organization_id, 'A' as lot_number, toNullable(toDate32('2027-06-30')) as expiration_date
+          where 0
+    expect:
+      rows:
+        - {month_end: 2026-09-30, stock_source: 'oasis_batch', source_system: 'oasis', quantity: 7, stock_value: 14, has_expired_lot: 0}

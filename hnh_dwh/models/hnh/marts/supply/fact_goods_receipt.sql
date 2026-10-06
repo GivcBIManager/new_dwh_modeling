@@ -44,7 +44,8 @@ fusion_receipts as (
         coalesce(dl.delivered_lot, r.vendor_lot_number)                         as lot_number,
         dl.delivered_expiry                                                     as expiry_date,
         cast(null as Nullable(Int64))                                           as oasis_line_id,
-        toNullable(r.transaction_id)                                            as fusion_transaction_id
+        toNullable(r.transaction_id)                                            as fusion_transaction_id,
+        toUInt8(r.po_line_location_id is not null)                              as has_po_line
     from {{ ref('stg_fusion__receipt_transactions') }} as r
     inner join {{ ref('int_inventory_org_branch') }} as o on o.organization_id = r.organization_id
     inner join cutover as k on k.branch_id = o.branch_key
@@ -81,7 +82,8 @@ oasis_receipts as (
         g.lot_number                                                            as lot_number,
         g.expiry_date                                                           as expiry_date,
         toNullable(g.oasis_line_id)                                             as oasis_line_id,
-        cast(null as Nullable(Int64))                                           as fusion_transaction_id
+        cast(null as Nullable(Int64))                                           as fusion_transaction_id,
+        toUInt8(0)                                                              as has_po_line
     from {{ ref('int_oasis_stock_line') }} as g
     left join oasis_grn_lines as rg on rg.grn_branch_key = g.branch_key and rg.grn_line_id = g.cross_ref_line_id
     where g.movement_type in ('Goods receipt', 'Return to supplier')
@@ -113,6 +115,7 @@ select
     r.expiry_date                                           as expiry_date,
     r.oasis_line_id                                         as oasis_line_id,
     r.fusion_transaction_id                                 as fusion_transaction_id,
+    toUInt8(if(r.source_system = 'fusion', r.has_po_line = 1, pl.purchase_line_key is not null)) as is_po_receipt,
     now()                                                   as _loaded_at
 from receipts as r
 left join (select supplier_key from {{ ref('hnh_dim_supplier') }}) as sp on sp.supplier_key = r.supplier_key_raw
