@@ -102,7 +102,7 @@ unit_tests:
       Branch 3 cuts over in 202607. Oasis June (202606): basic 1,000 and staff GOSI −90 (an employee deduction, not cost).
       Oasis July is a parallel-run month: kept with is_parallel_run = 1 and zero cost. Fusion July: basic 1,100 and
       a delay deduction of 50 stored positive (amount −50, an earnings adjustment that lowers cost) and a GOSI
-      reference earnings result (Not pay). A Fusion June result is before the cutover and dropped.
+      reference earnings result (Not pay). A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling.
     model: fact_payroll_monthly
     given:
       - input: ref('stg_oasis__payroll_transactions')
@@ -116,20 +116,21 @@ unit_tests:
         rows: |
           select toInt64(r) as run_result_id, toInt64(iv) as input_value_id, toNullable(toInt64(el)) as element_type_id,
                  toNullable(toInt64(pa)) as payroll_action_id, toNullable(at) as action_type,
-                 toNullable(toInt64(7)) as person_id, toNullable(toInt64(1)) as legal_employer_id, toNullable('C') as payroll_action_status,
+                 toNullable(toInt64(7)) as person_id, if(le = 0, cast(null as Nullable(Int64)), toNullable(toInt64(le))) as legal_employer_id, toNullable('C') as payroll_action_status,
                  toDate32(d) as effective_date, toNullable(toFloat64(v)) as result_value
-          from values('r UInt32, iv UInt32, el UInt32, pa UInt32, at String, d String, v Float64',
-              (1, 101, 11, 2, 'R', '2026-07-31', 1100), (2, 102, 12, 2, 'R', '2026-07-31', 50), (3, 103, 13, 2, 'R', '2026-07-31', 9000),
-              (4, 101, 11, 1, 'R', '2026-06-30', 999), (5, 101, 11, 1, 'R', '2026-07-31', 1100), (6, 101, 11, 3, 'Q', '2026-07-31', 50))
+          from values('r UInt32, iv UInt32, el UInt32, pa UInt32, at String, le UInt32, d String, v Float64',
+              (1, 101, 11, 2, 'R', 1, '2026-07-31', 1100), (2, 102, 12, 2, 'R', 1, '2026-07-31', 50), (3, 103, 13, 2, 'R', 1, '2026-07-31', 9000),
+              (4, 101, 11, 1, 'R', 1, '2026-06-30', 999), (5, 101, 11, 1, 'R', 1, '2026-07-31', 1100), (6, 101, 11, 3, 'Q', 1, '2026-07-31', 50),
+              (7, 105, 14, 4, 'R', 1, '2026-07-31', 700), (8, 104, 15, 2, 'R', 0, '2026-07-31', 200))
       - input: ref('stg_fusion__payroll_elements')
         format: sql
         rows: |
           select toInt64(e) as element_type_id, toNullable(n) as element_name
-          from values('e UInt32, n String', (11, 'Basic Salary'), (12, 'Delay Deduction Results'), (13, 'Saudi GOSI Reference Earnings'))
+          from values('e UInt32, n String', (11, 'Basic Salary'), (12, 'Delay Deduction Results'), (13, 'Saudi GOSI Reference Earnings'), (14, 'End of Service Provision'), (15, 'Saudi GOSI Employer Charge'))
       - input: ref('stg_fusion__payroll_input_values')
         format: sql
         rows: |
-          select toInt64(i) as input_value_id, toNullable('Pay Value') as input_value_base_name from values('i UInt32', (101), (102), (103))
+          select toInt64(i) as input_value_id, toNullable('Pay Value') as input_value_base_name from values('i UInt32', (101), (102), (103), (104), (105))
       - input: ref('stg_ref__pay_category')
         format: sql
         rows: |
@@ -137,7 +138,8 @@ unit_tests:
           from values('s String, c String, pt String, cat String',
               ('oasis', 'BASIC', 'P', 'Basic'), ('oasis', 'STAFF GOSI', 'P', 'GOSI employee deduction'),
               ('fusion', 'Basic Salary', '', 'Basic'), ('fusion', 'Delay Deduction Results', '', 'Absence and lateness deduction'),
-              ('fusion', 'Saudi GOSI Reference Earnings', '', 'Not pay'))
+              ('fusion', 'Saudi GOSI Reference Earnings', '', 'Not pay'),
+              ('fusion', 'End of Service Provision', '', 'Provisions'), ('fusion', 'Saudi GOSI Employer Charge', '', 'GOSI employer charge'))
       - input: ref('stg_ref__payroll_cutover')
         format: sql
         rows: |
@@ -147,7 +149,7 @@ unit_tests:
         rows: |
           select toInt64(bitShiftRight(cityHash64(concat(toString(c), '|')), 1)) as pay_category_key, c as pay_category, toUInt8(cost) as is_cost, toUInt8(gross) as is_gross_pay, toInt8(sgn) as fusion_sign
           from values('c String, cost UInt8, gross UInt8, sgn Int8',
-              ('Basic', 1, 1, 1), ('GOSI employee deduction', 0, 0, -1), ('Absence and lateness deduction', 1, 1, -1), ('Not pay', 0, 0, 1), ('Unmapped', 0, 0, 1))
+              ('Basic', 1, 1, 1), ('GOSI employee deduction', 0, 0, -1), ('Absence and lateness deduction', 1, 1, -1), ('Not pay', 0, 0, 1), ('Unmapped', 0, 0, 1), ('Provisions', 0, 0, 1), ('GOSI employer charge', 1, 0, 1))
       - input: ref('int_legal_employer_branch')
         format: sql
         rows: |
@@ -173,3 +175,5 @@ unit_tests:
         - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150}
         - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50}
         - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0}
+        - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0}
+        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0}
