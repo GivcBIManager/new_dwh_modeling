@@ -1,8 +1,12 @@
 """Draft static_mappings/pay_category_mapping.csv: Oasis pay codes and Fusion pay-value elements to pay categories.
 
 Keyword rules, first match wins. Codes with no rule are written with PAY_CATEGORY 'Unmapped' for the BI manager to
-complete. Fusion: only elements that carry a 'Pay Value' input; a deduction element without 'Results' whose
-'<name> Results' twin exists is 'Not pay' (the pair records the same deduction twice).
+complete. Fusion: only elements that carry a 'Pay Value' input. A base deduction element (name contains
+'deduction', does not end with 'Results', and a '<name> Results' twin exists) is 'Not pay' only when the pair
+really records the same deduction twice: in completed payroll (payroll_action_status 'C', Pay Value results) at
+least 50% of the base element's distinct (person, payroll month) also have a Pay Value result of the twin. Otherwise
+(low overlap, or the base was never paid) it is mapped by the name rules like any other element. The overlap ratio
+and chosen category are printed per pair.
 
 Usage:  python scripts/draft_pay_category_map.py
 """
@@ -54,6 +58,22 @@ def first(rules, text):
     return next((cat for pattern, cat in rules if re.search(pattern, text)), "Unmapped")
 
 
+def twin_overlap(c, base, twin):
+    """(base person-months, of which also in twin) over completed payroll, Pay Value results only."""
+    sql = (
+        "with r as (select e.element_name n, r.person_id p, toYYYYMM(r.payroll_effective_date) m "
+        "from fusion.fact_payroll_run_result r final "
+        "join (select distinct input_value_id, element_type_id from fusion.dim_payroll_input_value final "
+        "      where input_value_base_name = 'Pay Value') i on i.input_value_id = r.input_value_id "
+        "join (select distinct element_type_id, element_name from fusion.dim_payroll_element final "
+        "      where is_current = 'Y') e on e.element_type_id = i.element_type_id "
+        "where r.payroll_action_status = 'C' and e.element_name in ({b:String}, {t:String})) "
+        "select countDistinctIf((p, m), n = {b:String}), "
+        "countDistinctIf((p, m), n = {b:String} and (p, m) in (select p, m from r where n = {t:String})) from r"
+    )
+    return c.query(sql, parameters={"b": base, "t": twin}).result_rows[0]
+
+
 def main():
     c = client()
     oasis = c.query(
@@ -81,7 +101,10 @@ def main():
         elif cls == "Social Insurance Deductions":
             cat = "GOSI employee deduction"
         elif "deduction" in low and not low.endswith("results") and f"{name} Results" in names:
-            cat = "Not pay"
+            total, both = twin_overlap(c, name, f"{name} Results")
+            ratio = both / total if total else 0.0
+            cat = "Not pay" if total and ratio >= 0.5 else first(FUSION_NAME_RULES, low)
+            print(f"pair: {name} | {name} Results | base person-months {total}, shared {both}, overlap {ratio:.2f} -> {cat}")
         else:
             cat = first(FUSION_NAME_RULES, low)
         rows.append(("fusion", name, "", cat))
