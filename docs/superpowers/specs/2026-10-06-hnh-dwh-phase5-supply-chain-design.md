@@ -362,3 +362,40 @@ There is no separate fact. Department consumption is `fact_stock_movement` with 
 | O-P5-5 | Load `bal_product_base` into `default` (daily, 12–24 months) and confirm its column names. | User |
 | O-P5-6 | Alrabwah's and Head Office's reversed Fusion opening balances: confirm they are not live on Fusion inventory, and set their go-live dates in `map_scm_cutover` when they move. | BI manager |
 | O-P5-7 | Muhayil's opening balance is dated after its first sales, so Fusion month-end stock for May–July 2026 is not reliable. | BI manager |
+
+---
+
+## 11. Changes during implementation (2026-10-06)
+
+Pre-flight rulings:
+
+- `rec_purchase_ap_monthly` and `rec_inventory_gl_monthly` take their month from `assumeNotNull(...)` of the AP accounting date and the GL date, because the server has `allow_nullable_key = 0` and a Nullable sort key would fail the build (E1, E2).
+- `stg_ref__stock_snapshot` wraps every column in `assumeNotNull` / `ifNull` to its declared type, so a Nullable-loaded `bal_product_base` keeps the declared types (E3).
+- `rec_consumption_charge_monthly` links charges exactly as `fact_patient_consumption` does (invoice and product to the delivery lines, then the live charge lines), through one shared intermediate model, the new `int_consumption_charge_link`, with a unit-test row for the two-dispense case (E4).
+- The derived month-end rollback reverses every movement that changed Oasis on-hand, so it reads `int_oasis_stock_line` (all in-scope Oasis lines, including post-go-live batch lines and lines represented by Fusion rows) instead of the Oasis rows of `fact_stock_movement` (E5).
+- `fact_goods_receipt` includes Oasis returns to supplier (STOCKISS RFN) as `RETURN TO VENDOR` with negative quantity, symmetric with Fusion (E6).
+- `is_in_oasis` and `is_in_fusion` exist only where a line can be in both systems (`fact_stock_movement`, `fact_patient_consumption`); the other supply facts carry `source_system` (E7, refines S3).
+- The draft scripts for `map_store_department` and `map_item_group` are committed, as in Phase 4; only their CSV outputs are git-ignored (E8, corrects spec 4.2).
+- `fact_stock_monthly` groups and hashes on the resolved keys (`ifNull(store_key, -1)`, `ifNull(item_key, -1)`) and has a `hnh_unique_combination` test on branch, month end, store and item (E9); `int_stock_month_end` ends with the trailing settings clause (E13).
+- Oasis received quantity on PO lines uses the same GRN filters as `fact_goods_receipt` (E10).
+- The `units_per_primary` not-null test became a singular test (`units_per_primary <= 0`), and the `snapshot_date` not-null test on an `assumeNotNull` column was dropped, because neither could fail (E11).
+- Two macros, `hnh_stock_item_key` and `hnh_fusion_store_key`, are the single recipe for item and store keys (E12).
+
+Task rulings:
+
+- The Task 1 line-reference test fails on a null parse, and `hnh_fusion_store_key` folds an empty subinventory to `*` like a null one.
+- `stg_oasis__products` keeps one row per branch, store and trimmed product code, preferring the untrimmed raw code and then the larger on-hand quantity.
+- Oasis batch expiry dates before 2000-01-01 mean "no expiry": `int_oasis_stock_line` and `int_fusion_stock_line` set `expiry_date` to null, so expired-lot flags, near-expiry and `warn_stock_in_expired_lots` inherit the rule (the expiry-before-2000 rule; Fusion lot and expiry are taken from the same lot with expiry from 2000 on).
+- The `units_per_primary` ratio uses pack-size buckets, `if(r >= 1, round(r), 1 / round(1 / r))`, instead of `round(r, 4)`, because Fusion primary quantities carry five decimals and one pack factor split across buckets.
+- `hnh_dim_item` is one row per Fusion master item and lists all its Oasis product codes in `oasis_product_codes` (branch:product, ...), so an item with two Oasis products cannot fan out.
+- `int_fusion_stock_line` has a fifth reference status, `oasis_out_of_scope`, with `oasis_scope_reason` (reversed invoice, CREDITAR, PKHEADER, zero-cost non-stock, other); `fact_stock_movement` drops such a Fusion row only when an explicit Oasis rule excluded its Oasis line and keeps the rest as Fusion-only lines.
+- `valuation_unit_cost` is null when the weighted layer cost is 0, so those rows fall back to the Oasis line cost.
+- A new column `oasis_cost_amount` (the referenced Oasis line's cost) and a flag `is_cost_mismatch` (Fusion and Oasis cost differ by more than 2x on the same line) were added to `fact_stock_movement`, and carried to `fact_patient_consumption`, because Fusion pack-item costs in five branches equal one base unit's Oasis cost; the new monitor `warn_cost_mismatch` reports it by branch and month.
+- The near-zero quantity guard: in `int_oasis_stock_line` a primary quantity with absolute value below 1e-6 is 0 and its unit cost is null (1,926 lines), so no derived unit cost multiplies a Fusion quantity into an absurd cost.
+- `fact_patient_consumption` gains `revenue_basis` (`charge`, `package_component`, `cancelled`, `none`); `is_linked_to_charge` counts live charges only; `rec_consumption_charge_monthly` margin and `linked_consumption_cost` cover `revenue_basis = 'charge'`, with `package_component_cost` and `cancelled_only_cost` as separate columns and a new `linked_consumption_cost_oasis` column.
+- `int_store_crosswalk` (new model) maps Oasis stores to Fusion stores from the integration references, giving the `store_group_key` of spec 5.2.
+- `warn_unit_cost_outliers` keeps the 20x item-median rule but lists only rows with an absolute cost of at least 10,000 SAR and excludes transfers (371 rows instead of 56,864).
+- `rec_stock_interface_daily` closes exactly: `oasis_lines_in_fusion` excludes post-go-live batch lines, and the new columns `fusion_out_of_scope_reversals` and `fusion_out_of_scope_kept` show the out-of-scope Fusion rows; `warn_opening_balance_after_first_sale` compares the earliest opening date with the first sale.
+- Fusion month-end source precedence picks Fusion only where its valuation has layers for the branch by that month-end, otherwise the next available source.
+- `lead_time_days` is null when negative; `fact_goods_receipt` gains `is_po_receipt` (Fusion RECEIVE rows with no PO line are internal receipts), which supplier KPIs filter; `is_ap_matched` rests on spend lines (not tax-only) and stays 1 for schedules whose AP lines net to 0; the YAML documents `quantity_received` as net of returns for Fusion and gross GRN for Oasis.
+- Fusion HR staging (positions, jobs, grades, locations, HR departments, organizations, absence types and plans) keeps the latest row per id rather than current rows only, with is_current exposed, so end-dated members referenced by facts stay in the dimensions.
