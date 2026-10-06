@@ -27,7 +27,7 @@ salary as (
     select employee_key, payroll_month, sum(amount) as monthly_salary
     from {{ ref('fact_payroll_monthly') }}
     where is_parallel_run = 0 and employee_key != -1
-      and pay_category in ('Basic', 'Housing', 'Transport', 'Food', 'Clinical allowances', 'Other allowances')
+      and pay_category in (select pay_category from {{ ref('dim_pay_category') }} where is_recurring = 1)
     group by employee_key, payroll_month
     having sumIf(amount, pay_category = 'Basic') > 0  -- skip adjustment-only months
 )

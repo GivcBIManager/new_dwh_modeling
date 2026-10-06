@@ -12,7 +12,7 @@ joined as (
            s.location_id as location_id, s.fte as fte,
            e.employee_key as employee_key, e.worker_type_code as worker_type_code, e.gender as gender, e.is_saudi as is_saudi,
            e.birth_date as birth_date, e.staff_key as staff_key,
-           p.start_date as start_date, p.original_hire_date as original_hire_date, p.termination_date as termination_date
+           p.start_date as start_date, p.original_hire_date as original_hire_date
     from snap as s
     inner join (select employee_key, person_id, worker_type_code, gender, is_saudi, birth_date, staff_key
                 from {{ ref('hnh_dim_employee') }} where person_id is not null) as e
@@ -44,6 +44,5 @@ select
     toUInt8(1)                                                                      as headcount,
     fte,
     toUInt8(start_date is not null and toStartOfMonth(start_date) = toStartOfMonth(month_end))             as is_new_hire_in_month,
-    toUInt8(termination_date is not null and toStartOfMonth(termination_date) = toStartOfMonth(month_end)) as is_leaver_in_month,
     now()                                                                           as _loaded_at
 from joined

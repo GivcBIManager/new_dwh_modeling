@@ -1,7 +1,7 @@
 {{ config(alias='fact_worker_movement', order_by='(branch_key, action_date_key, movement_key)') }}
 
--- One Fusion assignment action from 2022 (spec 6.3). Branch from the department prefix (plan refinement), falling
--- back to the person's current branch.
+-- One Fusion assignment action from 2022 (spec 6.3). Branch from the legal employer of the assignment valid on the action
+-- date (previous branch: the day before), falling back to the department prefix, then the employee's current branch.
 with mv as (
     select * from {{ ref('stg_fusion__worker_movements') }}
     where action_date >= toDate32('{{ var("hnh_history_start_date") }}') and person_id is not null

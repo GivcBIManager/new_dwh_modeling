@@ -214,3 +214,8 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 - `hnh_dim_employee` leaves the 21 CON contractors without period of service, assignment or legal employer on branch 0 (dimension only; never in a fact).
 - Paid headcount in `rec_headcount_monthly` counts people with Basic pay above zero (not any gross pay); the two differ by 0 to 6 people per branch-month.
 - Two extra warn monitors were added in Task 8: `assert_leave_balance_single_entry_per_period` and `assert_absence_daily_no_overlap`.
+- `warn_leave_without_salary` counts only current balances (`is_current_balance = 1`), one per employee and plan, not every weekly entry.
+- Oasis payroll resolves staff to employee through `bridge_employee_staff` deduplicated to `min(employee_key)` per `staff_key` (3 staff records are shared by two employees), so no Oasis pay row is duplicated.
+- `fact_payroll_monthly` adds `paid_person_key` (`employee_key` when resolved, else `payee_key`), so paid headcount across months counts a person paid by Oasis and then Fusion once; `payee_key` stays per source.
+- `fact_headcount_monthly.is_leaver_in_month` is dropped (a leaver normally has no month-end row, so it caught about 11% of leavers); turnover leavers come from `fact_worker_movement.is_leaver`.
+- Relationship tests were added for every dimension key of the workforce facts (spec §8), with two error-severity conservation tests: `assert_headcount_matches_assignments` and `assert_movements_match_staged_actions`.

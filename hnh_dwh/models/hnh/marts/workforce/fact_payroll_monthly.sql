@@ -49,8 +49,8 @@ fusion_lines as (
     left join (select source_code, pay_category from {{ ref('stg_ref__pay_category') }} where source = 'fusion') as m
         on m.source_code = e.element_name
     where (r.action_type = 'Q' or r.payroll_action_id = r.latest_regular_action_id)
-      -- an unresolved employer stays visible as branch 0; a resolved one must be in a cutover branch and month
-      and (b.branch_key is null or toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month)
+      -- an unresolved employer (or one resolved to branch 0) stays visible as branch 0; a resolved one must be in a cutover branch and month
+      and (b.branch_key is null or b.branch_key = 0 or toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month)
     {{ hnh_settings() }}  -- left joins in a CTE feeding a union
 ),
 
@@ -95,6 +95,8 @@ select
     r.source                                                            as source,
     {{ hnh_surrogate_key(['r.source', 'r.branch_key', "ifNull(toString(r.person_id), r.staff_id)"]) }} as payee_key,
     r.employee_key                                                      as employee_key,
+    -- one key per person across sources (an Oasis payee linked through the bridge and its Fusion pay share it); distinct count for paid headcount
+    if(r.employee_key != -1, r.employee_key, payee_key)                 as paid_person_key,
     r.staff_key                                                         as staff_key,
     r.pay_category_key                                                  as pay_category_key,
     r.pay_category                                                      as pay_category,

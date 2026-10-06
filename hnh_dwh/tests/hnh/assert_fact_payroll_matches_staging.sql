@@ -29,7 +29,7 @@ fusion_staged as (
     left join (select source_code, pay_category from {{ ref('stg_ref__pay_category') }} where source = 'fusion') as m on m.source_code = e.element_name
     left join {{ ref('dim_pay_category') }} as c on c.pay_category = ifNull(m.pay_category, 'Unmapped')
     where (r.action_type = 'Q' or r.payroll_action_id = r.latest_regular_action_id)
-      and (b.branch_key is null or toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month)
+      and (b.branch_key is null or b.branch_key = 0 or toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month)
     {{ hnh_settings() }}
 ),
 fact as (

@@ -18,5 +18,8 @@ unit_tests:
           select toInt64(bitShiftRight(cityHash64(concat(toString(b), '|', s, '|')), 1)) as staff_key, toUInt8(b) as branch_key, s as staff_id
           from values('b UInt8, s String', (4, '500'), (5, '500'))
     expect:
-      rows:
-        - {worker_number: '500', branch_key: 4, match_method: worker_number}
+      format: sql
+      rows: |
+        select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(1)), '|')), 1)) as employee_key,
+               toInt64(bitShiftRight(cityHash64(concat(toString(toUInt8(4)), '|', '500', '|')), 1)) as staff_key,
+               toUInt8(4) as branch_key, '500' as worker_number, 'worker_number' as match_method

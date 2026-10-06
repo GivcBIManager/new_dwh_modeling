@@ -196,6 +196,7 @@ For each parallel-run month, `oasis_parallel_gross_pay` (Oasis rows in or after 
 | 100 | 2026-07-31 | 144 | 143.0 | 0 | 150 |
 | 100 | 2026-08-31 | 138 | 137.0 | 0 | 148 |
 | 100 | 2026-09-30 | 138 | 137.0 | 0 | 141 |
+
 ## 4. Monitors at first build
 
 Seven Task 9 monitors and two Task 8 monitors (the `assert_` names carry `severity: warn`). A PASS means 0 rows.
@@ -218,7 +219,7 @@ The hard workforce tests (`assert_workforce_facts_have_branch`, `assert_payroll_
 
 These are source or extract facts the model reports honestly; none is a model error.
 
-- **September 2026 repeated regular runs.** Fusion extract holds several full regular runs of the same month that were not rolled back (Jazan: actions 146197, 148235 and 150222, each about 690 people and 4.9M of basic). The rerun rule (latest regular action per person, element, legal employer and month, plus all QuickPay) removes, in Pay Value raw SAR (rows, people): 202603 0.03M (91, 13); 202607 under 0.01M (234, 234); 202608 under 0.01M (5, 3); 202609 89.36M (37,054, 1,936), of which 36.22M is Basic Salary. Without the rule September gross pay is about three times normal.
+- **September 2026 repeated regular runs.** Fusion extract holds several full regular runs of the same month that were not rolled back (Jazan: actions 146197, 148235 and 150222, each about 690 people and 4.9M of basic). The rerun rule (latest regular action per person, element, legal employer and month, plus all QuickPay) removes, in Pay Value raw SAR (rows, people): 202603 0.03M (91, 13); 202607 under 0.01M (234, 234); 202608 under 0.01M (5, 3); 202609 89.36M (37,054, 1,936), of which 36.22M is Basic Salary. The 202603 figure (0.03M) is the raw value of all removed March rows; the value difference between the two differing regular runs is about 26k SAR (next item). Without the rule September gross pay is about three times normal.
 - **202603 differing regular runs.** 91 person-element groups have two regular runs with different values (action 33032 against 61320); the older value (about 26k SAR) is dropped and may be arrears.
 - **Head Office end-of-service settlements.** Head Office payroll swings month to month because of end-of-service payments: 5.45M SAR for 7 people in 202608 (375,796 in 202607), not reruns.
 - **Branch 8 has no payroll in 202605 to 202607.** Oasis stops after 202604 and Fusion starts at the 202608 cutover; the source has no rows for the three months.
@@ -235,7 +236,9 @@ These are source or extract facts the model reports honestly; none is a model er
 
 Latest closed month-end 2026-09-30, non-contingent. Headcount and FTE by branch (FTE equals headcount for every branch except Head Office, 137.0 for 138): branch 1 989, 2 603, 3 696, 4 583, 5 528, 6 415, 7 303, 8 149, 100 138; total 4,404 (FTE 4,403). Saudisation: 1 30.5%, 2 32.7%, 3 30.7%, 4 33.8%, 5 32.4%, 6 29.9%, 7 31.0%, 8 26.8%, Head Office 41.3%, total 31.7% (1,396 of 4,404).
 
-Hires and leavers per month 2026 (month-end snapshot flags, non-contingent; leavers count only people active at a month-end): 202601 123 / 0, 202602 148 / 0, 202603 160 / 5, 202604 159 / 2, 202605 88 / 2, 202606 147 / 5, 202607 111 / 4, 202608 97 / 6, 202609 36 / 2.
+Hires per month 2026 (month-end snapshot flag `is_new_hire_in_month`, non-contingent): 202601 123, 202602 148, 202603 160, 202604 159, 202605 88, 202606 147, 202607 111, 202608 97, 202609 36.
+
+Leavers per month 2026 (`fact_worker_movement.is_leaver = 1` by action month; voluntary in brackets; no contingent worker is among them): 202601 1 (1), 202602 6 (3), 202603 9 (6), 202604 19 (10), 202605 13 (3), 202606 22 (12), 202607 39 (16), 202608 58 (21), 202609 65 (12); 236 for January to September. 202610 has 4 (2 dated after today) and 202611 4 (all scheduled). The dropped snapshot flag `is_leaver_in_month` marked only 26 rows over the same months, because a leaver normally has no month-end row.
 
 Leave liability at the current balance (`is_current_balance = 1`), days and SAR: branch 1 25,060 / 7,147,818; 2 18 / 3,652; 3 21,839 / 6,362,024; 4 13,456 / 3,858,213; 6 8,832 / 2,738,550; 7 5,391 / 1,754,526; 8 1,166 / 385,365; Head Office 3,513 / 3,295,694. Branch 5 (Madinah) has no Fusion balances yet.
 

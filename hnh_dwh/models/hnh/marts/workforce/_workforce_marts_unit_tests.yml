@@ -5,7 +5,7 @@ unit_tests:
     description: >
       Person 1 (employee, Saudi, hired 2026-02-10) is active at the February and March month-ends: hire flag in
       February. Person 2 is active in January, INACTIVE at the end of February (no row), active again at the end of
-      March with a termination date of 2026-03-15 (leaver flag in March). Person 3 is a contingent worker: a row with
+      March with a termination date of 2026-03-15 (still counted at the March month-end). Person 3 is a contingent worker: a row with
       is_contingent = 1.
     model: fact_headcount_monthly
     given:
@@ -34,11 +34,11 @@ unit_tests:
           from values('p UInt32, wt String, sa UInt8', (1, 'EMP', 1), (2, 'EMP', 0), (3, 'CWK', 0))
     expect:
       rows:
-        - {month_date_key: 20260228, headcount: 1, is_saudi: 1, is_contingent: 0, is_new_hire_in_month: 1, is_leaver_in_month: 0}
-        - {month_date_key: 20260331, headcount: 1, is_saudi: 1, is_contingent: 0, is_new_hire_in_month: 0, is_leaver_in_month: 0}
-        - {month_date_key: 20260131, headcount: 1, is_saudi: 0, is_contingent: 0, is_new_hire_in_month: 0, is_leaver_in_month: 0}
-        - {month_date_key: 20260331, headcount: 1, is_saudi: 0, is_contingent: 0, is_new_hire_in_month: 0, is_leaver_in_month: 1}
-        - {month_date_key: 20260331, headcount: 1, is_saudi: 0, is_contingent: 1, is_new_hire_in_month: 0, is_leaver_in_month: 0}
+        - {month_date_key: 20260228, headcount: 1, is_saudi: 1, is_contingent: 0, is_new_hire_in_month: 1}
+        - {month_date_key: 20260331, headcount: 1, is_saudi: 1, is_contingent: 0, is_new_hire_in_month: 0}
+        - {month_date_key: 20260131, headcount: 1, is_saudi: 0, is_contingent: 0, is_new_hire_in_month: 0}
+        - {month_date_key: 20260331, headcount: 1, is_saudi: 0, is_contingent: 0, is_new_hire_in_month: 0}
+        - {month_date_key: 20260331, headcount: 1, is_saudi: 0, is_contingent: 1, is_new_hire_in_month: 0}
 
   - name: fact_worker_movement_flags_transfers
     description: >
@@ -102,7 +102,7 @@ unit_tests:
       Branch 3 cuts over in 202607. Oasis June (202606): basic 1,000 and staff GOSI −90 (an employee deduction, not cost).
       Oasis July is a parallel-run month: kept with is_parallel_run = 1 and zero cost. Fusion July: basic 1,100 and
       a delay deduction of 50 stored positive (amount −50, an earnings adjustment that lowers cost) and a GOSI
-      reference earnings result (Not pay). A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling.
+      reference earnings result (Not pay). A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling. Oasis staff 500 and Fusion person 7 are the same person (bridge): one paid_person_key across the cutover.
     model: fact_payroll_monthly
     given:
       - input: ref('stg_oasis__payroll_transactions')
@@ -169,14 +169,14 @@ unit_tests:
           select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(7)), '|')), 1)) as employee_key, toDate('2026-07-31') as month_end, toInt64(-1) as hr_department_key
     expect:
       rows:
-        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1000, cost_amount: 1000, gross_pay: 1000}
-        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0}
-        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0}
-        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150}
-        - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50}
-        - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0}
-        - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0}
-        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0}
+        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1000, cost_amount: 1000, gross_pay: 1000, paid_person_key: 7559343772374295452}
+        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
+        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
+        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150, paid_person_key: 7559343772374295452}
+        - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50, paid_person_key: 7559343772374295452}
+        - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
+        - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
+        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0, paid_person_key: 7559343772374295452}
 
   - name: fact_absence_daily_splits_across_months
     description: >
@@ -249,6 +249,12 @@ unit_tests:
               (1, 202607, 'Basic', 6000, 0), (1, 202607, 'Housing', 1500, 0), (1, 202607, 'Overtime', 900, 0),
               (4, 202605, 'Basic', 3000, 0), (4, 202608, 'Basic', -500, 0), (4, 202609, 'Basic', 5000, 0),
               (4, 202606, 'Basic', 9000, 1), (-1, 202607, 'Basic', 8000, 0))
+      - input: ref('dim_pay_category')
+        format: sql
+        rows: |
+          select c as pay_category, toUInt8(rec) as is_recurring
+          from values('c String, rec UInt8', ('Basic', 1), ('Housing', 1), ('Transport', 1), ('Food', 1), ('Clinical allowances', 1),
+              ('Other allowances', 1), ('Overtime', 0))
     expect:
       rows:
         - {end_balance: 15, is_annual_plan: 1, monthly_salary: 7500, daily_rate: 250, leave_liability_amount: 3750, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}

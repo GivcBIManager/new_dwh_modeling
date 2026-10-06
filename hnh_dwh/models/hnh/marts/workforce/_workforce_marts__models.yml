@@ -18,6 +18,18 @@ models:
       - name: job_key
         tests:
           - relationships: {to: ref('hnh_dim_job'), field: job_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: grade_key
+        tests:
+          - relationships: {to: ref('hnh_dim_grade'), field: grade_key}
+      - name: position_key
+        tests:
+          - relationships: {to: ref('hnh_dim_position'), field: position_key}
+      - name: location_key
+        tests:
+          - relationships: {to: ref('hnh_dim_location'), field: location_key}
       - name: month_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
@@ -28,12 +40,51 @@ models:
       - name: branch_key
         tests:
           - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: previous_branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: employee_key
+        tests:
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
       - name: worker_action_key
         tests:
           - relationships: {to: ref('hnh_dim_worker_action'), field: worker_action_key}
       - name: action_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
+      - name: hr_department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_hr_department'), field: hr_department_key}
+      - name: previous_hr_department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_hr_department'), field: hr_department_key}
+      - name: job_key
+        tests:
+          - relationships: {to: ref('hnh_dim_job'), field: job_key}
+      - name: previous_job_key
+        tests:
+          - relationships: {to: ref('hnh_dim_job'), field: job_key}
+      - name: grade_key
+        tests:
+          - relationships: {to: ref('hnh_dim_grade'), field: grade_key}
+      - name: previous_grade_key
+        tests:
+          - relationships: {to: ref('hnh_dim_grade'), field: grade_key}
+      - name: position_key
+        tests:
+          - relationships: {to: ref('hnh_dim_position'), field: position_key}
+      - name: previous_position_key
+        tests:
+          - relationships: {to: ref('hnh_dim_position'), field: position_key}
+      - name: location_key
+        tests:
+          - relationships: {to: ref('hnh_dim_location'), field: location_key}
+      - name: previous_location_key
+        tests:
+          - relationships: {to: ref('hnh_dim_location'), field: location_key}
 
   - name: fact_payroll_monthly
     columns:
@@ -48,6 +99,24 @@ models:
       - name: employee_key
         tests:
           - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: paid_person_key
+        description: >
+          One key per person across payroll sources: employee_key when the payee resolves to an employee (Fusion pay, and
+          Oasis staff linked through bridge_employee_staff), else payee_key. payee_key hashes source, branch and person or
+          staff, so a person paid by Oasis and then by Fusion counts twice across a cutover; paid headcount over several
+          months is a distinct count of paid_person_key over rows with gross pay.
+      - name: amount
+        description: >
+          Signed amount of every pay category, including parallel-run rows and the Not pay category (GOSI reference
+          earnings). Do not sum it as a payroll measure: hide it in SSAS or use it only with a pay-category filter and
+          is_parallel_run = 0. Payroll measures use cost_amount and gross_pay (2026: Σ amount 541.9M against Σ cost_amount
+          379.5M; parallel-run rows add 50.1M and Not pay 123.5M).
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: hr_department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_hr_department'), field: hr_department_key}
       - name: month_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
@@ -62,6 +131,21 @@ models:
       - name: absence_type_key
         tests:
           - relationships: {to: ref('hnh_dim_absence_type'), field: absence_type_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: employee_key
+        tests:
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: start_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: end_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
   - name: fact_absence_daily
     columns:
       - name: absence_day_key
@@ -69,6 +153,18 @@ models:
       - name: date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: employee_key
+        tests:
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: absence_type_key
+        tests:
+          - relationships: {to: ref('hnh_dim_absence_type'), field: absence_type_key}
   - name: fact_leave_balance_monthly
     description: >
       One row per Fusion balance entry; accrual periods are weekly running balances (several per month, some in the
@@ -81,6 +177,12 @@ models:
       - name: employee_key
         tests:
           - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: accrual_period_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
   - name: agg_staff_productivity_monthly
     tests:
       - hnh_unique_combination:
@@ -89,3 +191,9 @@ models:
       - name: staff_key
         tests:
           - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
