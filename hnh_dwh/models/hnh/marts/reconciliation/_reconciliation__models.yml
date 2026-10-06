@@ -111,3 +111,17 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start]
+  - name: rec_stock_interface_daily
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, line_date]
+    columns:
+      - name: fusion_out_of_scope_reversals
+        description: >
+          Fusion integration transactions dropped as out of Oasis scope (reference_status oasis_out_of_scope with reason
+          reversed_invoice, creditar or package_header). They are in fusion_integration_transactions and fusion_quantity
+          but not in fact_stock_movement; subtract them to reconcile the daily gap figures.
+  - name: rec_inventory_gl_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
