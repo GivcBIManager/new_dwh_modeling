@@ -124,3 +124,23 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, fiscal_year, scenario, line_item_code, id]
+  - name: stg_ref__pay_category
+    tests:
+      - hnh_unique_combination:
+          columns: [source, source_code, payable_type]
+    columns:
+      - name: source
+        tests:
+          - accepted_values:
+              values: ['oasis', 'fusion']
+      - name: pay_category
+        tests:
+          - accepted_values:
+              values: ['Basic', 'Housing', 'Transport', 'Food', 'Clinical allowances', 'Other allowances', 'Overtime',
+                       'Leave pay', 'End of service', 'Awards and bonus', 'Absence and lateness deduction',
+                       'GOSI employer charge', 'Other employer charges', 'GOSI employee deduction', 'Loans and advances',
+                       'Other deductions', 'Not pay', 'Unmapped']
+  - name: stg_ref__payroll_cutover
+    columns:
+      - name: branch_id
+        tests: [unique, not_null]

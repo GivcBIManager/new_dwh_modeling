@@ -148,6 +148,20 @@ SMALL_TABLES = {
         [("SPECIALTY_CODE", "String", s), ("SPECIALTY_NAME", "String", s), ("UNIFIED_DEPARTMENT", "String", s)],
         "SPECIALTY_CODE",
     ),
+    # Pay category per Oasis pay code (with payable type) and Fusion pay-value element; drafted by
+    # scripts/draft_pay_category_map.py, reviewed by the BI manager.
+    "map_pay_category": (
+        "pay_category_mapping.csv",
+        [("SOURCE", "LowCardinality(String)", s), ("SOURCE_CODE", "String", s), ("PAYABLE_TYPE", "String", s),
+         ("PAY_CATEGORY", "LowCardinality(String)", s)],
+        "(SOURCE, SOURCE_CODE, PAYABLE_TYPE)",
+    ),
+    # First payroll month (yyyymm) paid from Fusion per branch; branches without a row are paid from Oasis.
+    "map_payroll_cutover": (
+        "payroll_cutover.csv",
+        [("BRANCH_ID", "UInt8", i), ("FIRST_FUSION_MONTH", "UInt32", i)],
+        "BRANCH_ID",
+    ),
     "map_unified_department_v2": (
         "master_unified_department.csv",
         [("DEPARTMENT", "String", s), ("UNIFIED_DEPARTMENT", "String", s), ("NOT_ADMITTING", "UInt8", i), ("High_Value", "UInt8", i)],
