@@ -209,7 +209,9 @@ unit_tests:
       1002 of 10) and DL2 (charge 1003 of 30) link to both lines: each charge line's revenue owner is line 11, the lowest
       Oasis line id. Return line 13 links to the same charges but owns none. Line 14 (INV2) has no charge. Fusion-sourced
       line 15 (INV3) links through the superseded INV3 charge row of DL3 to its live charge 1004 on another invoice. A
-      department issue is not a patient line.
+      department issue is not a patient line. Line 17 (INV5) links only to the live package-component charge 1005, line
+      18 (INV6) only to the cancelled charge 1006 (both linked rows keep their status). On INV7 the return line 8 has a
+      lower line id than the sale line 19 on the same charge 1007: the sale still owns the revenue.
     model: int_consumption_charge_link
     given:
       - input: ref('fact_stock_movement')
@@ -219,31 +221,39 @@ unit_tests:
           from values('m UInt32, mt String, l UInt32, inv String, p String',
               (1, 'Patient sale', 11, 'INV1', 'P1'), (2, 'Patient sale', 12, 'INV1', 'P1'),
               (3, 'Patient return', 13, 'INV1', 'P1'), (4, 'Patient sale', 14, 'INV2', 'P2'),
-              (5, 'Patient sale', 15, 'INV3', 'P3'), (6, 'Department issue', 16, 'ISS6', 'P1'))
+              (5, 'Patient sale', 15, 'INV3', 'P3'), (6, 'Department issue', 16, 'ISS6', 'P1'),
+              (7, 'Patient sale', 17, 'INV5', 'P5'), (8, 'Patient sale', 18, 'INV6', 'P6'),
+              (9, 'Patient return', 8, 'INV7', 'P7'), (10, 'Patient sale', 19, 'INV7', 'P7'))
       - input: ref('stg_oasis__charges')
         format: sql
         rows: |
           select toUInt8(3) as branch_id, toNullable(inv) as invoice_doc_no, toNullable(toInt64(dl)) as delivery_line
-          from values('inv String, dl UInt32', ('INV1', 1), ('INV1', 1), ('INV1', 2), ('INV3', 3), ('INV4', 3))
+          from values('inv String, dl UInt32', ('INV1', 1), ('INV1', 1), ('INV1', 2), ('INV3', 3), ('INV4', 3),
+              ('INV5', 5), ('INV6', 6), ('INV7', 7))
       - input: ref('stg_oasis__delivery_lines')
         format: sql
         rows: |
           select toUInt8(3) as branch_id, toInt64(dl) as delivery_line, toNullable(p) as product_code
-          from values('dl UInt32, p String', (1, 'P1'), (2, 'P1'), (3, 'P3'))
+          from values('dl UInt32, p String', (1, 'P1'), (2, 'P1'), (3, 'P3'), (5, 'P5'), (6, 'P6'), (7, 'P7'))
       - input: ref('fact_charge_line')
         format: sql
         rows: |
-          select toInt64(k) as charge_line_key, toUInt8(3) as branch_key, toNullable(toInt64(dl)) as delivery_line
-          from values('k UInt32, dl UInt32', (1001, 1), (1002, 1), (1003, 2), (1004, 3))
+          select toInt64(k) as charge_line_key, toUInt8(3) as branch_key, toNullable(toInt64(dl)) as delivery_line, st as charge_status, toUInt8(pc) as is_package_component
+          from values('k UInt32, dl UInt32, st String, pc UInt8', (1001, 1, 'Live', 0), (1002, 1, 'Live', 0), (1003, 2, 'Live', 0), (1004, 3, 'Live', 0),
+              (1005, 5, 'Live', 1), (1006, 6, 'Cancelled', 0), (1007, 7, 'Live', 0))
     expect:
       rows:
-        - {movement_key: 1, charge_line_key: 1001, is_revenue_owner: 1}
-        - {movement_key: 1, charge_line_key: 1002, is_revenue_owner: 1}
-        - {movement_key: 1, charge_line_key: 1003, is_revenue_owner: 1}
-        - {movement_key: 2, charge_line_key: 1001, is_revenue_owner: 0}
-        - {movement_key: 2, charge_line_key: 1002, is_revenue_owner: 0}
-        - {movement_key: 2, charge_line_key: 1003, is_revenue_owner: 0}
-        - {movement_key: 3, charge_line_key: 1001, is_revenue_owner: 0}
-        - {movement_key: 3, charge_line_key: 1002, is_revenue_owner: 0}
-        - {movement_key: 3, charge_line_key: 1003, is_revenue_owner: 0}
-        - {movement_key: 5, charge_line_key: 1004, is_revenue_owner: 1}
+        - {movement_key: 1, charge_line_key: 1001, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 1, charge_line_key: 1002, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 1, charge_line_key: 1003, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 2, charge_line_key: 1001, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 2, charge_line_key: 1002, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 2, charge_line_key: 1003, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 3, charge_line_key: 1001, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 3, charge_line_key: 1002, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 3, charge_line_key: 1003, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 5, charge_line_key: 1004, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 7, charge_line_key: 1005, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 1}
+        - {movement_key: 8, charge_line_key: 1006, is_revenue_owner: 1, charge_status: 'Cancelled', is_package_component: 0}
+        - {movement_key: 9, charge_line_key: 1007, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
+        - {movement_key: 10, charge_line_key: 1007, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 0}

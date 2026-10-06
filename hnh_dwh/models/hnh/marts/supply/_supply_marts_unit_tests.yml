@@ -77,7 +77,11 @@ unit_tests:
       line 12 none). Return line 13 links but carries no revenue. Line 14 (INV2) has no charge. Fusion-sourced line 15
       (INV3) links through the superseded INV3 charge row of DL3 to its live charge 1004 (50) on another invoice; its
       Fusion pack cost (6) keeps the Oasis line's cost (60) beside it. A department issue is not a patient line. The link
-      rows are those int_consumption_charge_link_follows_delivery_lines expects from the same scenario.
+      rows are those int_consumption_charge_link_follows_delivery_lines expects from the same scenario. Sale 7 links only
+      to a live package-component charge (basis package_component, linked, no revenue). Sale 8 links only to a cancelled
+      charge (basis cancelled, not linked; its keys fall back to that charge). Return 9 has a lower line id than sale 10
+      on charge 1007 (40): sale 10 owns the revenue. Sale 11 links to the cancelled charge 1000 and the live charge 1008
+      (25): its keys come from the live charge although the cancelled one has the lower key.
     model: fact_patient_consumption
     given:
       - input: ref('fact_stock_movement')
@@ -87,25 +91,36 @@ unit_tests:
           from values('m UInt32, mt String, l UInt32, inv String, p String, q Float64, c Float64, src String',
               (1, 'Patient sale', 11, 'INV1', 'P1', -1, -5, 'oasis'), (2, 'Patient sale', 12, 'INV1', 'P1', -1, -5, 'oasis'),
               (3, 'Patient return', 13, 'INV1', 'P1', 1, 5, 'oasis'), (4, 'Patient sale', 14, 'INV2', 'P2', -1, -4, 'oasis'),
-              (5, 'Patient sale', 15, 'INV3', 'P3', -2, -6, 'fusion'), (6, 'Department issue', 16, 'ISS6', 'P1', -1, -5, 'oasis'))
+              (5, 'Patient sale', 15, 'INV3', 'P3', -2, -6, 'fusion'), (6, 'Department issue', 16, 'ISS6', 'P1', -1, -5, 'oasis'),
+              (7, 'Patient sale', 17, 'INV5', 'P5', -1, -3, 'oasis'), (8, 'Patient sale', 18, 'INV6', 'P6', -1, -2, 'oasis'),
+              (9, 'Patient return', 8, 'INV7', 'P7', 1, 1, 'oasis'), (10, 'Patient sale', 19, 'INV7', 'P7', -1, -4, 'oasis'),
+              (11, 'Patient sale', 20, 'INV8', 'P8', -1, -7, 'oasis'))
       - input: ref('int_consumption_charge_link')
         format: sql
         rows: |
-          select toInt64(m) as movement_key, toInt64(k) as charge_line_key, toUInt8(o) as is_revenue_owner
-          from values('m UInt32, k UInt32, o UInt8',
-              (1, 1001, 1), (1, 1002, 1), (1, 1003, 1), (2, 1001, 0), (2, 1002, 0), (2, 1003, 0),
-              (3, 1001, 0), (3, 1002, 0), (3, 1003, 0), (5, 1004, 1))
+          select toInt64(m) as movement_key, toInt64(k) as charge_line_key, toUInt8(o) as is_revenue_owner, st as charge_status, toUInt8(pc) as is_package_component
+          from values('m UInt32, k UInt32, o UInt8, st String, pc UInt8',
+              (1, 1001, 1, 'Live', 0), (1, 1002, 1, 'Live', 0), (1, 1003, 1, 'Live', 0), (2, 1001, 0, 'Live', 0), (2, 1002, 0, 'Live', 0), (2, 1003, 0, 'Live', 0),
+              (3, 1001, 0, 'Live', 0), (3, 1002, 0, 'Live', 0), (3, 1003, 0, 'Live', 0), (5, 1004, 1, 'Live', 0),
+              (7, 1005, 1, 'Live', 1), (8, 1006, 1, 'Cancelled', 0), (9, 1007, 0, 'Live', 0), (10, 1007, 1, 'Live', 0),
+              (11, 1000, 1, 'Cancelled', 0), (11, 1008, 1, 'Live', 0))
       - input: ref('fact_charge_line')
         format: sql
         rows: |
           select toInt64(k) as charge_line_key, toFloat64(r) as revenue_amount,
                  toInt64(e) as encounter_key, toInt64(-1) as episode_key, toInt64(-1) as patient_key, toInt64(-1) as staff_key,
                  toInt64(-1) as billed_payer_key, toInt8(1) as care_type_key, toInt64(-1) as service_key, toInt64(-1) as department_key
-          from values('k UInt32, r Float64, e UInt32', (1001, 30, 701), (1002, 10, 701), (1003, 30, 702), (1004, 50, 703))
+          from values('k UInt32, r Float64, e UInt32', (1001, 30, 701), (1002, 10, 701), (1003, 30, 702), (1004, 50, 703),
+              (1005, 0, 705), (1006, 0, 706), (1007, 40, 707), (1000, 0, 700), (1008, 25, 708))
     expect:
       rows:
-        - {movement_key: 1, is_linked_to_charge: 1, revenue_amount: 70, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0}
-        - {movement_key: 2, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0}
-        - {movement_key: 3, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: 5, is_cost_mismatch: 0}
-        - {movement_key: 4, is_linked_to_charge: 0, revenue_amount: 0, encounter_key: -1, charge_line_key: -1, oasis_cost_amount: -4, is_cost_mismatch: 0}
-        - {movement_key: 5, is_linked_to_charge: 1, revenue_amount: 50, encounter_key: 703, charge_line_key: 1004, oasis_cost_amount: -60, is_cost_mismatch: 1}
+        - {movement_key: 1, is_linked_to_charge: 1, revenue_amount: 70, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 2, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 3, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: 5, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 4, is_linked_to_charge: 0, revenue_amount: 0, encounter_key: -1, charge_line_key: -1, oasis_cost_amount: -4, is_cost_mismatch: 0, revenue_basis: 'none'}
+        - {movement_key: 5, is_linked_to_charge: 1, revenue_amount: 50, encounter_key: 703, charge_line_key: 1004, oasis_cost_amount: -60, is_cost_mismatch: 1, revenue_basis: 'charge'}
+        - {movement_key: 7, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 705, charge_line_key: 1005, oasis_cost_amount: -3, is_cost_mismatch: 0, revenue_basis: 'package_component'}
+        - {movement_key: 8, is_linked_to_charge: 0, revenue_amount: 0, encounter_key: 706, charge_line_key: 1006, oasis_cost_amount: -2, is_cost_mismatch: 0, revenue_basis: 'cancelled'}
+        - {movement_key: 9, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 707, charge_line_key: 1007, oasis_cost_amount: 1, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 10, is_linked_to_charge: 1, revenue_amount: 40, encounter_key: 707, charge_line_key: 1007, oasis_cost_amount: -4, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 11, is_linked_to_charge: 1, revenue_amount: 25, encounter_key: 708, charge_line_key: 1008, oasis_cost_amount: -7, is_cost_mismatch: 0, revenue_basis: 'charge'}

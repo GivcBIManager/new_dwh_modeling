@@ -94,3 +94,14 @@ models:
           Margin on Oasis cost where the Fusion pack-item cost was loaded per base unit (five branches).
       - name: is_cost_mismatch
         description: From fact_stock_movement; 1 when cost_amount and oasis_cost_amount differ by a ratio outside [0.5, 2].
+      - name: is_linked_to_charge
+        description: 1 when the line links to at least one live charge line (package components included).
+      - name: revenue_basis
+        description: >
+          'charge' = links to a live charge that is not a package component; 'package_component' = links to live charges
+          that are all package components (the revenue sits on the package header charge); 'cancelled' = links only to
+          cancelled (or unknown-status) charges; 'none' = links to no charge. The charge keys come from the lowest-key
+          live charge, else the lowest-key cancelled one.
+        tests:
+          - accepted_values:
+              values: ['charge', 'package_component', 'cancelled', 'none']
