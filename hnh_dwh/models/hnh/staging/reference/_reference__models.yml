@@ -144,3 +144,30 @@ models:
     columns:
       - name: branch_id
         tests: [unique, not_null]
+  - name: stg_ref__scm_cutover
+    columns:
+      - name: branch_id
+        tests: [unique, not_null]
+  - name: stg_ref__store_department
+    tests:
+      - hnh_unique_combination:
+          columns: [source, branch_id, store_code]
+    columns:
+      - name: source
+        tests:
+          - accepted_values:
+              values: ['oasis', 'fusion']
+      - name: store_type
+        tests:
+          - accepted_values:
+              values: ['Warehouse', 'Pharmacy', 'Operating room', 'Ward', 'Clinic', 'Laboratory', 'Radiology',
+                       'Administration', 'Support', 'Asset', 'Expiry/damaged/recall', 'Unmapped']
+  - name: stg_ref__item_group
+    columns:
+      - name: category_code
+        tests: [unique, not_null]
+      - name: item_group
+        tests:
+          - accepted_values:
+              values: ['Medication', 'Medical consumable', 'Implant', 'Laboratory', 'General', 'Asset', 'Other']
+  - name: stg_ref__stock_snapshot
