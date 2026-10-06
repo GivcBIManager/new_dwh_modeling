@@ -18,6 +18,8 @@ vars:
   hnh_head_office_fusion_branch_code: 101
   hnh_head_office_ledger_id: 300000005003375
   hnh_fusion_oasis_feed_source: "300000007046804"
+  hnh_hr_snapshot_start: "2026-01-01"   # first month-end of the headcount snapshot (Fusion core HR go-live)
+  hnh_hr_snapshot_end: ""               # empty = today; unit tests override it
 
 models:
   hnh_dwh:
