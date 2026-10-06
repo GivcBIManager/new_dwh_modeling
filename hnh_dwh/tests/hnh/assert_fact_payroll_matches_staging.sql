@@ -7,7 +7,11 @@ with oasis_staged as (
 ),
 fusion_staged as (
     select round(sum(r.result_value * ifNull(c.fusion_sign, 1)), 2) as amt
-    from {{ ref('stg_fusion__payroll_run_results') }} as r
+    from (
+        select *, max(if(action_type = 'R', payroll_action_id, null)) over (partition by person_id, element_type_id, toYYYYMM(effective_date)) as latest_regular_action_id
+        from {{ ref('stg_fusion__payroll_run_results') }}
+        where payroll_action_status = 'C' and result_value is not null
+    ) as r
     inner join (select input_value_id from {{ ref('stg_fusion__payroll_input_values') }} where input_value_base_name = 'Pay Value') as i
         on i.input_value_id = r.input_value_id
     inner join {{ ref('int_legal_employer_branch') }} as b on b.legal_employer_id = r.legal_employer_id
@@ -15,7 +19,7 @@ fusion_staged as (
     left join (select element_type_id, element_name from {{ ref('stg_fusion__payroll_elements') }}) as e on e.element_type_id = r.element_type_id
     left join (select source_code, pay_category from {{ ref('stg_ref__pay_category') }} where source = 'fusion') as m on m.source_code = e.element_name
     left join {{ ref('dim_pay_category') }} as c on c.pay_category = ifNull(m.pay_category, 'Unmapped')
-    where r.payroll_action_status = 'C' and r.result_value is not null
+    where (r.action_type = 'Q' or r.payroll_action_id = r.latest_regular_action_id)
       and toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month
 ),
 fact as (

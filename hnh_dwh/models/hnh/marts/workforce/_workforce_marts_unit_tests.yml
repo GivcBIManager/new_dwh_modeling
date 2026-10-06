@@ -115,10 +115,12 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(r) as run_result_id, toInt64(iv) as input_value_id, toNullable(toInt64(el)) as element_type_id,
+                 toNullable(toInt64(pa)) as payroll_action_id, toNullable(at) as action_type,
                  toNullable(toInt64(7)) as person_id, toNullable(toInt64(1)) as legal_employer_id, toNullable('C') as payroll_action_status,
                  toDate32(d) as effective_date, toNullable(toFloat64(v)) as result_value
-          from values('r UInt32, iv UInt32, el UInt32, d String, v Float64',
-              (1, 101, 11, '2026-07-31', 1100), (2, 102, 12, '2026-07-31', 50), (3, 103, 13, '2026-07-31', 9000), (4, 101, 11, '2026-06-30', 999))
+          from values('r UInt32, iv UInt32, el UInt32, pa UInt32, at String, d String, v Float64',
+              (1, 101, 11, 2, 'R', '2026-07-31', 1100), (2, 102, 12, 2, 'R', '2026-07-31', 50), (3, 103, 13, 2, 'R', '2026-07-31', 9000),
+              (4, 101, 11, 1, 'R', '2026-06-30', 999), (5, 101, 11, 1, 'R', '2026-07-31', 1100), (6, 101, 11, 3, 'Q', '2026-07-31', 50))
       - input: ref('stg_fusion__payroll_elements')
         format: sql
         rows: |
@@ -168,6 +170,6 @@ unit_tests:
         - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1000, cost_amount: 1000, gross_pay: 1000}
         - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0}
         - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0}
-        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1100, cost_amount: 1100, gross_pay: 1100}
+        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150}
         - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50}
         - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0}

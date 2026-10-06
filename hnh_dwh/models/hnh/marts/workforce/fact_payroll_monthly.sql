@@ -18,11 +18,18 @@ oasis_lines as (
     {{ hnh_settings() }}  -- left joins in a CTE feeding a union
 ),
 
-fusion_lines as (
-    select b.branch_key as branch_key, 'fusion' as source, cast(null as Nullable(String)) as staff_id, r.person_id as person_id,
+fusion_results as (
+    -- Repeated full regular runs are not rolled back in the extract: keep the latest regular action per person, element and month (supplementary runs carry other elements), plus QuickPay.
+    select run_result_id, input_value_id, element_type_id, person_id, legal_employer_id, effective_date, result_value, action_type, payroll_action_id,
+           max(if(action_type = 'R', payroll_action_id, null)) over (partition by person_id, element_type_id, toYYYYMM(effective_date)) as latest_regular_action_id
+    from {{ ref('stg_fusion__payroll_run_results') }}
+    where payroll_action_status = 'C' and result_value is not null
+),
+
+fusion_lines as (    select b.branch_key as branch_key, 'fusion' as source, cast(null as Nullable(String)) as staff_id, r.person_id as person_id,
            toInt32(toYYYYMM(assumeNotNull(r.effective_date))) as payroll_month, ifNull(m.pay_category, 'Unmapped') as pay_category,
            assumeNotNull(r.result_value) as raw_amount, toUInt8(0) as is_parallel_run
-    from {{ ref('stg_fusion__payroll_run_results') }} as r
+    from fusion_results as r
     inner join (select input_value_id from {{ ref('stg_fusion__payroll_input_values') }} where input_value_base_name = 'Pay Value') as i
         on i.input_value_id = r.input_value_id
     inner join {{ ref('int_legal_employer_branch') }} as b on b.legal_employer_id = r.legal_employer_id
@@ -30,7 +37,7 @@ fusion_lines as (
     left join (select element_type_id, element_name from {{ ref('stg_fusion__payroll_elements') }}) as e on e.element_type_id = r.element_type_id
     left join (select source_code, pay_category from {{ ref('stg_ref__pay_category') }} where source = 'fusion') as m
         on m.source_code = e.element_name
-    where r.payroll_action_status = 'C' and r.result_value is not null
+    where (r.action_type = 'Q' or r.payroll_action_id = r.latest_regular_action_id)
       and toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month
     {{ hnh_settings() }}  -- left joins in a CTE feeding a union
 ),
