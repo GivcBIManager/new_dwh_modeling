@@ -34,9 +34,9 @@ multiIf(lower(ifNull({{ type_name }}, '')) like '%sick%', 'Sick',
         'Other')
 {%- endmacro %}
 
-{# Whole years between two dates (365.25-day years). #}
+{# Exact whole years between two dates (anniversary-aware). #}
 {% macro hnh_years_between(start_date, ref_date) -%}
-toInt32(floor(dateDiff('day', {{ start_date }}, {{ ref_date }}) / 365.25))
+toInt32(dateDiff('year', {{ start_date }}, {{ ref_date }}) - if(addYears({{ start_date }}, dateDiff('year', {{ start_date }}, {{ ref_date }})) > {{ ref_date }}, 1, 0))
 {%- endmacro %}
 
 {% macro hnh_age_band(birth_date, ref_date) -%}

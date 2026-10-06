@@ -73,3 +73,18 @@ select 'worker type wrong'
 where not ({{ hnh_worker_type_label("'EMP'") }} = 'Employee' and {{ hnh_worker_type_label("'EX_EMP'") }} = 'Ex-employee'
        and {{ hnh_worker_type_label("'CWK'") }} = 'Contingent worker' and {{ hnh_worker_type_label("'CON'") }} = 'Contractor'
        and {{ hnh_worker_type_label("'CANCELED_HIRE'") }} = 'Cancelled hire' and {{ hnh_worker_type_label(null_s) }} = 'Unknown')
+
+union all
+select 'age band anniversary wrong'
+where not ({{ hnh_age_band("toDate32('2001-06-01')", "toDate32('2026-06-01')") }} = '25-34'
+       and {{ hnh_age_band("toDate32('2001-06-01')", "toDate32('2026-05-31')") }} = '<25')
+
+union all
+select 'tenure anniversary wrong'
+where not ({{ hnh_tenure_band("toDate32('2025-06-01')", "toDate32('2026-06-01')") }} = '1-3'
+       and {{ hnh_tenure_band("toDate32('2025-06-01')", "toDate32('2026-05-31')") }} = '<1')
+
+union all
+select 'month ends wrong'
+where (select min(month_end) from ({{ hnh_hr_month_ends() }})) != toDate('2026-01-31')
+   or (select count() from ({{ hnh_hr_month_ends() }})) != dateDiff('month', toDate('2026-01-01'), today()) + 1
