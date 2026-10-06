@@ -183,6 +183,10 @@ models:
     columns:
       - name: supplier_key
         tests: [unique, not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['fusion', 'oasis', 'unknown']
   - name: dim_fs_line
     columns:
       - name: fs_line_key
@@ -263,3 +267,31 @@ models:
       - name: staff_key
         tests:
           - relationships: {to: ref('dim_staff'), field: staff_key}
+  - name: hnh_dim_item
+    columns:
+      - name: item_key
+        tests: [unique, not_null]
+      - name: item_group
+        tests:
+          - accepted_values:
+              values: ['Medication', 'Medical consumable', 'Implant', 'Laboratory', 'General', 'Asset', 'Other']
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['fusion', 'oasis', 'unknown']
+  - name: dim_store
+    columns:
+      - name: store_key
+        tests: [unique, not_null]
+      - name: store_group_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: dim_movement_type
+    columns:
+      - name: movement_type_key
+        tests: [unique, not_null]
+      - name: movement_type
+        tests: [unique]
