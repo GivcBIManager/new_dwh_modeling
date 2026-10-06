@@ -81,3 +81,11 @@ models:
       - name: employee_key
         tests:
           - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+  - name: agg_staff_productivity_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [staff_key, month_date_key]
+    columns:
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}

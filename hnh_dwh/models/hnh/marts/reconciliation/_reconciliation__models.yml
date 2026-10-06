@@ -66,3 +66,11 @@ models:
               # budget file subtotals are stored rounded; differences up to ~0.12 SAR measured 2026-10-05
               tolerance: 1
               config: {severity: warn}
+  - name: rec_payroll_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, payroll_month]
+  - name: rec_headcount_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_end]
