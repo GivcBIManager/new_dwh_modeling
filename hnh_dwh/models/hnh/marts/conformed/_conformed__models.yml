@@ -230,22 +230,32 @@ models:
     columns:
       - name: hr_department_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_job
     columns:
       - name: job_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_grade
     columns:
       - name: grade_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_position
     columns:
       - name: position_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_location
     columns:
       - name: location_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_worker_action
     columns:
       - name: worker_action_key
@@ -254,6 +264,8 @@ models:
     columns:
       - name: absence_type_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: dim_pay_category
     columns:
       - name: pay_category_key
