@@ -81,7 +81,8 @@ unit_tests:
       primary unit. An issue without pod is a Department issue. A patient return (CRD) and a count (CNT) carry no total
       cost, so cost = quantity x unit cost. A costed invoice line is a Patient sale; a zero-cost invoice line, a
       reversed invoice (gl_stk R), a package header, a cancelled GRN line and an unposted document are left out.
-      Line 13 carries a 1900 "no expiry" date, which becomes null.
+      Line 13 carries a 1900 "no expiry" date, which becomes null. Line 14 is a patient return with a denormal
+      quantity (1e-38) and total cost 5: the quantity becomes 0, there is no unit cost (0) and the cost stays 5.
     model: int_oasis_stock_line
     given:
       - input: ref('stg_oasis__stock_documents')
@@ -110,7 +111,7 @@ unit_tests:
               (7, 6, 'INVOICEAR', 45, 'P3', 1, 0, 0, ''), (8, 7, 'INVOICEAR', 45, 'P2', 1, 5, 5, ''),
               (9, 8, 'INVOICEAR', 45, 'P2', 1, 5, 5, ''), (10, 9, 'STOCKRCPT', 81, 'P2', 5, 10, 50, 'C'),
               (11, 9, 'STOCKRCPT', 81, 'P2', 5, 10, 50, 'P'), (12, 10, 'STOCKISS', 8, 'P2', 1, 3, 3, ''),
-              (13, 3, 'STOCKISS', 8, 'P2', 1, 2, 2, ''))
+              (13, 3, 'STOCKISS', 8, 'P2', 1, 2, 2, ''), (14, 4, 'STOCKRCPT', 44, 'P2', 1e-38, 0, 5, ''))
       - input: ref('int_item_crosswalk')
         format: sql
         rows: |
@@ -125,6 +126,7 @@ unit_tests:
         - {oasis_line_id: 6, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: -9, unit_cost: 9, transfer_store_id: null, expiry_date: '2027-01-31'}
         - {oasis_line_id: 11, movement_type: 'Goods receipt', primary_quantity: 5, cost_amount: 50, unit_cost: 10, transfer_store_id: null, expiry_date: '2027-01-31'}
         - {oasis_line_id: 13, movement_type: 'Department issue', primary_quantity: -1, cost_amount: -2, unit_cost: 2, transfer_store_id: null, expiry_date: null}
+        - {oasis_line_id: 14, movement_type: 'Patient return', primary_quantity: 0, cost_amount: 5, unit_cost: 0, transfer_store_id: null, expiry_date: '2027-01-31'}
 
   - name: int_fusion_stock_line_resolves_lines_and_costs
     description: >

@@ -7,6 +7,8 @@
 -- Quantities: Oasis base units converted to the item's primary unit through the crosswalk; signed + in / - out.
 -- Cost: total_cost, or quantity x unit cost on lines that carry none (counts, patient returns), with the same sign.
 -- Expiry dates before 2000 are Oasis "no expiry" values (1900-era adj_date) and become null.
+-- A primary quantity below 1e-6 in absolute value is float residue (Oasis holds quantities such as 1e-38) and becomes
+-- 0; the unit cost (cost / quantity) is derived only from a quantity of at least 1e-6, else 0 (no unit cost).
 {% set first_day = "toDate32('" ~ var('hnh_history_start_date') ~ "')" %}
 {% set last_day = "toDate32(concat(toString(toYear(today()) + 2), '-12-31'))" %}
 
@@ -69,9 +71,10 @@ select
     c.product_code                                                      as product_code,
     x.inventory_item_id                                                 as inventory_item_id,
     {{ hnh_stock_item_key('x.inventory_item_id', 'c.branch_key', 'c.product_code') }} as item_key,
-    c.direction * {{ hnh_primary_qty('c.base_quantity', 'x.units_per_primary') }} as primary_quantity,
+    if(abs({{ hnh_primary_qty('c.base_quantity', 'x.units_per_primary') }}) < 1e-6, toFloat64(0),
+       c.direction * {{ hnh_primary_qty('c.base_quantity', 'x.units_per_primary') }}) as primary_quantity,
     c.direction * c.base_cost                                           as cost_amount,
-    if(primary_quantity != 0, cost_amount / primary_quantity, 0)        as unit_cost,
+    if(abs(primary_quantity) >= 1e-6, cost_amount / primary_quantity, 0) as unit_cost,
     c.lot_number                                                        as lot_number,
     c.expiry_date                                                       as expiry_date,
     c.account_code                                                      as account_code,

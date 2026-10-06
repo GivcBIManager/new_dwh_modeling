@@ -91,9 +91,10 @@ identity_rows as (
         if(has_fusion = 1, fl_transaction_date, cast(null as Nullable(Date))) as fusion_transaction_date,
         if(source_system = 'fusion', ifNull(fl_quantity, 0), primary_quantity)    as movement_quantity,
         multiIf(source_system = 'oasis', if(cost_amount != 0, 'oasis_line', 'none'),
-                fl_missing_cost = 0, 'fusion_valuation', unit_cost != 0, 'oasis_line', 'none') as cost_source,
+                fl_missing_cost = 0, 'fusion_valuation', ifNull(unit_cost, 0) != 0, 'oasis_line', 'none') as cost_source,
         multiIf(source_system = 'oasis', cost_amount, fl_missing_cost = 0, ifNull(fl_valuation_cost, 0),
-                unit_cost != 0, unit_cost * ifNull(fl_quantity, 0), 0)            as movement_cost,
+                -- the Oasis unit cost only when there is one (0 = none: no usable Oasis quantity)
+                ifNull(unit_cost, 0) != 0, ifNull(unit_cost, 0) * ifNull(fl_quantity, 0), 0) as movement_cost,
         toNullable(cost_amount)                                                   as oasis_cost_amount,
         if(source_system = 'fusion', coalesce(fl_lot_number, lot_number), lot_number) as lot_number,
         if(source_system = 'fusion', coalesce(fl_expiry_date, expiry_date), expiry_date) as expiry_date
