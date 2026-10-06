@@ -1,0 +1,27 @@
+-- One row per PO shipment (line location). unit_price is the schedule's price override, else the line price.
+select
+    line_location_id,
+    po_header_id,
+    po_line_id,
+    {{ hnh_str('po_number') }}              as po_number,
+    line_num,
+    shipment_num,
+    vendor_id,
+    vendor_site_id,
+    ship_to_organization_id,
+    item_id,
+    {{ hnh_code('uom_code') }}              as uom_code,
+    {{ hnh_code('document_status') }}       as document_status,
+    line_type_id,
+    {{ hnh_code('schedule_status') }}       as schedule_status,
+    toUInt8(ifNull(schedule_cancel_flag, 'N') = 'Y' or ifNull(line_cancel_flag, 'N') = 'Y' or ifNull(po_cancel_flag, 'N') = 'Y') as is_cancelled,
+    toDate(po_creation_date)                as po_creation_date,
+    toDate(need_by_date)                    as need_by_date,
+    toFloat64(ifNull(quantity, 0))          as quantity,
+    toFloat64(ifNull(quantity_received, 0)) as quantity_received,
+    toFloat64(ifNull(quantity_billed, 0))   as quantity_billed,
+    toFloat64(ifNull(quantity_cancelled, 0)) as quantity_cancelled,
+    toFloat64(ifNull(coalesce(price_override, unit_price), 0)) as unit_price,
+    toFloat64(ifNull(amount, 0))            as amount,
+    toFloat64(ifNull(amount_received, 0))   as amount_received
+from {{ hnh_fusion_source('fact_po_schedule') }} final
