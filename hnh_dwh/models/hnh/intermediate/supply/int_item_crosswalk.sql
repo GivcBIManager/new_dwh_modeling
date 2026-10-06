@@ -3,7 +3,8 @@
 -- Fusion item per Oasis product and branch, derived from the integration (spec 4.3): a Fusion integration transaction
 -- whose reference resolves to an Oasis line of the posting organisation's branch pairs the Fusion item with that line's
 -- product. Per product the pair with the most lines wins (ties: the lower item id). units_per_primary is the most
--- frequent ratio of the Oasis base-unit quantity to the Fusion primary quantity over the winning pair's lines
+-- frequent ratio of the Oasis base-unit quantity to the Fusion primary quantity over the winning pair's lines, bucketed by
+-- pack size (whole units above 1, 1/whole below; Fusion quantities carry 5 decimals)
 -- (plan refinement: Fusion primary units are packs for about a third of the products).
 with refs as (
     select o.branch_key as branch_key, assumeNotNull(t.inventory_item_id) as inventory_item_id,
@@ -22,7 +23,7 @@ oasis_lines as (
 
 pairs as (
     select r.branch_key as branch_key, l.product_code as product_code, r.inventory_item_id as inventory_item_id,
-           round(l.oasis_quantity / r.fusion_quantity, 4) as ratio
+           if(l.oasis_quantity >= r.fusion_quantity, round(l.oasis_quantity / r.fusion_quantity), 1 / round(r.fusion_quantity / l.oasis_quantity)) as ratio
     from refs as r
     inner join oasis_lines as l on l.branch_id = r.branch_key and l.line_id = r.oasis_line_id
     where r.oasis_line_id is not null
