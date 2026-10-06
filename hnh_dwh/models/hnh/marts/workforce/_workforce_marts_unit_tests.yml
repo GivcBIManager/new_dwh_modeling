@@ -177,3 +177,73 @@ unit_tests:
         - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0}
         - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0}
         - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0}
+
+  - name: fact_absence_daily_splits_across_months
+    description: >
+      Entry 1: approved sick leave 30 June – 2 July 2026 (3 days, two months). Entry 2: withdrawn annual leave
+      (not counted, no daily rows). Entry 3: approved permission leave in hours (no daily rows).
+    model: fact_absence_daily
+    given:
+      - input: ref('stg_fusion__absence_entries')
+        format: sql
+        rows: |
+          select toInt64(e) as absence_entry_id, toNullable(toInt64(5)) as person_id, toNullable(toInt64(t)) as absence_type_id,
+                 toNullable(toInt64(1)) as legal_employer_id, toNullable(st) as absence_status_code, toNullable('APPROVED') as approval_status_code,
+                 toDate32(sd) as start_date, toDate32(ed) as end_date, toNullable(toFloat64(dur)) as duration, toNullable(u) as duration_uom
+          from values('e UInt32, t UInt32, st String, sd String, ed String, dur Float64, u String',
+              (1, 70, 'SUBMITTED', '2026-06-30', '2026-07-02', 3, 'C'),
+              (2, 71, 'ORA_WITHDRAWN', '2026-06-01', '2026-06-05', 5, 'C'),
+              (3, 72, 'SUBMITTED', '2026-06-10', '2026-06-10', 2, 'H'))
+      - input: ref('hnh_dim_absence_type')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(t)),'|')),1)) as absence_type_key, toNullable(toInt64(t)) as absence_type_id from values('t UInt32', (70), (71), (72))
+      - input: ref('hnh_dim_employee')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(5)),'|')),1)) as employee_key, toNullable(toInt64(5)) as person_id, toUInt8(6) as branch_key, toInt64(-1) as staff_key
+      - input: ref('int_legal_employer_branch')
+        format: sql
+        rows: |
+          select toInt64(1) as legal_employer_id, toUInt8(6) as branch_key
+    expect:
+      rows:
+        - {date_key: 20260630, absence_days: 1}
+        - {date_key: 20260701, absence_days: 1}
+        - {date_key: 20260702, absence_days: 1}
+
+  - name: fact_leave_balance_monthly_values_liability
+    description: >
+      Person 1: annual-leave balance of 15 days at 2026-07-31; recurring pay in July 2026 is basic 6,000 + housing 1,500
+      (overtime 900 excluded) → daily rate 250, liability 3,750. Person 2: sick-leave plan → no liability. Person 3:
+      annual leave but never paid → salary and liability null.
+    model: fact_leave_balance_monthly
+    given:
+      - input: ref('stg_fusion__absence_balances')
+        format: sql
+        rows: |
+          select toInt64(a) as accrual_entry_id, toNullable(toInt64(p)) as person_id, toNullable(toInt64(pl)) as absence_plan_id,
+                 toDate32('2026-07-31') as accrual_period_date, toNullable('A') as status, toFloat64(0) as begin_balance,
+                 toFloat64(0) as accrued, toFloat64(0) as used, toFloat64(eb) as end_balance
+          from values('a UInt32, p UInt32, pl UInt32, eb Float64', (1, 1, 80, 15), (2, 2, 81, 4), (3, 3, 80, 10))
+      - input: ref('stg_fusion__absence_plans')
+        format: sql
+        rows: |
+          select toInt64(pl) as absence_plan_id, toNullable(n) as absence_plan_name, toNullable(t) as plan_type
+          from values('pl UInt32, n String, t String', (80, 'Hospitals Annual Leave', 'A'), (81, 'Sick Leave', 'Q'))
+      - input: ref('hnh_dim_employee')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)),'|')),1)) as employee_key, toNullable(toInt64(p)) as person_id, toUInt8(6) as branch_key
+          from values('p UInt32', (1), (2), (3))
+      - input: ref('fact_payroll_monthly')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(1)),'|')),1)) as employee_key, toInt32(202607) as payroll_month, c as pay_category,
+                 toFloat64(a) as amount, toUInt8(0) as is_parallel_run
+          from values('c String, a Float64', ('Basic', 6000), ('Housing', 1500), ('Overtime', 900))
+    expect:
+      rows:
+        - {end_balance: 15, is_annual_plan: 1, monthly_salary: 7500, daily_rate: 250, leave_liability_amount: 3750}
+        - {end_balance: 4, is_annual_plan: 0, monthly_salary: null, daily_rate: null, leave_liability_amount: null}
+        - {end_balance: 10, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null}

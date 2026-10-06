@@ -55,3 +55,24 @@ models:
         tests:
           - accepted_values:
               values: ['oasis', 'fusion']
+  - name: fact_absence
+    columns:
+      - name: absence_key
+        tests: [unique, not_null]
+      - name: absence_type_key
+        tests:
+          - relationships: {to: ref('hnh_dim_absence_type'), field: absence_type_key}
+  - name: fact_absence_daily
+    columns:
+      - name: absence_day_key
+        tests: [unique, not_null]
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+  - name: fact_leave_balance_monthly
+    columns:
+      - name: leave_balance_key
+        tests: [unique, not_null]
+      - name: employee_key
+        tests:
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
