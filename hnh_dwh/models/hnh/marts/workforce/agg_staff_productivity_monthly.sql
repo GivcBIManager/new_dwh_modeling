@@ -5,7 +5,7 @@
 {% set start_key = "toInt32(toYYYYMMDD(toDate('" ~ var('hnh_hr_snapshot_start') ~ "')))" %}
 
 with linked as (
-    -- bridge_employee_staff is one row per employee and 16 employees share a staff record: one row per staff here
+    -- bridge_employee_staff is one row per employee and 3 staff records are shared by 2 employees each: one row per staff here
     select b.staff_key as staff_key, any(b.branch_key) as branch_key, any(s.category) as staff_category
     from {{ ref('bridge_employee_staff') }} as b
     inner join (select staff_key, category from {{ ref('dim_staff') }}) as s on s.staff_key = b.staff_key
@@ -32,14 +32,15 @@ measures as (
     where month_date_key >= {{ start_key }} and staff_key in (select staff_key from linked)
     group by staff_key, toStartOfMonth(toDate(toString(month_date_key)))
     union all
-    select staff_key, toStartOfMonth(month_end), toUInt64(0), toFloat64(0), toFloat64(0), toFloat64(0), toFloat64(sum(fte)), toFloat64(0)
+    select staff_key, toStartOfMonth(month_end), toUInt64(0), toFloat64(0), toFloat64(0), toFloat64(0), toFloat64(max(fte)), toFloat64(0)
+    -- max per staff and month over non-contingent rows: 3 staff records are shared by 2 employees each
     from {{ ref('fact_headcount_monthly') }}
-    where staff_key in (select staff_key from linked)
+    where is_contingent = 0 and month_end >= toDate('{{ var("hnh_hr_snapshot_start") }}') and staff_key in (select staff_key from linked)
     group by staff_key, toStartOfMonth(month_end)
     union all
     select staff_key, toStartOfMonth(toDate(toString(date_key))), toUInt64(0), toFloat64(0), toFloat64(0), toFloat64(0), toFloat64(0), toFloat64(sum(absence_days))
     from {{ ref('fact_absence_daily') }}
-    where staff_key in (select staff_key from linked)
+    where date_key >= {{ start_key }} and staff_key in (select staff_key from linked)
     group by staff_key, toStartOfMonth(toDate(toString(date_key)))
 )
 
