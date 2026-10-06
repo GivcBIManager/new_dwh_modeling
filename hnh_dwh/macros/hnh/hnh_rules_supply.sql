@@ -109,5 +109,5 @@ if({{ inventory_item_id }} is not null, {{ hnh_surrogate_key([inventory_item_id]
 
 {# Store key of a Fusion organisation + subinventory; a null subinventory is the organisation level ('*'). #}
 {% macro hnh_fusion_store_key(organization_id, subinventory_code) -%}
-{{ hnh_surrogate_key(["'fusion'", organization_id, "ifNull(" ~ subinventory_code ~ ", '*')"]) }}
+{{ hnh_surrogate_key(["'fusion'", organization_id, "ifNull(nullIf(" ~ subinventory_code ~ ", ''), '*')"]) }}
 {%- endmacro %}

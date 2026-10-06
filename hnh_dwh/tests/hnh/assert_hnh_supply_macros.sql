@@ -71,8 +71,8 @@ where not ({{ hnh_movement_direction("'Patient sale'") }} = -1 and {{ hnh_moveme
 
 union all
 select 'oasis line reference wrong'
-where not ({{ hnh_oasis_line_ref("'GN-7606861'") }} = 7606861 and {{ hnh_oasis_line_ref("'AB-9411507'") }} = 9411507
-       and {{ hnh_oasis_line_ref("'GN--7460641'") }} = 7460641 and {{ hnh_oasis_line_ref("'MA-12'") }} = 12
+where not (ifNull({{ hnh_oasis_line_ref("'GN-7606861'") }} = 7606861, 0) and ifNull({{ hnh_oasis_line_ref("'AB-9411507'") }} = 9411507, 0)
+       and ifNull({{ hnh_oasis_line_ref("'GN--7460641'") }} = 7460641, 0) and ifNull({{ hnh_oasis_line_ref("'MA-12'") }} = 12, 0)
        and {{ hnh_oasis_line_ref("'OB-JA-139'") }} is null and {{ hnh_oasis_line_ref("'cp'") }} is null
        and {{ hnh_oasis_line_ref("'10313'") }} is null and {{ hnh_oasis_line_ref("''") }} is null
        and {{ hnh_oasis_line_ref(null_s) }} is null)
@@ -108,10 +108,14 @@ union all
 select 'stock item key wrong'
 where not ({{ hnh_stock_item_key('toInt64(123)', "'B1'", "'P1'") }} = {{ hnh_surrogate_key(['toInt64(123)']) }}
        and {{ hnh_stock_item_key(null_i, "'B1'", "'P1'") }} = {{ hnh_surrogate_key(["'B1'", "'P1'"]) }}
-       and {{ hnh_stock_item_key(null_i, "'B1'", "'P1'") }} != {{ hnh_stock_item_key('toInt64(123)', "'B1'", "'P1'") }})
+       and {{ hnh_stock_item_key(null_i, "'B1'", "'P1'") }} != {{ hnh_stock_item_key('toInt64(123)', "'B1'", "'P1'") }}
+       and {{ hnh_stock_item_key(null_i, null_s, null_s) }} = -1)
 
 union all
 select 'fusion store key wrong'
 where not ({{ hnh_fusion_store_key('toInt64(77)', "'SUB1'") }} = {{ hnh_surrogate_key(["'fusion'", 'toInt64(77)', "'SUB1'"]) }}
        and {{ hnh_fusion_store_key('toInt64(77)', null_s) }} = {{ hnh_surrogate_key(["'fusion'", 'toInt64(77)', "'*'"]) }}
-       and {{ hnh_fusion_store_key('toInt64(77)', null_s) }} != {{ hnh_fusion_store_key('toInt64(77)', "'SUB1'") }})
+       and {{ hnh_fusion_store_key('toInt64(77)', null_s) }} != {{ hnh_fusion_store_key('toInt64(77)', "'SUB1'") }}
+       and {{ hnh_fusion_store_key('toInt64(77)', "''") }} = {{ hnh_surrogate_key(["'fusion'", 'toInt64(77)', "'*'"]) }}
+       and {{ hnh_fusion_store_key(null_i, "'SUB1'") }} = -1
+       and {{ hnh_fusion_store_key(null_i, null_s) }} = -1)
