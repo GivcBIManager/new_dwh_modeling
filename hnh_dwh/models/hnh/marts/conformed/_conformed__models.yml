@@ -215,3 +215,51 @@ models:
         tests:
           - accepted_values:
               values: ['supplied', 'inferred', 'not mapped', 'prior-year roll']
+  - name: hnh_dim_employee
+    columns:
+      - name: employee_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: hnh_dim_hr_department
+    columns:
+      - name: hr_department_key
+        tests: [unique, not_null]
+  - name: hnh_dim_job
+    columns:
+      - name: job_key
+        tests: [unique, not_null]
+  - name: hnh_dim_grade
+    columns:
+      - name: grade_key
+        tests: [unique, not_null]
+  - name: hnh_dim_position
+    columns:
+      - name: position_key
+        tests: [unique, not_null]
+  - name: hnh_dim_location
+    columns:
+      - name: location_key
+        tests: [unique, not_null]
+  - name: hnh_dim_worker_action
+    columns:
+      - name: worker_action_key
+        tests: [unique, not_null]
+  - name: hnh_dim_absence_type
+    columns:
+      - name: absence_type_key
+        tests: [unique, not_null]
+  - name: dim_pay_category
+    columns:
+      - name: pay_category_key
+        tests: [unique, not_null]
+  - name: bridge_employee_staff
+    columns:
+      - name: employee_key
+        tests:
+          - unique
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}

@@ -1,0 +1,22 @@
+version: 2
+
+unit_tests:
+  - name: bridge_employee_staff_matches_within_branch
+    description: >
+      Worker 500 exists as Oasis staff in branches 4 and 5; the employee belongs to branch 4, so only the branch 4
+      record links. Worker 600 (branch 4) has no Oasis record. A Head Office employee (branch 100) is never linked.
+    model: bridge_employee_staff
+    given:
+      - input: ref('int_employee_period')
+        format: sql
+        rows: |
+          select toInt64(p) as person_id, toNullable(w) as worker_number, toUInt8(b) as branch_key
+          from values('p UInt32, w String, b UInt8', (1, '500', 4), (2, '600', 4), (3, '500', 100))
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(b), '|', s, '|')), 1)) as staff_key, toUInt8(b) as branch_key, s as staff_id
+          from values('b UInt8, s String', (4, '500'), (5, '500'))
+    expect:
+      rows:
+        - {worker_number: '500', branch_key: 4, match_method: worker_number}
