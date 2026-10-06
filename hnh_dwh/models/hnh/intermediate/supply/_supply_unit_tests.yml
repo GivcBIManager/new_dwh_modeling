@@ -202,3 +202,48 @@ unit_tests:
         - {fusion_transaction_id: 9, branch_key: 2, reference_status: 'not_integration', oasis_scope_reason: null, oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Goods receipt', valuation_unit_cost: null, lot_number: 'L2', expiry_date: null}
         - {fusion_transaction_id: 10, branch_key: 2, reference_status: 'oasis_out_of_scope', oasis_scope_reason: 'reversed_invoice', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Patient sale', valuation_unit_cost: 13, lot_number: null, expiry_date: null}
         - {fusion_transaction_id: 11, branch_key: 2, reference_status: 'not_integration', oasis_scope_reason: null, oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Goods receipt', valuation_unit_cost: null, lot_number: 'L5', expiry_date: '2026-12-31'}
+
+  - name: int_consumption_charge_link_follows_delivery_lines
+    description: >
+      Lines 11 and 12 dispense P1 twice on invoice INV1, whose P1 delivery lines DL1 (charges 1001 of 30 and the co-pay
+      1002 of 10) and DL2 (charge 1003 of 30) link to both lines: each charge line's revenue owner is line 11, the lowest
+      Oasis line id. Return line 13 links to the same charges but owns none. Line 14 (INV2) has no charge. Fusion-sourced
+      line 15 (INV3) links through the superseded INV3 charge row of DL3 to its live charge 1004 on another invoice. A
+      department issue is not a patient line.
+    model: int_consumption_charge_link
+    given:
+      - input: ref('fact_stock_movement')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toUInt8(3) as branch_key, mt as movement_type, toNullable(toInt64(l)) as oasis_line_id, toNullable(inv) as oasis_doc_no, toNullable(p) as oasis_product_code
+          from values('m UInt32, mt String, l UInt32, inv String, p String',
+              (1, 'Patient sale', 11, 'INV1', 'P1'), (2, 'Patient sale', 12, 'INV1', 'P1'),
+              (3, 'Patient return', 13, 'INV1', 'P1'), (4, 'Patient sale', 14, 'INV2', 'P2'),
+              (5, 'Patient sale', 15, 'INV3', 'P3'), (6, 'Department issue', 16, 'ISS6', 'P1'))
+      - input: ref('stg_oasis__charges')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toNullable(inv) as invoice_doc_no, toNullable(toInt64(dl)) as delivery_line
+          from values('inv String, dl UInt32', ('INV1', 1), ('INV1', 1), ('INV1', 2), ('INV3', 3), ('INV4', 3))
+      - input: ref('stg_oasis__delivery_lines')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toInt64(dl) as delivery_line, toNullable(p) as product_code
+          from values('dl UInt32, p String', (1, 'P1'), (2, 'P1'), (3, 'P3'))
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toInt64(k) as charge_line_key, toUInt8(3) as branch_key, toNullable(toInt64(dl)) as delivery_line
+          from values('k UInt32, dl UInt32', (1001, 1), (1002, 1), (1003, 2), (1004, 3))
+    expect:
+      rows:
+        - {movement_key: 1, charge_line_key: 1001, is_revenue_owner: 1}
+        - {movement_key: 1, charge_line_key: 1002, is_revenue_owner: 1}
+        - {movement_key: 1, charge_line_key: 1003, is_revenue_owner: 1}
+        - {movement_key: 2, charge_line_key: 1001, is_revenue_owner: 0}
+        - {movement_key: 2, charge_line_key: 1002, is_revenue_owner: 0}
+        - {movement_key: 2, charge_line_key: 1003, is_revenue_owner: 0}
+        - {movement_key: 3, charge_line_key: 1001, is_revenue_owner: 0}
+        - {movement_key: 3, charge_line_key: 1002, is_revenue_owner: 0}
+        - {movement_key: 3, charge_line_key: 1003, is_revenue_owner: 0}
+        - {movement_key: 5, charge_line_key: 1004, is_revenue_owner: 1}

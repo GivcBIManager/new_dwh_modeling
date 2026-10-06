@@ -69,3 +69,43 @@ unit_tests:
         - {oasis_line_id: null, fusion_transaction_id: 9013, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: 0, cost_source: 'none', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null}
         - {oasis_line_id: null, fusion_transaction_id: 9014, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Opening balance', primary_quantity: 7, cost_amount: 14, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null}
         - {oasis_line_id: null, fusion_transaction_id: 9021, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -6, cost_source: 'fusion_valuation', consumption_cost: 6, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null}
+
+  - name: fact_patient_consumption_counts_revenue_once
+    description: >
+      Lines 11 and 12 dispense P1 twice on invoice INV1, whose P1 delivery lines DL1 (charges 1001 of 30 and the co-pay
+      1002 of 10) and DL2 (charge 1003 of 30) link to both lines: each charge line goes to line 11 only (revenue 70,
+      line 12 none). Return line 13 links but carries no revenue. Line 14 (INV2) has no charge. Fusion-sourced line 15
+      (INV3) links through the superseded INV3 charge row of DL3 to its live charge 1004 (50) on another invoice; its
+      Fusion pack cost (6) keeps the Oasis line's cost (60) beside it. A department issue is not a patient line. The link
+      rows are those int_consumption_charge_link_follows_delivery_lines expects from the same scenario.
+    model: fact_patient_consumption
+    given:
+      - input: ref('fact_stock_movement')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toUInt8(3) as branch_key, toInt32(20260905) as date_key, toInt64(1) as store_key, toInt64(2) as item_key, toInt64(3) as movement_type_key, mt as movement_type, toNullable(toInt64(l)) as oasis_line_id, toNullable(inv) as oasis_doc_no, toNullable(p) as oasis_product_code, toFloat64(q) as primary_quantity, toFloat64(c) as cost_amount, toFloat64(-q) as consumption_quantity, toFloat64(-c) as consumption_cost, src as source_system, toUInt8(1) as is_in_oasis, toUInt8(src = 'fusion') as is_in_fusion, toUInt8(0) as is_fusion_gap, toNullable(toFloat64(if(src = 'fusion', -60, c))) as oasis_cost_amount, toUInt8(src = 'fusion') as is_cost_mismatch
+          from values('m UInt32, mt String, l UInt32, inv String, p String, q Float64, c Float64, src String',
+              (1, 'Patient sale', 11, 'INV1', 'P1', -1, -5, 'oasis'), (2, 'Patient sale', 12, 'INV1', 'P1', -1, -5, 'oasis'),
+              (3, 'Patient return', 13, 'INV1', 'P1', 1, 5, 'oasis'), (4, 'Patient sale', 14, 'INV2', 'P2', -1, -4, 'oasis'),
+              (5, 'Patient sale', 15, 'INV3', 'P3', -2, -6, 'fusion'), (6, 'Department issue', 16, 'ISS6', 'P1', -1, -5, 'oasis'))
+      - input: ref('int_consumption_charge_link')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toInt64(k) as charge_line_key, toUInt8(o) as is_revenue_owner
+          from values('m UInt32, k UInt32, o UInt8',
+              (1, 1001, 1), (1, 1002, 1), (1, 1003, 1), (2, 1001, 0), (2, 1002, 0), (2, 1003, 0),
+              (3, 1001, 0), (3, 1002, 0), (3, 1003, 0), (5, 1004, 1))
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toInt64(k) as charge_line_key, toFloat64(r) as revenue_amount,
+                 toInt64(e) as encounter_key, toInt64(-1) as episode_key, toInt64(-1) as patient_key, toInt64(-1) as staff_key,
+                 toInt64(-1) as billed_payer_key, toInt8(1) as care_type_key, toInt64(-1) as service_key, toInt64(-1) as department_key
+          from values('k UInt32, r Float64, e UInt32', (1001, 30, 701), (1002, 10, 701), (1003, 30, 702), (1004, 50, 703))
+    expect:
+      rows:
+        - {movement_key: 1, is_linked_to_charge: 1, revenue_amount: 70, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0}
+        - {movement_key: 2, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0}
+        - {movement_key: 3, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: 5, is_cost_mismatch: 0}
+        - {movement_key: 4, is_linked_to_charge: 0, revenue_amount: 0, encounter_key: -1, charge_line_key: -1, oasis_cost_amount: -4, is_cost_mismatch: 0}
+        - {movement_key: 5, is_linked_to_charge: 1, revenue_amount: 50, encounter_key: 703, charge_line_key: 1004, oasis_cost_amount: -60, is_cost_mismatch: 1}

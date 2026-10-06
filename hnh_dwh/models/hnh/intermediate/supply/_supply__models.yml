@@ -38,3 +38,23 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, store_id]
+  - name: int_consumption_charge_link
+    description: >
+      Patient-sale and patient-return lines of fact_stock_movement against the live charge lines they link to, through
+      the Oasis invoice line (invoice + product -> delivery lines named by any charge row -> live charge lines). The one
+      link read by fact_patient_consumption and rec_consumption_charge_monthly.
+    tests:
+      - hnh_unique_combination:
+          columns: [movement_key, charge_line_key]
+      - hnh_unique_combination:
+          columns: [charge_line_key]
+          config: {where: "is_revenue_owner = 1"}
+    columns:
+      - name: movement_key
+        tests:
+          - relationships: {to: ref('fact_stock_movement'), field: movement_key}
+      - name: charge_line_key
+        tests:
+          - relationships: {to: ref('fact_charge_line'), field: charge_line_key}
+      - name: is_revenue_owner
+        description: 1 on the linked patient-sale line with the lowest Oasis line id; that line carries the charge's revenue.

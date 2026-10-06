@@ -74,3 +74,16 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_end]
+  - name: rec_consumption_charge_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+    columns:
+      - name: linked_consumption_cost
+        description: Consumption cost of the patient lines linked to a charge, at the cost recorded in fact_stock_movement.
+      - name: linked_consumption_cost_oasis
+        description: >
+          The same lines at the Oasis line's cost (oasis_cost_amount), for margin where Fusion pack-item costs were
+          loaded per base unit (five branches).
+      - name: medication_charges_without_cost
+        description: Medication charge lines with revenue that no patient-sale or return line links to (int_consumption_charge_link).

@@ -42,3 +42,55 @@ models:
       - name: is_cost_mismatch
         description: >
           1 when cost_amount and oasis_cost_amount are both non-zero and their absolute ratio lies outside [0.5, 2].
+  - name: fact_patient_consumption
+    columns:
+      - name: movement_key
+        tests:
+          - unique
+          - not_null
+          - relationships: {to: ref('fact_stock_movement'), field: movement_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: movement_type_key
+        tests:
+          - relationships: {to: ref('dim_movement_type'), field: movement_type_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: treating_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: billed_payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: service_key
+        tests:
+          - relationships: {to: ref('dim_service'), field: service_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: encounter_key
+        tests:
+          - relationships:
+              to: ref('fact_encounter')
+              field: encounter_key
+              config: {severity: warn, where: "encounter_key != -1"}
+      - name: oasis_cost_amount
+        description: >
+          From fact_stock_movement: the referenced Oasis line's cost (signed like cost_amount), null on Fusion-only lines.
+          Margin on Oasis cost where the Fusion pack-item cost was loaded per base unit (five branches).
+      - name: is_cost_mismatch
+        description: From fact_stock_movement; 1 when cost_amount and oasis_cost_amount differ by a ratio outside [0.5, 2].
