@@ -9,13 +9,38 @@ with mv as (
 
 depts as (select organization_id as dept_org_id, branch_key as dept_org_branch from {{ ref('hnh_dim_hr_department') }} where organization_id is not null),
 
+-- Legal employer valid on the action date (own assignment) and the day before: the same assignment's row, else the
+-- person's primary assignment (a transfer starts a new assignment id). One row per movement.
+le as (
+    select m.assignment_id as assignment_id, m.effective_end_date_key as effective_end_date_key, m.effective_sequence as effective_sequence,
+           argMaxIf(a.legal_employer_id, a.valid_from, a.assignment_id = m.assignment_id and a.valid_from <= m.action_date and a.valid_to >= m.action_date) as cur_le,
+           ifNull(argMaxIf(a.legal_employer_id, a.valid_from, a.assignment_id = m.assignment_id and a.valid_from <= m.action_date - 1 and a.valid_to >= m.action_date - 1),
+                  argMaxIf(a.legal_employer_id, a.valid_from, a.is_primary = 1 and a.valid_from <= m.action_date - 1 and a.valid_to >= m.action_date - 1)) as prev_le
+    from mv as m
+    inner join (select person_id, assignment_id, is_primary, valid_from, valid_to, legal_employer_id from {{ ref('stg_fusion__assignments') }}) as a
+        on a.person_id = m.person_id
+    group by m.assignment_id, m.effective_end_date_key, m.effective_sequence
+),
+
+le_branch as (
+    select le.assignment_id as lb_assignment_id, le.effective_end_date_key as lb_end_key, le.effective_sequence as lb_seq,
+           c.branch_key as cur_le_branch, p.branch_key as prev_le_branch
+    from le
+    left join (select legal_employer_id, branch_key from {{ ref('int_legal_employer_branch') }}) as c on c.legal_employer_id = le.cur_le
+    left join (select legal_employer_id, branch_key from {{ ref('int_legal_employer_branch') }}) as p on p.legal_employer_id = le.prev_le
+    {{ hnh_settings() }}  -- unresolved employers stay NULL, not 0
+),
+
 joined as (
     select m.*, d.dept_org_branch as dept_branch, pd.dept_org_branch as prev_dept_branch,
+           lb.cur_le_branch as cur_le_branch, lb.prev_le_branch as prev_le_branch,
            e.employee_key as employee_key, e.branch_key as employee_branch, e.staff_key as staff_key,
            wa.worker_action_key as action_key_found
     from mv as m
     left join depts as d on d.dept_org_id = m.organization_id
     left join depts as pd on pd.dept_org_id = m.previous_organization_id
+    left join le_branch as lb on lb.lb_assignment_id = m.assignment_id and lb.lb_end_key = m.effective_end_date_key
+        and lb.lb_seq = m.effective_sequence
     inner join (select employee_key, person_id, branch_key, staff_key from {{ ref('hnh_dim_employee') }} where person_id is not null) as e
         on e.person_id = m.person_id
     left join (select worker_action_key, ifNull(action_code, '') as wa_code, ifNull(action_reason_code, '') as wa_reason
@@ -26,8 +51,8 @@ joined as (
 
 select
     {{ hnh_surrogate_key(['assignment_id', 'effective_end_date_key', 'effective_sequence']) }}  as movement_key,
-    if(ifNull(dept_branch, 0) = 0, employee_branch, assumeNotNull(dept_branch))             as branch_key,
-    if(ifNull(prev_dept_branch, 0) = 0, branch_key, assumeNotNull(prev_dept_branch))        as previous_branch_key,
+    multiIf(ifNull(cur_le_branch, 0) != 0, assumeNotNull(cur_le_branch), ifNull(dept_branch, 0) != 0, assumeNotNull(dept_branch), employee_branch) as branch_key,
+    multiIf(ifNull(prev_le_branch, 0) != 0, assumeNotNull(prev_le_branch), ifNull(prev_dept_branch, 0) != 0, assumeNotNull(prev_dept_branch), branch_key) as previous_branch_key,
     employee_key,
     staff_key,
     ifNull(action_key_found, toInt64(-1))                                                   as worker_action_key,

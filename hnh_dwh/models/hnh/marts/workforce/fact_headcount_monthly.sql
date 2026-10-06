@@ -33,6 +33,7 @@ select
     if(location_id is null, toInt64(-1), {{ hnh_surrogate_key(['location_id']) }})         as location_key,
     {{ hnh_date_key('month_end') }}                                                 as month_date_key,
     month_end,
+    toUInt8(month_end < today())                                                    as is_closed_month,
     worker_type_code,
     toUInt8(ifNull(worker_type_code, '') in ('CWK', 'CON'))                         as is_contingent,
     assignment_status,

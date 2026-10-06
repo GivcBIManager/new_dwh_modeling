@@ -43,7 +43,7 @@ unit_tests:
   - name: fact_worker_movement_flags_transfers
     description: >
       A GLB_TRANSFER from a KHM department to an ABH department: branch 6 after, branch 2 before, branch transfer flag.
-      A RESIGNATION is a voluntary leaver. A HIRE before 2022 is outside the window.
+      A RESIGNATION is a voluntary leaver. A HIRE before 2022 is outside the window. A second GLB_TRANSFER keeps its department but starts a new assignment whose legal employer differs from the person's previous primary assignment from branch 2 to branch 6: the branch comes from the legal employer.
     model: hnh_fact_worker_movement
     given:
       - input: ref('stg_fusion__worker_movements')
@@ -60,7 +60,22 @@ unit_tests:
                  toUInt8(porg != 0) as is_organization_changed, toUInt8(0) as is_job_changed, toUInt8(0) as is_position_changed,
                  toUInt8(0) as is_grade_changed, toUInt8(0) as is_location_changed
           from values('a UInt32, d String, p UInt32, ac String, org UInt32, porg UInt32',
-              (1, '2026-05-01', 1, 'GLB_TRANSFER', 61, 21), (2, '2026-06-30', 2, 'RESIGNATION', 61, 0), (3, '2019-01-01', 3, 'HIRE', 61, 0))
+              (1, '2026-05-01', 1, 'GLB_TRANSFER', 61, 21), (2, '2026-06-30', 2, 'RESIGNATION', 61, 0), (3, '2019-01-01', 3, 'HIRE', 61, 0),
+              (4, '2026-07-01', 4, 'GLB_TRANSFER', 61, 61))
+      - input: ref('stg_fusion__assignments')
+        format: sql
+        rows: |
+          select toInt64(a) as assignment_id, toNullable(toInt64(p)) as person_id, toUInt8(pr) as is_primary, toDate32(vf) as valid_from,
+                 toDate32(vt) as valid_to, toNullable(toInt64(le)) as legal_employer_id
+          from values('a UInt32, p UInt32, pr UInt8, vf String, vt String, le UInt32',
+              (1, 1, 1, '2020-01-01', '2026-04-30', 700), (1, 1, 1, '2026-05-01', '2299-12-31', 600),
+              (2, 2, 1, '2020-01-01', '2299-12-31', 600), (3, 3, 1, '2010-01-01', '2299-12-31', 600),
+              (5, 4, 1, '2020-01-01', '2026-06-30', 700), (4, 4, 1, '2026-07-01', '2299-12-31', 600))
+      - input: ref('int_legal_employer_branch')
+        format: sql
+        rows: |
+          select toInt64(l) as legal_employer_id, toUInt8(b) as branch_key
+          from values('l UInt32, b UInt8', (600, 6), (700, 2))
       - input: ref('hnh_dim_hr_department')
         format: sql
         rows: |
@@ -70,7 +85,7 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)), '|')), 1)) as employee_key, toNullable(toInt64(p)) as person_id, toUInt8(6) as branch_key, toInt64(-1) as staff_key
-          from values('p UInt32', (1), (2), (3))
+          from values('p UInt32', (1), (2), (3), (4))
       - input: ref('hnh_dim_worker_action')
         format: sql
         rows: |
@@ -80,3 +95,4 @@ unit_tests:
       rows:
         - {action_code: GLB_TRANSFER, worker_action_key: 101, branch_key: 6, previous_branch_key: 2, movement_group: Transfer, is_branch_transfer: 1, is_leaver: 0, is_voluntary_leaver: 0}
         - {action_code: RESIGNATION, worker_action_key: 102, branch_key: 6, previous_branch_key: 6, movement_group: Voluntary leaver, is_branch_transfer: 0, is_leaver: 1, is_voluntary_leaver: 1}
+        - {action_code: GLB_TRANSFER, worker_action_key: 101, branch_key: 6, previous_branch_key: 2, movement_group: Transfer, is_branch_transfer: 1, is_leaver: 0, is_voluntary_leaver: 0}
