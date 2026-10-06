@@ -107,3 +107,7 @@ models:
         description: Consumption cost of the patient lines (sales and returns) with revenue_basis 'cancelled'.
       - name: medication_charges_without_cost
         description: Medication charge lines with revenue that no patient-sale or return line links to (int_consumption_charge_link).
+  - name: rec_purchase_ap_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]

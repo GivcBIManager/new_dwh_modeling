@@ -124,3 +124,68 @@ models:
       - name: item_key
         tests:
           - relationships: {to: ref('hnh_dim_item'), field: item_key}
+  - name: fact_purchase_line
+    columns:
+      - name: purchase_line_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: po_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: ship_to_store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: requisition_approved_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: first_receipt_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['oasis', 'fusion']
+      - name: quantity_received
+        description: >
+          Fusion: the schedule's received quantity. Oasis: the GRN lines on the PO line in fact_goods_receipt's scope
+          (int_oasis_stock_line, movement 'Goods receipt'), in Oasis base units; returns to supplier are not netted.
+  - name: fact_goods_receipt
+    columns:
+      - name: goods_receipt_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: purchase_line_key
+        tests:
+          - relationships:
+              to: ref('fact_purchase_line')
+              field: purchase_line_key
+              config: {where: "purchase_line_key != -1"}
+      - name: receipt_type
+        description: >
+          RECEIVE / RETURN TO VENDOR (Fusion), GRN / RETURN TO VENDOR (Oasis STOCKISS RFN, returns to supplier).
+          Returns carry a negative quantity and value.
+        tests:
+          - accepted_values:
+              values: ['RECEIVE', 'RETURN TO VENDOR', 'GRN']

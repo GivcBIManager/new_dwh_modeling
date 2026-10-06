@@ -153,7 +153,7 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(d) as invoice_distribution_id, toNullable(toInt64(inv)) as invoice_id, toNullable(toString(inv)) as invoice_num,
-                 toNullable(lt) as line_type, cast(null as Nullable(Int64)) as po_distribution_id, toUInt8(1) as is_posted,
+                 toNullable(lt) as line_type, cast(null as Nullable(Int64)) as po_distribution_id, cast(null as Nullable(Int64)) as rcv_transaction_id, toUInt8(1) as is_posted,
                  toUInt8(c) as is_cancelled, toUInt8(c) as is_reversal, toNullable(it) as invoice_type_code,
                  toNullable(toInt64(5)) as vendor_id, toNullable(toInt64(vs)) as vendor_site_id,
                  toNullable(toInt64(300000005003384)) as ledger_id, toNullable(toInt64(10)) as code_combination_id,
