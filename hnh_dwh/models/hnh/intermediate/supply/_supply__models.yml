@@ -29,7 +29,11 @@ models:
       - name: reference_status
         tests:
           - accepted_values:
-              values: ['oasis_line', 'not_in_oasis', 'no_reference', 'not_integration']
+              values: ['oasis_line', 'oasis_out_of_scope', 'not_in_oasis', 'no_reference', 'not_integration']
+      - name: oasis_scope_reason
+        tests:
+          - accepted_values:
+              values: ['reversed_invoice', 'creditar', 'package_header', 'not_stock_or_zero_cost', 'other']
   - name: int_store_crosswalk
     tests:
       - hnh_unique_combination:
