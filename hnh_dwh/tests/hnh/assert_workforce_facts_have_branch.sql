@@ -8,3 +8,5 @@ union all
 select 'fact_absence', count() from {{ ref('fact_absence') }} where branch_key = 0 having count() > 0
 union all
 select 'fact_leave_balance_monthly', count() from {{ ref('fact_leave_balance_monthly') }} where branch_key = 0 having count() > 0
+union all
+select 'fact_absence_daily', count() from {{ ref('fact_absence_daily') }} where branch_key = 0 having count() > 0

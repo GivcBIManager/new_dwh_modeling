@@ -70,6 +70,11 @@ models:
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
   - name: fact_leave_balance_monthly
+    description: >
+      One row per Fusion balance entry; accrual periods are weekly running balances (several per month, some in the
+      future). Monthly KPIs must filter is_latest_in_month = 1, current or latest-balance KPIs is_current_balance = 1
+      (latest closed period, i.e. before today), and closed-period reporting is_closed_period = 1; summing all rows
+      overstates the liability. Liability only exists for annual-leave plans with a salary.
     columns:
       - name: leave_balance_key
         tests: [unique, not_null]

@@ -8,7 +8,7 @@ select
     e.staff_key                                                                         as staff_key,
     ifNull(t.absence_type_key, toInt64(-1))                                             as absence_type_key,
     ifNull({{ hnh_date_key_in_range('a.start_date') }}, 0)                              as start_date_key,
-    {{ hnh_date_key_in_range('a.end_date') }}                                           as end_date_key,
+    ifNull({{ hnh_date_key_in_range('a.end_date') }}, 0)                                as end_date_key,
     {{ hnh_absence_status('a.absence_status_code', 'a.approval_status_code') }}         as absence_status,
     {{ hnh_is_counted_absence('a.absence_status_code', 'a.approval_status_code') }}     as is_counted,
     a.duration_uom                                                                      as duration_uom,

@@ -216,16 +216,20 @@ unit_tests:
     description: >
       Person 1: annual-leave balance of 15 days at 2026-07-31; recurring pay in July 2026 is basic 6,000 + housing 1,500
       (overtime 900 excluded) → daily rate 250, liability 3,750. Person 2: sick-leave plan → no liability. Person 3:
-      annual leave but never paid → salary and liability null.
+      annual leave but never paid → salary and liability null. Person 4: balance at 2026-08-29 takes the salary of 202605
+      (Basic 3,000), skipping the adjustment-only month 202608 (Basic -500), the later month 202609, a parallel-run row
+      and an unlinked row. Person 5: two accrual periods in July 2026 → only the later one is latest in month and current.
     model: fact_leave_balance_monthly
     given:
       - input: ref('stg_fusion__absence_balances')
         format: sql
         rows: |
           select toInt64(a) as accrual_entry_id, toNullable(toInt64(p)) as person_id, toNullable(toInt64(pl)) as absence_plan_id,
-                 toDate32('2026-07-31') as accrual_period_date, toNullable('A') as status, toFloat64(0) as begin_balance,
+                 toDate32(d) as accrual_period_date, toNullable('A') as status, toFloat64(0) as begin_balance,
                  toFloat64(0) as accrued, toFloat64(0) as used, toFloat64(eb) as end_balance
-          from values('a UInt32, p UInt32, pl UInt32, eb Float64', (1, 1, 80, 15), (2, 2, 81, 4), (3, 3, 80, 10))
+          from values('a UInt32, p UInt32, pl UInt32, eb Float64, d String',
+              (1, 1, 80, 15, '2026-07-31'), (2, 2, 81, 4, '2026-07-31'), (3, 3, 80, 10, '2026-07-31'),
+              (4, 4, 80, 20, '2026-08-29'), (5, 5, 80, 7, '2026-07-10'), (6, 5, 80, 8, '2026-07-31'))
       - input: ref('stg_fusion__absence_plans')
         format: sql
         rows: |
@@ -235,15 +239,21 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)),'|')),1)) as employee_key, toNullable(toInt64(p)) as person_id, toUInt8(6) as branch_key
-          from values('p UInt32', (1), (2), (3))
+          from values('p UInt32', (1), (2), (3), (4), (5))
       - input: ref('fact_payroll_monthly')
         format: sql
         rows: |
-          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(1)),'|')),1)) as employee_key, toInt32(202607) as payroll_month, c as pay_category,
-                 toFloat64(a) as amount, toUInt8(0) as is_parallel_run
-          from values('c String, a Float64', ('Basic', 6000), ('Housing', 1500), ('Overtime', 900))
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)),'|')),1)) as employee_key, toInt32(m) as payroll_month, c as pay_category,
+                 toFloat64(a) as amount, toUInt8(par) as is_parallel_run
+          from values('p Int64, m UInt32, c String, a Float64, par UInt8',
+              (1, 202607, 'Basic', 6000, 0), (1, 202607, 'Housing', 1500, 0), (1, 202607, 'Overtime', 900, 0),
+              (4, 202605, 'Basic', 3000, 0), (4, 202608, 'Basic', -500, 0), (4, 202609, 'Basic', 5000, 0),
+              (4, 202606, 'Basic', 9000, 1), (-1, 202607, 'Basic', 8000, 0))
     expect:
       rows:
-        - {end_balance: 15, is_annual_plan: 1, monthly_salary: 7500, daily_rate: 250, leave_liability_amount: 3750}
-        - {end_balance: 4, is_annual_plan: 0, monthly_salary: null, daily_rate: null, leave_liability_amount: null}
-        - {end_balance: 10, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null}
+        - {end_balance: 15, is_annual_plan: 1, monthly_salary: 7500, daily_rate: 250, leave_liability_amount: 3750, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {end_balance: 4, is_annual_plan: 0, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {end_balance: 10, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {end_balance: 20, is_annual_plan: 1, monthly_salary: 3000, daily_rate: 100, leave_liability_amount: 2000, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {end_balance: 7, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 0, is_current_balance: 0}
+        - {end_balance: 8, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
