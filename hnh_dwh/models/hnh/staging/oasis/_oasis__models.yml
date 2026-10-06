@@ -218,3 +218,7 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, generic_id]
+  - name: stg_oasis__payroll_transactions
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, account_transaction_no]

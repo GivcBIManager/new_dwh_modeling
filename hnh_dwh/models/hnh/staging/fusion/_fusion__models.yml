@@ -46,3 +46,79 @@ models:
     columns:
       - name: business_unit_id
         tests: [unique, not_null]
+  - name: stg_fusion__employees
+    tests:
+      - hnh_unique_combination:
+          columns: [person_id, valid_from]
+  - name: stg_fusion__assignments
+    tests:
+      - hnh_unique_combination:
+          columns: [assignment_id, valid_from]
+  - name: stg_fusion__periods_of_service
+    columns:
+      - name: period_of_service_id
+        tests: [unique, not_null]
+  - name: stg_fusion__worker_movements
+    tests:
+      - hnh_unique_combination:
+          columns: [assignment_id, effective_end_date_key, effective_sequence]
+  - name: stg_fusion__work_measures
+    columns:
+      - name: assign_work_measure_id
+        tests: [not_null]
+  - name: stg_fusion__hr_departments
+    columns:
+      - name: organization_id
+        tests: [unique, not_null]
+  - name: stg_fusion__organizations
+    columns:
+      - name: organization_id
+        tests: [unique, not_null]
+  - name: stg_fusion__jobs
+    columns:
+      - name: job_id
+        tests: [unique, not_null]
+  - name: stg_fusion__grades
+    columns:
+      - name: grade_id
+        tests: [unique, not_null]
+  - name: stg_fusion__positions
+    columns:
+      - name: position_id
+        tests: [unique, not_null]
+  - name: stg_fusion__locations
+    columns:
+      - name: location_id
+        tests: [unique, not_null]
+  - name: stg_fusion__worker_actions
+    tests:
+      - hnh_unique_combination:
+          columns: [action_code, action_reason_code]
+  - name: stg_fusion__payroll_run_results
+    tests:
+      - hnh_unique_combination:
+          columns: [run_result_id, input_value_id]
+  - name: stg_fusion__payroll_elements
+    columns:
+      - name: element_type_id
+        tests: [unique, not_null]
+  - name: stg_fusion__payroll_input_values
+    columns:
+      - name: input_value_id
+        tests: [unique, not_null]
+  - name: stg_fusion__absence_entries
+    columns:
+      - name: absence_entry_id
+        tests: [unique, not_null]
+  - name: stg_fusion__absence_types
+    columns:
+      - name: absence_type_id
+        tests: [unique, not_null]
+  - name: stg_fusion__absence_plans
+    columns:
+      - name: absence_plan_id
+        tests: [unique, not_null]
+  - name: stg_fusion__absence_balances
+    columns:
+      - name: accrual_entry_id
+        tests: [unique, not_null]
