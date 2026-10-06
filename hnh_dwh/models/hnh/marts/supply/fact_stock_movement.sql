@@ -81,7 +81,9 @@ identity_rows as (
            {{ hnh_fusion_store_key('fl_organization_id', 'fl_subinventory_code') }},
            {{ hnh_surrogate_key(["'oasis'", 'branch_key', 'store_id']) }})         as store_key_raw,
         if(source_system = 'fusion',
-           if(fl_transfer_organization_id is null and fl_transfer_subinventory is null, toInt64(-1),
+           if(fl_transfer_organization_id is null and fl_transfer_subinventory is null,
+              -- no Fusion counterparty: the Oasis line's own counterparty store when it has one
+              if(transfer_store_id is not null, {{ hnh_surrogate_key(["'oasis'", 'branch_key', 'transfer_store_id']) }}, toInt64(-1)),
               {{ hnh_fusion_store_key('ifNull(fl_transfer_organization_id, fl_organization_id)', 'fl_transfer_subinventory') }}),
            {{ hnh_surrogate_key(["'oasis'", 'branch_key', 'transfer_store_id']) }}) as transfer_store_key_raw,
         -- hnh_stock_item_key with a known Fusion item reduces to this form; a null item stays -1 as in the plan

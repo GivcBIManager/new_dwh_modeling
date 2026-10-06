@@ -401,3 +401,12 @@ Task rulings:
 - Fusion month-end source precedence picks Fusion only where its valuation has layers for the branch by that month-end, otherwise the next available source.
 - `lead_time_days` is null when negative; `fact_goods_receipt` gains `is_po_receipt` (Fusion RECEIVE rows with no PO line are internal receipts), which supplier KPIs filter; `is_ap_matched` rests on spend lines (not tax-only) and stays 1 for schedules whose AP lines net to 0; the YAML documents `quantity_received` as net of returns for Fusion and gross GRN for Oasis.
 - Fusion HR staging (positions, jobs, grades, locations, HR departments, organizations, absence types and plans) keeps the latest row per id rather than current rows only, with is_current exposed, so end-dated members referenced by facts stay in the dimensions.
+
+Final fix wave (whole-branch review):
+
+- Derived month-ends (spec 6.4) are valued at the product's average cost only; the movement's unit cost is not used (spec 6.4 said "movement's unit cost or average cost").
+- `fact_purchase_line.ordered_value` is net of cancellations, (quantity ordered - quantity cancelled) x unit price; `gross_ordered_value` keeps quantity x price. `is_approved_po` is 0 for CANCELED, REJECTED, WITHDRAWN, INCOMPLETE and PENDING APPROVAL, and `rec_purchase_ap_monthly` orders only approved lines. Cancellation comes from `quantity_cancelled` and the status (the schedule's cancel flag is always 0).
+- `fact_goods_receipt.is_supplier_receipt` is 1 for every Oasis GRN and return to supplier and for Fusion receipts with a PO line; `is_po_receipt` keeps its meaning (PO line resolved in `fact_purchase_line`).
+- A Fusion-sourced transfer with no transfer organisation and subinventory takes the Oasis line's counterparty store as `transfer_store_key`; `warn_movements_unknown_item_or_store` also counts transfer rows whose `transfer_store_key` is -1.
+- `stg_fusion__subinventories` drops nameless subinventories instead of turning them into '', so a store cannot collide with the organisation-level '*' key.
+- The eight Fusion HR staging views order by `is_current desc, valid_from desc, valid_to desc` before `limit 1 by id`, so a future-dated row never replaces the current one.

@@ -30,7 +30,7 @@ vars:
   hnh_hr_snapshot_end: ""                # empty = through the current month
   hnh_fusion_inventory_start: "2026-02-01"          # first month of the Fusion inventory integration window
   hnh_fusion_item_master_org_id: 300000005019401    # Fusion item master organisation
-  hnh_stock_month_end_last: ""           # empty = last closed month-end; fixed value only for unit tests
+  hnh_stock_month_end_last: ""           # empty = the current month-end (not the last closed one); fixed value only for unit tests
 
 models:
   oasis:
@@ -157,7 +157,12 @@ on-run-end:
 - Costs are as recorded (CEFODOX in Abha at 6,241,137 SAR per bottle); check `warn_unit_cost_outliers` before publishing a month.
 - In Khamis, Jazan, Unaizah, Madinah and Muhayil the Fusion valuation cost of pack items equals one base unit's Oasis cost. `cost_amount` keeps the recorded Fusion cost; `oasis_cost_amount` and `is_cost_mismatch` let SSAS show the Oasis cost instead, and `warn_cost_mismatch` reports it monthly.
 - Quantities are in the item's primary unit (Fusion primary unit for Fusion-mapped items, Oasis base unit otherwise); purchase quantities are in the ordering unit (`uom_code`): compare purchase prices per item and supplier within one `source_system`.
-- Supplier KPIs filter `fact_goods_receipt.is_po_receipt = 1`. `lead_time_days` is null when negative. Fusion `quantity_received` is net of returns; Oasis counts GRNs gross.
+- Supplier KPIs filter `fact_goods_receipt.is_supplier_receipt = 1` (every Oasis GRN and return to supplier; Fusion rows with a PO line); `is_po_receipt` only says the PO line is resolved in `fact_purchase_line`. `lead_time_days` is null when negative. Fusion `quantity_received` is net of returns; Oasis counts GRNs gross.
+- `fact_purchase_line.ordered_value` is net of cancellations (`gross_ordered_value` keeps quantity x price): filter `is_approved_po = 1` (0 for CANCELED, REJECTED, WITHDRAWN, INCOMPLETE and PENDING APPROVAL).
+- Role-playing relationships: `fact_stock_movement` to `dim_store` on `store_key` is active and on `transfer_store_key` inactive; `fact_purchase_line` to `dim_date` on `po_date_key` is active, `requisition_approved_date_key` and `first_receipt_date_key` inactive. Follow a store across the Oasis-to-Fusion cutover with `dim_store.store_group_key`.
+- Never divide receipt quantities (primary unit) by purchase-line quantities (ordering unit).
+- Fusion month-end stock does not yet deduct gap-filled sales (about 42% of lines from go-live), and Ghirnata's Fusion stock value is about 3x Oasis (pack items costed per pack); both inflate days of stock.
+- Oasis lead times above 365 days (260 lines) skew the average: prefer the median.
 - ABC class, slow-moving, near-expiry, fill rate, lead time, last PO price and price change follow spec 7; `hnh_abc_class` gives the A/B/C thresholds (0.80 / 0.95).
 - Known data findings (Abha PON-numbered POs, Al-Hayat sister-hospital suppliers, Fusion cost errors, the interface gap) are listed in `docs/reconciliation_phase5.md`.
 
@@ -168,7 +173,7 @@ on-run-end:
 3. Add `use_lw_deletes: true` to the `oasis` output in the server's `profiles.yml`.
 4. Check the reference tables listed above exist in `default` on the server's ClickHouse.
 5. `cd dbt && dbt parse` — must finish without errors.
-6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` (Phase 5 full build of 2026-10-06: PASS=1037 WARN=49 ERROR=3 in about 17.5 minutes, peak query memory 69.7 GiB; the 3 errors were Phase 4 position-key relationship tests, fixed by commit 271be60 and green on re-test, so a clean build is expected to be ERROR=0; Phase 4 full build of 2026-10-06: PASS=813 WARN=38 ERROR=0 in about 12.5 minutes; Phase 3 of 2026-10-05 was PASS=642 WARN=31 ERROR=0). The WARN count is the `warn_*` monitors and warn-severity tests that return data findings (Phase 1–3), so a few more or fewer is normal; only ERROR > 0 is a failure.
+6. `dbt build --select tag:hnh` — the first run creates the `stg`, `int` and `gold` objects; expect `ERROR=0` (Phase 5 full build of 2026-10-06: PASS=1037 WARN=49 ERROR=3 in about 17.5 minutes, peak query memory 45.3 GiB (Phase 2 fact_charge_line), Phase 5 maximum 22.4 GiB (fact_patient_consumption); the 3 errors were Phase 4 position-key relationship tests, fixed by commit 271be60 and green on re-test, so a clean build is expected to be ERROR=0; Phase 4 full build of 2026-10-06: PASS=813 WARN=38 ERROR=0 in about 12.5 minutes; Phase 3 of 2026-10-05 was PASS=642 WARN=31 ERROR=0). The WARN count is the `warn_*` monitors and warn-severity tests that return data findings (Phase 1–3), so a few more or fewer is normal; only ERROR > 0 is a failure.
 7. Add a flow step after the `oasis_lake` loads: `dbt build --select tag:hnh`. Flows that run "all models" with no selector also include the `hnh` models (they run after `oasis_lake`, because of `ref()`), but `dbt run` skips the tests, so keep the `build` step as the one SSAS waits on.
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.

@@ -154,6 +154,18 @@ models:
         tests:
           - accepted_values:
               values: ['oasis', 'fusion']
+      - name: ordered_value
+        description: >
+          Net of cancellations: (quantity_ordered - quantity_cancelled) x unit_price (Fusion: the schedule's amount for
+          a zero-quantity services line). Oasis cancelled lines (status C) carry their cancelled quantity, so a
+          cancelled line is 0. Sum it over is_approved_po = 1 lines. Cancellation comes from quantity_cancelled and
+          po_status (the schedule's cancel flag, which is always 0 here, is not carried).
+      - name: gross_ordered_value
+        description: The ordered quantity x unit_price before cancellations (the earlier definition of ordered_value).
+      - name: is_approved_po
+        description: >
+          0 when po_status is CANCELED, REJECTED, WITHDRAWN, INCOMPLETE or PENDING APPROVAL, else 1. Ordered-value KPIs
+          filter is_approved_po = 1.
       - name: quantity_received
         description: >
           Fusion: the schedule's received quantity, net of returns to vendor. Oasis: the GRN lines on the PO line in
@@ -200,7 +212,12 @@ models:
         description: >
           1 when the receipt links to a PO line (Fusion po_line_location_id not null; Oasis GRN or return with a resolved
           purchase_line_key), else 0 (e.g. Fusion RECEIVE rows without a PO line are internal transfer receipts).
-          Supplier and purchasing KPIs filter is_po_receipt = 1.
+          It does not mean the receipt is from a supplier: use is_supplier_receipt.
+      - name: is_supplier_receipt
+        description: >
+          1 for every Oasis GRN and return to supplier (RFN) row, also when its PO line is not in fact_purchase_line; for
+          Fusion RECEIVE / RETURN TO VENDOR rows 1 when the row has a PO line, else 0 (internal receipt). Supplier KPIs
+          filter is_supplier_receipt = 1.
       - name: receipt_type
         description: >
           RECEIVE / RETURN TO VENDOR (Fusion), GRN / RETURN TO VENDOR (Oasis STOCKISS RFN, returns to supplier).

@@ -1,12 +1,12 @@
 {{ config(order_by='(branch_key, month_start)') }}
 
--- Per branch and month (spec 8): received value against PO-matched AP spend, with non-PO AP spend; ordered value by
+-- Per branch and month (spec 8): received value against PO-matched AP spend, with non-PO AP spend; ordered value (net of cancellations, approved POs only) by
 -- PO month. AP months are accounting months; spend follows Phase 3 (spend_amount). Received value includes returns to
 -- supplier (negative).
 with ordered as (
     select branch_key, toStartOfMonth(toDate(toString(po_date_key))) as month_start,
-           sumIf(ordered_value, source_system = 'oasis') as oasis_ordered_value,
-           sumIf(ordered_value, source_system = 'fusion') as fusion_ordered_value
+           sumIf(ordered_value, source_system = 'oasis' and is_approved_po = 1) as oasis_ordered_value,
+           sumIf(ordered_value, source_system = 'fusion' and is_approved_po = 1) as fusion_ordered_value
     from {{ ref('fact_purchase_line') }}
     group by branch_key, month_start
 ),

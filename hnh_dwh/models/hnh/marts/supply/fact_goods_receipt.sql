@@ -5,7 +5,9 @@
 -- start; Oasis GRNs after the cutover receive Oasis POs of the overlap month. Oasis returns to supplier (STOCKISS RFN,
 -- movement 'Return to supplier') are RETURN TO VENDOR rows like Fusion's; a return that references a GRN line belongs to
 -- that GRN's PO line. Quantities in the item's primary unit, returns negative. Fusion store and lot come from the
--- receipt's delivery into inventory.
+-- receipt's delivery into inventory. is_po_receipt = the PO line is resolved in fact_purchase_line; is_supplier_receipt =
+-- the receipt is from or to a supplier (every Oasis GRN / RFN row; Fusion rows that have a PO line, the rest being
+-- internal receipts) and is what supplier KPIs filter on.
 with cutover as (
     select branch_id, first_fusion_purchasing_month from {{ ref('stg_ref__scm_cutover') }}
 ),
@@ -116,6 +118,7 @@ select
     r.oasis_line_id                                         as oasis_line_id,
     r.fusion_transaction_id                                 as fusion_transaction_id,
     toUInt8(if(r.source_system = 'fusion', r.has_po_line = 1, pl.purchase_line_key is not null)) as is_po_receipt,
+    toUInt8(r.source_system = 'oasis' or r.has_po_line = 1)  as is_supplier_receipt,
     now()                                                   as _loaded_at
 from receipts as r
 left join (select supplier_key from {{ ref('hnh_dim_supplier') }}) as sp on sp.supplier_key = r.supplier_key_raw

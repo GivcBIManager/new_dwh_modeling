@@ -5,6 +5,8 @@
 -- Fusion month is the overlap month and keeps both systems' POs, because they are different documents. Quantities are in each system's ordering unit (uom_code: Oasis base
 -- unit, Fusion PO unit). Lead time = PO date to first receipt. AP match = Fusion AP lines on the schedule's PO
 -- distributions, with Phase 3's spend definition. Oasis POs carry no requisition, billing or AP link.
+-- ordered_value is net of cancelled quantity (gross_ordered_value keeps the ordered quantity x price); is_approved_po = 0
+-- for cancelled, rejected, withdrawn, incomplete and pending-approval POs.
 -- Oasis receipts are the GRN lines in fact_goods_receipt's scope: the 'Goods receipt' lines of int_oasis_stock_line
 -- (posted, not reversed, not cancelled or superseded), so the GRN predicate lives in one place.
 {% set first_day = "toDate32('" ~ var('hnh_history_start_date') ~ "')" %}
@@ -72,7 +74,8 @@ fusion_lines as (
         s.quantity_cancelled                                                    as quantity_cancelled,
         s.quantity_billed                                                       as quantity_billed,
         s.unit_price                                                            as unit_price,
-        if(s.quantity > 0, s.quantity * s.unit_price, s.amount)                 as ordered_value,
+        if(s.quantity > 0, greatest(s.quantity - s.quantity_cancelled, 0) * s.unit_price, s.amount) as ordered_value,
+        if(s.quantity > 0, s.quantity * s.unit_price, s.amount)                 as gross_ordered_value,
         if(s.quantity > 0, s.quantity_received * s.unit_price, s.amount_received) as received_value,
         r.first_receipt_date                                                    as first_receipt_date,
         ifNull(s.document_status, 'UNKNOWN')                                    as po_status,
@@ -126,7 +129,8 @@ oasis_lines as (
         if(ifNull(l.line_status, '') = 'C', greatest(l.qty_ordered - ifNull(g.grn_quantity, 0), 0), 0) as quantity_cancelled,
         toFloat64(0)                                                            as quantity_billed,
         l.list_unit_price * (1 - l.list_discount_pct / 100) * (1 - l.discount_pct / 100) as unit_price,
-        l.qty_ordered * unit_price                                              as ordered_value,
+        greatest(l.qty_ordered - quantity_cancelled, 0) * unit_price            as ordered_value,
+        l.qty_ordered * unit_price                                              as gross_ordered_value,
         ifNull(g.grn_quantity, 0) * unit_price                                  as received_value,
         if(g.grn_first_date is null, cast(null as Nullable(Date)), toDate(g.grn_first_date)) as first_receipt_date,
         {{ hnh_oasis_po_status('d.doc_status', 'l.line_status') }}              as po_status,
@@ -169,11 +173,13 @@ select
     l.quantity_billed                                           as quantity_billed,
     l.unit_price                                                as unit_price,
     l.ordered_value                                             as ordered_value,
+    l.gross_ordered_value                                       as gross_ordered_value,
     l.received_value                                            as received_value,
     {{ hnh_date_key_in_range('l.first_receipt_date') }}         as first_receipt_date_key,
     if(l.first_receipt_date is null or dateDiff('day', l.po_date, assumeNotNull(l.first_receipt_date)) < 0, cast(null as Nullable(Int32)),
        toInt32(dateDiff('day', l.po_date, assumeNotNull(l.first_receipt_date)))) as lead_time_days,
     l.po_status                                                 as po_status,
+    toUInt8(l.po_status not in ('CANCELED', 'REJECTED', 'WITHDRAWN', 'INCOMPLETE', 'PENDING APPROVAL')) as is_approved_po,
     l.line_type                                                 as line_type,
     l.is_ap_matched                                             as is_ap_matched,
     l.ap_matched_amount                                         as ap_matched_amount,
