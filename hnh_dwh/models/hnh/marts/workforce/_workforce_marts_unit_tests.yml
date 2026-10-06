@@ -1,0 +1,82 @@
+version: 2
+
+unit_tests:
+  - name: fact_headcount_monthly_counts_active_people
+    description: >
+      Person 1 (employee, Saudi, hired 2026-02-10) is active at the February and March month-ends: hire flag in
+      February. Person 2 is active in January, INACTIVE at the end of February (no row), active again at the end of
+      March with a termination date of 2026-03-15 (leaver flag in March). Person 3 is a contingent worker: a row with
+      is_contingent = 1.
+    model: fact_headcount_monthly
+    given:
+      - input: ref('int_assignment_month_end')
+        format: sql
+        rows: |
+          select toInt64(p) as person_id, toDate(me) as month_end, toInt64(p * 10) as assignment_id, toNullable('E') as assignment_type,
+                 toNullable(st) as assignment_status, toNullable(toInt64(900)) as organization_id, toNullable(toInt64(1)) as job_id,
+                 cast(null as Nullable(Int64)) as position_id, cast(null as Nullable(Int64)) as grade_id, cast(null as Nullable(Int64)) as location_id,
+                 toUInt8(6) as branch_key, toFloat64(1) as fte
+          from values('p UInt32, me String, st String',
+              (1, '2026-02-28', 'ACTIVE'), (1, '2026-03-31', 'ACTIVE'),
+              (2, '2026-01-31', 'ACTIVE'), (2, '2026-02-28', 'INACTIVE'), (2, '2026-03-31', 'ACTIVE'),
+              (3, '2026-03-31', 'ACTIVE'))
+      - input: ref('int_employee_period')
+        format: sql
+        rows: |
+          select toInt64(p) as person_id, toDate32(sd) as start_date, if(td = '', cast(null as Nullable(Date32)), toNullable(toDate32(td))) as termination_date,
+                 cast(null as Nullable(Date32)) as original_hire_date
+          from values('p UInt32, sd String, td String', (1, '2026-02-10', ''), (2, '2020-01-01', '2026-03-15'), (3, '2025-01-01', ''))
+      - input: ref('hnh_dim_employee')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)), '|')), 1)) as employee_key, toNullable(toInt64(p)) as person_id, toNullable(wt) as worker_type_code,
+                 toNullable('M') as gender, toUInt8(sa) as is_saudi, toNullable(toDate32('1990-01-01')) as birth_date, toInt64(-1) as staff_key
+          from values('p UInt32, wt String, sa UInt8', (1, 'EMP', 1), (2, 'EMP', 0), (3, 'CWK', 0))
+    expect:
+      rows:
+        - {month_date_key: 20260228, headcount: 1, is_saudi: 1, is_contingent: 0, is_new_hire_in_month: 1, is_leaver_in_month: 0}
+        - {month_date_key: 20260331, headcount: 1, is_saudi: 1, is_contingent: 0, is_new_hire_in_month: 0, is_leaver_in_month: 0}
+        - {month_date_key: 20260131, headcount: 1, is_saudi: 0, is_contingent: 0, is_new_hire_in_month: 0, is_leaver_in_month: 0}
+        - {month_date_key: 20260331, headcount: 1, is_saudi: 0, is_contingent: 0, is_new_hire_in_month: 0, is_leaver_in_month: 1}
+        - {month_date_key: 20260331, headcount: 1, is_saudi: 0, is_contingent: 1, is_new_hire_in_month: 0, is_leaver_in_month: 0}
+
+  - name: fact_worker_movement_flags_transfers
+    description: >
+      A GLB_TRANSFER from a KHM department to an ABH department: branch 6 after, branch 2 before, branch transfer flag.
+      A RESIGNATION is a voluntary leaver. A HIRE before 2022 is outside the window.
+    model: hnh_fact_worker_movement
+    given:
+      - input: ref('stg_fusion__worker_movements')
+        format: sql
+        rows: |
+          select toInt64(a) as assignment_id, toInt64(20991231) as effective_end_date_key, toInt64(1) as effective_sequence,
+                 toDate32(d) as effective_start_date, toNullable(toInt64(p)) as person_id, toNullable(ac) as action_code,
+                 cast(null as Nullable(String)) as action_reason_code, toDate32(d) as action_date, toNullable('ACTIVE') as assignment_status,
+                 toNullable(toInt64(org)) as organization_id, cast(null as Nullable(Int64)) as job_id, cast(null as Nullable(Int64)) as position_id,
+                 cast(null as Nullable(Int64)) as grade_id, cast(null as Nullable(Int64)) as location_id,
+                 if(porg = 0, cast(null as Nullable(Int64)), toNullable(toInt64(porg))) as previous_organization_id,
+                 cast(null as Nullable(Int64)) as previous_job_id, cast(null as Nullable(Int64)) as previous_position_id,
+                 cast(null as Nullable(Int64)) as previous_grade_id, cast(null as Nullable(Int64)) as previous_location_id,
+                 toUInt8(porg != 0) as is_organization_changed, toUInt8(0) as is_job_changed, toUInt8(0) as is_position_changed,
+                 toUInt8(0) as is_grade_changed, toUInt8(0) as is_location_changed
+          from values('a UInt32, d String, p UInt32, ac String, org UInt32, porg UInt32',
+              (1, '2026-05-01', 1, 'GLB_TRANSFER', 61, 21), (2, '2026-06-30', 2, 'RESIGNATION', 61, 0), (3, '2019-01-01', 3, 'HIRE', 61, 0))
+      - input: ref('hnh_dim_hr_department')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(o)), '|')), 1)) as hr_department_key, toNullable(toInt64(o)) as organization_id, toUInt8(b) as branch_key
+          from values('o UInt32, b UInt8', (61, 6), (21, 2))
+      - input: ref('hnh_dim_employee')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)), '|')), 1)) as employee_key, toNullable(toInt64(p)) as person_id, toUInt8(6) as branch_key, toInt64(-1) as staff_key
+          from values('p UInt32', (1), (2), (3))
+      - input: ref('hnh_dim_worker_action')
+        format: sql
+        rows: |
+          select toInt64(k) as worker_action_key, toNullable(a) as action_code, cast(null as Nullable(String)) as action_reason_code
+          from values('k Int64, a String', (101, 'GLB_TRANSFER'), (102, 'RESIGNATION'), (103, 'HIRE'))
+    expect:
+      rows:
+        - {action_code: GLB_TRANSFER, worker_action_key: 101, branch_key: 6, previous_branch_key: 2, movement_group: Transfer, is_branch_transfer: 1, is_leaver: 0, is_voluntary_leaver: 0}
+        - {action_code: RESIGNATION, worker_action_key: 102, branch_key: 6, previous_branch_key: 6, movement_group: Voluntary leaver, is_branch_transfer: 0, is_leaver: 1, is_voluntary_leaver: 1}

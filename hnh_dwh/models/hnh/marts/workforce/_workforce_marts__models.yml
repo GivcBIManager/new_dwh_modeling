@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: fact_headcount_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [employee_key, month_date_key]
+    columns:
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: employee_key
+        tests:
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
+      - name: hr_department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_hr_department'), field: hr_department_key}
+      - name: job_key
+        tests:
+          - relationships: {to: ref('hnh_dim_job'), field: job_key}
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+  - name: hnh_fact_worker_movement
+    columns:
+      - name: movement_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: worker_action_key
+        tests:
+          - relationships: {to: ref('hnh_dim_worker_action'), field: worker_action_key}
+      - name: action_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
