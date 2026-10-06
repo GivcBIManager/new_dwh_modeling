@@ -396,6 +396,8 @@ Task rulings:
 - `int_store_crosswalk` (new model) maps Oasis stores to Fusion stores from the integration references, giving the `store_group_key` of spec 5.2.
 - `warn_unit_cost_outliers` keeps the 20x item-median rule but lists only rows with an absolute cost of at least 10,000 SAR and excludes transfers (371 rows instead of 56,864).
 - `rec_stock_interface_daily` closes exactly: `oasis_lines_in_fusion` excludes post-go-live batch lines, and the new columns `fusion_out_of_scope_reversals` and `fusion_out_of_scope_kept` show the out-of-scope Fusion rows; `warn_opening_balance_after_first_sale` compares the earliest opening date with the first sale.
+- `fact_patient_consumption` takes its charge keys (encounter, payer and the rest) from the lowest live charge, falling back to a cancelled one when the line has no live charge.
+- `int_store_crosswalk` folds an empty subinventory to `*`, like `hnh_fusion_store_key`.
 - Fusion month-end source precedence picks Fusion only where its valuation has layers for the branch by that month-end, otherwise the next available source.
 - `lead_time_days` is null when negative; `fact_goods_receipt` gains `is_po_receipt` (Fusion RECEIVE rows with no PO line are internal receipts), which supplier KPIs filter; `is_ap_matched` rests on spend lines (not tax-only) and stays 1 for schedules whose AP lines net to 0; the YAML documents `quantity_received` as net of returns for Fusion and gross GRN for Oasis.
 - Fusion HR staging (positions, jobs, grades, locations, HR departments, organizations, absence types and plans) keeps the latest row per id rather than current rows only, with is_current exposed, so end-dated members referenced by facts stay in the dimensions.

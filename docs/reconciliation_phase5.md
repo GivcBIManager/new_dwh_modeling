@@ -130,7 +130,7 @@ Link rate = patient-sale and return lines linked to at least one live charge; co
 | 8 Muhayil | 2026 | 12,766 | 0.6150 | 86,740 | 234,460 | 147,720 | 31,571 | 44 | 2,409 | 4 |
 
 
-Of 2026 cost, 52,029,593 SAR sits on package-component dispenses whose revenue is on the package header; counted against drug revenue it would turn Abha's 2026 margin negative (package cost 7.10M against a charge-basis margin of 3.97M). Cancelled-only charges in 2026 net to near zero (dispense-and-return pairs). Muhayil's 2026 link rate is 0.615: 2,402 sale lines in May 2026 have no charge. `medication_charges_without_cost` counts medication charge lines with no stock cost line; it is high in 2022 to 2024 (Al-Rabwa 558,612 in 2022) and small in 2026.
+Of 2026 cost, 52,029,593 SAR sits on package-component dispenses whose revenue is on the package header; counted against drug revenue it would turn Abha's 2026 margin negative (package cost 7.10M against a charge-basis margin of 3.97M). Cancelled-only charges in 2026 net to near zero (dispense-and-return pairs). Muhayil's 2026 link rate is 0.615: 2,409 sale lines in 2026 have no charge, 2,402 of them in May. `medication_charges_without_cost` counts medication charge lines with no stock cost line; it is high in 2022 to 2024 (Al-Rabwa 558,612 in 2022) and small in 2026.
 
 
 ## 4. Stock against the GL (`gold.rec_inventory_gl_monthly`)
@@ -194,7 +194,7 @@ Fusion stock value (valuation layers), the GL balance of inventory accounts 115*
 | 100 Head Office | 2026-10 | 0 | -948 | -948 | 0 |  | 948 |
 
 
-From July 2026 the accounted share of cost distributions is 0 to 9% (Abha 0.009 in September), so the GL no longer follows stock and the difference is not expected to tie (O-P5-3). Abha carries CEFODOX: one write-off on 2026-06-20 at 6,241,137 SAR per bottle (374,468,220 SAR) puts Abha's June month-end stock at 419.3M against 10.1M in August (O-P5-2). Posted GL inventory is 0 for Khamis, Madinah and Muhayil so far (Khamis has 6.55M unposted).
+From July 2026 the accounted share of cost distributions is 0 to 9% (Abha 0.009 in September), so the GL no longer follows stock and the difference is not expected to tie (O-P5-3). Abha carries CEFODOX: one write-off on 2026-06-20 at 6,241,137 SAR per bottle (374,468,220 SAR) puts Abha's June month-end stock at 419.3M against 10.1M in August (O-P5-2). Jazan June 2026 shows stock 0 against 12.3M of unposted GL inventory: its inventory go-live is 2026-07-12, so June has no Fusion stock while the Oasis feed had already booked the opening inventory in the GL. Posted GL inventory is 0 for Khamis, Madinah and Muhayil so far (Khamis has 6.55M unposted).
 
 
 ## 5. Purchasing against AP (`gold.rec_purchase_ap_monthly`)
@@ -305,7 +305,7 @@ Oasis PO lines are kept up to and including each branch's first Fusion purchasin
 | 8 Muhayil | fusion_valuation | 13,324 | 2026-07-31 | 2026-10-31 |
 
 
-Only `oasis_batch` and `fusion_valuation` appear today. `snapshot` and `derived` appear only after `default.bal_product_base` is loaded and the next build has run (O-P5-5; `stg_ref__stock_snapshot` has 0 rows now); month-ends before 2026-08-31 for the Oasis-only branches then come from them. Source precedence: snapshot, derived, Oasis batch, Fusion valuation, with Fusion picked only where its valuation has layers for the branch by that month-end. Muhayil (8) has no stock source for the May and June 2026 month-ends (O-P5-7: its opening balance is dated after its first sales and its Fusion layers start in July), so those months are empty.
+Only `oasis_batch` and `fusion_valuation` appear today. `snapshot` and `derived` appear only after `default.bal_product_base` is loaded and the next build has run (O-P5-5; `stg_ref__stock_snapshot` has 0 rows now); month-ends before 2026-08-31 for the Oasis-only branches then come from them. Source precedence (lowest rank wins, `argMin`): Fusion valuation (1), snapshot (2), Oasis batch (3), derived (4). Fusion is used for a branch's months from its go-live month, but only when it has valuation layers by that month-end; otherwise the month falls back to the snapshot, then the Oasis batch, then the derived value. Muhayil (8) has no stock source for the May and June 2026 month-ends (O-P5-7: its opening balance is dated after its first sales and its Fusion layers start in July), so those months are empty.
 
 Month-end stock value (`is_expiry_store = 0`), 2026:
 
