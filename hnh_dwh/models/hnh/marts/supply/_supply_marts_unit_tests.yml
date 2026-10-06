@@ -1,0 +1,67 @@
+version: 2
+
+unit_tests:
+  - name: fact_stock_movement_switches_at_go_live
+    description: >
+      Jazan goes live on 2026-07-12. Line 101 (11 July) stays Oasis although Fusion holds it; line 102 (12 July) is the
+      Fusion transaction, costed from valuation (12); line 103 has no Fusion transaction (gap fill); line 104 has a
+      Fusion transaction without valuation (cost from the Oasis line, 8 per unit); line 105 is an Oasis batch posting
+      after go-live (left out); line 106 was posted twice in Fusion and corrected by a reversal (three transactions net
+      to one, cost -40); line 107 is a pack item whose Fusion valuation (1) is the cost of one base unit against the
+      Oasis line's 10 (cost mismatch). Fusion-only: 9010 a PO receipt (valuation 5), 9011 before go-live (left out),
+      9012 an integration row without reference (left out), 9013 a reference Oasis does not hold (no cost), 9014 an
+      opening balance, 9020 a reference to a reversed Oasis invoice (left out), 9021 a reference to an out-of-scope
+      zero-cost Oasis line (kept, valuation 3). Alrabwah (no go-live) line 201 is Oasis.
+    model: fact_stock_movement
+    given:
+      - input: ref('int_oasis_stock_line')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toInt64(l) as oasis_line_id, toNullable(concat('DOC', toString(l))) as oasis_doc_no, toDate32(d) as line_date, mt as movement_type, toUInt8(bp) as is_batch_posting, toNullable(toInt64(45)) as store_id, cast(null as Nullable(Int64)) as transfer_store_id, toNullable('P1') as product_code, toInt64(777) as item_key, toFloat64(q) as primary_quantity, toFloat64(c) as cost_amount, toFloat64(uc) as unit_cost, cast(null as Nullable(String)) as lot_number, cast(null as Nullable(Date32)) as expiry_date
+          from values('b UInt8, l UInt32, d String, mt String, bp UInt8, q Float64, c Float64, uc Float64',
+              (3, 101, '2026-07-11', 'Patient sale', 0, -2, -20, 10), (3, 102, '2026-07-12', 'Patient sale', 0, -1, -10, 10),
+              (3, 103, '2026-07-12', 'Patient sale', 0, -3, -30, 10), (3, 104, '2026-07-13', 'Patient sale', 0, -1, -8, 8),
+              (3, 105, '2026-07-14', 'Write-off / misc', 1, 5, 25, 5), (3, 106, '2026-07-14', 'Transfer out', 0, -4, -40, 10),
+              (3, 107, '2026-07-15', 'Patient sale', 0, -2, -20, 10),
+              (1, 201, '2026-08-01', 'Department issue', 0, -1, -3, 3))
+      - input: ref('int_fusion_stock_line')
+        format: sql
+        rows: |
+          select toInt64(t) as fusion_transaction_id, toUInt8(b) as branch_key, toNullable(toInt64(3004)) as organization_id, toNullable('IPH') as subinventory_code, cast(null as Nullable(Int64)) as transfer_organization_id, cast(null as Nullable(String)) as transfer_subinventory, toNullable(toInt64(500)) as inventory_item_id, toDate(d) as transaction_date, toFloat64(q) as primary_quantity, rs as reference_status, nullIf(sr, '') as oasis_scope_reason, if(l = 0, cast(null as Nullable(Int64)), toNullable(toInt64(l))) as oasis_line_id, toUInt8(ob) as is_opening_balance, mt as fusion_movement_type, if(v < 0, cast(null as Nullable(Float64)), toNullable(toFloat64(v))) as valuation_unit_cost, cast(null as Nullable(String)) as lot_number, cast(null as Nullable(Date32)) as expiry_date
+          from values('t UInt32, b UInt8, d String, q Float64, rs String, sr String, l UInt32, ob UInt8, mt String, v Float64',
+              (9001, 3, '2026-07-12', -2, 'oasis_line', '', 101, 0, 'Patient sale', 11), (9002, 3, '2026-07-12', -1, 'oasis_line', '', 102, 0, 'Patient sale', 12),
+              (9004, 3, '2026-07-14', -1, 'oasis_line', '', 104, 0, 'Patient sale', -1), (9005, 3, '2026-07-15', 5, 'oasis_line', '', 105, 0, 'Patient return', 5),
+              (9061, 3, '2026-07-14', -4, 'oasis_line', '', 106, 0, 'Transfer out', 10), (9062, 3, '2026-07-14', -4, 'oasis_line', '', 106, 0, 'Transfer out', 10),
+              (9063, 3, '2026-07-15', 4, 'oasis_line', '', 106, 0, 'Transfer in', 10),
+              (9007, 3, '2026-07-15', -2, 'oasis_line', '', 107, 0, 'Patient sale', 1),
+              (9010, 3, '2026-07-15', 10, 'not_integration', '', 0, 0, 'Goods receipt', 5), (9011, 3, '2026-07-10', 10, 'not_integration', '', 0, 0, 'Goods receipt', 5),
+              (9012, 3, '2026-07-15', -1, 'no_reference', '', 0, 0, 'Patient sale', 5), (9013, 3, '2026-07-16', -1, 'not_in_oasis', '', 0, 0, 'Patient sale', -1),
+              (9014, 3, '2026-07-16', 7, 'not_integration', '', 0, 1, 'Opening balance', 2),
+              (9020, 3, '2026-07-16', -1, 'oasis_out_of_scope', 'reversed_invoice', 0, 0, 'Patient sale', 5),
+              (9021, 3, '2026-07-16', -2, 'oasis_out_of_scope', 'not_stock_or_zero_cost', 0, 0, 'Patient sale', 3))
+      - input: ref('stg_ref__scm_cutover')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, if(d = '', cast(null as Nullable(Date)), toNullable(toDate(d))) as inventory_go_live_date
+          from values('b UInt8, d String', (3, '2026-07-12'), (100, ''))
+      - input: ref('dim_store')
+        format: sql
+        rows: |
+          select toInt64(1) as store_key
+      - input: ref('hnh_dim_item')
+        format: sql
+        rows: |
+          select toInt64(777) as item_key
+    expect:
+      rows:
+        - {oasis_line_id: 101, fusion_transaction_id: 9001, date_key: 20260711, source_system: 'oasis', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -20, cost_source: 'oasis_line', consumption_cost: 20, fusion_transaction_count: 1, oasis_cost_amount: -20, is_cost_mismatch: 0}
+        - {oasis_line_id: 102, fusion_transaction_id: 9002, date_key: 20260712, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: -12, cost_source: 'fusion_valuation', consumption_cost: 12, fusion_transaction_count: 1, oasis_cost_amount: -10, is_cost_mismatch: 0}
+        - {oasis_line_id: 103, fusion_transaction_id: null, date_key: 20260712, source_system: 'oasis', is_in_fusion: 0, is_fusion_gap: 1, movement_type: 'Patient sale', primary_quantity: -3, cost_amount: -30, cost_source: 'oasis_line', consumption_cost: 30, fusion_transaction_count: 0, oasis_cost_amount: -30, is_cost_mismatch: 0}
+        - {oasis_line_id: 104, fusion_transaction_id: 9004, date_key: 20260713, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: -8, cost_source: 'oasis_line', consumption_cost: 8, fusion_transaction_count: 1, oasis_cost_amount: -8, is_cost_mismatch: 0}
+        - {oasis_line_id: 106, fusion_transaction_id: 9061, date_key: 20260714, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Transfer out', primary_quantity: -4, cost_amount: -40, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 3, oasis_cost_amount: -40, is_cost_mismatch: 0}
+        - {oasis_line_id: 107, fusion_transaction_id: 9007, date_key: 20260715, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -2, cost_source: 'fusion_valuation', consumption_cost: 2, fusion_transaction_count: 1, oasis_cost_amount: -20, is_cost_mismatch: 1}
+        - {oasis_line_id: 201, fusion_transaction_id: null, date_key: 20260801, source_system: 'oasis', is_in_fusion: 0, is_fusion_gap: 0, movement_type: 'Department issue', primary_quantity: -1, cost_amount: -3, cost_source: 'oasis_line', consumption_cost: 3, fusion_transaction_count: 0, oasis_cost_amount: -3, is_cost_mismatch: 0}
+        - {oasis_line_id: null, fusion_transaction_id: 9010, date_key: 20260715, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Goods receipt', primary_quantity: 10, cost_amount: 50, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0}
+        - {oasis_line_id: null, fusion_transaction_id: 9013, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: 0, cost_source: 'none', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0}
+        - {oasis_line_id: null, fusion_transaction_id: 9014, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Opening balance', primary_quantity: 7, cost_amount: 14, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0}
+        - {oasis_line_id: null, fusion_transaction_id: 9021, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -6, cost_source: 'fusion_valuation', consumption_cost: 6, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0}

@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: fact_stock_movement
+    columns:
+      - name: movement_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: transfer_store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: movement_type_key
+        tests:
+          - relationships: {to: ref('dim_movement_type'), field: movement_type_key}
+      - name: fusion_transaction_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['oasis', 'fusion']
+      - name: cost_source
+        tests:
+          - accepted_values:
+              values: ['fusion_valuation', 'oasis_line', 'none']
+      - name: oasis_cost_amount
+        description: >
+          Cost of the referenced Oasis line (signed like cost_amount) on every row with an Oasis line id, whichever
+          source the row takes; null on Fusion-only lines. Lets reports compare or switch to the Oasis cost where the
+          Fusion item cost was loaded per base unit (pack items, five branches).
+      - name: is_cost_mismatch
+        description: >
+          1 when cost_amount and oasis_cost_amount are both non-zero and their absolute ratio lies outside [0.5, 2].
