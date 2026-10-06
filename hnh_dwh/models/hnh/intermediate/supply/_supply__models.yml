@@ -66,3 +66,12 @@ models:
               values: ['Live', 'Cancelled', 'Unknown']
       - name: is_package_component
         description: From fact_charge_line; 1 on a package component, whose revenue sits on the package header charge.
+  - name: int_stock_month_end
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_end, store_key, item_key]
+    columns:
+      - name: stock_source
+        tests:
+          - accepted_values:
+              values: ['snapshot', 'derived', 'oasis_batch', 'fusion_valuation']

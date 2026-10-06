@@ -105,3 +105,22 @@ models:
         tests:
           - accepted_values:
               values: ['charge', 'package_component', 'cancelled', 'none']
+  - name: fact_stock_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_end, store_key, item_key]
+    columns:
+      - name: stock_monthly_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}

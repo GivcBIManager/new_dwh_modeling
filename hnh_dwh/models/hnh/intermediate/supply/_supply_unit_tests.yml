@@ -257,3 +257,80 @@ unit_tests:
         - {movement_key: 8, charge_line_key: 1006, is_revenue_owner: 1, charge_status: 'Cancelled', is_package_component: 0}
         - {movement_key: 9, charge_line_key: 1007, is_revenue_owner: 0, charge_status: 'Live', is_package_component: 0}
         - {movement_key: 10, charge_line_key: 1007, is_revenue_owner: 1, charge_status: 'Live', is_package_component: 0}
+
+  - name: int_stock_month_end_switches_source
+    description: >
+      Khamis (go-live 2026-09-05), store 44, product P1 = Fusion item 500 (1 base unit per primary unit, average cost
+      2). May: old snapshot, the last day (31st, 100) wins over the 30th. June and July: derived from the first batch
+      month-end (31 August, 70) by reversing the later in-scope Oasis stock lines (August -5, July -15): July 75, June
+      90; the June line and a September line after the anchor do not count, nor does a July line of another branch. The
+      rollback reads int_oasis_stock_line, so it also reverses lines that fact_stock_movement represents through a
+      Fusion row. August: Oasis batch, 60 + 10 in an expired batch = 70. Store 45 holds 5 in a batch dated 1900 (Oasis
+      "no expiry"), which is not expired; with no later lines it is 5 in June, July and August. September: Fusion
+      valuation, 40 - 10 = 30 (value 150; an October layer is after the month-end), split by the 30 September on-hand
+      into IPH 20 and OPH 10 (OPH in an expired lot).
+    model: int_stock_month_end
+    overrides:
+      vars:
+        hnh_stock_month_end_last: "2026-09-30"
+    given:
+      - input: ref('stg_ref__scm_cutover')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toNullable(toDate('2026-09-05')) as inventory_go_live_date
+      - input: ref('int_item_crosswalk')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_key, 'P1' as product_code, toInt64(500) as inventory_item_id, toFloat64(1) as units_per_primary
+      - input: ref('stg_oasis__products')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, 'P1' as product_code, toFloat64(2) as average_cost
+      - input: ref('stg_ref__stock_snapshot')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(44) as store_id, 'P1' as product_code, toDate(d) as snapshot_date, toFloat64(q) as qty_on_hand, toFloat64(2) as average_cost
+          from values('d String, q Float64', ('2026-05-30', 999), ('2026-05-31', 100))
+      - input: ref('stg_oasis__stock_batch_snapshots')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toDate32(d) as snapshot_date, toInt64(st) as store_id, 'P1' as product_code, toNullable(toDate32(e)) as expiry_date, toFloat64(q) as quantity
+          from values('d String, st UInt32, e String, q Float64', ('2026-08-30', 44, '2027-01-01', 72), ('2026-08-31', 44, '2027-01-01', 60), ('2026-08-31', 44, '2026-08-01', 10),
+              ('2026-08-31', 45, '1900-01-01', 5))
+      - input: ref('int_oasis_stock_line')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toDate32(d) as line_date, toNullable(toInt64(44)) as store_id, toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(500)), '|')), 1)) as item_key,
+                 toNullable('P1') as product_code, toFloat64(q) as primary_quantity
+          from values('b UInt8, d String, q Float64', (2, '2026-06-15', -10), (2, '2026-07-10', -15), (2, '2026-08-10', -5), (2, '2026-09-01', -3), (3, '2026-07-20', -100))
+      - input: ref('stg_fusion__inventory_valuation')
+        format: sql
+        rows: |
+          select toNullable(toInt64(2004)) as inventory_org_id, toNullable(toInt64(500)) as inventory_item_id, toDate(d) as cost_date, toFloat64(q) as quantity, toFloat64(5) as unit_cost, toNullable('Y') as posted_flag
+          from values('d String, q Float64', ('2026-08-30', 40), ('2026-09-10', -10), ('2026-10-02', -5))
+      - input: ref('int_inventory_org_branch')
+        format: sql
+        rows: |
+          select toInt64(2004) as organization_id, toUInt8(2) as branch_key
+      - input: ref('stg_fusion__inventory_onhand')
+        format: sql
+        rows: |
+          select toNullable(toDate('2026-09-30')) as snapshot_date, toNullable(toInt64(2004)) as organization_id, toNullable(toInt64(500)) as inventory_item_id,
+                 toNullable(s) as subinventory_code, toNullable(l) as lot_number, toFloat64(q) as primary_quantity
+          from values('s String, l String, q Float64', ('IPH', 'A', 20), ('OPH', 'B', 10))
+      - input: ref('stg_fusion__lots')
+        format: sql
+        rows: |
+          select toInt64(500) as inventory_item_id, toInt64(2004) as organization_id, l as lot_number, toNullable(toDate32(e)) as expiration_date
+          from values('l String, e String', ('A', '2027-06-30'), ('B', '2026-09-15'))
+    expect:
+      rows:
+        - {month_end: 2026-05-31, stock_source: 'snapshot', source_system: 'oasis', quantity: 100, stock_value: 200, has_expired_lot: 0}
+        - {month_end: 2026-06-30, stock_source: 'derived', source_system: 'oasis', quantity: 90, stock_value: 180, has_expired_lot: 0}
+        - {month_end: 2026-07-31, stock_source: 'derived', source_system: 'oasis', quantity: 75, stock_value: 150, has_expired_lot: 0}
+        - {month_end: 2026-08-31, stock_source: 'oasis_batch', source_system: 'oasis', quantity: 70, stock_value: 140, has_expired_lot: 1}
+        - {month_end: 2026-06-30, stock_source: 'derived', source_system: 'oasis', quantity: 5, stock_value: 10, has_expired_lot: 0}
+        - {month_end: 2026-07-31, stock_source: 'derived', source_system: 'oasis', quantity: 5, stock_value: 10, has_expired_lot: 0}
+        - {month_end: 2026-08-31, stock_source: 'oasis_batch', source_system: 'oasis', quantity: 5, stock_value: 10, has_expired_lot: 0}
+        - {month_end: 2026-09-30, stock_source: 'fusion_valuation', source_system: 'fusion', quantity: 20, stock_value: 100, has_expired_lot: 0}
+        - {month_end: 2026-09-30, stock_source: 'fusion_valuation', source_system: 'fusion', quantity: 10, stock_value: 50, has_expired_lot: 1}
