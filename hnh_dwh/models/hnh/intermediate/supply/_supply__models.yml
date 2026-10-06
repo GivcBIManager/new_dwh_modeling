@@ -12,3 +12,25 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, product_code]
+  - name: int_oasis_stock_line
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, oasis_line_id]
+    columns:
+      - name: movement_type
+        tests:
+          - accepted_values:
+              values: ['Patient sale', 'Patient return', 'Department issue', 'Transfer out', 'Transfer in', 'Goods receipt',
+                       'Return to supplier', 'Count adjustment', 'Write-off / misc']
+  - name: int_fusion_stock_line
+    columns:
+      - name: fusion_transaction_id
+        tests: [unique, not_null]
+      - name: reference_status
+        tests:
+          - accepted_values:
+              values: ['oasis_line', 'not_in_oasis', 'no_reference', 'not_integration']
+  - name: int_store_crosswalk
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, store_id]

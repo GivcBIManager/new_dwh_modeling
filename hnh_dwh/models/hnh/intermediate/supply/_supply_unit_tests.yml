@@ -73,3 +73,111 @@ unit_tests:
         - {branch_key: 3, product_code: 'P4', inventory_item_id: 510, pair_lines: 5, units_per_primary: 30}
         - {branch_key: 3, product_code: 'P5', inventory_item_id: 520, pair_lines: 1, units_per_primary: 2}
         - {branch_key: 3, product_code: 'P6', inventory_item_id: 620, pair_lines: 2, units_per_primary: 1}
+
+  - name: int_oasis_stock_line_classifies_lines
+    description: >
+      A transfer (STOCKISS ENTT with pod 44 and its STOCKRCPT ENTT, doc TRF1) gives Transfer out of store 45 and
+      Transfer in to store 44, each pointing at the other store; P1 maps to Fusion item 500 at 20 base units per
+      primary unit. An issue without pod is a Department issue. A patient return (CRD) and a count (CNT) carry no total
+      cost, so cost = quantity x unit cost. A costed invoice line is a Patient sale; a zero-cost invoice line, a
+      reversed invoice (gl_stk R), a package header, a cancelled GRN line and an unposted document are left out.
+      Line 13 carries a 1900 "no expiry" date, which becomes null.
+    model: int_oasis_stock_line
+    given:
+      - input: ref('stg_oasis__stock_documents')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toInt64(d) as doc_id, toNullable(dn) as doc_no, toNullable(dt) as doc_type, if(src = '', cast(null as Nullable(String)), toNullable(src)) as source_code, if(pod = 0, cast(null as Nullable(Int64)), toNullable(toInt64(pod))) as pod, toNullable('210103-901') as account_code, toNullable(st) as doc_status, if(gl = '', cast(null as Nullable(String)), toNullable(gl)) as gl_stk, if(ot = '', cast(null as Nullable(String)), toNullable(ot)) as order_type, toNullable(toDate32('2026-09-10')) as doc_date
+          from values('d UInt32, dn String, dt String, src String, pod UInt32, st String, gl String, ot String',
+              (1, 'TRF1', 'STOCKISS', 'ENTT', 44, 'P', '', ''), (2, 'TRF1', 'STOCKRCPT', 'ENTT', 45, 'P', '', ''),
+              (3, 'ISS3', 'STOCKISS', 'ENTT', 0, 'P', '', ''), (4, 'CRD4', 'STOCKRCPT', 'CRD', 0, 'P', '', ''),
+              (5, 'CNT5', 'STOCKISS', 'CNT', 0, 'P', '', ''), (6, 'INV6', 'INVOICEAR', 'OASIS', 0, 'P', '123', ''),
+              (7, 'INV7', 'INVOICEAR', 'OASIS', 0, 'P', 'R', ''), (8, 'INV8', 'INVOICEAR', 'OASIS', 0, 'P', '', 'PKHEADER'),
+              (9, 'GRN9', 'STOCKRCPT', 'GRN', 36, 'P', '', ''), (10, 'ISS10', 'STOCKISS', 'ENTT', 0, 'O', '', ''))
+      - input: ref('stg_oasis__stock_document_lines')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toInt64(l) as line_id, toInt64(d) as doc_id, toNullable(dt) as doc_type,
+                 toNullable(toDate32('2026-09-10')) as line_date, toNullable(toInt64(s)) as store_id, toNullable(p) as product_code,
+                 toFloat64(q) as quantity, toFloat64(uc) as unit_cost, toFloat64(tc) as total_cost,
+                 if(ls = '', cast(null as Nullable(String)), toNullable(ls)) as line_status, toNullable(toInt64(77)) as cross_ref_line_id,
+                 cast(null as Nullable(String)) as lot_number, toNullable('B1') as batch_number,
+                 toNullable(toDate32(if(l = 13, '1900-01-01', '2027-01-31'))) as expiry_date, toFloat64(0) as bonus_quantity
+          from values('l UInt32, d UInt32, dt String, s UInt32, p String, q Float64, uc Float64, tc Float64, ls String',
+              (1, 1, 'STOCKISS', 45, 'P1', 20, 0.5, 10, ''), (2, 2, 'STOCKRCPT', 44, 'P1', 20, 0.5, 10, ''),
+              (3, 3, 'STOCKISS', 8, 'P2', 4, 2, 8, ''), (4, 4, 'STOCKRCPT', 44, 'P2', 2, 2, 0, ''),
+              (5, 5, 'STOCKISS', 81, 'P2', 3, 1.5, 0, ''), (6, 6, 'INVOICEAR', 45, 'P2', 1, 9, 9, ''),
+              (7, 6, 'INVOICEAR', 45, 'P3', 1, 0, 0, ''), (8, 7, 'INVOICEAR', 45, 'P2', 1, 5, 5, ''),
+              (9, 8, 'INVOICEAR', 45, 'P2', 1, 5, 5, ''), (10, 9, 'STOCKRCPT', 81, 'P2', 5, 10, 50, 'C'),
+              (11, 9, 'STOCKRCPT', 81, 'P2', 5, 10, 50, 'P'), (12, 10, 'STOCKISS', 8, 'P2', 1, 3, 3, ''),
+              (13, 3, 'STOCKISS', 8, 'P2', 1, 2, 2, ''))
+      - input: ref('int_item_crosswalk')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, 'P1' as product_code, toInt64(500) as inventory_item_id, toFloat64(20) as units_per_primary
+    expect:
+      rows:
+        - {oasis_line_id: 1, movement_type: 'Transfer out', primary_quantity: -1, cost_amount: -10, unit_cost: 10, transfer_store_id: 44, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 2, movement_type: 'Transfer in', primary_quantity: 1, cost_amount: 10, unit_cost: 10, transfer_store_id: 45, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 3, movement_type: 'Department issue', primary_quantity: -4, cost_amount: -8, unit_cost: 2, transfer_store_id: null, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 4, movement_type: 'Patient return', primary_quantity: 2, cost_amount: 4, unit_cost: 2, transfer_store_id: null, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 5, movement_type: 'Count adjustment', primary_quantity: -3, cost_amount: -4.5, unit_cost: 1.5, transfer_store_id: null, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 6, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: -9, unit_cost: 9, transfer_store_id: null, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 11, movement_type: 'Goods receipt', primary_quantity: 5, cost_amount: 50, unit_cost: 10, transfer_store_id: null, expiry_date: '2027-01-31'}
+        - {oasis_line_id: 13, movement_type: 'Department issue', primary_quantity: -1, cost_amount: -2, unit_cost: 2, transfer_store_id: null, expiry_date: null}
+
+  - name: int_fusion_stock_line_resolves_lines_and_costs
+    description: >
+      Transaction 1 is an Oasis Sales Issue posted in Khamis organisation 2004 with the Ghirnata prefix GN-555: the
+      branch is Khamis (2) and the line is Khamis line 555 (Ghirnata also has a line 555); its cost is the
+      quantity-weighted unit cost of the two valuation layers (1 x 10 + 3 x 14) / 4 = 13. Transaction 2 references a
+      line Ghirnata does not hold (not_in_oasis); 3 has no reference. 4 (OB-KH-433) and 5 (CP-12) are an opening load
+      and its reversal; 6 is a miscellaneous issue in a ward organisation (Department issue); 7 (INV-ADJ-1) is misc; 8
+      is a PO receipt with lot L1. 9 is a PO receipt whose lot L2 expires in 1930, which becomes null.
+    model: int_fusion_stock_line
+    given:
+      - input: ref('stg_fusion__inventory_transactions')
+        format: sql
+        rows: |
+          select toInt64(t) as transaction_id, toNullable(toInt64(org)) as organization_id, toNullable('IPH') as subinventory_code, cast(null as Nullable(Int64)) as transfer_organization_id, cast(null as Nullable(String)) as transfer_subinventory, toNullable(toInt64(500)) as inventory_item_id, toNullable(toInt64(tt)) as transaction_type_id, if(ref = '', cast(null as Nullable(String)), toNullable(ref)) as transaction_reference, cast(null as Nullable(Int64)) as rcv_transaction_id, toDate('2026-09-06') as transaction_date, toFloat64(q) as primary_quantity
+          from values('t UInt32, org UInt32, tt UInt64, ref String, q Float64',
+              (1, 2004, 300000012981827, 'GN-555', -2), (2, 7004, 300000012981827, 'GN-557', -1), (3, 7004, 300000012981826, '', 1),
+              (4, 2002, 42, 'OB-KH-433', 100), (5, 2002, 32, 'CP-12', -100), (6, 2006, 32, '', -1), (7, 2002, 42, 'INV-ADJ-1', 3),
+              (8, 2002, 18, '', 10), (9, 2002, 18, '', 5))
+      - input: ref('int_inventory_org_branch')
+        format: sql
+        rows: |
+          select toInt64(o) as organization_id, toUInt8(b) as branch_key, t as org_type_code
+          from values('o UInt32, b UInt8, t String', (2004, 2, '04'), (7004, 7, '04'), (2006, 2, '06'), (2002, 2, '02'))
+      - input: ref('stg_oasis__stock_document_lines')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, toInt64(l) as line_id, toNullable(toDate32('2026-09-06')) as line_date
+          from values('b UInt8, l UInt32', (2, 555), (7, 555), (7, 556))
+      - input: ref('stg_fusion__inventory_valuation')
+        format: sql
+        rows: |
+          select toNullable(toInt64(500)) as inventory_item_id, toNullable(toInt64(2004)) as inventory_org_id, toDate('2026-09-06') as cost_date,
+                 toNullable(toInt64(300000012981827)) as base_txn_type_id, toFloat64(q) as quantity, toFloat64(uc) as unit_cost, toNullable(f) as posted_flag
+          from values('q Float64, uc Float64, f String', (-1, 10, 'Y'), (-3, 14, 'E'))
+      - input: ref('stg_fusion__inventory_transaction_lots')
+        format: sql
+        rows: |
+          select toInt64(t) as transaction_id, lot as lot_number, toNullable(toInt64(500)) as inventory_item_id, toNullable(toInt64(2002)) as organization_id
+          from values('t UInt32, lot String', (8, 'L1'), (9, 'L2'))
+      - input: ref('stg_fusion__lots')
+        format: sql
+        rows: |
+          select toInt64(500) as inventory_item_id, toInt64(2002) as organization_id, lot as lot_number, toNullable(toDate32(e)) as expiration_date
+          from values('lot String, e String', ('L1', '2027-01-31'), ('L2', '1930-05-01'))
+    expect:
+      rows:
+        - {fusion_transaction_id: 1, branch_key: 2, reference_status: 'oasis_line', oasis_line_id: 555, is_opening_balance: 0, fusion_movement_type: 'Patient sale', valuation_unit_cost: 13, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 2, branch_key: 7, reference_status: 'not_in_oasis', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Patient sale', valuation_unit_cost: null, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 3, branch_key: 7, reference_status: 'no_reference', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Patient return', valuation_unit_cost: null, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 4, branch_key: 2, reference_status: 'not_integration', oasis_line_id: null, is_opening_balance: 1, fusion_movement_type: 'Opening balance', valuation_unit_cost: null, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 5, branch_key: 2, reference_status: 'not_integration', oasis_line_id: null, is_opening_balance: 1, fusion_movement_type: 'Opening balance', valuation_unit_cost: null, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 6, branch_key: 2, reference_status: 'not_integration', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Department issue', valuation_unit_cost: null, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 7, branch_key: 2, reference_status: 'not_integration', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Write-off / misc', valuation_unit_cost: null, lot_number: null, expiry_date: null}
+        - {fusion_transaction_id: 8, branch_key: 2, reference_status: 'not_integration', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Goods receipt', valuation_unit_cost: null, lot_number: 'L1', expiry_date: '2027-01-31'}
+        - {fusion_transaction_id: 9, branch_key: 2, reference_status: 'not_integration', oasis_line_id: null, is_opening_balance: 0, fusion_movement_type: 'Goods receipt', valuation_unit_cost: null, lot_number: 'L2', expiry_date: null}
