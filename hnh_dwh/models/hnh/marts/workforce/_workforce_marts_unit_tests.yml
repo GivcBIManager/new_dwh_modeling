@@ -96,3 +96,78 @@ unit_tests:
         - {action_code: GLB_TRANSFER, worker_action_key: 101, branch_key: 6, previous_branch_key: 2, movement_group: Transfer, is_branch_transfer: 1, is_leaver: 0, is_voluntary_leaver: 0}
         - {action_code: RESIGNATION, worker_action_key: 102, branch_key: 6, previous_branch_key: 6, movement_group: Voluntary leaver, is_branch_transfer: 0, is_leaver: 1, is_voluntary_leaver: 1}
         - {action_code: GLB_TRANSFER, worker_action_key: 101, branch_key: 6, previous_branch_key: 2, movement_group: Transfer, is_branch_transfer: 1, is_leaver: 0, is_voluntary_leaver: 0}
+
+  - name: fact_payroll_monthly_switches_at_cutover
+    description: >
+      Branch 3 cuts over in 202607. Oasis June (202606): basic 1,000 and staff GOSI −90 (an employee deduction, not cost).
+      Oasis July is a parallel-run month: kept with is_parallel_run = 1 and zero cost. Fusion July: basic 1,100 and
+      a delay deduction of 50 stored positive (amount −50, an earnings adjustment that lowers cost) and a GOSI
+      reference earnings result (Not pay). A Fusion June result is before the cutover and dropped.
+    model: fact_payroll_monthly
+    given:
+      - input: ref('stg_oasis__payroll_transactions')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toInt64(n) as account_transaction_no, toNullable('500') as staff_id, toInt32(m) as payroll_month,
+                 t as trx_type, 'P' as payable_type, toNullable('C') as status, toFloat64(a) as amount
+          from values('n UInt32, m UInt32, t String, a Float64', (1, 202606, 'BASIC', 1000), (2, 202606, 'STAFF GOSI', -90), (3, 202607, 'BASIC', 1000))
+      - input: ref('stg_fusion__payroll_run_results')
+        format: sql
+        rows: |
+          select toInt64(r) as run_result_id, toInt64(iv) as input_value_id, toNullable(toInt64(el)) as element_type_id,
+                 toNullable(toInt64(7)) as person_id, toNullable(toInt64(1)) as legal_employer_id, toNullable('C') as payroll_action_status,
+                 toDate32(d) as effective_date, toNullable(toFloat64(v)) as result_value
+          from values('r UInt32, iv UInt32, el UInt32, d String, v Float64',
+              (1, 101, 11, '2026-07-31', 1100), (2, 102, 12, '2026-07-31', 50), (3, 103, 13, '2026-07-31', 9000), (4, 101, 11, '2026-06-30', 999))
+      - input: ref('stg_fusion__payroll_elements')
+        format: sql
+        rows: |
+          select toInt64(e) as element_type_id, toNullable(n) as element_name
+          from values('e UInt32, n String', (11, 'Basic Salary'), (12, 'Delay Deduction Results'), (13, 'Saudi GOSI Reference Earnings'))
+      - input: ref('stg_fusion__payroll_input_values')
+        format: sql
+        rows: |
+          select toInt64(i) as input_value_id, toNullable('Pay Value') as input_value_base_name from values('i UInt32', (101), (102), (103))
+      - input: ref('stg_ref__pay_category')
+        format: sql
+        rows: |
+          select s as source, c as source_code, pt as payable_type, cat as pay_category
+          from values('s String, c String, pt String, cat String',
+              ('oasis', 'BASIC', 'P', 'Basic'), ('oasis', 'STAFF GOSI', 'P', 'GOSI employee deduction'),
+              ('fusion', 'Basic Salary', '', 'Basic'), ('fusion', 'Delay Deduction Results', '', 'Absence and lateness deduction'),
+              ('fusion', 'Saudi GOSI Reference Earnings', '', 'Not pay'))
+      - input: ref('stg_ref__payroll_cutover')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toInt32(202607) as first_fusion_month
+      - input: ref('dim_pay_category')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(c), '|')), 1)) as pay_category_key, c as pay_category, toUInt8(cost) as is_cost, toUInt8(gross) as is_gross_pay, toInt8(sgn) as fusion_sign
+          from values('c String, cost UInt8, gross UInt8, sgn Int8',
+              ('Basic', 1, 1, 1), ('GOSI employee deduction', 0, 0, -1), ('Absence and lateness deduction', 1, 1, -1), ('Not pay', 0, 0, 1), ('Unmapped', 0, 0, 1))
+      - input: ref('int_legal_employer_branch')
+        format: sql
+        rows: |
+          select toInt64(1) as legal_employer_id, toUInt8(3) as branch_key
+      - input: ref('bridge_employee_staff')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(7)), '|')), 1)) as employee_key, toInt64(bitShiftRight(cityHash64(concat(toString(toUInt8(3)), '|', toString('500'), '|')), 1)) as staff_key,
+                 toUInt8(3) as branch_key, '500' as worker_number
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toUInt8(3)), '|', toString('500'), '|')), 1)) as staff_key
+      - input: ref('fact_headcount_monthly')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(7)), '|')), 1)) as employee_key, toDate('2026-07-31') as month_end, toInt64(-1) as hr_department_key
+    expect:
+      rows:
+        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1000, cost_amount: 1000, gross_pay: 1000}
+        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0}
+        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0}
+        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1100, cost_amount: 1100, gross_pay: 1100}
+        - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50}
+        - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0}
