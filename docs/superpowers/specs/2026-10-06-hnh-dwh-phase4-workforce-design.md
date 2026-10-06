@@ -181,6 +181,7 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 - Headcount KPIs use the month-end snapshot; never sum `headcount` across months (use the last month or an average).
 - Payroll measures filter `is_parallel_run = 0`.
 - Turnover and headcount history start in 2026; earlier months show paid headcount only.
+- Payroll reporting (employee detail, open and closed payroll, latest Oasis run, measure definitions) follows §12.
 
 ---
 
@@ -195,6 +196,7 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 | O-P4-5 | Fusion FTE values are mostly empty or 0 | FTE KPIs | FTE 1 unless a value in (0, 1.5] exists |
 | O-P4-6 | Whether contingent workers count in any headcount KPI | — | Closed 2026-10-06: excluded by default, flagged (`is_contingent`) |
 | O-P4-7 | Head Office employees have no Oasis staff record | Productivity of HO staff | Not linked |
+| O-P4-8 | `fact_payroll_monthly` loads only closed Oasis payroll (status C); §12 needs open payroll with the latest-run rule and a closed flag | SSAS payroll model showing the current month | Until implemented, open Oasis payroll is missing from SSAS (September 2026: Khamis 587 staff, SAR 5.25M gross) |
 
 ---
 
@@ -219,3 +221,50 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 - `fact_payroll_monthly` adds `paid_person_key` (`employee_key` when resolved, else `payee_key`), so paid headcount across months counts a person paid by Oasis and then Fusion once; `payee_key` stays per source.
 - `fact_headcount_monthly.is_leaver_in_month` is dropped (a leaver normally has no month-end row, so it caught about 11% of leavers); turnover leavers come from `fact_worker_movement.is_leaver`.
 - Relationship tests were added for every dimension key of the workforce facts (spec §8), with two error-severity conservation tests: `assert_headcount_matches_assignments` and `assert_movements_match_staged_actions`.
+
+---
+
+## 12. Payroll reporting rules for SSAS (decided 2026-10-06)
+
+Decided by the user while building the September 2026 payroll report (all branches, employee level): **payroll that is not yet closed is included, each employee carries a closed flag, and Oasis payroll counts only the latest payroll run.** Status of the gold model: see O-P4-8.
+
+### 12.1 Source per branch and month
+- A branch-month is paid by Fusion from its `FIRST_FUSION_MONTH` in `map_payroll_cutover`, by Oasis before (unchanged from 6.4). Oasis lines of a branch already on Fusion (parallel run) are excluded.
+- Fusion: completed payroll actions only, the latest regular run per person, element and legal employer plus QuickPay (§11). Every Fusion employee is *Closed*.
+- Oasis: `account_transactions` lines with status C (closed) **and** P (in progress), reduced by the latest-run rule in 12.2.
+
+### 12.2 Oasis latest-run rule
+**Finding.** The ClickHouse copy of `account_transactions` keeps every payroll calculation as status P lines, also after the month is closed; closing writes the final run again as new status C lines dated on the close date. September 2026 evidence: Alrabwah has P runs on 21, 22, 26 and 29 Sep and the C close of 5 Oct equals the 26 Sep run (SAR 8,204,567); Madinah's close of 1 Oct equals its 24 Sep run (SAR 4,472,462); Khamis, still open, has three full P runs (21, 23, 24 Sep), so its open lines total SAR 15.9M against about 5.3M per run.
+
+**Rule** (per branch × staff × payroll month):
+1. *Calculation date* = a date carrying a positive BASIC line with status P for the staff.
+2. *Branch full run* = a date on which at least 20% of the branch's staff with positive BASIC that month were calculated (P) or closed (C); the latest such date is the branch's last full run.
+3. *Staff closed* = the staff has no calculation date, or has a positive closed BASIC line dated on or after the staff's latest calculation date.
+4. Closed lines (C) are always kept.
+5. Open lines (P) are kept only when the staff is not closed **and** the staff's latest calculation date is on or after the branch's last full run (a staff calculated in a trial run but left out of a later run or of the close is a leftover: September 2026, 28 Alrabwah and Madinah staff from the 21 Sep run). Of those, keep the lines of the latest calculation date plus lines on dates that are not calculation dates (one-off entries: loans, bank charges, adjustments). Lines of superseded calculations are dropped.
+
+### 12.3 Payroll status (per employee and month)
+`Closed` = all kept lines are closed (Oasis status C, or Fusion); `Open` = all kept lines are status P (figures can change until the branch closes the month); `Partly closed` = both. Reports show the status and split gross pay into closed and open.
+
+### 12.4 Measures
+Signed amounts: earnings and employer charges positive, employee deductions negative. Pay category *Not pay* (GOSI reference earnings and salary, Fusion Information elements) is excluded from every measure.
+
+| Measure | Definition |
+|---|---|
+| Basic, Housing, Transport, Food, Clinical allowances, Other allowances, Overtime, Leave pay, End of service, Awards and bonus, Absence and lateness deduction | Σ amount of that pay category |
+| Gross pay | Σ amount where `is_gross_pay` (all earnings including the absence and lateness deduction) |
+| Employee deductions | Σ amount of GOSI employee deduction, Loans and advances, Other deductions |
+| Net pay | Gross pay + employee deductions (derived; can differ from the bank transfer when off-payroll deductions exist) |
+| GOSI employer charge | Σ amount of that category |
+| Total cost | Σ amount where `is_cost` = gross pay + GOSI employer charge |
+| Paid employees | distinct employees with gross pay ≠ 0 in the month (closed and open counted separately as well) |
+| Gross pay closed / open | gross pay of closed / open lines |
+| Unmapped pay codes | Σ amount of category *Unmapped* (expected 0; monitored) |
+
+### 12.5 Employee attributes in the payroll detail
+Fusion employees (and Oasis staff linked through `bridge_employee_staff`): name from Fusion `dim_employee.full_name` (latest version), person number, job, grade, nationality, Saudi flag, gender, hire date and assignment status from `dim_employee`; department from the HR department of the month-end headcount row. Fallback for Oasis staff without a Fusion link: `dim_staff` name, position, grade, nationality and service start date, department from the staff's home department. Head Office staff have no Oasis staff id.
+
+### 12.6 Implementation notes
+- O-P4-8: `fact_payroll_monthly` still loads Oasis status C only. To serve 12.1–12.4 from SSAS, load Oasis status P through the 12.2 rule (needs `transaction_date` in `stg_oasis__payroll_transactions`) and add `is_closed_payroll` and `open_run_date` to the fact; payroll measures then cover open and closed lines, with the status as a slicer.
+- Build timing: Oasis is copied to ClickHouse around 09:10 each day. A gold build before that misses payroll closed that morning (6 Oct 2026: the 08:26 build missed the Alrabwah and Madinah September close, showing 69 and 39 paid staff instead of 953 and 482). Schedule the workforce build after the Oasis copy.
+- September 2026 reference figures (for testing the implementation): group paid employees 4,304 (3,717 closed, 587 open, all open in Khamis), gross pay SAR 42,852,632, net pay 41,706,707, total cost 44,304,326; Khamis 622 employees, gross 5,684,074 (closed 436,997, open 5,247,077).
