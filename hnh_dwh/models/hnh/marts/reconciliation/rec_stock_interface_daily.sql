@@ -3,6 +3,8 @@
 -- Per branch and day from the first Fusion inventory month (spec 8): Oasis stock lines against the Fusion integration
 -- transactions (count, quantity, cost) and the gap share from the go-live. Fusion rows before the go-live, integration
 -- rows without a reference and Oasis batch postings from the go-live are shown here; they are not in fact_stock_movement.
+-- Identity on live days: lines_from_go_live = oasis_lines_in_fusion + gap_lines (batch lines left out are excluded from
+-- oasis_lines_in_fusion). fusion_out_of_scope_kept counts out-of-scope Fusion rows not dropped as reversals.
 -- fusion_out_of_scope_reversals counts the integration rows dropped as reversed invoices, creditar or package headers:
 -- they are inside fusion_integration_transactions but never become lines, so subtract them to reconcile the gap figures.
 {% set start = "toDate32('" ~ var('hnh_fusion_inventory_start') ~ "')" %}
@@ -21,7 +23,8 @@ fusion_refs as (
 oasis_daily as (
     select o.branch_key as branch_key, o.line_date as line_date, count() as oasis_lines,
            sum(o.primary_quantity) as oasis_quantity, sum(o.cost_amount) as oasis_cost,
-           countIf(f.ref_line_id is not null) as oasis_lines_in_fusion,
+           countIf(f.ref_line_id is not null
+                   and not (o.is_batch_posting = 1 and k.go_live_date is not null and o.line_date >= k.go_live_date)) as oasis_lines_in_fusion,
            countIf(o.is_batch_posting = 1 and k.go_live_date is not null and o.line_date >= k.go_live_date) as batch_lines_left_out
     from {{ ref('int_oasis_stock_line') }} as o
     left join fusion_refs as f on f.ref_branch_key = o.branch_key and f.ref_line_id = o.oasis_line_id
@@ -39,7 +42,9 @@ fusion_daily as (
            countIf(f.reference_status = 'no_reference') as fusion_without_reference,
            countIf(k.go_live_date is null or f.transaction_date < k.go_live_date) as fusion_before_go_live,
            countIf(f.reference_status = 'oasis_out_of_scope'
-                   and f.oasis_scope_reason in ('reversed_invoice', 'creditar', 'package_header')) as fusion_out_of_scope_reversals
+                   and f.oasis_scope_reason in ('reversed_invoice', 'creditar', 'package_header')) as fusion_out_of_scope_reversals,
+           countIf(f.reference_status = 'oasis_out_of_scope'
+                   and f.oasis_scope_reason not in ('reversed_invoice', 'creditar', 'package_header')) as fusion_out_of_scope_kept
     from {{ ref('int_fusion_stock_line') }} as f
     left join cutover as k on k.branch_id = f.branch_key
     group by f.branch_key, line_date
@@ -79,7 +84,8 @@ select
     ifNull(d.gap_lines, 0)                                  as gap_lines,
     if(ifNull(d.lines_from_go_live, 0) = 0, cast(null as Nullable(Float64)),
        ifNull(d.gap_lines, 0) / d.lines_from_go_live)       as gap_share,
-    ifNull(f.fusion_out_of_scope_reversals, 0)              as fusion_out_of_scope_reversals
+    ifNull(f.fusion_out_of_scope_reversals, 0)              as fusion_out_of_scope_reversals,
+    ifNull(f.fusion_out_of_scope_kept, 0)                   as fusion_out_of_scope_kept
 from spine as s
 left join cutover as k on k.branch_id = s.branch_key
 left join oasis_daily as o on o.branch_key = s.branch_key and o.line_date = s.line_date

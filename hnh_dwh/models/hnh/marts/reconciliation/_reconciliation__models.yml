@@ -115,7 +115,12 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, line_date]
+    description: >
+        Identity on live days: lines_from_go_live = oasis_lines_in_fusion + gap_lines (post-go-live batch lines are
+        excluded from oasis_lines_in_fusion).
     columns:
+      - name: fusion_out_of_scope_kept
+        description: Fusion rows with reference_status oasis_out_of_scope whose reason is not reversed_invoice, creditar or package_header.
       - name: fusion_out_of_scope_reversals
         description: >
           Fusion integration transactions dropped as out of Oasis scope (reference_status oasis_out_of_scope with reason
