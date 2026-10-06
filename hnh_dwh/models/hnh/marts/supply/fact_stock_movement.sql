@@ -49,7 +49,10 @@ fusion_by_line as (
            argMin(transfer_organization_id, fusion_transaction_id) as fl_transfer_organization_id,
            argMin(transfer_subinventory, fusion_transaction_id) as fl_transfer_subinventory,
            argMin(inventory_item_id, fusion_transaction_id) as fl_inventory_item_id,
-           min(lot_number) as fl_lot_number, min(expiry_date) as fl_expiry_date
+           -- lot and expiry as one pair: those of the first transaction (lowest id) that carries a lot
+           toUInt8(countIf(lot_number is not null) > 0) as fl_has_lot,
+           argMinIf(tuple(lot_number, expiry_date), fusion_transaction_id, lot_number is not null) as fl_lot_pair,
+           tupleElement(fl_lot_pair, 1) as fl_lot_number, tupleElement(fl_lot_pair, 2) as fl_expiry_date
     from fusion
     where reference_status = 'oasis_line'
     group by branch_key, oasis_line_id
@@ -96,8 +99,9 @@ identity_rows as (
                 -- the Oasis unit cost only when there is one (0 = none: no usable Oasis quantity)
                 ifNull(unit_cost, 0) != 0, ifNull(unit_cost, 0) * ifNull(fl_quantity, 0), 0) as movement_cost,
         toNullable(cost_amount)                                                   as oasis_cost_amount,
-        if(source_system = 'fusion', coalesce(fl_lot_number, lot_number), lot_number) as lot_number,
-        if(source_system = 'fusion', coalesce(fl_expiry_date, expiry_date), expiry_date) as expiry_date
+        -- the Fusion lot pair when Fusion has a lot, else the Oasis pair (never one from each)
+        if(source_system = 'fusion' and ifNull(fl_has_lot, 0) = 1, fl_lot_number, lot_number) as lot_number,
+        if(source_system = 'fusion' and ifNull(fl_has_lot, 0) = 1, fl_expiry_date, expiry_date) as expiry_date
     from oasis_identity
 ),
 
