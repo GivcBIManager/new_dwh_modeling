@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: int_survey_encounter_link
+    description: Survey invitation → encounter, episode, patient, clinic, payer, care type and doctor (spec 6.1).
+    columns:
+      - name: surveycode
+        tests: [unique, not_null]
+      - name: link_status
+        tests:
+          - accepted_values:
+              values: ['Linked', 'Encounter not found', 'Bad encounter id']
+  - name: int_survey_background
+    description: Conformed background attributes per survey with at least one background answer (spec 4.2).
+    columns:
+      - name: surveycode
+        tests: [unique, not_null]

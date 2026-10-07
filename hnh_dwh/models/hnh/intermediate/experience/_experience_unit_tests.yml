@@ -1,0 +1,85 @@
+version: 2
+
+unit_tests:
+  - name: int_survey_encounter_link_resolves_encounter_and_doctor
+    description: >
+      Branch from the Press Ganey code (hnhj = Jazan 3). S1 inpatient with an admission consultant takes the
+      consultant (201), not the treating doctor. S2 inpatient whose admission has no consultant (-1) takes the treating
+      doctor (202). S3 outpatient without a treating doctor takes the booked doctor (303). S4 ER takes the treating doctor
+      (404). S5 'o5' must not match the ER visit with the same id 5: Encounter not found. S6 a malformed id: Bad encounter
+      id. S7 an unknown hospital code gets branch 0 and does not link.
+    model: int_survey_encounter_link
+    given:
+      - input: ref('stg_pg__survey_response')
+        format: sql
+        rows: |
+          select s as surveycode, h as pg_branch_code, e as encounter_id
+          from values('s String, h String, e String',
+              ('S1', 'hnhj', 'i1'), ('S2', 'hnhj', 'i2'), ('S3', 'hnhj', 'o3'), ('S4', 'hnhj', 'e4'),
+              ('S5', 'hnhj', 'o5'), ('S6', 'hnhj', 'x6'), ('S7', 'zzz', 'o3'))
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, toNullable('hnhj') as pg_branch_code
+          union all select toUInt8(0), cast(null as Nullable(String))
+      - input: ref('fact_encounter')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, t as encounter_type, toInt64(sid) as source_id, toInt64(k) as encounter_key,
+                 toInt64(k + 1000) as episode_key, toInt64(k + 2000) as patient_key, toInt64(k + 3000) as department_key,
+                 toInt64(k + 4000) as payer_key, toInt8(ct) as care_type_key, toInt64(tr) as treating_staff_key,
+                 toInt64(bk) as booked_staff_key
+          from values('t String, sid Int64, k Int64, ct Int8, tr Int64, bk Int64',
+              ('IP', 1, 11, 3, 101, 151), ('IP', 2, 12, 3, 202, 252), ('OP', 3, 13, 1, -1, 303),
+              ('ER', 4, 14, 2, 404, 454), ('ER', 5, 15, 2, 505, 555))
+      - input: ref('fact_admission')
+        format: sql
+        rows: |
+          select toInt64(k) as encounter_key, toInt64(c) as consultant_staff_key
+          from values('k Int64, c Int64', (11, 201), (12, -1))
+    expect:
+      rows:
+        - {surveycode: S1, branch_key: 3, encounter_key: 11, staff_key: 201, department_key: 3011, care_type_key: 3, link_status: Linked}
+        - {surveycode: S2, branch_key: 3, encounter_key: 12, staff_key: 202, department_key: 3012, care_type_key: 3, link_status: Linked}
+        - {surveycode: S3, branch_key: 3, encounter_key: 13, staff_key: 303, department_key: 3013, care_type_key: 1, link_status: Linked}
+        - {surveycode: S4, branch_key: 3, encounter_key: 14, staff_key: 404, department_key: 3014, care_type_key: 2, link_status: Linked}
+        - {surveycode: S5, branch_key: 3, encounter_key: -1, staff_key: -1, department_key: -1, care_type_key: -1, link_status: Encounter not found}
+        - {surveycode: S6, branch_key: 3, encounter_key: -1, staff_key: -1, department_key: -1, care_type_key: -1, link_status: Bad encounter id}
+        - {surveycode: S7, branch_key: 0, encounter_key: -1, staff_key: -1, department_key: -1, care_type_key: -1, link_status: Encounter not found}
+
+  - name: int_survey_background_conforms_answers
+    description: >
+      The same meaning arrives under different codes: DEN relation 5 and ER filling 1 are both Patient. An OP routing
+      answer (labtests 2) gives used_lab = No. An answer code with no conformed value is Unmapped (ER filling 9). NPS
+      answers are not background (S4 has only an NPS answer and gets no row). An attribute a survey did not answer is
+      Not answered.
+    model: int_survey_background
+    given:
+      - input: ref('stg_pg__survey_answer')
+        format: sql
+        rows: |
+          select s as surveycode, sv as service_code, q as question_code, a as answer_code
+          from values('s String, sv String, q String, a String',
+              ('S1', 'DEN', 'relation', '5'), ('S1', 'DEN', 'fvisit', '1'), ('S2', 'ER', 'filling', '1'),
+              ('S3', 'OP', 'labtests', '2'), ('S3', 'OP', 'howschvs', '5'), ('S5', 'ER', 'filling', '9'),
+              ('S4', 'OP', 'o4', '5'))
+      - input: ref('stg_ref__pg_question_role')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, r as role
+          from values('sv String, q String, r String',
+              ('DEN', 'relation', 'respondent'), ('DEN', 'fvisit', 'first_visit'), ('ER', 'filling', 'respondent'),
+              ('OP', 'labtests', 'used_lab'), ('OP', 'howschvs', 'booking_channel'), ('OP', 'o4', 'Hospital NPS'))
+      - input: ref('stg_ref__pg_background_value')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, a as answer_code, v as conformed_value
+          from values('sv String, q String, a String, v String',
+              ('DEN', 'relation', '5', 'Patient'), ('DEN', 'fvisit', '1', 'Yes'), ('ER', 'filling', '1', 'Patient'),
+              ('OP', 'labtests', '2', 'No'), ('OP', 'howschvs', '5', 'Walk-in'))
+    expect:
+      rows:
+        - {surveycode: S1, respondent_type: Patient, first_visit: 'Yes', used_lab: Not answered, booking_channel: Not answered}
+        - {surveycode: S2, respondent_type: Patient, first_visit: Not answered, used_lab: Not answered, booking_channel: Not answered}
+        - {surveycode: S3, respondent_type: Not answered, first_visit: Not answered, used_lab: 'No', booking_channel: Walk-in}
+        - {surveycode: S5, respondent_type: Unmapped, first_visit: Not answered, used_lab: Not answered, booking_channel: Not answered}
