@@ -8,15 +8,46 @@ models:
           columns: [branch_id, account_code]
 
   - name: int_preauth_line
-    description: One Oasis authorisation line, or one NPHIES item without an Oasis line, with its final NPHIES answer.
+    description: >
+      One Oasis authorisation line, or one NPHIES item without an Oasis line, with its final NPHIES answer; or one
+      payer-initiated advance authorisation (line_source 'Payer advance', line_natural_id V + payer licence + '-' +
+      preAuthRef) with no request, send or service.
     tests:
       - hnh_unique_combination:
           columns: [branch_id, line_natural_id]
     columns:
+      - name: line_source
+        tests:
+          - accepted_values:
+              values: ['Oasis', 'NPHIES only', 'Payer advance']
       - name: preauth_outcome
         tests:
           - accepted_values:
               values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Error', 'Cancelled', 'Not sent', 'Unknown']
+
+  - name: int_nphies_advance_authorisation
+    description: >
+      One payer-initiated advance authorisation (pull response_type advanced-authorization) per branch, payer licence
+      and preAuthRef, from its latest pull (responded_at, then response_id), parsed at header level. Amounts are the
+      total[] values, else the sum over addItem[]. The patient is linked only when the Patient identifier matches
+      exactly one patient of the branch (the identity value is not kept); the episode by reference (claim line
+      pre_auth_id or Oasis request referral pre-auth reference) else the patient's first episode starting inside the
+      validity period. Spec Phase 2B section 12.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, line_natural_id]
+    columns:
+      - name: line_natural_id
+        tests: [not_null]
+      - name: outcome
+        tests:
+          - accepted_values:
+              values: ['Approved', 'Partially approved', 'Not required', 'Rejected', 'Pended', 'Unknown']
+              config: {severity: warn}
+      - name: episode_link_method
+        tests:
+          - accepted_values:
+              values: ['Reference', 'Validity period']
 
   - name: int_nphies_adjudication
     description: One item of one NPHIES ClaimResponse (claim or pre-authorisation) parsed from the pull-response bundle.

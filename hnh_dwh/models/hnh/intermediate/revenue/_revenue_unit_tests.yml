@@ -11,6 +11,8 @@ unit_tests:
       payer decision); the final answer stays APPROVED.
       A5 has one response whose item appears twice (PENDED then APPROVED): the item row with the
       highest id is kept, so it is one response with final answer APPROVED.
+      V7001-R1 is a payer advance authorisation for the same patient and episode as A1-A3: its answer comes from
+      int_nphies_advance_authorisation, its request flags are 0 and it leaves the flags of A1-A3 unchanged.
     model: int_preauth_line
     given:
       - input: ref('stg_oasis__authorisations')
@@ -87,11 +89,24 @@ unit_tests:
               (5001, 1001, 'Pended', '2026-06-01 09:20:00', '', 0, 0, 'PA-0'),
               (5002, 1002, 'Partially approved', '2026-06-01 09:50:00', 'BE-1-6', 200, 180, 'PA-1'),
               (5004, 1003, 'Rejected', '2026-06-01 10:10:00', 'MN-1-1', 0, 0, 'PA-2'))
+      - input: ref('int_nphies_advance_authorisation')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, 'V7001-R1' as line_natural_id, toNullable(toInt64(100)) as patient_id,
+                 toNullable(toInt64(1)) as episode_no, toNullable(toInt64(300)) as purchaser_code,
+                 toNullable(toDateTime('2026-06-01 08:00:00', 'Asia/Riyadh')) as created_at, toNullable(toFloat64(200)) as submitted_amount,
+                 toUInt64(3) as pull_count, toNullable('APPROVED') as nphies_status, 'Approved' as outcome,
+                 toNullable(toDateTime('2026-06-02 10:00:00', 'Asia/Riyadh')) as responded_at, toNullable(toFloat64(150)) as approved_amount,
+                 cast(null as Nullable(Float64)) as eligible_amount, 'R1' as preauth_reference,
+                 toNullable(toDate('2026-06-01')) as preauth_valid_from, toNullable(toDate('2026-06-30')) as preauth_valid_to,
+                 toNullable('referral') as advance_reason, '7001' as payer_license, cast(null as Nullable(String)) as referring_provider_name,
+                 toNullable('OP') as care_type, toNullable('Validity period') as episode_link_method, toUInt32(1) as episode_match_count
     expect:
       rows:
-        - {line_natural_id: A1, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: PENDED, nphies_last_status: ERROR BY NPHIES, response_count: 3, request_send_count: 2, nphies_approved_amount: 180, is_latest_request_for_service: 0, legacy_is_last_request: 0, primary_reason_code: BE-1-6, payer_approved_amount: 180, preauth_reference: PA-1}
-        - {line_natural_id: A2, line_source: Oasis, preauth_outcome: Rejected, nphies_final_status: null, nphies_first_status: null, nphies_last_status: null, response_count: 0, request_send_count: 0, nphies_approved_amount: null, is_latest_request_for_service: 1, legacy_is_last_request: 0, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null}
-        - {line_natural_id: A3, line_source: Oasis, preauth_outcome: Pended, nphies_final_status: null, nphies_first_status: null, nphies_last_status: null, response_count: 0, request_send_count: 0, nphies_approved_amount: null, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null}
-        - {line_natural_id: N1003-1, line_source: NPHIES only, preauth_outcome: Rejected, nphies_final_status: REJECTED, nphies_first_status: REJECTED, nphies_last_status: REJECTED, response_count: 1, request_send_count: 1, nphies_approved_amount: 0, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: MN-1-1, payer_approved_amount: 0, preauth_reference: PA-2}
-        - {line_natural_id: A4, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: COMPLETE, response_count: 2, request_send_count: 1, nphies_approved_amount: 90, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null}
-        - {line_natural_id: A5, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: APPROVED, response_count: 1, request_send_count: 1, nphies_approved_amount: 70, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null}
+        - {line_natural_id: A1, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: PENDED, nphies_last_status: ERROR BY NPHIES, response_count: 3, request_send_count: 2, nphies_approved_amount: 180, is_latest_request_for_service: 0, legacy_is_last_request: 0, primary_reason_code: BE-1-6, payer_approved_amount: 180, preauth_reference: PA-1, payer_license: null, pull_count: null}
+        - {line_natural_id: A2, line_source: Oasis, preauth_outcome: Rejected, nphies_final_status: null, nphies_first_status: null, nphies_last_status: null, response_count: 0, request_send_count: 0, nphies_approved_amount: null, is_latest_request_for_service: 1, legacy_is_last_request: 0, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null, payer_license: null, pull_count: null}
+        - {line_natural_id: A3, line_source: Oasis, preauth_outcome: Pended, nphies_final_status: null, nphies_first_status: null, nphies_last_status: null, response_count: 0, request_send_count: 0, nphies_approved_amount: null, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null, payer_license: null, pull_count: null}
+        - {line_natural_id: N1003-1, line_source: NPHIES only, preauth_outcome: Rejected, nphies_final_status: REJECTED, nphies_first_status: REJECTED, nphies_last_status: REJECTED, response_count: 1, request_send_count: 1, nphies_approved_amount: 0, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: MN-1-1, payer_approved_amount: 0, preauth_reference: PA-2, payer_license: null, pull_count: null}
+        - {line_natural_id: A4, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: COMPLETE, response_count: 2, request_send_count: 1, nphies_approved_amount: 90, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null, payer_license: null, pull_count: null}
+        - {line_natural_id: A5, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: APPROVED, response_count: 1, request_send_count: 1, nphies_approved_amount: 70, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null, payer_license: null, pull_count: null}
+        - {line_natural_id: V7001-R1, line_source: Payer advance, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: APPROVED, response_count: 3, request_send_count: 0, nphies_approved_amount: 150, is_latest_request_for_service: 0, legacy_is_last_request: 0, primary_reason_code: null, payer_approved_amount: 150, preauth_reference: R1, payer_license: '7001', pull_count: 3}

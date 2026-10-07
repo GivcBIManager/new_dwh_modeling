@@ -10,5 +10,6 @@ select
     {{ hnh_str('treatment_type') }}          as treatment_type,
     {{ hnh_str('diagnosis_code') }}          as diagnosis_code,
     {{ hnh_flag('transfer_request') }}       as is_transfer,
+    {{ hnh_str('referral_pre_auth_ref') }}   as referral_pre_auth_ref,
     {{ hnh_ksa_wall_clock('creation_date') }} as sent_at
 from {{ hnh_oasis_source('api_pre_approval_req') }} final

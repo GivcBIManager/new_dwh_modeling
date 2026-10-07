@@ -217,6 +217,21 @@ all_lines as (
         toUInt64(s.request_send_count), s.first_sent_at
     from sends as s
     where startsWith(s.line_natural_id, 'N')
+
+    union all
+
+    -- Payer-initiated advance authorisations (spec Phase 2B section 12): no hospital request, send or service
+    select
+        v.branch_id, v.line_natural_id, 'Payer advance', cast(null as Nullable(Int64)),
+        cast(null as Nullable(Int64)), cast(null as Nullable(String)), cast(null as Nullable(Int64)),
+        v.patient_id, v.episode_no, cast(null as Nullable(Int64)),
+        cast(null as Nullable(Int64)), cast(null as Nullable(String)), v.purchaser_code,
+        cast(null as Nullable(String)), cast(null as Nullable(String)),
+        v.created_at, cast(null as Nullable(String)), cast(null as Nullable(String)),
+        cast(null as Nullable(Float64)), cast(null as Nullable(Float64)), cast(null as Nullable(Float64)), v.submitted_amount,
+        cast(null as Nullable(Float64)), toUInt8(0), toUInt8(0),
+        toUInt64(0), cast(null as Nullable(DateTime('Asia/Riyadh')))
+    from {{ ref('int_nphies_advance_authorisation') }} as v
 )
 
 select
@@ -247,35 +262,55 @@ select
     l.has_communication_request                          as has_communication_request,
     l.request_send_count                                 as request_send_count,
     l.first_sent_at                                      as first_sent_at,
-    toUInt64(ifNull(rs.response_count, 0))               as response_count,
-    rs.nphies_first_status                               as nphies_first_status,
-    rs.nphies_last_status                                as nphies_last_status,
-    rs.nphies_final_status                               as nphies_final_status,
-    rs.final_responded_at                                as final_responded_at,
-    rs.last_responded_at                                 as last_responded_at,
-    rs.nphies_approved_amount                            as nphies_approved_amount,
+    -- Payer advance rows: the answer comes from the kept pull of int_nphies_advance_authorisation (response_summary
+    -- and payer_adjudication never match a V line); every pull of the authorisation counts as a response
+    toUInt64(if(l.line_source = 'Payer advance', ifNull(v.pull_count, 0), ifNull(rs.response_count, 0))) as response_count,
+    coalesce(rs.nphies_first_status, v.nphies_status)    as nphies_first_status,
+    coalesce(rs.nphies_last_status, v.nphies_status)     as nphies_last_status,
+    coalesce(rs.nphies_final_status, v.nphies_status)    as nphies_final_status,
+    coalesce(rs.final_responded_at, v.responded_at)      as final_responded_at,
+    coalesce(rs.last_responded_at, v.responded_at)       as last_responded_at,
+    -- Oasis never fills api_pre_approval_res_details.approved_amount: use the benefit from the pull-response JSON
+    coalesce(rs.nphies_approved_amount, pa.payer_approved_amount, v.approved_amount) as nphies_approved_amount,
     rs.payer_comment                                     as payer_comment,
-    {{ hnh_preauth_outcome('rs.nphies_final_status', 'l.authorised_flag', 'l.request_status') }} as preauth_outcome,
+    if(l.line_source = 'Payer advance', ifNull(v.outcome, 'Unknown'),
+       {{ hnh_preauth_outcome('rs.nphies_final_status', 'l.authorised_flag', 'l.request_status') }}) as preauth_outcome,
     multiIf(l.request_status = 'S' and l.authorised_flag = 'Y', 'Approved',
             l.request_status = 'S' and l.authorised_flag = 'H', 'Hold',
             l.request_status = 'S' and l.authorised_flag = 'N', 'Sent',
             l.request_status = 'S' and l.authorised_flag = 'R', 'Rejected',
             l.request_status = 'P' and l.authorised_flag = 'N', 'Posted',
             l.request_status = 'O' and l.authorised_flag = 'N', 'Opened', null) as legacy_line_status,
-    toUInt8(ifNull(l.request_no, 0) = max(ifNull(l.request_no, 0))
-            over (partition by l.branch_id, l.patient_id, l.episode_no, l.ios))  as is_latest_request_for_service,
-    toUInt8(ifNull(l.request_no, 0) = max(ifNull(l.request_no, 0))
-            over (partition by l.branch_id, l.patient_id, l.episode_no))         as legacy_is_last_request,
+    -- Payer advance rows are 0 and sit in their own partition, so they never change the flags of hospital requests
+    toUInt8(l.line_source != 'Payer advance' and ifNull(l.request_no, 0) = max(ifNull(l.request_no, 0))
+            over (partition by l.branch_id, l.patient_id, l.episode_no, l.ios, l.line_source = 'Payer advance'))  as is_latest_request_for_service,
+    toUInt8(l.line_source != 'Payer advance' and ifNull(l.request_no, 0) = max(ifNull(l.request_no, 0))
+            over (partition by l.branch_id, l.patient_id, l.episode_no, l.line_source = 'Payer advance'))         as legacy_is_last_request,
     pa.primary_reason_code                               as primary_reason_code,
     ifNull(pa.reason_codes, cast([] as Array(String)))   as reason_codes,
-    pa.payer_eligible_amount                             as payer_eligible_amount,
-    pa.payer_approved_amount                             as payer_approved_amount,
-    pa.preauth_reference                                 as preauth_reference,
-    pa.preauth_valid_from                                as preauth_valid_from,
-    pa.preauth_valid_to                                  as preauth_valid_to
+    coalesce(pa.payer_eligible_amount, v.eligible_amount) as payer_eligible_amount,
+    coalesce(pa.payer_approved_amount, v.approved_amount) as payer_approved_amount,
+    coalesce(pa.preauth_reference, v.preauth_reference)  as preauth_reference,
+    coalesce(pa.preauth_valid_from, v.preauth_valid_from) as preauth_valid_from,
+    coalesce(pa.preauth_valid_to, v.preauth_valid_to)    as preauth_valid_to,
+    -- Payer advance attributes; null on hospital lines
+    v.advance_reason                                     as advance_reason,
+    v.payer_license                                      as payer_license,
+    v.referring_provider_name                            as referring_provider_name,
+    v.care_type                                          as advance_care_type,
+    v.episode_link_method                                as episode_link_method,
+    v.episode_match_count                                as episode_match_count,
+    v.pull_count                                         as pull_count
 from all_lines as l
 left join response_summary as rs
     on rs.branch_id = l.branch_id and rs.line_natural_id = l.line_natural_id
 left join payer_adjudication as pa
     on pa.branch_id = l.branch_id and pa.line_natural_id = l.line_natural_id
+left join (
+    select branch_id, line_natural_id, pull_count, nphies_status, outcome, responded_at, approved_amount, eligible_amount,
+           preauth_reference, preauth_valid_from, preauth_valid_to, advance_reason, payer_license,
+           referring_provider_name, care_type, episode_link_method, episode_match_count
+    from {{ ref('int_nphies_advance_authorisation') }}
+) as v
+    on v.branch_id = l.branch_id and v.line_natural_id = l.line_natural_id
 {{ hnh_settings() }}

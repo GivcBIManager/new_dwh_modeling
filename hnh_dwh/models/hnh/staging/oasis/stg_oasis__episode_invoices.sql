@@ -15,5 +15,6 @@ select
     toFloat64(ifNull(invoice_total, 0))                 as total_amount,
     {{ hnh_str('stat_invoice_no') }}                    as stat_invoice_no,
     {{ hnh_code('approval_status') }}                   as approval_status_code,
-    {{ hnh_str('claim_type') }}                         as claim_type
+    {{ hnh_str('claim_type') }}                         as claim_type,
+    {{ hnh_id('api_trans_id') }}                        as api_trans_id
 from {{ hnh_oasis_source('ar_episode_invoices') }} final

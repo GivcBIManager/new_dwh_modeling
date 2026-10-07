@@ -4,9 +4,10 @@ with claims as (
     select
         branch_key,
         toStartOfMonth(YYYYMMDDToDate(toUInt32(statement_end_date_key)))                         as month_start,
-        sum(legacy_submitted_amount)                                                              as legacy_submitted,
-        sum(legacy_approved_amount)                                                               as legacy_approved,
-        sum(legacy_rejected_amount)                                                               as legacy_rejected,
+        -- the old models' scope: invoice and NPHIES transaction on an AR statement (O-P2B-5)
+        sumIf(legacy_submitted_amount, legacy_in_scope = 1)                                       as legacy_submitted,
+        sumIf(legacy_approved_amount, legacy_in_scope = 1)                                        as legacy_approved,
+        sumIf(legacy_rejected_amount, legacy_in_scope = 1)                                        as legacy_rejected,
         sumIf(claimed_amount, is_sent = 1 and is_latest_submission = 1 and is_cancelled_claim = 0) as submitted,
         sumIf(ifNull(approved_amount, 0), is_latest_submission = 1 and is_cancelled_claim = 0)   as approved,
         sumIf(ifNull(rejected_amount, 0), is_latest_submission = 1 and is_cancelled_claim = 0)   as rejected,

@@ -152,27 +152,34 @@ unit_tests:
   - name: fact_preauth_line_counts_delivery_after_request_only
     description: >
       A1 (service 500) was approved; its only charge was on 5 June, before the 10 June request, so it is
-      approved and not delivered. A2 (service 600) was rejected but delivered on 12 June.
+      approved and not delivered. A2 (service 600) was rejected but delivered on 12 June. V7001-R1 is a payer
+      advance authorisation (no service, request or send, IP from the payer's subType): approved, never counted as
+      delivered or approved-not-delivered, with no estimated approved amount or turnaround although the episode is OP.
     model: fact_preauth_line
     given:
       - input: ref('int_preauth_line')
         format: sql
         rows: |
-          select toUInt8(1) as branch_id, line as line_natural_id, toNullable(toInt64(100)) as patient_id,
-                 toNullable(toInt64(1)) as episode_no, toNullable(toInt64(ios)) as ios,
+          select toUInt8(1) as branch_id, line as line_natural_id, src as line_source, toNullable(toInt64(100)) as patient_id,
+                 toNullable(toInt64(1)) as episode_no, if(ios = 0, cast(null as Nullable(Int64)), toNullable(toInt64(ios))) as ios,
                  cast(null as Nullable(String)) as requesting_staff_id, toNullable(toInt64(300)) as purchaser_code,
                  toNullable(toDateTime('2026-06-10 09:00:00', 'Asia/Riyadh')) as requested_at,
-                 toNullable(toDateTime('2026-06-10 09:10:00', 'Asia/Riyadh')) as first_sent_at,
+                 if(src = 'Payer advance', cast(null as Nullable(DateTime('Asia/Riyadh'))),
+                    toNullable(toDateTime('2026-06-10 09:10:00', 'Asia/Riyadh'))) as first_sent_at,
                  toNullable(toDateTime('2026-06-10 09:40:00', 'Asia/Riyadh')) as final_responded_at,
                  toNullable(toDateTime('2026-06-10 09:40:00', 'Asia/Riyadh')) as last_responded_at,
                  outcome as preauth_outcome, toNullable(st) as nphies_final_status, toNullable(st) as nphies_first_status,
-                 toNullable(flag) as authorised_flag, toUInt64(1) as request_send_count,
-                 toNullable(toFloat64(2)) as requested_qty, toNullable(toFloat64(2)) as approved_qty,
+                 if(flag = '', cast(null as Nullable(String)), toNullable(flag)) as authorised_flag,
+                 toUInt64(if(src = 'Payer advance', 0, 1)) as request_send_count,
+                 if(src = 'Payer advance', cast(null as Nullable(Float64)), toNullable(toFloat64(2))) as requested_qty,
+                 if(src = 'Payer advance', cast(null as Nullable(Float64)), toNullable(toFloat64(2))) as approved_qty,
                  toNullable(toFloat64(200)) as estimated_amount,
                  cast(null as Nullable(String)) as primary_reason_code, cast(null as Nullable(Date)) as preauth_valid_from,
-                 cast(null as Nullable(Date)) as preauth_valid_to
-          from values('line String, ios UInt32, outcome String, st String, flag String',
-              ('A1', 500, 'Approved', 'APPROVED', 'Y'), ('A2', 600, 'Rejected', 'REJECTED', 'R'))
+                 cast(null as Nullable(Date)) as preauth_valid_to,
+                 if(src = 'Payer advance', toNullable('IP'), cast(null as Nullable(String))) as advance_care_type
+          from values('line String, src String, ios UInt32, outcome String, st String, flag String',
+              ('A1', 'Oasis', 500, 'Approved', 'APPROVED', 'Y'), ('A2', 'Oasis', 600, 'Rejected', 'REJECTED', 'R'),
+              ('V7001-R1', 'Payer advance', 0, 'Approved', 'APPROVED', ''))
       - input: ref('int_episode')
         format: sql
         rows: |
@@ -207,14 +214,16 @@ unit_tests:
           select toInt64(-1) as nphies_reason_key
     expect:
       rows:
-        - {line_natural_id: A1, is_delivered: 0, is_approved_not_delivered: 1, is_delivered_not_approved: 0, approved_estimated_amount: 200, is_approved: 1, has_final_response: 1, care_type_key: 1, nphies_reason_key: 0}
-        - {line_natural_id: A2, is_delivered: 1, is_approved_not_delivered: 0, is_delivered_not_approved: 1, approved_estimated_amount: 200, is_approved: 0, has_final_response: 1, care_type_key: 1, nphies_reason_key: 0}
+        - {line_natural_id: A1, is_delivered: 0, is_approved_not_delivered: 1, is_delivered_not_approved: 0, approved_estimated_amount: 200, is_approved: 1, has_final_response: 1, care_type_key: 1, nphies_reason_key: 0, total_turnaround_minutes: 40}
+        - {line_natural_id: A2, is_delivered: 1, is_approved_not_delivered: 0, is_delivered_not_approved: 1, approved_estimated_amount: 200, is_approved: 0, has_final_response: 1, care_type_key: 1, nphies_reason_key: 0, total_turnaround_minutes: 40}
+        - {line_natural_id: V7001-R1, is_delivered: 0, is_approved_not_delivered: 0, is_delivered_not_approved: 0, approved_estimated_amount: null, is_approved: 1, has_final_response: 1, care_type_key: 3, nphies_reason_key: 0, total_turnaround_minutes: null}
 
   - name: fact_cash_receipt_keeps_patient_receipts_only
     description: >
       Patient receipts are on account CASHACC, have no account, or are on the patient's own account (doc 6,
       account 102 for patient 102; doc 7, a REC receipt on patient 103's account). The INS and DIR receipts are insurer and contract collections (Phase 3)
-      and are left out. The positive CSH document is a reversal.
+      and are left out. Doc 5 (a positive CSH document, -20) cancels doc 8's receipt of 20 for the same patient and
+      episode; doc 9 (-15) matches no receipt, so it is a refund.
     model: fact_cash_receipt
     given:
       - input: ref('stg_oasis__ar_documents')
@@ -233,15 +242,19 @@ unit_tests:
               (4, 'REC0000001', 'DIR-0006-004', '', -2000),
               (5, 'CSH0000002', 'CASHACC', '100', 20),
               (6, 'RCT0000003', '102', '102', -30),
-              (7, 'REC0000002', '103', '103', -10))
+              (7, 'REC0000002', '103', '103', -10),
+              (8, 'CSH0000003', 'CASHACC', '100', -20),
+              (9, 'CSH0000004', 'CASHACC', '100', 15))
       - input: ref('dim_patient')
         format: sql
         rows: |
           select toInt64(-1) as patient_key
     expect:
       rows:
-        - {doc_id: 1, receipt_type: Cashier,         receipt_amount: 50,  is_reversal: 0}
-        - {doc_id: 2, receipt_type: AR cash receipt, receipt_amount: 40,  is_reversal: 0}
-        - {doc_id: 5, receipt_type: Cashier,         receipt_amount: -20, is_reversal: 1}
-        - {doc_id: 6, receipt_type: AR cash receipt, receipt_amount: 30,  is_reversal: 0}
-        - {doc_id: 7, receipt_type: Receipt (REC),   receipt_amount: 10,  is_reversal: 0}
+        - {doc_id: 1, receipt_type: Cashier,         receipt_amount: 50,  receipt_kind: Receipt}
+        - {doc_id: 2, receipt_type: AR cash receipt, receipt_amount: 40,  receipt_kind: Receipt}
+        - {doc_id: 5, receipt_type: Cashier,         receipt_amount: -20, receipt_kind: Cancellation}
+        - {doc_id: 6, receipt_type: AR cash receipt, receipt_amount: 30,  receipt_kind: Receipt}
+        - {doc_id: 7, receipt_type: Receipt (REC),   receipt_amount: 10,  receipt_kind: Receipt}
+        - {doc_id: 8, receipt_type: Cashier,         receipt_amount: 20,  receipt_kind: Receipt}
+        - {doc_id: 9, receipt_type: Cashier,         receipt_amount: -15, receipt_kind: Refund}

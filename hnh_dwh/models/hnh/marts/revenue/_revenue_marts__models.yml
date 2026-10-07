@@ -72,7 +72,9 @@ models:
     description: >
       Oasis patient receipts: account CASHACC, none, or the patient's own account. Insurer and contract
       receipts are excluded (Phase 3).
-      Receipts are net of reversals; is_reversal marks receipt documents with a negative amount.
+      Receipts are net of cancellations and refunds. receipt_kind: Receipt (money in), Cancellation (a negative
+      receipt matching an earlier receipt of the same patient, episode and amount), Refund (any other negative
+      receipt, money paid back). Cash collected = Σ receipt_amount over Receipt and Cancellation; refunds = Σ over Refund.
     columns:
       - name: receipt_key
         tests: [unique, not_null]
@@ -120,10 +122,19 @@ models:
       - hnh_unique_combination:
           columns: [branch_key, episode_key]
   - name: fact_preauth_line
-    description: One pre-authorisation line with its final NPHIES answer, turnaround and delivery.
+    description: >
+      One pre-authorisation line with its final NPHIES answer, turnaround and delivery. Rows with line_source
+      'Payer advance' are payer-initiated advance authorisations (spec Phase 2B section 12): no request, send,
+      service, delivery or turnaround; care type from the payer's subType; filter them out of the hospital
+      pre-authorisation measures and count them on their own (payer_approved_amount, advance_reason, payer_license,
+      referring_provider_name, episode_link_method, episode_match_count, pull_count are their attributes).
     columns:
       - name: preauth_line_key
         tests: [unique, not_null]
+      - name: line_source
+        tests:
+          - accepted_values:
+              values: ['Oasis', 'NPHIES only', 'Payer advance']
       - name: branch_key
         tests:
           - relationships: {to: ref('hnh_dim_branch'), field: branch_key}

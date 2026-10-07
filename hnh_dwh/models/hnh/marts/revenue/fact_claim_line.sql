@@ -3,7 +3,17 @@
 {% set first_at = "toDateTime('" ~ var('hnh_history_start_date') ~ " 00:00:00', 'Asia/Riyadh')" %}
 {% set last_day = "toDate(concat(toString(toYear(today()) + 2), '-12-31'))" %}
 
-with lines as (
+with statement_invoices as (
+    -- Invoices on an AR statement with the NPHIES transaction they were sent under: the scope of the old claims model and
+    -- bsc.vw_rcm (their inner join to tr_ar_statements on branch, API_TRANS_ID and invoice), used by the legacy_* columns.
+    select distinct i.branch_id as si_branch_id, i.invoice_no as si_invoice_no, assumeNotNull(i.api_trans_id) as si_api_trans_id
+    from {{ ref('stg_oasis__episode_invoices') }} as i
+    inner join (select branch_id, stat_invoice_no from {{ ref('stg_oasis__invoice_statements') }}) as s
+        on s.branch_id = i.branch_id and s.stat_invoice_no = i.stat_invoice_no
+    where i.api_trans_id is not null
+),
+
+lines as (
     select
         s.branch_id                 as branch_id,
         s.visit_id                  as visit_id,
@@ -19,6 +29,7 @@ with lines as (
         sub.episode_no              as episode_no,
         sub.purchaser_code          as purchaser_code,
         sub.claim_type              as claim_type,
+        sub.api_trans_id            as api_trans_id,
         sub.request_at              as request_at,
         sub.statement_end_at        as statement_end_at,
         sub.is_cancelled            as is_cancelled,
@@ -27,7 +38,9 @@ with lines as (
         sub.is_sent                 as is_sent,
         sub.final_response_id       as final_response_id,
         sub.final_responded_at      as final_responded_at,
-        sub.adjudication_status     as adjudication_status
+        sub.adjudication_status     as adjudication_status,
+        toUInt8((s.branch_id, ifNull(sub.claim_invoice_no, toInt64(0)), ifNull(sub.api_trans_id, toInt64(0)))
+                in (select si_branch_id, si_invoice_no, si_api_trans_id from statement_invoices)) as legacy_in_scope
     from {{ ref('stg_oasis__claim_services') }} as s
     inner join {{ ref('int_claim_submission') }} as sub
         on sub.branch_id = s.branch_id and sub.visit_id = s.visit_id
@@ -120,15 +133,17 @@ select
     if(k.has_adjudication = 1, k.response_patient_share, null)              as patient_share_amount,
     if(k.has_adjudication = 1, k.response_tax, null)                        as tax_amount,
     if(k.has_adjudication = 1, k.response_approved_qty, null)               as approved_qty,
-    -- payers omit eligible on approved items and send eligible = submitted on rejected ones, so go by outcome
+    -- payers omit eligible on approved items and send eligible = submitted on rejected ones, so go by outcome;
+    -- submitted includes VAT while eligible and benefit exclude it (the payer returns it as tax), so tax is not rejected
     if(k.has_adjudication = 1,
        multiIf(k.response_outcome = 'Rejected', ifNull(k.response_submitted, k.net_amount),
                k.response_outcome = 'Approved', 0,
-               greatest(ifNull(k.response_submitted, k.net_amount)
+               greatest(ifNull(k.response_submitted, k.net_amount) - ifNull(k.response_tax, 0)
                         - coalesce(nullIf(k.response_eligible, 0),
                                    ifNull(k.response_benefit, 0) + coalesce(k.response_patient_share, k.response_copay, 0)), 0)),
        null)                                                                as rejected_amount,
-    -- old claims model and bsc.vw_rcm
+    -- old claims model and bsc.vw_rcm; their scope is legacy_in_scope = 1 (invoice and transaction on an AR statement)
+    k.legacy_in_scope                                                       as legacy_in_scope,
     k.net_amount                                                            as legacy_submitted_amount,
     multiIf(ifNull(k.line_outcome, '') = 'REJECTED', 0,
             ifNull(k.line_outcome, '') = 'PARTIAL', ifNull(k.legacy_reason_amount, 0),

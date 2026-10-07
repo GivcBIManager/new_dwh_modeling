@@ -29,7 +29,9 @@ keyed as (
         {{ hnh_surrogate_key(['l.branch_id', 'l.ios']) }}                       as service_key_raw,
         {{ hnh_surrogate_key(['l.branch_id', 'l.requesting_staff_id']) }}       as staff_key_raw,
         coalesce(l.purchaser_code, ep.purchaser_code, toInt64(9999))            as payer_purchaser_code,
-        ifNull(ep.care_type, 'Unknown')                                         as care_type,
+        -- payer advance rows take the care type from the payer's subType, not from the linked episode
+        if(l.line_source = 'Payer advance', ifNull(l.advance_care_type, 'Unknown'),
+           ifNull(ep.care_type, 'Unknown'))                                     as care_type,
         {{ hnh_preauth_outcome('l.nphies_final_status', null_s, null_s) }}      as nphies_outcome,
         {{ hnh_preauth_outcome('l.nphies_first_status', null_s, null_s) }}      as nphies_first_outcome
     from lines as l
@@ -57,16 +59,20 @@ select
     toUInt8(k.request_send_count > 1)                          as is_resubmitted,
     toUInt8(ifNull((k.authorised_flag = 'Y' and k.nphies_outcome = 'Rejected')
             or (k.authorised_flag = 'R' and k.nphies_outcome in {{ approved_set }}), 0)) as is_status_override,
-    toUInt8(ifNull(dv.last_delivery_date_key, 0) >= k.request_date_key)          as is_delivered,
-    toUInt8(k.preauth_outcome = 'Approved' and is_delivered = 0)                as is_approved_not_delivered,
+    -- payer advance rows name no service, so they are never delivered or approved-not-delivered
+    toUInt8(k.line_source != 'Payer advance' and ifNull(dv.last_delivery_date_key, 0) >= k.request_date_key) as is_delivered,
+    toUInt8(k.line_source != 'Payer advance' and k.preauth_outcome = 'Approved' and is_delivered = 0) as is_approved_not_delivered,
     toUInt8(k.preauth_outcome = 'Rejected' and is_delivered = 1)                as is_delivered_not_approved,
     if(ifNull(k.requested_qty, 0) > 0, k.estimated_amount / k.requested_qty * k.approved_qty, null) as approved_estimated_amount,
     {{ hnh_minutes_between('k.requested_at', 'k.first_sent_at') }}              as request_to_sent_minutes,
     dateDiff('minute', k.requested_at, k.first_sent_at)                         as request_to_sent_minutes_raw,
     {{ hnh_minutes_between('k.first_sent_at', 'k.final_responded_at') }}        as sent_to_response_minutes,
     dateDiff('minute', k.first_sent_at, k.final_responded_at)                   as sent_to_response_minutes_raw,
-    {{ hnh_minutes_between('k.requested_at', 'k.final_responded_at') }}         as total_turnaround_minutes,
-    dateDiff('minute', k.requested_at, k.final_responded_at)                    as total_turnaround_minutes_raw,
+    -- payer advance rows have no request: created to pull time is not a turnaround
+    if(k.line_source = 'Payer advance', null,
+       {{ hnh_minutes_between('k.requested_at', 'k.final_responded_at') }})     as total_turnaround_minutes,
+    if(k.line_source = 'Payer advance', null,
+       dateDiff('minute', k.requested_at, k.final_responded_at))                as total_turnaround_minutes_raw,
     -- old report: first sent to the last response of any kind
     dateDiff('minute', k.first_sent_at, k.last_responded_at)                    as legacy_sent_to_response_minutes,
     if(k.primary_reason_code is null, toInt64(0), ifNull(dnr.nphies_reason_key, toInt64(-1))) as nphies_reason_key,
@@ -74,7 +80,8 @@ select
     {{ hnh_date_key_in_range('k.preauth_valid_to') }}          as preauth_valid_to_date_key,
     k.* except (branch_id, patient_id, episode_no, ios, requesting_staff_id, purchaser_code,
                 request_date_key, preauth_line_key, episode_key, patient_key_raw, service_key_raw,
-                staff_key_raw, care_type, nphies_first_outcome, payer_purchaser_code, nphies_outcome),
+                staff_key_raw, care_type, nphies_first_outcome, payer_purchaser_code, nphies_outcome,
+                advance_care_type),
     now()                                                      as _loaded_at
 from keyed as k
 left join deliveries as dv

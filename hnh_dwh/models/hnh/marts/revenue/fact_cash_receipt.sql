@@ -12,6 +12,14 @@ with receipts as (
     from {{ ref('stg_oasis__ar_documents') }}
     where doc_type = 'RECEIPT' and doc_at >= {{ first_at }} and toDate(doc_at) <= {{ last_day }}
       and {{ hnh_is_patient_receipt('account_code', 'ext_ref') }} = 1
+),
+
+positive_receipts as (
+    -- earliest positive receipt per patient, episode and amount: a negative receipt that matches one cancels it (O-P2-7)
+    select branch_id, patient_id, episode_no, -total_doc_price as amount, min(doc_at) as first_at
+    from receipts
+    where -total_doc_price > 0
+    group by branch_id, patient_id, episode_no, amount
 )
 
 select
@@ -27,9 +35,15 @@ select
             startsWith(ifNull(r.doc_no, ''), 'RCT'), 'AR cash receipt',
             startsWith(ifNull(r.doc_no, ''), 'REC'), 'Receipt (REC)', 'Other') as receipt_type,
     -r.total_doc_price                                                     as receipt_amount,
-    toUInt8(-r.total_doc_price < 0)                                        as is_reversal,
+    -- Receipt: money in. Cancellation: a negative receipt of the same patient, episode and amount as an earlier receipt.
+    -- Refund: any other negative receipt (money paid back to the patient).
+    multiIf(-r.total_doc_price >= 0, 'Receipt',
+            p.first_at is not null and p.first_at <= r.doc_at, 'Cancellation', 'Refund') as receipt_kind,
     now()                                                                  as _loaded_at
 from receipts as r
+left join positive_receipts as p
+    on p.branch_id = r.branch_id and p.patient_id = r.patient_id and p.episode_no = r.episode_no
+   and p.amount = r.total_doc_price
 left join (select patient_key from {{ ref('dim_patient') }}) as dp
     on dp.patient_key = {{ hnh_surrogate_key(['r.branch_id', 'r.patient_id']) }}
 {{ hnh_settings() }}

@@ -14,8 +14,8 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(1) as branch_key, toInt32(20260630) as statement_end_date_key,
-                 toFloat64(0) as legacy_submitted_amount, toFloat64(0) as legacy_approved_amount, toFloat64(0) as legacy_rejected_amount,
-                 toFloat64(cl) as claimed_amount, toUInt8(1) as is_sent, toUInt64(sn) as submission_number,
+                 toFloat64(cl) as legacy_submitted_amount, toFloat64(0) as legacy_approved_amount, toFloat64(0) as legacy_rejected_amount,
+                 toUInt8(sn = 3) as legacy_in_scope, toFloat64(cl) as claimed_amount, toUInt8(1) as is_sent, toUInt64(sn) as submission_number,
                  toUInt8(lt) as is_latest_submission, toUInt8(cx) as is_cancelled_claim, st as adjudication_status,
                  toNullable(toFloat64(sub)) as submitted_amount, toNullable(toFloat64(ap)) as approved_amount,
                  toNullable(toFloat64(rj)) as rejected_amount
@@ -37,7 +37,7 @@ unit_tests:
       format: sql
       rows: |
         select toUInt8(1) as branch_key, toDate('2026-06-01') as month_start,
-               toFloat64(0) as legacy_submitted, toFloat64(0) as legacy_approved, toFloat64(0) as legacy_rejected,
+               toFloat64(100) as legacy_submitted, toFloat64(0) as legacy_approved, toFloat64(0) as legacy_rejected,
                toFloat64(150) as submitted, toFloat64(100) as approved, toFloat64(0) as rejected,
                toFloat64(100) as adjudicated_submitted, toFloat64(300) as first_pass_rejected,
                toFloat64(600) as first_pass_adjudicated_submitted, toFloat64(100) as resubmission_recovery,
@@ -181,3 +181,34 @@ unit_tests:
     expect:
       rows:
         - {branch_key: 3, survey_service_key: OP, source_invitations: 1, gold_invitations: 1, invitation_difference: 0, source_answers: 3, gold_answers: 1, answer_difference: 2}
+
+  - name: rec_preauth_monthly_reports_payer_advances_apart
+    description: >
+      June, branch 1: hospital line H1 is approved and not delivered (lost revenue 100) and H2 is rejected for a
+      fraud reason and delivered. Payer advance V1 is approved for 150 and V2 is a rejected 1-SAR placeholder with no
+      reason: neither counts in any existing pre-authorisation column; they are the two advance authorisations with
+      151 approved.
+    model: rec_preauth_monthly
+    given:
+      - input: ref('fact_preauth_line')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_key, toInt32(20260610) as request_date_key, src as line_source,
+                 toUInt8(appr) as is_approved, outcome as preauth_outcome, toUInt8(fin) as has_final_response,
+                 toUInt8(and_) as is_approved_not_delivered, est as approved_estimated_amount,
+                 toUInt8(src != 'Payer advance') as is_latest_request_for_service, toUInt8(dna) as is_delivered_not_approved,
+                 toNullable(last) as nphies_last_status, toUInt8(dlv) as is_delivered,
+                 toUInt8(src != 'Payer advance') as legacy_is_last_request, toInt64(rk) as nphies_reason_key,
+                 toNullable(pam) as payer_approved_amount
+          from values('src String, appr UInt8, outcome String, fin UInt8, and_ UInt8, est Nullable(Float64), dna UInt8, last String, dlv UInt8, rk Int64, pam Float64',
+              ('Oasis', 1, 'Approved', 1, 1, 100, 0, 'APPROVED', 0, 0, 90),
+              ('Oasis', 0, 'Rejected', 1, 0, 50, 1, 'REJECTED', 1, 5, 0),
+              ('Payer advance', 1, 'Approved', 1, 0, NULL, 0, 'APPROVED', 0, 0, 150),
+              ('Payer advance', 0, 'Rejected', 1, 0, NULL, 0, 'REJECTED', 0, 0, 1))
+      - input: ref('dim_nphies_reason')
+        format: sql
+        rows: |
+          select toInt64(5) as nphies_reason_key, 'Fraud' as reason_category
+    expect:
+      rows:
+        - {branch_key: 1, month_start: 2026-06-01, services: 2, approved: 1, rejected: 1, final_responses: 2, approved_final: 1, rejected_final: 1, unutilised: 1, lost_revenue: 100, delivered_not_approved: 1, legacy_approved: 1, legacy_rejected: 1, legacy_lost_revenue: 100, rejected_fraud: 1, rejected_reason_not_given: 0, rejected_reason_unknown: 0, advance_authorisations: 2, advance_approved_amount: 151}
