@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_order_line', drop=['order_line_key', 'episode_key', 'master_order_no', 'order_line', 'status_reason'], decimals=['ordered_value', 'charged_amount'], floats=['unit_fulfilment_ratio', 'units_ordered', 'units_delivered']) }}

@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_target_daily', decimals=['target_revenue', 'target_cost_total', 'target_cost_per_episode'], floats=['target_census', 'target_episodes', 'target_patient_days', 'target_alos']) }}

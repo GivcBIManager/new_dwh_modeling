@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_claim_payment', drop=['claim_payment_key', 'episode_key', 'invoice_key', 'visit_id', 'claim_api_trans_id', 'payer_claim_response_id', 'reconciliation_id'], decimals=['payment_amount', 'payment_component', 'early_fee', 'nphies_fee']) }}

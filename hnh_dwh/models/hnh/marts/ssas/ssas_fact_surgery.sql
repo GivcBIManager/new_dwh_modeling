@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_surgery', drop=['surgery_key', 'episode_key', 'operation_seq', 'hall_to_theatre_minutes_raw', 'anaesthesia_minutes_raw', 'operating_minutes_raw', 'recovery_handover_minutes_raw']) }}

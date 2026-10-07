@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_admission', drop=['admission_key', 'encounter_key', 'episode_key', 'admitted_at', 'physical_discharge_at', 'planned_admit_at'], floats=['los_hours', 'los_days', 'los_days_to_date', 'critical_bed_hours']) }}
