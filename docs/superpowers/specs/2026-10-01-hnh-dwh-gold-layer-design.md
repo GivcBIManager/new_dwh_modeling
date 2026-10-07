@@ -512,7 +512,7 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 | O7 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build |
 | O8 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row |
 | O9 | Trigger time and SSAS processing mechanism | Orchestration | Manual run |
-| O10 | Outpatient survey link rate (section 13.1, revised 2026-10-04: the encounter id is the appointment id, so the low match rate is probably a measurement artefact) | Phase 6 | Re-test before Phase 6; no ingestion planned |
+| O10 | Outpatient survey link rate (section 13.1, revised 2026-10-04: the encounter id is the appointment id, so the low match rate is probably a measurement artefact) | Phase 6 | Closed 2026-10-07: outpatient link 87% (514,659 of 589,401), ER 99.3%, IP 100%; misses are the Khamis Dec 2025 – Jul 2026 appointment gap (Phase 6 spec P6, P7) |
 
 ### Resolved on review (2026-10-01)
 

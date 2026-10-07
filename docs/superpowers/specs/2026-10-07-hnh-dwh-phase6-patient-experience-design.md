@@ -311,9 +311,23 @@ All measures slice by branch, service, care type, doctor, specialty, clinic, pay
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
 | O-P6-1 | Khamis OP surveys January–July 2026 have no appointment (61,963) | — | Kept as `Encounter not found`; analysable by branch and service only |
-| O-P6-2 | Outpatient rehab (OR) links only 50% | — | Investigated during the build and recorded; no fix planned |
+| O-P6-2 | Outpatient rehab (OR) links only 50% | — | **Closed 2026-10-07:** the misses are the Khamis gap of O-P6-1 (section 11) |
 | O-P6-3 | Survey comments are always empty in the source | Free-text analysis | Out of scope until ingestion supplies text |
 | O-P6-4 | 5-point NPS is not comparable to external 0–10 benchmarks | SSAS labels | Labelled "NPS (5-point)" |
 | O-P6-5 | Ghirnata and Muhayil surveys start mid-September 2026 | — | None; it is the data's start |
-| O-P6-6 | Whether the receiving dbt project already declares a source named `press_ganey` | Moving the models | The `hnh` YAML declares `press_ganey`; rename it if it clashes |
+| O-P6-6 | Whether the receiving dbt project already declares a source named `press_ganey` | Moving the models | **Closed 2026-10-07:** no source or model of those names in `dbt/models` |
 | O-P6-7 | Review of `map_pg_question_role` and `map_pg_background_value` drafts | Build of the facts | Drafted values used as loaded |
+
+---
+
+## 11. Changes during implementation (2026-10-07)
+
+- `response_status` Submitted needs at least one answer: 84 surveys that are `submitted` in the source carry no answer and count as Not started (`source_status` keeps the source value), so completion rate is not inflated.
+- Response rate (section 7.1) is responded ÷ all primary invitations, not ÷ invitations with an SMS sent: 8,259 of 24,968 submitted surveys have no `sms_send_date`, and Muhayil has none at all.
+- O-P6-2 is closed: every branch-service-month with 100+ invitations and a link rate under 80% is Khamis, December 2025 to July 2026, in OP, DEN and OR — the appointment gap of O-P6-1. `warn_survey_link_rate` leaves that window out.
+- `map_pg_question_role` has 61 rows (16 NPS roles, 45 attribute roles), because `hl_disclaimer` and `filling` exist per service; `map_pg_background_value` has 104 rows, the 103 workbook options plus LTC `csurvey` code 2, drafted as Family member (O-P6-7).
+- Booking channel adds the value `Appointment` (OR `visadvan` answer 1 names no channel). Every background attribute can also be `Unmapped`, for an answered code with no conformed value.
+- The answer fact has 739,968 rows: the 54 `initial_response` values are skipped (P2). It also carries `question_code`, `scale_type` and `link_status`.
+- `contact_consent` is always `Not answered` today: no `hl_disclaimer` answer in the source is non-null.
+- `rec_survey_monthly` takes the month from `assumeNotNull(visit_date)`: a nullable sort key cannot build. `stg_pg__survey_response.visit_date` is tested not null.
+- O-P6-6 is closed: the receiving project has no `press_ganey` source and no model of the Phase 6 names, so no `hnh_` alias is needed.
