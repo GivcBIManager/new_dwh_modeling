@@ -1,8 +1,8 @@
 /// Patient receipts, cancellations and refunds.
 table 'Cash Receipts'
 
-	/// Patient collections in SAR: Σ receipt_amount; cancellations and refunds count as recorded (Phase 2 spec section 8).
-	measure 'Patient Collections' = SUM ( 'Cash Receipts'[Receipt Amount] )
+	/// Patient collections in SAR: Σ receipt_amount over receipts and cancellations; refunds are excluded (receiving note: refunds = Σ over Refund).
+	measure 'Patient Collections' = CALCULATE ( SUM ( 'Cash Receipts'[Receipt Amount] ), 'Cash Receipts'[Receipt Kind] IN { "Receipt", "Cancellation" } )
 		formatString: #,0
 		displayFolder: Collections
 

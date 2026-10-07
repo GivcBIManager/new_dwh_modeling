@@ -1,15 +1,16 @@
 /// Month-end headcount snapshot per employee.
 table Headcount
 
-	/// Month-end headcount of the last month in the selection, contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months. The last period is taken per branch, so a multi-branch total keeps every branch.
+	/// Month-end headcount of the last closed month (is_closed_month) in the selection; the projected current month is excluded. Contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months. The last period is taken per branch, so a multi-branch total keeps every branch.
 	measure Headcount =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ) )
+				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					CALCULATE (
 						SUM ( Headcount[Headcount Units] ),
 						Headcount[Month Date Key] = LastMonth,
+						Headcount[Is Closed Month] = "Yes",
 						Headcount[Is Contingent] = "No"
 					)
 			)
