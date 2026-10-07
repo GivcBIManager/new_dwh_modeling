@@ -1,15 +1,18 @@
 /// Month-end headcount snapshot per employee.
 table Headcount
 
-	/// Month-end headcount of the last month in the selection, contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months.
+	/// Month-end headcount of the last month in the selection, contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months. The last period is taken per branch, so a multi-branch total keeps every branch.
 	measure Headcount =
-			VAR LastMonth = MAX ( Headcount[Month Date Key] )
-			RETURN
-				CALCULATE (
-					SUM ( Headcount[Headcount Units] ),
-					Headcount[Month Date Key] = LastMonth,
-					Headcount[Is Contingent] = "No"
-				)
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ) )
+				RETURN
+					CALCULATE (
+						SUM ( Headcount[Headcount Units] ),
+						Headcount[Month Date Key] = LastMonth,
+						Headcount[Is Contingent] = "No"
+					)
+			)
 		formatString: #,0
 		displayFolder: Headcount
 

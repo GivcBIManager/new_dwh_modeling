@@ -1,15 +1,18 @@
 /// Month-end stock per store and item.
 table 'Stock Monthly'
 
-	/// Stock value in SAR at the last month-end of the selection, expiry stores excluded (Phase 5 spec section 7). Snapshot.
+	/// Stock value in SAR at the last month-end of the selection, expiry stores excluded (Phase 5 spec section 7). Snapshot. The last period is taken per branch, so a multi-branch total keeps every branch.
 	measure 'Stock Value' =
-			VAR LastMonth = MAX ( 'Stock Monthly'[Month Date Key] )
-			RETURN
-				CALCULATE (
-					SUM ( 'Stock Monthly'[Stock Value Amount] ),
-					'Stock Monthly'[Month Date Key] = LastMonth,
-					'Stock Monthly'[Is Expiry Store] = "No"
-				)
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				RETURN
+					CALCULATE (
+						SUM ( 'Stock Monthly'[Stock Value Amount] ),
+						'Stock Monthly'[Month Date Key] = LastMonth,
+						'Stock Monthly'[Is Expiry Store] = "No"
+					)
+			)
 		formatString: #,0
 		displayFolder: Stock
 

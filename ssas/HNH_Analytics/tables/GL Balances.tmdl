@@ -1,15 +1,18 @@
 /// Monthly opening, movement and closing balance per account.
 table 'GL Balances'
 
-	/// Posted closing balance in SAR at the last period of the selection (an adjustment period wins over its month), signed for display (Phase 3 spec section 8). Snapshot.
+	/// Posted closing balance in SAR at the last period of the selection (an adjustment period wins over its month), signed for display (Phase 3 spec section 8). Snapshot. The last period is taken per branch, so a multi-branch total keeps every branch.
 	measure 'GL Closing Balance' =
-			VAR LastPeriod = MAX ( 'GL Balances'[Period Key] )
-			RETURN
-				CALCULATE (
-					SUMX ( 'GL Balances', 'GL Balances'[Closing Balance] * RELATED ( 'FS Line'[Display Sign] ) ),
-					'GL Balances'[Period Key] = LastPeriod,
-					'GL Balances'[Balance View] = "posted"
-				)
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				RETURN
+					CALCULATE (
+						SUMX ( 'GL Balances', 'GL Balances'[Closing Balance] * RELATED ( 'FS Line'[Display Sign] ) ),
+						'GL Balances'[Period Key] = LastPeriod,
+						'GL Balances'[Balance View] = "posted"
+					)
+			)
 		formatString: #,0
 		displayFolder: Balances
 
