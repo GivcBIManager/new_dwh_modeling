@@ -48,6 +48,11 @@ models:
         +schema: gold
         +materialized: table
         +tags: ["hnh_gold"]
+        ssas:                            # SSAS views, inside marts:
+          +materialized: view
+          +sql_security: definer
+          +definer: CURRENT_USER
+          +tags: ["hnh_ssas"]
 
 data_tests:                              # top level; makes --select tag:hnh run the singular tests too
   oasis:
@@ -180,6 +185,13 @@ Patient experience (Phase 6, spec `2026-10-07-hnh-dwh-phase6-patient-experience-
 - Survey quality (spec 7.1) counts primary invitations (`is_primary_for_encounter = 1`): Invitations = rows; SMS reach = `is_sms_sent` ÷ invitations; Response rate = `is_responded` ÷ invitations (not ÷ SMS sent: a third of submitted surveys have no SMS date, see `docs/reconciliation_phase6.md`); Completion = `is_submitted` ÷ `is_responded`; Answer completeness = Σ `scored_questions_answered` ÷ Σ `scored_questions_offered` over responded invitations; Median days visit → answer = median `days_visit_to_answer`, which exists for submitted surveys only (`survey_date` is the close date of partial and not-started surveys, and `survey_date_key` is null on them); Link % = `link_status = "Linked"` ÷ invitations; Doctor attribution = responded with `staff_key <> -1` ÷ responded.
 - NPS (spec 7.2) = (Σ `is_promoter` − Σ `is_detractor`) ÷ COUNTROWS × 100 over `fact_survey_answer` with `is_scored = 1`. Hospital NPS filters `nps_role = "Hospital NPS"` and Physician NPS `nps_role = "Physician NPS"`; domain and question NPS use the same measure under a `dim_survey_question` filter. Show the answer count (n) and % promoter / passive / detractor next to every NPS, and display "insufficient sample" when n < 30. Label it "NPS (5-point)": it is not comparable to external 0–10 NPS benchmarks.
 - Background attributes (`respondent_type`, `first_visit`, `booking_channel`, `used_lab`, …) are columns on `fact_survey_response`. To slice answer-level NPS by them, filter through `survey_response_key` in DAX (`TREATAS`) or build a survey-attribute dimension in SSAS. Response-level Hospital NPS (`fact_survey_response.nps_band`) gives the same figure and slices by them directly.
+
+## SSAS views and access (2026-10-07)
+
+- `models/hnh/marts/ssas/` builds 79 `gold.ssas_*` views (tag `hnh_ssas`, `SQL SECURITY DEFINER`, enforced contracts). SSAS reads only these views.
+- After changing a view's columns on purpose, run `python scripts/gen_view_contracts.py` in the development repository and copy the regenerated `_ssas__models.yml`.
+- Reference table `default.map_bi_user_permission (bi_user_name, can_see_pay, can_see_pii)` holds the pay and PII permissions; a user not listed has neither (fail closed). Load it with `scripts/load_reference_data.py --only map_bi_user_permission`.
+- ClickHouse user `ssas_reader` (`readonly = 2`, `SELECT ON gold.ssas_*`) is created by `scripts/create_ssas_reader.py`; the SSAS server's system DSN `HNH_Gold` uses it.
 
 ## Deployment checklist (Ubuntu server)
 
