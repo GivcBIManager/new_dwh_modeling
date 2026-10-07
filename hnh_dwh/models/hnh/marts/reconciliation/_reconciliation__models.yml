@@ -130,3 +130,17 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start]
+  - name: rec_survey_monthly
+    description: Press Ganey source against gold per branch, survey service and visit month; link rate (spec 6.3, 8).
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, survey_service_key, month_start]
+    columns:
+      - name: invitation_difference
+        tests:
+          - hnh_within_tolerance:
+              tolerance: 0
+      - name: answer_difference
+        tests:
+          - hnh_within_tolerance:
+              tolerance: 0
