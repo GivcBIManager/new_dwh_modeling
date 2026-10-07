@@ -1,14 +1,6 @@
 /// One order line with its fulfilment status.
 table 'Order Lines'
 
-	column 'Order Key'
-		dataType: int64
-		isHidden
-		isAvailableInMdx: false
-		encodingHint: hash
-		summarizeBy: none
-		sourceColumn: order_key
-
 	column 'Branch Key'
 		dataType: int64
 		isHidden

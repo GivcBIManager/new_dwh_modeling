@@ -1888,8 +1888,6 @@ models:
     config:
       contract: {enforced: true}
     columns:
-      - name: order_key
-        data_type: "Int64"
       - name: branch_key
         data_type: "Int64"
       - name: order_date_key

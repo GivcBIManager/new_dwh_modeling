@@ -26,7 +26,7 @@ select table, name, type, 'line id kept on a large line fact'
 from cols
 where table in ('ssas_fact_charge_line', 'ssas_fact_order_line', 'ssas_fact_stock_movement',
                 'ssas_fact_patient_consumption', 'ssas_fact_claim_line')
-  and name in ('charge_line_key', 'order_line_key', 'movement_key', 'claim_line_key', 'delivery_charge_id',
+  and name in ('charge_line_key', 'order_line_key', 'order_key', 'movement_key', 'claim_line_key', 'delivery_charge_id',
                'delivery_line', 'invoice_doc_no', 'master_order_no', 'order_line', 'oasis_line_id', 'oasis_doc_no',
                'fusion_transaction_id', 'claim_invoice_no', 'stat_invoice_no', 'visit_id', 'sequence_no', 'lot_number')
 union all

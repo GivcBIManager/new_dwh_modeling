@@ -159,7 +159,6 @@ EXTRA_RELATIONSHIPS = [Relationship("Patient Details", "patient_key", "Patient",
 
 # Facts keep these keys hidden, with no relationship (spec 5: facts are never related to each other).
 NO_RELATIONSHIP = {
-    ("Order Lines", "order_key"),
     ("Survey Responses", "survey_response_key"),
     ("Survey Answers", "survey_response_key"),
 }
