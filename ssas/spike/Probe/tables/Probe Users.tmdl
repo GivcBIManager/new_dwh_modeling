@@ -1,0 +1,21 @@
+table 'Probe Users'
+	isHidden
+
+	column 'Login Name'
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: login_name
+
+	column 'Dim Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: dim_key
+
+	partition 'Probe Users' = query
+		source
+			query = select 'set-by-spike' as login_name, toInt64(1) as dim_key
+			dataSource: HNH_Gold

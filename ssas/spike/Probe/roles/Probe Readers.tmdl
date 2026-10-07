@@ -1,0 +1,11 @@
+role 'Probe Readers'
+	modelPermission: read
+
+	tablePermission 'Probe Users' = FALSE ()
+
+	tablePermission 'Probe Dim' =
+			'Probe Dim'[Dim Key]
+				IN CALCULATETABLE (
+					VALUES ( 'Probe Users'[Dim Key] ),
+					'Probe Users'[Login Name] = USERNAME ()
+				)

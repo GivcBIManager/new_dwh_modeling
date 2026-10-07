@@ -1,0 +1,17 @@
+table 'Probe Dim'
+
+	column 'Dim Key'
+		dataType: int64
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: dim_key
+
+	column 'Dim Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: dim_name
+
+	partition 'Probe Dim' = query
+		source
+			query = select toInt64(1) as dim_key, 'عنصر أول' as dim_name union all select toInt64(2), 'second'
+			dataSource: HNH_Gold

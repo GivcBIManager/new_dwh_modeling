@@ -1,0 +1,11 @@
+model Model
+	culture: en-US
+	discourageImplicitMeasures
+
+ref table 'Probe Dim'
+ref table 'Probe Fact'
+ref table 'Probe Users'
+
+ref role 'Probe Readers'
+
+ref perspective 'Probe View'
