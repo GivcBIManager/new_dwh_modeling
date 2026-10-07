@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: stg_pg__survey_response
+    columns:
+      - name: surveycode
+        tests: [unique, not_null]
+      - name: visit_date
+        tests: [not_null]
+  - name: stg_pg__survey_answer
+    tests:
+      - hnh_unique_combination:
+          columns: [surveycode, question_code]
+  - name: stg_pg__survey_question
+    tests:
+      - hnh_unique_combination:
+          columns: [service_code, question_code]
+  - name: stg_pg__answer_option
+    tests:
+      - hnh_unique_combination:
+          columns: [service_code, question_code, answer_code]
+  - name: stg_pg__service
+    columns:
+      - name: service_code
+        tests: [unique, not_null]

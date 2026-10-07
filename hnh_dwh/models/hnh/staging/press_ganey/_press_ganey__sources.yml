@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: press_ganey
+    schema: press_ganey
+    description: Press Ganey patient surveys. Responses are ReplacingMergeTree on _fetched_at; answers are a JSON string.
+    tables:
+      - name: pg_survey_responses
+        loaded_at_field: _fetched_at
+        freshness:
+          warn_after: {count: 30, period: hour}
+          error_after: {count: 54, period: hour}
+      - name: pg_survey_questions
+      - name: pg_survey_answer_options
+      - name: dim_pg_service
