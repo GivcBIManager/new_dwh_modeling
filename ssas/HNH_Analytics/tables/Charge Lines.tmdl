@@ -1,0 +1,218 @@
+/// One Oasis charge line (delivered service or item).
+table 'Charge Lines'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Delivery Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: delivery_date_key
+
+	column 'Delivery Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: delivery_time_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Service Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_key
+
+	column 'Product Category Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: product_category_key
+
+	column 'Billed Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: billed_payer_key
+
+	column 'Episode Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: episode_payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Encounter Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: encounter_type
+
+	column 'Resolved Encounter Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: resolved_encounter_type
+
+	column 'Bill To'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: bill_to
+
+	column 'Charge Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: charge_status
+
+	column 'Is Package Component'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_package_component
+
+	column 'Is Patient Share'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_patient_share
+
+	column 'Is Cash Billed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cash_billed
+
+	column 'Is Medication'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_medication
+
+	column 'Is LTC'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_ltc
+
+	column Units
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: units
+
+	column 'Net Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: net_amount
+
+	column 'Line Discount Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: line_discount_amount
+
+	column 'Gross Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: gross_amount
+
+	column 'VAT Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: vat_amount
+
+	column 'Is Recognised Revenue'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_recognised_revenue
+
+	column 'Revenue Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: revenue_amount
+
+	column 'Package Content Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: package_content_amount
+
+	column 'Is Claimable'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_claimable
+
+	column 'Claimable Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: claimable_amount
+
+	partition 'Charge Lines template' = query
+		source
+			query = select * from gold.ssas_fact_charge_line where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_charge_line
+	annotation hnh_partition_column = delivery_date_key

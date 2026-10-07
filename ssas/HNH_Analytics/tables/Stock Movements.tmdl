@@ -1,0 +1,146 @@
+/// One stock movement line from Oasis or Fusion.
+table 'Stock Movements'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column 'Store Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: store_key
+
+	column 'Transfer Store Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: transfer_store_key
+
+	column 'Item Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: item_key
+
+	column 'Movement Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: movement_type_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Is In Oasis'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_in_oasis
+
+	column 'Is In Fusion'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_in_fusion
+
+	column 'Is Fusion Gap'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_fusion_gap
+
+	column 'Is Opening Balance'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_opening_balance
+
+	column 'Is Consumption'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_consumption
+
+	column 'Fusion Transaction Count'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: fusion_transaction_count
+
+	column 'Primary Quantity'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: primary_quantity
+
+	column 'Cost Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: cost_amount
+
+	column 'Cost Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cost_source
+
+	column 'Oasis Cost Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: oasis_cost_amount
+
+	column 'Is Cost Mismatch'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cost_mismatch
+
+	column 'Consumption Quantity'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: consumption_quantity
+
+	column 'Consumption Cost Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: consumption_cost
+
+	partition 'Stock Movements template' = query
+		source
+			query = select * from gold.ssas_fact_stock_movement where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_stock_movement
+	annotation hnh_partition_column = date_key

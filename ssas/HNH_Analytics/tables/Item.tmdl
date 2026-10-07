@@ -1,0 +1,100 @@
+/// Inventory items from Fusion and Oasis with item group.
+table Item
+
+	column 'Item Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: item_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Inventory Item ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: inventory_item_id
+
+	column 'Item Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_number
+
+	column 'Item Description'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_description
+
+	column 'Primary UOM Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: primary_uom_code
+
+	column 'Item Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_type
+
+	column 'Item Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_status
+
+	column 'Is Lot Controlled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_lot_controlled
+
+	column 'Category Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: category_code
+
+	column 'Item Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_group
+
+	column 'Is Deleted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_deleted
+
+	column 'Oasis Product Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: oasis_product_code
+
+	column 'Oasis Product Codes'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: oasis_product_codes
+
+	column 'Oasis Product Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: oasis_product_category
+
+	column 'Product Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: product_group
+
+	partition Item = query
+		source
+			query = select * from gold.ssas_dim_item
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_item

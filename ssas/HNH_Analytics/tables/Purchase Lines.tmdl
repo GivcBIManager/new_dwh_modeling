@@ -1,0 +1,185 @@
+/// One purchase order line.
+table 'Purchase Lines'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'PO Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: po_date_key
+
+	column 'Supplier Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: supplier_key
+
+	column 'Item Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: item_key
+
+	column 'Ship To Store Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: ship_to_store_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'PO Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: po_number
+
+	column 'Requisition Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: requisition_number
+
+	column 'Requisition Approved Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: requisition_approved_date_key
+
+	column 'UOM Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: uom_code
+
+	column 'Quantity Ordered'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: quantity_ordered
+
+	column 'Quantity Received'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: quantity_received
+
+	column 'Quantity Cancelled'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: quantity_cancelled
+
+	column 'Quantity Billed'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: quantity_billed
+
+	column 'Unit Price'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: unit_price
+
+	column 'Ordered Value'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: ordered_value
+
+	column 'Gross Ordered Value'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: gross_ordered_value
+
+	column 'Received Value'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: received_value
+
+	column 'First Receipt Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: first_receipt_date_key
+
+	column 'Lead Time Days'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: lead_time_days
+
+	column 'PO Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: po_status
+
+	column 'Is Approved PO'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_approved_po
+
+	column 'Line Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: line_type
+
+	column 'Is AP Matched'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_ap_matched
+
+	column 'AP Matched Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: ap_matched_amount
+
+	partition 'Purchase Lines' = query
+		source
+			query = select * from gold.ssas_fact_purchase_line
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_purchase_line

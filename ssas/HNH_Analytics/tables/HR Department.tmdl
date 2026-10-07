@@ -1,0 +1,55 @@
+/// Fusion HR departments with unified department.
+table 'HR Department'
+
+	column 'HR Department Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_department_key
+
+	column 'Organization ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: organization_id
+
+	column 'Department Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: department_name
+
+	column 'Branch Prefix'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branch_prefix
+
+	column 'Department Base Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: department_base_name
+
+	column 'Unified Department'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unified_department
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Is Current'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_current
+
+	partition 'HR Department' = query
+		source
+			query = select * from gold.ssas_dim_hr_department
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_hr_department

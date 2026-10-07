@@ -1,0 +1,86 @@
+/// Monthly encounters, revenue and payroll per linked doctor or nurse; pay access only.
+table 'Staff Productivity'
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	column 'Staff Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: staff_category
+
+	column 'Encounters Seen'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: encounters_seen
+
+	column 'Revenue Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: revenue_amount
+
+	column 'Payroll Cost'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: payroll_cost
+
+	column 'Gross Pay'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: gross_pay
+
+	column FTE
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: fte
+
+	column 'Absence Days'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: absence_days
+
+	partition 'Staff Productivity' = query
+		source
+			query = select * from gold.ssas_agg_staff_productivity_monthly
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_agg_staff_productivity_monthly

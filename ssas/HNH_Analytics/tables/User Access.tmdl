@@ -1,0 +1,54 @@
+/// Branches, specialties and pay/PII permissions per login (security table).
+table 'User Access'
+	isHidden
+
+	column 'Login Name'
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: login_name
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Unified Specialty'
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: unified_specialty
+
+	column 'Is Admin'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_admin
+
+	column 'Can See Pay'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: can_see_pay
+
+	column 'Can See PII'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: can_see_pii
+
+	partition 'User Access' = query
+		source
+			query = select * from gold.ssas_sec_user_access
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = security
+	annotation hnh_view = ssas_sec_user_access

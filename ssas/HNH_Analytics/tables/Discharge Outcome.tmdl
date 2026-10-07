@@ -1,0 +1,45 @@
+/// Discharge outcomes with MOH codes.
+table 'Discharge Outcome'
+
+	column 'Discharge Outcome Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: discharge_outcome_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Outcome Code'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: outcome_code
+
+	column Outcome
+		dataType: string
+		summarizeBy: none
+		sourceColumn: outcome
+
+	column 'Outcome Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: outcome_group
+
+	column 'MOH Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: moh_code
+
+	partition 'Discharge Outcome' = query
+		source
+			query = select * from gold.ssas_dim_discharge_outcome
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_discharge_outcome

@@ -1,0 +1,49 @@
+perspective 'Revenue Cycle'
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable 'Cash Receipts'
+		includeAll
+
+	perspectiveTable 'Charge Lines'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable Department
+		includeAll
+
+	perspectiveTable 'Episode Billing'
+		includeAll
+
+	perspectiveTable Invoices
+		includeAll
+
+	perspectiveTable 'Order Lines'
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable 'Product Category'
+		includeAll
+
+	perspectiveTable 'Revenue Adjustments'
+		includeAll
+
+	perspectiveTable Service
+		includeAll
+
+	perspectiveTable Staff
+		includeAll
+
+	perspectiveTable Time
+		includeAll

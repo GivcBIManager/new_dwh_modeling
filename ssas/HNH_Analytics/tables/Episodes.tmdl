@@ -1,0 +1,152 @@
+/// One Oasis episode.
+table Episodes
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Start Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: start_date_key
+
+	column 'End Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: end_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Consultant Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: consultant_staff_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Eligibility Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: eligibility_type_key
+
+	column 'Episode No'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: episode_no
+
+	column 'Episode Seq'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: episode_seq
+
+	column 'Is First Episode'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_first_episode
+
+	column 'Previous Care Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: previous_care_type
+
+	column 'Policy Code'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: policy_code
+
+	column 'Contract No'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: contract_no
+
+	column 'Is Referral Policy'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_referral_policy
+
+	column 'OP Encounters'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: op_encounters
+
+	column 'ER Encounters'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: er_encounters
+
+	column 'IP Encounters'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: ip_encounters
+
+	column 'Has Arrived Non Follow Up Encounter'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: has_arrived_non_follow_up_encounter
+
+	partition 'Episodes template' = query
+		source
+			query = select * from gold.ssas_fact_episode where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_episode
+	annotation hnh_partition_column = start_date_key

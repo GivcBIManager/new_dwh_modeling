@@ -1,0 +1,106 @@
+/// Open payables at the last refresh with ageing bucket.
+table 'AP Open Items'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Supplier Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: supplier_key
+
+	column 'Invoice Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: invoice_date_key
+
+	column 'Due Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: due_date_key
+
+	column 'Invoice Num'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoice_num
+
+	column 'Invoice Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoice_type
+
+	column 'Approval Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: approval_status
+
+	column 'Payment Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: payment_status
+
+	column 'Is On Hold'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_on_hold
+
+	column 'Is Cancelled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cancelled
+
+	column 'Ageing Bucket'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ageing_bucket
+
+	column 'Snapshot Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: snapshot_date
+
+	column 'Gross Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: gross_amount
+
+	column 'Amount Remaining'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: amount_remaining
+
+	column 'Days Overdue'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_overdue
+
+	partition 'AP Open Items' = query
+		source
+			query = select * from gold.ssas_fact_ap_open_item
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_ap_open_item

@@ -1,0 +1,52 @@
+perspective 'Supply Chain'
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable Department
+		includeAll
+
+	perspectiveTable 'Goods Receipts'
+		includeAll
+
+	perspectiveTable Item
+		includeAll
+
+	perspectiveTable 'Movement Type'
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable 'Patient Consumption'
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable 'Purchase Lines'
+		includeAll
+
+	perspectiveTable Service
+		includeAll
+
+	perspectiveTable Staff
+		includeAll
+
+	perspectiveTable 'Stock Monthly'
+		includeAll
+
+	perspectiveTable 'Stock Movements'
+		includeAll
+
+	perspectiveTable Store
+		includeAll
+
+	perspectiveTable Supplier
+		includeAll

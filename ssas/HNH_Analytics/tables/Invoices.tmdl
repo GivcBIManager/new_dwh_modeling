@@ -1,0 +1,199 @@
+/// One invoice with statement and approval status.
+table Invoices
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Invoice Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: invoice_date_key
+
+	column 'Service Start Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: service_start_date_key
+
+	column 'Service End Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: service_end_date_key
+
+	column 'Statement End Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: statement_end_date_key
+
+	column 'Statement Sent Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: statement_sent_date_key
+
+	column 'Statement Approved Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: statement_approved_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Invoice No'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: invoice_no
+
+	column 'Stat Invoice No'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: stat_invoice_no
+
+	column 'Account Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: account_code
+
+	column 'Purchaser Code'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: purchaser_code
+
+	column 'Gross Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: gross_amount
+
+	column 'Discount Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: discount_amount
+
+	column 'Net Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: net_amount
+
+	column 'VAT Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: vat_amount
+
+	column 'Total Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: total_amount
+
+	column 'Approval Status Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: approval_status_code
+
+	column 'Approval Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: approval_status
+
+	column 'Submission Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: submission_status
+
+	column 'Validation Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: validation_status
+
+	column 'Is Submission Status Mapped'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_submission_status_mapped
+
+	column 'Is Verified'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_verified
+
+	column 'Is Sent'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_sent
+
+	column 'Is Cancelled Statement'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cancelled_statement
+
+	column 'Claim Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: claim_type
+
+	partition Invoices = query
+		source
+			query = select * from gold.ssas_fact_invoice
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_invoice

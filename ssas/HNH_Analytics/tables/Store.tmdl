@@ -1,0 +1,71 @@
+/// Stores and subinventories with store type.
+table Store
+
+	column 'Store Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: store_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Store Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: store_code
+
+	column 'Store Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: store_name
+
+	column 'Organization ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: organization_id
+
+	column 'Subinventory Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: subinventory_code
+
+	column 'Oasis Store ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: oasis_store_id
+
+	column 'Store Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: store_type
+
+	column 'Unified Department'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unified_department
+
+	column 'Is Expiry Store'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_expiry_store
+
+	partition Store = query
+		source
+			query = select * from gold.ssas_dim_store
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_store

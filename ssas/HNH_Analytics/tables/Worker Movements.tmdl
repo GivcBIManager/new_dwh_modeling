@@ -1,0 +1,180 @@
+/// Hires, leavers and changes of employees.
+table 'Worker Movements'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Worker Action Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: worker_action_key
+
+	column 'Action Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: action_date_key
+
+	column 'HR Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_department_key
+
+	column 'Previous HR Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: previous_hr_department_key
+
+	column 'Job Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: job_key
+
+	column 'Previous Job Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: previous_job_key
+
+	column 'Grade Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: grade_key
+
+	column 'Previous Grade Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: previous_grade_key
+
+	column 'Position Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: position_key
+
+	column 'Previous Position Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: previous_position_key
+
+	column 'Location Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: location_key
+
+	column 'Previous Location Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: previous_location_key
+
+	column 'Movement Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: movement_group
+
+	column 'Is Organization Changed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_organization_changed
+
+	column 'Is Job Changed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_job_changed
+
+	column 'Is Position Changed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_position_changed
+
+	column 'Is Grade Changed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_grade_changed
+
+	column 'Is Location Changed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_location_changed
+
+	column 'Is Hire'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_hire
+
+	column 'Is Leaver'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_leaver
+
+	column 'Is Voluntary Leaver'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_voluntary_leaver
+
+	column 'Is Branch Transfer'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_branch_transfer
+
+	partition 'Worker Movements' = query
+		source
+			query = select * from gold.ssas_fact_worker_movement
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_worker_movement

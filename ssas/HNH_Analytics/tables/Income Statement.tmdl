@@ -1,0 +1,84 @@
+/// Monthly actual and budget per budget line.
+table 'Income Statement'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	column 'Budget Line Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: budget_line_key
+
+	column 'Revenue Care Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: revenue_care_type
+
+	column 'Statement Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: statement_group
+
+	column 'Actual Posted'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: actual_posted
+
+	column 'Actual Including Unposted'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: actual_including_unposted
+
+	column 'Actual Excl Opening'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: actual_excl_opening
+
+	column 'Budget Most Likely'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: budget_most_likely
+
+	column 'Budget Worst Case'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: budget_worst_case
+
+	partition 'Income Statement' = query
+		source
+			query = select * from gold.ssas_fact_income_statement_monthly
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_income_statement_monthly

@@ -1,0 +1,125 @@
+/// One payables invoice distribution line.
+table 'AP Invoice Lines'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Supplier Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: supplier_key
+
+	column 'GL Account Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: gl_account_key
+
+	column 'Invoice Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: invoice_date_key
+
+	column 'Accounting Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: accounting_date_key
+
+	column 'Period Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: period_key
+
+	column 'Invoice Num'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoice_num
+
+	column 'Invoice Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: invoice_type
+
+	column 'Line Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: line_type
+
+	column 'Is Posted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_posted
+
+	column 'Is Cancelled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cancelled
+
+	column 'Is Reversal'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_reversal
+
+	column 'Is PO Matched'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_po_matched
+
+	column Amount
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: amount
+
+	column 'Spend Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: spend_amount
+
+	column 'Tax Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: tax_amount
+
+	column 'Prepayment Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: prepayment_amount
+
+	partition 'AP Invoice Lines' = query
+		source
+			query = select * from gold.ssas_fact_ap_invoice_line
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_ap_invoice_line

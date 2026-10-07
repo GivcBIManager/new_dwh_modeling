@@ -1,0 +1,70 @@
+/// Patient names and identifiers; visible only to users with PII access.
+table 'Patient Details'
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Patient ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: patient_id
+
+	column MRN
+		dataType: string
+		summarizeBy: none
+		sourceColumn: mrn
+
+	column 'Full Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: full_name
+
+	column 'Full Name AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: full_name_ar
+
+	column 'National ID'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: national_id
+
+	column 'Passport No'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: passport_no
+
+	column 'Border No'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: border_no
+
+	column 'Mobile No'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: mobile_no
+
+	column 'Email Address'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: email_address
+
+	partition 'Patient Details' = query
+		source
+			query = select * from gold.ssas_dim_patient_pii
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_patient_pii

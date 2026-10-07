@@ -1,0 +1,48 @@
+/// Fusion jobs.
+table Job
+
+	column 'Job Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: job_key
+
+	column 'Job ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: job_id
+
+	column 'Job Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: job_code
+
+	column 'Job Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: job_name
+
+	column 'Full Part Time'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: full_part_time
+
+	column 'Regular Temporary'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: regular_temporary
+
+	column 'Is Current'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_current
+
+	partition Job = query
+		source
+			query = select * from gold.ssas_dim_job
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_job

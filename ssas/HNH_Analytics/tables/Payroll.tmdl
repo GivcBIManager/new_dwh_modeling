@@ -1,0 +1,109 @@
+/// Monthly pay per employee and pay category; pay access only.
+table Payroll
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column Source
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Pay Category Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: pay_category_key
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	column 'HR Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_department_key
+
+	column 'Is Parallel Run'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_parallel_run
+
+	column 'Is Closed Payroll'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_closed_payroll
+
+	column 'Payroll Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: payroll_status
+
+	column 'Open Run Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: open_run_date
+
+	column Amount
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: amount
+
+	column 'Cost Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: cost_amount
+
+	column 'Gross Pay'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: gross_pay
+
+	partition 'Payroll template' = query
+		source
+			query = select * from gold.ssas_fact_payroll_monthly where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_payroll_monthly
+	annotation hnh_partition_column = month_date_key

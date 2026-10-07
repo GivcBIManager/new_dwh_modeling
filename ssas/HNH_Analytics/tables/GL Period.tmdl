@@ -1,0 +1,70 @@
+/// Fusion accounting periods including quarterly adjustment periods.
+table 'GL Period'
+
+	column 'Period Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: period_key
+
+	column 'Period Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: period_name
+
+	column 'Fiscal Year'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: fiscal_year
+
+	column 'Period Num'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: period_num
+
+	column 'Quarter Num'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: quarter_num
+
+	column 'Start Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: start_date
+
+	column 'End Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: end_date
+
+	column 'End Date Key'
+		dataType: int64
+		isHidden
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: end_date_key
+
+	column 'Month Start'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: month_start
+
+	column 'Is Adjustment'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_adjustment
+
+	partition 'GL Period' = query
+		source
+			query = select * from gold.ssas_dim_gl_period
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_gl_period

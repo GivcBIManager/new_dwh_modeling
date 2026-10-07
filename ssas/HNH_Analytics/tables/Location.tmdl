@@ -1,0 +1,43 @@
+/// Fusion work locations.
+table Location
+
+	column 'Location Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: location_key
+
+	column 'Location ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: location_id
+
+	column 'Location Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: location_code
+
+	column 'Location Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: location_name
+
+	column 'Town Or City'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: town_or_city
+
+	column 'Is Current'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_current
+
+	partition Location = query
+		source
+			query = select * from gold.ssas_dim_location
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_location

@@ -1,0 +1,61 @@
+/// Patient receipts, cancellations and refunds.
+table 'Cash Receipts'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Receipt Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: receipt_date_key
+
+	column 'Receipt Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: receipt_time_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Receipt Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: receipt_type
+
+	column 'Receipt Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: receipt_amount
+
+	column 'Receipt Kind'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: receipt_kind
+
+	partition 'Cash Receipts template' = query
+		source
+			query = select * from gold.ssas_fact_cash_receipt where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_cash_receipt
+	annotation hnh_partition_column = receipt_date_key

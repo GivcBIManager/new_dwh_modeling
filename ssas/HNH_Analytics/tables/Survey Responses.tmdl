@@ -1,0 +1,283 @@
+/// One Press Ganey survey invitation and its response.
+table 'Survey Responses'
+
+	column 'Survey Response Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: survey_response_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Survey Service Key'
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: survey_service_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Visit Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: visit_date_key
+
+	column 'SMS Sent Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: sms_sent_date_key
+
+	column 'Survey Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: survey_date_key
+
+	column 'Source Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_status
+
+	column 'Response Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: response_status
+
+	column 'Is SMS Sent'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_sms_sent
+
+	column 'Is Responded'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_responded
+
+	column 'Is Submitted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_submitted
+
+	column 'Is Primary For Encounter'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_primary_for_encounter
+
+	column 'Answers Count'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: answers_count
+
+	column 'Scored Questions Offered'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: scored_questions_offered
+
+	column 'Scored Questions Answered'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: scored_questions_answered
+
+	column 'Days Visit To SMS'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_visit_to_sms
+
+	column 'Days Visit To Answer'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_visit_to_answer
+
+	column 'Link Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: link_status
+
+	column 'Respondent Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: respondent_type
+
+	column 'First Visit'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: first_visit
+
+	column 'Booking Channel'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: booking_channel
+
+	column 'Admitted Via ER'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: admitted_via_er
+
+	column 'Used Lab'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: used_lab
+
+	column 'Used Radiology'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: used_radiology
+
+	column 'Used Pharmacy'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: used_pharmacy
+
+	column 'Used Insurance Office'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: used_insurance_office
+
+	column 'Used Physio'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: used_physio
+
+	column 'Used Speech'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: used_speech
+
+	column 'Treatment Complete'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: treatment_complete
+
+	column 'Meds Delivered'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: meds_delivered
+
+	column 'Tele Spared Visit'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: tele_spared_visit
+
+	column 'Tele Channel'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: tele_channel
+
+	column 'HHC Service'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: hhc_service
+
+	column 'Dental Service'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: dental_service
+
+	column 'Dialysis Done'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: dialysis_done
+
+	column 'Contact Consent'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: contact_consent
+
+	column 'NPS Score'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: nps_score
+
+	column 'NPS Band'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nps_band
+
+	column 'Physician NPS Score'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: physician_nps_score
+
+	column 'Physician NPS Band'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: physician_nps_band
+
+	partition 'Survey Responses' = query
+		source
+			query = select * from gold.ssas_fact_survey_response
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_survey_response

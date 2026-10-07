@@ -1,0 +1,97 @@
+/// Fusion workers (current state) with age and tenure bands.
+table Employee
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column 'Person Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: person_number
+
+	column 'Worker Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: worker_number
+
+	column 'Worker Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: worker_type
+
+	column 'Worker Type Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: worker_type_code
+
+	column Gender
+		dataType: string
+		summarizeBy: none
+		sourceColumn: gender
+
+	column Nationality
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nationality
+
+	column 'Is Saudi'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_saudi
+
+	column 'Age Band'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: age_band
+
+	column 'Hire Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: hire_date
+
+	column 'Original Hire Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: original_hire_date
+
+	column 'Termination Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: termination_date
+
+	column 'Is Terminated'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_terminated
+
+	column 'Tenure Band'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: tenure_band
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Assignment Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: assignment_status
+
+	partition Employee = query
+		source
+			query = select * from gold.ssas_dim_employee
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_employee

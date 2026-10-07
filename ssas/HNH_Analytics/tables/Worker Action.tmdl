@@ -1,0 +1,42 @@
+/// HR actions and reasons with movement group.
+table 'Worker Action'
+
+	column 'Worker Action Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: worker_action_key
+
+	column 'Action Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: action_code
+
+	column 'Action Reason Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: action_reason_code
+
+	column 'Action Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: action_name
+
+	column 'Action Reason Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: action_reason_name
+
+	column 'Movement Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: movement_group
+
+	partition 'Worker Action' = query
+		source
+			query = select * from gold.ssas_dim_worker_action
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_worker_action

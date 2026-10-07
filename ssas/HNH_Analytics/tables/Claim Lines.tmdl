@@ -1,0 +1,205 @@
+/// One NPHIES claim line per submission.
+table 'Claim Lines'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Statement End Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: statement_end_date_key
+
+	column 'Submitted Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: submitted_date_key
+
+	column 'Response Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: response_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Service Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'NPHIES Reason Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: nphies_reason_key
+
+	column 'Submission Number'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: submission_number
+
+	column 'Is Latest Submission'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_latest_submission
+
+	column 'Is Sent'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_sent
+
+	column 'Is Cancelled Claim'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cancelled_claim
+
+	column 'Adjudication Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: adjudication_status
+
+	column 'Item Outcome'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_outcome
+
+	column 'Primary Reason Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: primary_reason_code
+
+	column 'Reason Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: reason_source
+
+	column 'Line Claimed Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: claimed_amount
+
+	column 'Submitted Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: submitted_amount
+
+	column 'Eligible Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: eligible_amount
+
+	column 'Approved Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: approved_amount
+
+	column 'Copay Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: copay_amount
+
+	column 'Deductible Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: deductible_amount
+
+	column 'Patient Share Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: patient_share_amount
+
+	column 'Tax Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: tax_amount
+
+	column 'Approved Qty'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: approved_qty
+
+	column 'Rejected Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: rejected_amount
+
+	partition 'Claim Lines template' = query
+		source
+			query = select * from gold.ssas_fact_claim_line where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_claim_line
+	annotation hnh_partition_column = statement_end_date_key

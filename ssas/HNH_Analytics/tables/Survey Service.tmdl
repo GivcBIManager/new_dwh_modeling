@@ -1,0 +1,41 @@
+/// Press Ganey survey services.
+table 'Survey Service'
+
+	column 'Survey Service Key'
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: survey_service_key
+
+	column 'Service Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_name
+
+	column 'Care Setting'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: care_setting
+
+	column 'Is Enabled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_enabled
+
+	column 'Survey Name En'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: survey_name_en
+
+	column 'Survey Name AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: survey_name_ar
+
+	partition 'Survey Service' = query
+		source
+			query = select * from gold.ssas_dim_survey_service
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_survey_service

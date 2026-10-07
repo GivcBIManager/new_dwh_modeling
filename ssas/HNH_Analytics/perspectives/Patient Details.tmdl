@@ -1,0 +1,64 @@
+perspective 'Patient Details'
+
+	perspectiveTable 'Admission Source'
+		includeAll
+
+	perspectiveTable 'Admission Treating Doctor'
+		includeAll
+
+	perspectiveTable Admissions
+		includeAll
+
+	perspectiveTable 'Appointment Outcome'
+		includeAll
+
+	perspectiveTable Bed
+		includeAll
+
+	perspectiveTable 'Booked Doctor'
+		includeAll
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable Department
+		includeAll
+
+	perspectiveTable 'Discharge Outcome'
+		includeAll
+
+	perspectiveTable 'ER Priority'
+		includeAll
+
+	perspectiveTable 'Eligibility Type'
+		includeAll
+
+	perspectiveTable Encounters
+		includeAll
+
+	perspectiveTable Episodes
+		includeAll
+
+	perspectiveTable Invoices
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable 'Patient Details'
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Staff
+		includeAll
+
+	perspectiveTable Time
+		includeAll

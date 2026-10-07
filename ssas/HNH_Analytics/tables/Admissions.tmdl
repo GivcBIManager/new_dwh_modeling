@@ -1,0 +1,261 @@
+/// One inpatient admission with length of stay and outcomes.
+table Admissions
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Admit Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: admit_date_key
+
+	column 'Admit Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: admit_time_key
+
+	column 'Clinical Discharge Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: clinical_discharge_date_key
+
+	column 'Physical Discharge Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: physical_discharge_date_key
+
+	column 'Financial Discharge Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: financial_discharge_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Consultant Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: consultant_staff_key
+
+	column 'Treating Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: treating_staff_key
+
+	column 'First Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: first_department_key
+
+	column 'Last Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: last_department_key
+
+	column 'Last Bed Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: last_bed_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Admission Source Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: admission_source_key
+
+	column 'Discharge Outcome Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: discharge_outcome_key
+
+	column 'Admission No'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: admission_no
+
+	column 'Admission Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: admission_type
+
+	column 'Referred Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: referred_type
+
+	column 'Discharge Outcome Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: discharge_outcome_group
+
+	column 'LOS Hours'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: los_hours
+
+	column 'LOS Days'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: los_days
+
+	column 'LOS Days To Date'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: los_days_to_date
+
+	column 'Is Open'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_open
+
+	column 'Is Short Stay'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_short_stay
+
+	column 'Is Wrong Admission Outcome'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_wrong_admission_outcome
+
+	column 'Is Countable'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_countable
+
+	column 'Is LTC'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_ltc
+
+	column 'Is LTC To Date'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_ltc_to_date
+
+	column 'Has Bed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: has_bed
+
+	column 'Had Critical Bed'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: had_critical_bed
+
+	column 'Critical Bed Hours'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: critical_bed_hours
+
+	column 'Days Since Previous Discharge'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_since_previous_discharge
+
+	column 'Is Readmission 30d'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_readmission_30d
+
+	column 'Is ICU Readmission 48h'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_icu_readmission_48h
+
+	column 'Is Died'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_died
+
+	column 'Is DAMA'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_dama
+
+	partition Admissions = query
+		source
+			query = select * from gold.ssas_fact_admission
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_admission

@@ -1,0 +1,56 @@
+/// Hospital branches 1-8 and Head Office (100).
+table Branch
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Branch Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branch_name
+
+	column City
+		dataType: string
+		summarizeBy: none
+		sourceColumn: city
+
+	column 'Licensed Beds'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: licensed_beds
+
+	column 'Clinics Count'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: clinics_count
+
+	column 'Fusion Branch Code'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: fusion_branch_code
+
+	column 'Fusion Ledger ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: fusion_ledger_id
+
+	column 'PG Branch Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: pg_branch_code
+
+	partition Branch = query
+		source
+			query = select * from gold.ssas_dim_branch
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_branch

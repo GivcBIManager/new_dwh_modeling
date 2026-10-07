@@ -1,0 +1,245 @@
+/// One outpatient, emergency or inpatient encounter.
+table Encounters
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Encounter Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: encounter_date_key
+
+	column 'Encounter Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: encounter_time_key
+
+	column 'Arrival Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: arrival_date_key
+
+	column 'Arrival Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: arrival_time_key
+
+	column 'Booking Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: booking_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Booked Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: booked_staff_key
+
+	column 'Treating Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: treating_staff_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Eligibility Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: eligibility_type_key
+
+	column 'Outcome Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: outcome_key
+
+	column 'ER Priority Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: er_priority_key
+
+	column 'Encounter Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: encounter_type
+
+	column 'Source ID'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: source_id
+
+	column 'Visit Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: visit_type
+
+	column 'Booked From'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: booked_from
+
+	column 'Is Arrived'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_arrived
+
+	column 'Is Seen'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_seen
+
+	column 'Is Cancelled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cancelled
+
+	column 'Is No Show'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_no_show
+
+	column 'Is Walk In'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_walk_in
+
+	column 'Is Follow Up'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_follow_up
+
+	column 'Is Virtual'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_virtual
+
+	column 'Is Online Booking'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_online_booking
+
+	column 'Is First Episode'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_first_episode
+
+	column 'Is Returning'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_returning
+
+	column 'Prior Encounters 4m'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: prior_encounters_4m
+
+	column 'Wait Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: wait_minutes
+
+	column 'Door To Triage Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: door_to_triage_minutes
+
+	column 'Service Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: service_minutes
+
+	column 'ER LOS Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: er_los_minutes
+
+	column 'Booking Lead Days'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: booking_lead_days
+
+	partition 'Encounters template' = query
+		source
+			query = select * from gold.ssas_fact_encounter where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_encounter
+	annotation hnh_partition_column = encounter_date_key

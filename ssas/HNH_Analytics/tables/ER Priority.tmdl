@@ -1,0 +1,52 @@
+/// Emergency triage priorities (CTAS) with target minutes.
+table 'ER Priority'
+
+	column 'ER Priority Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: er_priority_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column Priority
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: priority
+
+	column Description
+		dataType: string
+		summarizeBy: none
+		sourceColumn: description
+
+	column 'CTAS Level'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ctas_level
+
+	column Colour
+		dataType: string
+		summarizeBy: none
+		sourceColumn: colour
+
+	column 'Target Minutes'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: target_minutes
+
+	partition 'ER Priority' = query
+		source
+			query = select * from gold.ssas_dim_er_priority
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_er_priority

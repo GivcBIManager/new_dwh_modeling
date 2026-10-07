@@ -1,0 +1,37 @@
+perspective 'Claims & Pre-auth'
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable 'Claim Lines'
+		includeAll
+
+	perspectiveTable 'Claim Payments'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable 'NPHIES Reason'
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable 'Pre-auth Lines'
+		includeAll
+
+	perspectiveTable 'Pre-auth Outcome'
+		includeAll
+
+	perspectiveTable Service
+		includeAll
+
+	perspectiveTable Staff
+		includeAll

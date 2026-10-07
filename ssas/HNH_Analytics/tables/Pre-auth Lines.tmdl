@@ -1,0 +1,353 @@
+/// One pre-authorisation line or payer advance authorisation.
+table 'Pre-auth Lines'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Request Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: request_date_key
+
+	column 'First Sent Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: first_sent_date_key
+
+	column 'Final Response Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: final_response_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Requesting Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: requesting_staff_key
+
+	column 'Service Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Preauth Outcome Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: preauth_outcome_key
+
+	column 'Is Approved'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_approved
+
+	column 'Has Final Response'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: has_final_response
+
+	column 'Is First Response Approved'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_first_response_approved
+
+	column 'Is Resubmitted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_resubmitted
+
+	column 'Is Status Override'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_status_override
+
+	column 'Is Delivered'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_delivered
+
+	column 'Is Approved Not Delivered'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_approved_not_delivered
+
+	column 'Is Delivered Not Approved'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_delivered_not_approved
+
+	column 'Approved Estimated Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: approved_estimated_amount
+
+	column 'Request To Sent Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: request_to_sent_minutes
+
+	column 'Sent To Response Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: sent_to_response_minutes
+
+	column 'Total Turnaround Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: total_turnaround_minutes
+
+	column 'NPHIES Reason Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: nphies_reason_key
+
+	column 'Preauth Valid From Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: preauth_valid_from_date_key
+
+	column 'Preauth Valid To Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: preauth_valid_to_date_key
+
+	column 'Line Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: line_source
+
+	column 'Request No'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: request_no
+
+	column 'Service Dept'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: service_dept
+
+	column 'Treatment Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: treatment_type
+
+	column 'Diagnosis Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: diagnosis_code
+
+	column 'Request Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: request_status
+
+	column 'Authorised Flag'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: authorised_flag
+
+	column 'Requested Qty'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: requested_qty
+
+	column 'Approved Qty'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: approved_qty
+
+	column 'Used Qty'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: used_qty
+
+	column 'Estimated Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: estimated_amount
+
+	column 'Is Transfer'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_transfer
+
+	column 'Has Communication Request'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: has_communication_request
+
+	column 'Request Send Count'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: request_send_count
+
+	column 'Response Count'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: response_count
+
+	column 'NPHIES First Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nphies_first_status
+
+	column 'NPHIES Last Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nphies_last_status
+
+	column 'NPHIES Final Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nphies_final_status
+
+	column 'NPHIES Approved Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: nphies_approved_amount
+
+	column 'Preauth Outcome'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: preauth_outcome
+
+	column 'Is Latest Request For Service'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_latest_request_for_service
+
+	column 'Primary Reason Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: primary_reason_code
+
+	column 'Payer Eligible Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: payer_eligible_amount
+
+	column 'Payer Approved Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: payer_approved_amount
+
+	column 'Advance Reason'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: advance_reason
+
+	column 'Payer License'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: payer_license
+
+	column 'Referring Provider Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: referring_provider_name
+
+	column 'Episode Link Method'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: episode_link_method
+
+	partition 'Pre-auth Lines template' = query
+		source
+			query = select * from gold.ssas_fact_preauth_line where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_preauth_line
+	annotation hnh_partition_column = request_date_key

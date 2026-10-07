@@ -1,0 +1,34 @@
+perspective 'Patient Experience'
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable Department
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Staff
+		includeAll
+
+	perspectiveTable 'Survey Answers'
+		includeAll
+
+	perspectiveTable 'Survey Question'
+		includeAll
+
+	perspectiveTable 'Survey Responses'
+		includeAll
+
+	perspectiveTable 'Survey Service'
+		includeAll

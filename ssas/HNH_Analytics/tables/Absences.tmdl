@@ -1,0 +1,89 @@
+/// One absence entry.
+table Absences
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Absence Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: absence_type_key
+
+	column 'Start Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: start_date_key
+
+	column 'End Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: end_date_key
+
+	column 'Absence Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: absence_status
+
+	column 'Is Counted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_counted
+
+	column 'Duration UOM'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: duration_uom
+
+	column 'Absence Days'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: absence_days
+
+	column 'Absence Hours'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: absence_hours
+
+	partition Absences = query
+		source
+			query = select * from gold.ssas_fact_absence
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_absence

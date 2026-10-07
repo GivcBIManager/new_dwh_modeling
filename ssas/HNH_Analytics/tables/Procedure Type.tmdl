@@ -1,0 +1,22 @@
+/// Surgery procedure types.
+table 'Procedure Type'
+
+	column 'Procedure Type Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: procedure_type_key
+
+	column 'Procedure Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: procedure_type
+
+	partition 'Procedure Type' = query
+		source
+			query = select * from gold.ssas_dim_procedure_type
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_procedure_type

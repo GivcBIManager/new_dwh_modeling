@@ -1,0 +1,123 @@
+/// Oasis clinics, wards and service departments with unified department.
+table Department
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Work Entity'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: work_entity
+
+	column 'Department Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: department_name
+
+	column 'Short Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: short_name
+
+	column 'Entity Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: entity_type
+
+	column 'Entity Type Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: entity_type_name
+
+	column 'Care Setting'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: care_setting
+
+	column 'Service Dept'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: service_dept
+
+	column 'Service Department Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_department_name
+
+	column 'Service Department Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_department_type
+
+	column 'Unified Department'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unified_department
+
+	column 'Is Non Admitting Specialty'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_non_admitting_specialty
+
+	column 'Is High Value Specialty'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_high_value_specialty
+
+	column 'Cost Centre ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: cost_centre_id
+
+	column 'Cost Centre Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cost_centre_name
+
+	column Tower
+		dataType: string
+		summarizeBy: none
+		sourceColumn: tower
+
+	column 'Max Beds In Ward'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: max_beds_in_ward
+
+	column 'Is Excluded Ward'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_excluded_ward
+
+	column 'Is Home Care'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_home_care
+
+	column 'Is Virtual Clinic'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_virtual_clinic
+
+	partition Department = query
+		source
+			query = select * from gold.ssas_dim_department
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_department

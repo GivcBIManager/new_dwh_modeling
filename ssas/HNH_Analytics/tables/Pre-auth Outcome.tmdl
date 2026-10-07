@@ -1,0 +1,27 @@
+/// Final outcomes of pre-authorisation lines.
+table 'Pre-auth Outcome'
+
+	column 'Preauth Outcome Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: preauth_outcome_key
+
+	column 'Preauth Outcome'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: preauth_outcome
+
+	column 'Is Approved'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_approved
+
+	partition 'Pre-auth Outcome' = query
+		source
+			query = select * from gold.ssas_dim_preauth_outcome
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_preauth_outcome

@@ -1,0 +1,1095 @@
+relationship absence_days_absence_type_key
+	fromColumn: 'Absence Days'.'Absence Type Key'
+	toColumn: 'Absence Type'.'Absence Type Key'
+
+relationship absence_days_branch_key
+	fromColumn: 'Absence Days'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship absence_days_date_key
+	fromColumn: 'Absence Days'.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship absence_days_employee_key
+	fromColumn: 'Absence Days'.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship absence_days_staff_key
+	fromColumn: 'Absence Days'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship absences_absence_type_key
+	fromColumn: Absences.'Absence Type Key'
+	toColumn: 'Absence Type'.'Absence Type Key'
+
+relationship absences_branch_key
+	fromColumn: Absences.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship absences_employee_key
+	fromColumn: Absences.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship absences_end_date_key
+	isActive: false
+	fromColumn: Absences.'End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship absences_staff_key
+	fromColumn: Absences.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship absences_start_date_key
+	fromColumn: Absences.'Start Date Key'
+	toColumn: Date.'Date Key'
+
+relationship admissions_admission_source_key
+	fromColumn: Admissions.'Admission Source Key'
+	toColumn: 'Admission Source'.'Admission Source Key'
+
+relationship admissions_admit_date_key
+	fromColumn: Admissions.'Admit Date Key'
+	toColumn: Date.'Date Key'
+
+relationship admissions_admit_time_key
+	fromColumn: Admissions.'Admit Time Key'
+	toColumn: Time.'Time Key'
+
+relationship admissions_branch_key
+	fromColumn: Admissions.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship admissions_care_type_key
+	fromColumn: Admissions.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship admissions_clinical_discharge_date_key
+	isActive: false
+	fromColumn: Admissions.'Clinical Discharge Date Key'
+	toColumn: Date.'Date Key'
+
+relationship admissions_consultant_staff_key
+	fromColumn: Admissions.'Consultant Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship admissions_discharge_outcome_key
+	fromColumn: Admissions.'Discharge Outcome Key'
+	toColumn: 'Discharge Outcome'.'Discharge Outcome Key'
+
+relationship admissions_financial_discharge_date_key
+	isActive: false
+	fromColumn: Admissions.'Financial Discharge Date Key'
+	toColumn: Date.'Date Key'
+
+relationship admissions_first_department_key
+	fromColumn: Admissions.'First Department Key'
+	toColumn: Department.'Department Key'
+
+relationship admissions_last_bed_key
+	fromColumn: Admissions.'Last Bed Key'
+	toColumn: Bed.'Bed Key'
+
+relationship admissions_last_department_key
+	isActive: false
+	fromColumn: Admissions.'Last Department Key'
+	toColumn: Department.'Department Key'
+
+relationship admissions_patient_key
+	fromColumn: Admissions.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship admissions_payer_key
+	fromColumn: Admissions.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship admissions_physical_discharge_date_key
+	isActive: false
+	fromColumn: Admissions.'Physical Discharge Date Key'
+	toColumn: Date.'Date Key'
+
+relationship admissions_treating_staff_key
+	fromColumn: Admissions.'Treating Staff Key'
+	toColumn: 'Admission Treating Doctor'.'Staff Key'
+
+relationship ap_invoice_lines_accounting_date_key
+	fromColumn: 'AP Invoice Lines'.'Accounting Date Key'
+	toColumn: Date.'Date Key'
+
+relationship ap_invoice_lines_branch_key
+	fromColumn: 'AP Invoice Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship ap_invoice_lines_gl_account_key
+	fromColumn: 'AP Invoice Lines'.'GL Account Key'
+	toColumn: 'GL Account'.'GL Account Key'
+
+relationship ap_invoice_lines_invoice_date_key
+	isActive: false
+	fromColumn: 'AP Invoice Lines'.'Invoice Date Key'
+	toColumn: Date.'Date Key'
+
+relationship ap_invoice_lines_period_key
+	fromColumn: 'AP Invoice Lines'.'Period Key'
+	toColumn: 'GL Period'.'Period Key'
+
+relationship ap_invoice_lines_supplier_key
+	fromColumn: 'AP Invoice Lines'.'Supplier Key'
+	toColumn: Supplier.'Supplier Key'
+
+relationship ap_open_items_branch_key
+	fromColumn: 'AP Open Items'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship ap_open_items_due_date_key
+	isActive: false
+	fromColumn: 'AP Open Items'.'Due Date Key'
+	toColumn: Date.'Date Key'
+
+relationship ap_open_items_invoice_date_key
+	fromColumn: 'AP Open Items'.'Invoice Date Key'
+	toColumn: Date.'Date Key'
+
+relationship ap_open_items_supplier_key
+	fromColumn: 'AP Open Items'.'Supplier Key'
+	toColumn: Supplier.'Supplier Key'
+
+relationship ap_payments_branch_key
+	fromColumn: 'AP Payments'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship ap_payments_payment_date_key
+	fromColumn: 'AP Payments'.'Payment Date Key'
+	toColumn: Date.'Date Key'
+
+relationship ap_payments_supplier_key
+	fromColumn: 'AP Payments'.'Supplier Key'
+	toColumn: Supplier.'Supplier Key'
+
+relationship bed_occupancy_bed_key
+	fromColumn: 'Bed Occupancy'.'Bed Key'
+	toColumn: Bed.'Bed Key'
+
+relationship bed_occupancy_branch_key
+	fromColumn: 'Bed Occupancy'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bed_occupancy_date_key
+	fromColumn: 'Bed Occupancy'.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship bed_occupancy_department_key
+	fromColumn: 'Bed Occupancy'.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship budget_branch_key
+	fromColumn: Budget.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship budget_budget_line_key
+	fromColumn: Budget.'Budget Line Key'
+	toColumn: 'Budget Line'.'Budget Line Key'
+
+relationship budget_month_date_key
+	fromColumn: Budget.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship cash_receipts_branch_key
+	fromColumn: 'Cash Receipts'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship cash_receipts_patient_key
+	fromColumn: 'Cash Receipts'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship cash_receipts_receipt_date_key
+	fromColumn: 'Cash Receipts'.'Receipt Date Key'
+	toColumn: Date.'Date Key'
+
+relationship cash_receipts_receipt_time_key
+	fromColumn: 'Cash Receipts'.'Receipt Time Key'
+	toColumn: Time.'Time Key'
+
+relationship charge_lines_billed_payer_key
+	fromColumn: 'Charge Lines'.'Billed Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship charge_lines_branch_key
+	fromColumn: 'Charge Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship charge_lines_care_type_key
+	fromColumn: 'Charge Lines'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship charge_lines_delivery_date_key
+	fromColumn: 'Charge Lines'.'Delivery Date Key'
+	toColumn: Date.'Date Key'
+
+relationship charge_lines_delivery_time_key
+	fromColumn: 'Charge Lines'.'Delivery Time Key'
+	toColumn: Time.'Time Key'
+
+relationship charge_lines_department_key
+	fromColumn: 'Charge Lines'.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship charge_lines_episode_payer_key
+	isActive: false
+	fromColumn: 'Charge Lines'.'Episode Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship charge_lines_patient_key
+	fromColumn: 'Charge Lines'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship charge_lines_product_category_key
+	fromColumn: 'Charge Lines'.'Product Category Key'
+	toColumn: 'Product Category'.'Product Category Key'
+
+relationship charge_lines_service_key
+	fromColumn: 'Charge Lines'.'Service Key'
+	toColumn: Service.'Service Key'
+
+relationship charge_lines_staff_key
+	fromColumn: 'Charge Lines'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship claim_lines_branch_key
+	fromColumn: 'Claim Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship claim_lines_care_type_key
+	fromColumn: 'Claim Lines'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship claim_lines_nphies_reason_key
+	fromColumn: 'Claim Lines'.'NPHIES Reason Key'
+	toColumn: 'NPHIES Reason'.'NPHIES Reason Key'
+
+relationship claim_lines_patient_key
+	fromColumn: 'Claim Lines'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship claim_lines_payer_key
+	fromColumn: 'Claim Lines'.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship claim_lines_response_date_key
+	isActive: false
+	fromColumn: 'Claim Lines'.'Response Date Key'
+	toColumn: Date.'Date Key'
+
+relationship claim_lines_service_key
+	fromColumn: 'Claim Lines'.'Service Key'
+	toColumn: Service.'Service Key'
+
+relationship claim_lines_statement_end_date_key
+	fromColumn: 'Claim Lines'.'Statement End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship claim_lines_submitted_date_key
+	isActive: false
+	fromColumn: 'Claim Lines'.'Submitted Date Key'
+	toColumn: Date.'Date Key'
+
+relationship claim_payments_branch_key
+	fromColumn: 'Claim Payments'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship claim_payments_patient_key
+	fromColumn: 'Claim Payments'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship claim_payments_payer_key
+	fromColumn: 'Claim Payments'.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship claim_payments_payment_date_key
+	fromColumn: 'Claim Payments'.'Payment Date Key'
+	toColumn: Date.'Date Key'
+
+relationship claim_payments_statement_end_date_key
+	isActive: false
+	fromColumn: 'Claim Payments'.'Statement End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship clinic_capacity_branch_key
+	fromColumn: 'Clinic Capacity'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship clinic_capacity_date_key
+	fromColumn: 'Clinic Capacity'.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship clinic_capacity_department_key
+	fromColumn: 'Clinic Capacity'.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship clinic_capacity_staff_key
+	fromColumn: 'Clinic Capacity'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship encounters_arrival_date_key
+	isActive: false
+	fromColumn: Encounters.'Arrival Date Key'
+	toColumn: Date.'Date Key'
+
+relationship encounters_arrival_time_key
+	isActive: false
+	fromColumn: Encounters.'Arrival Time Key'
+	toColumn: Time.'Time Key'
+
+relationship encounters_booked_staff_key
+	fromColumn: Encounters.'Booked Staff Key'
+	toColumn: 'Booked Doctor'.'Staff Key'
+
+relationship encounters_booking_date_key
+	isActive: false
+	fromColumn: Encounters.'Booking Date Key'
+	toColumn: Date.'Date Key'
+
+relationship encounters_branch_key
+	fromColumn: Encounters.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship encounters_care_type_key
+	fromColumn: Encounters.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship encounters_department_key
+	fromColumn: Encounters.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship encounters_eligibility_type_key
+	fromColumn: Encounters.'Eligibility Type Key'
+	toColumn: 'Eligibility Type'.'Eligibility Type Key'
+
+relationship encounters_encounter_date_key
+	fromColumn: Encounters.'Encounter Date Key'
+	toColumn: Date.'Date Key'
+
+relationship encounters_encounter_time_key
+	fromColumn: Encounters.'Encounter Time Key'
+	toColumn: Time.'Time Key'
+
+relationship encounters_er_priority_key
+	fromColumn: Encounters.'ER Priority Key'
+	toColumn: 'ER Priority'.'ER Priority Key'
+
+relationship encounters_outcome_key
+	fromColumn: Encounters.'Outcome Key'
+	toColumn: 'Appointment Outcome'.'Outcome Key'
+
+relationship encounters_patient_key
+	fromColumn: Encounters.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship encounters_payer_key
+	fromColumn: Encounters.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship encounters_treating_staff_key
+	fromColumn: Encounters.'Treating Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship episode_billing_branch_key
+	fromColumn: 'Episode Billing'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship episode_billing_care_type_key
+	fromColumn: 'Episode Billing'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship episode_billing_first_invoice_date_key
+	isActive: false
+	fromColumn: 'Episode Billing'.'First Invoice Date Key'
+	toColumn: Date.'Date Key'
+
+relationship episode_billing_last_delivery_date_key
+	fromColumn: 'Episode Billing'.'Last Delivery Date Key'
+	toColumn: Date.'Date Key'
+
+relationship episode_billing_last_invoice_date_key
+	isActive: false
+	fromColumn: 'Episode Billing'.'Last Invoice Date Key'
+	toColumn: Date.'Date Key'
+
+relationship episode_billing_patient_key
+	fromColumn: 'Episode Billing'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship episodes_branch_key
+	fromColumn: Episodes.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship episodes_care_type_key
+	fromColumn: Episodes.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship episodes_consultant_staff_key
+	fromColumn: Episodes.'Consultant Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship episodes_department_key
+	fromColumn: Episodes.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship episodes_eligibility_type_key
+	fromColumn: Episodes.'Eligibility Type Key'
+	toColumn: 'Eligibility Type'.'Eligibility Type Key'
+
+relationship episodes_end_date_key
+	isActive: false
+	fromColumn: Episodes.'End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship episodes_patient_key
+	fromColumn: Episodes.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship episodes_payer_key
+	fromColumn: Episodes.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship episodes_start_date_key
+	fromColumn: Episodes.'Start Date Key'
+	toColumn: Date.'Date Key'
+
+relationship gl_account_fs_line_key
+	fromColumn: 'GL Account'.'FS Line Key'
+	toColumn: 'FS Line'.'FS Line Key'
+
+relationship gl_balances_branch_key
+	fromColumn: 'GL Balances'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship gl_balances_gl_account_key
+	fromColumn: 'GL Balances'.'GL Account Key'
+	toColumn: 'GL Account'.'GL Account Key'
+
+relationship gl_balances_period_end_date_key
+	fromColumn: 'GL Balances'.'Period End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship gl_balances_period_key
+	fromColumn: 'GL Balances'.'Period Key'
+	toColumn: 'GL Period'.'Period Key'
+
+relationship gl_journal_lines_accounting_date_key
+	fromColumn: 'GL Journal Lines'.'Accounting Date Key'
+	toColumn: Date.'Date Key'
+
+relationship gl_journal_lines_branch_key
+	fromColumn: 'GL Journal Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship gl_journal_lines_gl_account_key
+	fromColumn: 'GL Journal Lines'.'GL Account Key'
+	toColumn: 'GL Account'.'GL Account Key'
+
+relationship gl_journal_lines_period_key
+	fromColumn: 'GL Journal Lines'.'Period Key'
+	toColumn: 'GL Period'.'Period Key'
+
+relationship gl_journal_lines_posted_date_key
+	isActive: false
+	fromColumn: 'GL Journal Lines'.'Posted Date Key'
+	toColumn: Date.'Date Key'
+
+relationship goods_receipts_branch_key
+	fromColumn: 'Goods Receipts'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship goods_receipts_date_key
+	fromColumn: 'Goods Receipts'.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship goods_receipts_item_key
+	fromColumn: 'Goods Receipts'.'Item Key'
+	toColumn: Item.'Item Key'
+
+relationship goods_receipts_store_key
+	fromColumn: 'Goods Receipts'.'Store Key'
+	toColumn: Store.'Store Key'
+
+relationship goods_receipts_supplier_key
+	fromColumn: 'Goods Receipts'.'Supplier Key'
+	toColumn: Supplier.'Supplier Key'
+
+relationship headcount_branch_key
+	fromColumn: Headcount.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship headcount_employee_key
+	fromColumn: Headcount.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship headcount_grade_key
+	fromColumn: Headcount.'Grade Key'
+	toColumn: Grade.'Grade Key'
+
+relationship headcount_hr_department_key
+	fromColumn: Headcount.'HR Department Key'
+	toColumn: 'HR Department'.'HR Department Key'
+
+relationship headcount_job_key
+	fromColumn: Headcount.'Job Key'
+	toColumn: Job.'Job Key'
+
+relationship headcount_location_key
+	fromColumn: Headcount.'Location Key'
+	toColumn: Location.'Location Key'
+
+relationship headcount_month_date_key
+	fromColumn: Headcount.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship headcount_position_key
+	fromColumn: Headcount.'Position Key'
+	toColumn: Position.'Position Key'
+
+relationship headcount_staff_key
+	fromColumn: Headcount.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship income_statement_branch_key
+	fromColumn: 'Income Statement'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship income_statement_budget_line_key
+	fromColumn: 'Income Statement'.'Budget Line Key'
+	toColumn: 'Budget Line'.'Budget Line Key'
+
+relationship income_statement_month_date_key
+	fromColumn: 'Income Statement'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship invoices_branch_key
+	fromColumn: Invoices.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship invoices_care_type_key
+	fromColumn: Invoices.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship invoices_invoice_date_key
+	fromColumn: Invoices.'Invoice Date Key'
+	toColumn: Date.'Date Key'
+
+relationship invoices_patient_key
+	fromColumn: Invoices.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship invoices_payer_key
+	fromColumn: Invoices.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship invoices_service_end_date_key
+	isActive: false
+	fromColumn: Invoices.'Service End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship invoices_service_start_date_key
+	isActive: false
+	fromColumn: Invoices.'Service Start Date Key'
+	toColumn: Date.'Date Key'
+
+relationship invoices_statement_approved_date_key
+	isActive: false
+	fromColumn: Invoices.'Statement Approved Date Key'
+	toColumn: Date.'Date Key'
+
+relationship invoices_statement_end_date_key
+	isActive: false
+	fromColumn: Invoices.'Statement End Date Key'
+	toColumn: Date.'Date Key'
+
+relationship invoices_statement_sent_date_key
+	isActive: false
+	fromColumn: Invoices.'Statement Sent Date Key'
+	toColumn: Date.'Date Key'
+
+relationship leave_balances_accrual_period_date_key
+	fromColumn: 'Leave Balances'.'Accrual Period Date Key'
+	toColumn: Date.'Date Key'
+
+relationship leave_balances_branch_key
+	fromColumn: 'Leave Balances'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship leave_balances_employee_key
+	fromColumn: 'Leave Balances'.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship order_lines_branch_key
+	fromColumn: 'Order Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship order_lines_care_type_key
+	fromColumn: 'Order Lines'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship order_lines_first_delivery_date_key
+	isActive: false
+	fromColumn: 'Order Lines'.'First Delivery Date Key'
+	toColumn: Date.'Date Key'
+
+relationship order_lines_order_date_key
+	fromColumn: 'Order Lines'.'Order Date Key'
+	toColumn: Date.'Date Key'
+
+relationship order_lines_order_time_key
+	fromColumn: 'Order Lines'.'Order Time Key'
+	toColumn: Time.'Time Key'
+
+relationship order_lines_ordering_department_key
+	fromColumn: 'Order Lines'.'Ordering Department Key'
+	toColumn: Department.'Department Key'
+
+relationship order_lines_ordering_staff_key
+	fromColumn: 'Order Lines'.'Ordering Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship order_lines_patient_key
+	fromColumn: 'Order Lines'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship order_lines_payer_key
+	fromColumn: 'Order Lines'.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship order_lines_product_category_key
+	fromColumn: 'Order Lines'.'Product Category Key'
+	toColumn: 'Product Category'.'Product Category Key'
+
+relationship order_lines_service_key
+	fromColumn: 'Order Lines'.'Service Key'
+	toColumn: Service.'Service Key'
+
+relationship patient_consumption_billed_payer_key
+	fromColumn: 'Patient Consumption'.'Billed Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship patient_consumption_branch_key
+	fromColumn: 'Patient Consumption'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship patient_consumption_care_type_key
+	fromColumn: 'Patient Consumption'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship patient_consumption_date_key
+	fromColumn: 'Patient Consumption'.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship patient_consumption_department_key
+	fromColumn: 'Patient Consumption'.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship patient_consumption_item_key
+	fromColumn: 'Patient Consumption'.'Item Key'
+	toColumn: Item.'Item Key'
+
+relationship patient_consumption_movement_type_key
+	fromColumn: 'Patient Consumption'.'Movement Type Key'
+	toColumn: 'Movement Type'.'Movement Type Key'
+
+relationship patient_consumption_patient_key
+	fromColumn: 'Patient Consumption'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship patient_consumption_service_key
+	fromColumn: 'Patient Consumption'.'Service Key'
+	toColumn: Service.'Service Key'
+
+relationship patient_consumption_store_key
+	fromColumn: 'Patient Consumption'.'Store Key'
+	toColumn: Store.'Store Key'
+
+relationship patient_consumption_treating_staff_key
+	fromColumn: 'Patient Consumption'.'Treating Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship patient_details_patient_key
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: 'Patient Details'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship payroll_branch_key
+	fromColumn: Payroll.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship payroll_employee_key
+	fromColumn: Payroll.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship payroll_hr_department_key
+	fromColumn: Payroll.'HR Department Key'
+	toColumn: 'HR Department'.'HR Department Key'
+
+relationship payroll_month_date_key
+	fromColumn: Payroll.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship payroll_pay_category_key
+	fromColumn: Payroll.'Pay Category Key'
+	toColumn: 'Pay Category'.'Pay Category Key'
+
+relationship payroll_staff_key
+	fromColumn: Payroll.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship pre_auth_lines_branch_key
+	fromColumn: 'Pre-auth Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship pre_auth_lines_care_type_key
+	fromColumn: 'Pre-auth Lines'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship pre_auth_lines_final_response_date_key
+	isActive: false
+	fromColumn: 'Pre-auth Lines'.'Final Response Date Key'
+	toColumn: Date.'Date Key'
+
+relationship pre_auth_lines_first_sent_date_key
+	isActive: false
+	fromColumn: 'Pre-auth Lines'.'First Sent Date Key'
+	toColumn: Date.'Date Key'
+
+relationship pre_auth_lines_nphies_reason_key
+	fromColumn: 'Pre-auth Lines'.'NPHIES Reason Key'
+	toColumn: 'NPHIES Reason'.'NPHIES Reason Key'
+
+relationship pre_auth_lines_patient_key
+	fromColumn: 'Pre-auth Lines'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship pre_auth_lines_payer_key
+	fromColumn: 'Pre-auth Lines'.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship pre_auth_lines_preauth_outcome_key
+	fromColumn: 'Pre-auth Lines'.'Preauth Outcome Key'
+	toColumn: 'Pre-auth Outcome'.'Preauth Outcome Key'
+
+relationship pre_auth_lines_preauth_valid_from_date_key
+	isActive: false
+	fromColumn: 'Pre-auth Lines'.'Preauth Valid From Date Key'
+	toColumn: Date.'Date Key'
+
+relationship pre_auth_lines_preauth_valid_to_date_key
+	isActive: false
+	fromColumn: 'Pre-auth Lines'.'Preauth Valid To Date Key'
+	toColumn: Date.'Date Key'
+
+relationship pre_auth_lines_request_date_key
+	fromColumn: 'Pre-auth Lines'.'Request Date Key'
+	toColumn: Date.'Date Key'
+
+relationship pre_auth_lines_requesting_staff_key
+	fromColumn: 'Pre-auth Lines'.'Requesting Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship pre_auth_lines_service_key
+	fromColumn: 'Pre-auth Lines'.'Service Key'
+	toColumn: Service.'Service Key'
+
+relationship purchase_lines_branch_key
+	fromColumn: 'Purchase Lines'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship purchase_lines_first_receipt_date_key
+	isActive: false
+	fromColumn: 'Purchase Lines'.'First Receipt Date Key'
+	toColumn: Date.'Date Key'
+
+relationship purchase_lines_item_key
+	fromColumn: 'Purchase Lines'.'Item Key'
+	toColumn: Item.'Item Key'
+
+relationship purchase_lines_po_date_key
+	fromColumn: 'Purchase Lines'.'PO Date Key'
+	toColumn: Date.'Date Key'
+
+relationship purchase_lines_requisition_approved_date_key
+	isActive: false
+	fromColumn: 'Purchase Lines'.'Requisition Approved Date Key'
+	toColumn: Date.'Date Key'
+
+relationship purchase_lines_ship_to_store_key
+	fromColumn: 'Purchase Lines'.'Ship To Store Key'
+	toColumn: Store.'Store Key'
+
+relationship purchase_lines_supplier_key
+	fromColumn: 'Purchase Lines'.'Supplier Key'
+	toColumn: Supplier.'Supplier Key'
+
+relationship revenue_adjustments_adjustment_date_key
+	fromColumn: 'Revenue Adjustments'.'Adjustment Date Key'
+	toColumn: Date.'Date Key'
+
+relationship revenue_adjustments_billed_payer_key
+	fromColumn: 'Revenue Adjustments'.'Billed Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship revenue_adjustments_branch_key
+	fromColumn: 'Revenue Adjustments'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship revenue_adjustments_care_type_key
+	fromColumn: 'Revenue Adjustments'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship revenue_adjustments_patient_key
+	fromColumn: 'Revenue Adjustments'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship staff_productivity_branch_key
+	fromColumn: 'Staff Productivity'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship staff_productivity_month_date_key
+	fromColumn: 'Staff Productivity'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship staff_productivity_staff_key
+	fromColumn: 'Staff Productivity'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship stock_monthly_branch_key
+	fromColumn: 'Stock Monthly'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship stock_monthly_item_key
+	fromColumn: 'Stock Monthly'.'Item Key'
+	toColumn: Item.'Item Key'
+
+relationship stock_monthly_month_date_key
+	fromColumn: 'Stock Monthly'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship stock_monthly_store_key
+	fromColumn: 'Stock Monthly'.'Store Key'
+	toColumn: Store.'Store Key'
+
+relationship stock_movements_branch_key
+	fromColumn: 'Stock Movements'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship stock_movements_date_key
+	fromColumn: 'Stock Movements'.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship stock_movements_item_key
+	fromColumn: 'Stock Movements'.'Item Key'
+	toColumn: Item.'Item Key'
+
+relationship stock_movements_movement_type_key
+	fromColumn: 'Stock Movements'.'Movement Type Key'
+	toColumn: 'Movement Type'.'Movement Type Key'
+
+relationship stock_movements_store_key
+	fromColumn: 'Stock Movements'.'Store Key'
+	toColumn: Store.'Store Key'
+
+relationship stock_movements_transfer_store_key
+	isActive: false
+	fromColumn: 'Stock Movements'.'Transfer Store Key'
+	toColumn: Store.'Store Key'
+
+relationship surgeries_anaesthetist_staff_key
+	fromColumn: Surgeries.'Anaesthetist Staff Key'
+	toColumn: Anaesthetist.'Staff Key'
+
+relationship surgeries_branch_key
+	fromColumn: Surgeries.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship surgeries_care_type_key
+	fromColumn: Surgeries.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship surgeries_department_key
+	fromColumn: Surgeries.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship surgeries_operation_date_key
+	fromColumn: Surgeries.'Operation Date Key'
+	toColumn: Date.'Date Key'
+
+relationship surgeries_operation_time_key
+	fromColumn: Surgeries.'Operation Time Key'
+	toColumn: Time.'Time Key'
+
+relationship surgeries_patient_key
+	fromColumn: Surgeries.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship surgeries_payer_key
+	fromColumn: Surgeries.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship surgeries_procedure_type_key
+	fromColumn: Surgeries.'Procedure Type Key'
+	toColumn: 'Procedure Type'.'Procedure Type Key'
+
+relationship surgeries_surgeon_staff_key
+	fromColumn: Surgeries.'Surgeon Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship survey_answers_branch_key
+	fromColumn: 'Survey Answers'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship survey_answers_care_type_key
+	fromColumn: 'Survey Answers'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship survey_answers_department_key
+	fromColumn: 'Survey Answers'.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship survey_answers_patient_key
+	fromColumn: 'Survey Answers'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship survey_answers_payer_key
+	fromColumn: 'Survey Answers'.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship survey_answers_question_key
+	fromColumn: 'Survey Answers'.'Question Key'
+	toColumn: 'Survey Question'.'Question Key'
+
+relationship survey_answers_staff_key
+	fromColumn: 'Survey Answers'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship survey_answers_survey_service_key
+	fromColumn: 'Survey Answers'.'Survey Service Key'
+	toColumn: 'Survey Service'.'Survey Service Key'
+
+relationship survey_answers_visit_date_key
+	fromColumn: 'Survey Answers'.'Visit Date Key'
+	toColumn: Date.'Date Key'
+
+relationship survey_responses_branch_key
+	fromColumn: 'Survey Responses'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship survey_responses_care_type_key
+	fromColumn: 'Survey Responses'.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship survey_responses_department_key
+	fromColumn: 'Survey Responses'.'Department Key'
+	toColumn: Department.'Department Key'
+
+relationship survey_responses_patient_key
+	fromColumn: 'Survey Responses'.'Patient Key'
+	toColumn: Patient.'Patient Key'
+
+relationship survey_responses_payer_key
+	fromColumn: 'Survey Responses'.'Payer Key'
+	toColumn: Payer.'Payer Key'
+
+relationship survey_responses_sms_sent_date_key
+	isActive: false
+	fromColumn: 'Survey Responses'.'SMS Sent Date Key'
+	toColumn: Date.'Date Key'
+
+relationship survey_responses_staff_key
+	fromColumn: 'Survey Responses'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship survey_responses_survey_date_key
+	isActive: false
+	fromColumn: 'Survey Responses'.'Survey Date Key'
+	toColumn: Date.'Date Key'
+
+relationship survey_responses_survey_service_key
+	fromColumn: 'Survey Responses'.'Survey Service Key'
+	toColumn: 'Survey Service'.'Survey Service Key'
+
+relationship survey_responses_visit_date_key
+	fromColumn: 'Survey Responses'.'Visit Date Key'
+	toColumn: Date.'Date Key'
+
+relationship targets_branch_key
+	fromColumn: Targets.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship targets_care_type_key
+	fromColumn: Targets.'Care Type Key'
+	toColumn: 'Care Type'.'Care Type Key'
+
+relationship targets_date_key
+	fromColumn: Targets.'Date Key'
+	toColumn: Date.'Date Key'
+
+relationship worker_movements_action_date_key
+	fromColumn: 'Worker Movements'.'Action Date Key'
+	toColumn: Date.'Date Key'
+
+relationship worker_movements_branch_key
+	fromColumn: 'Worker Movements'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship worker_movements_employee_key
+	fromColumn: 'Worker Movements'.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship worker_movements_grade_key
+	fromColumn: 'Worker Movements'.'Grade Key'
+	toColumn: Grade.'Grade Key'
+
+relationship worker_movements_hr_department_key
+	fromColumn: 'Worker Movements'.'HR Department Key'
+	toColumn: 'HR Department'.'HR Department Key'
+
+relationship worker_movements_job_key
+	fromColumn: 'Worker Movements'.'Job Key'
+	toColumn: Job.'Job Key'
+
+relationship worker_movements_location_key
+	fromColumn: 'Worker Movements'.'Location Key'
+	toColumn: Location.'Location Key'
+
+relationship worker_movements_position_key
+	fromColumn: 'Worker Movements'.'Position Key'
+	toColumn: Position.'Position Key'
+
+relationship worker_movements_previous_grade_key
+	isActive: false
+	fromColumn: 'Worker Movements'.'Previous Grade Key'
+	toColumn: Grade.'Grade Key'
+
+relationship worker_movements_previous_hr_department_key
+	isActive: false
+	fromColumn: 'Worker Movements'.'Previous HR Department Key'
+	toColumn: 'HR Department'.'HR Department Key'
+
+relationship worker_movements_previous_job_key
+	isActive: false
+	fromColumn: 'Worker Movements'.'Previous Job Key'
+	toColumn: Job.'Job Key'
+
+relationship worker_movements_previous_location_key
+	isActive: false
+	fromColumn: 'Worker Movements'.'Previous Location Key'
+	toColumn: Location.'Location Key'
+
+relationship worker_movements_previous_position_key
+	isActive: false
+	fromColumn: 'Worker Movements'.'Previous Position Key'
+	toColumn: Position.'Position Key'
+
+relationship worker_movements_staff_key
+	fromColumn: 'Worker Movements'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship worker_movements_worker_action_key
+	fromColumn: 'Worker Movements'.'Worker Action Key'
+	toColumn: 'Worker Action'.'Worker Action Key'

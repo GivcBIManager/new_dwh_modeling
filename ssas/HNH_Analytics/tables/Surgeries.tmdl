@@ -1,0 +1,160 @@
+/// One surgery with times and team.
+table Surgeries
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Operation Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: operation_date_key
+
+	column 'Operation Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: operation_time_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Surgeon Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: surgeon_staff_key
+
+	column 'Anaesthetist Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: anaesthetist_staff_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Procedure Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: procedure_type_key
+
+	column 'Operating Slot Code'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: operating_slot_code
+
+	column 'Procedure Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: procedure_name
+
+	column 'Operation Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: operation_type
+
+	column 'Anaesthesia Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: anaesthesia_type
+
+	column 'Operation Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: operation_status
+
+	column 'Is Cancelled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cancelled
+
+	column 'Is Rescheduled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_rescheduled
+
+	column 'Cancel Reason'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: cancel_reason
+
+	column 'Hall To Theatre Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: hall_to_theatre_minutes
+
+	column 'Anaesthesia Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: anaesthesia_minutes
+
+	column 'Operating Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: operating_minutes
+
+	column 'Recovery Handover Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: recovery_handover_minutes
+
+	partition Surgeries = query
+		source
+			query = select * from gold.ssas_fact_surgery
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_surgery

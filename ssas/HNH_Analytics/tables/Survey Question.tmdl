@@ -1,0 +1,102 @@
+/// Survey questions with domain, scale and NPS role.
+table 'Survey Question'
+
+	column 'Question Key'
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: question_key
+
+	column 'Service Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_code
+
+	column 'Question Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: question_code
+
+	column 'PG Var'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: pg_var
+
+	column 'Survey Name En'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: survey_name_en
+
+	column 'Survey Name AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: survey_name_ar
+
+	column 'Item No'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: item_no
+
+	column 'Domain En'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: domain_en
+
+	column 'Domain AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: domain_ar
+
+	column 'Question En'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: question_en
+
+	column 'Question AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: question_ar
+
+	column 'Scale Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: scale_type
+
+	column 'Scale En'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: scale_en
+
+	column 'Item Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: item_type
+
+	column 'Is Scored'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_scored
+
+	column 'Question Class'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: question_class
+
+	column 'NPS Role'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nps_role
+
+	column 'Attribute Role'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: attribute_role
+
+	partition 'Survey Question' = query
+		source
+			query = select * from gold.ssas_dim_survey_question
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_survey_question

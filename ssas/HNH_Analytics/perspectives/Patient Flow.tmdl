@@ -1,0 +1,76 @@
+perspective 'Patient Flow'
+
+	perspectiveTable 'Admission Source'
+		includeAll
+
+	perspectiveTable 'Admission Treating Doctor'
+		includeAll
+
+	perspectiveTable Admissions
+		includeAll
+
+	perspectiveTable Anaesthetist
+		includeAll
+
+	perspectiveTable 'Appointment Outcome'
+		includeAll
+
+	perspectiveTable Bed
+		includeAll
+
+	perspectiveTable 'Bed Occupancy'
+		includeAll
+
+	perspectiveTable 'Booked Doctor'
+		includeAll
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable 'Clinic Capacity'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable Department
+		includeAll
+
+	perspectiveTable 'Discharge Outcome'
+		includeAll
+
+	perspectiveTable 'ER Priority'
+		includeAll
+
+	perspectiveTable 'Eligibility Type'
+		includeAll
+
+	perspectiveTable Encounters
+		includeAll
+
+	perspectiveTable Episodes
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable 'Procedure Type'
+		includeAll
+
+	perspectiveTable Staff
+		includeAll
+
+	perspectiveTable Surgeries
+		includeAll
+
+	perspectiveTable Targets
+		includeAll
+
+	perspectiveTable Time
+		includeAll

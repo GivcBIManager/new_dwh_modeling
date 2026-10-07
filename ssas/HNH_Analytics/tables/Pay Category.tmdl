@@ -1,0 +1,55 @@
+/// Pay categories; visible only to users with pay access.
+table 'Pay Category'
+
+	column 'Pay Category Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: pay_category_key
+
+	column 'Pay Category'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Sort Order'
+		sourceColumn: pay_category
+
+	column 'Pay Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: pay_group
+
+	column 'Is Cost'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_cost
+
+	column 'Is Gross Pay'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_gross_pay
+
+	column 'Is Recurring'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_recurring
+
+	column 'Fusion Sign'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: fusion_sign
+
+	column 'Sort Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: sort_order
+
+	partition 'Pay Category' = query
+		source
+			query = select * from gold.ssas_dim_pay_category
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_pay_category

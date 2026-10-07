@@ -1,0 +1,221 @@
+/// One order line with its fulfilment status.
+table 'Order Lines'
+
+	column 'Order Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: order_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Order Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: order_date_key
+
+	column 'Order Time Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: order_time_key
+
+	column 'First Delivery Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: first_delivery_date_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Ordering Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: ordering_staff_key
+
+	column 'Ordering Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: ordering_department_key
+
+	column 'Service Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_key
+
+	column 'Product Category Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: product_category_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Order Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: order_category
+
+	column 'Line Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: line_status
+
+	column 'Fulfilment Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fulfilment_status
+
+	column 'Generic Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: generic_name
+
+	column 'Urgency Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: urgency_code
+
+	column 'Is Alternative'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_alternative
+
+	column 'Is Excluded Package'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_excluded_package
+
+	column 'Is Inpatient'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_inpatient
+
+	column 'Is In Leak Scope'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_in_leak_scope
+
+	column 'Is Lost'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_lost
+
+	column 'Is Partially Delivered'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_partially_delivered
+
+	column 'Unit Fulfilment Ratio'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: unit_fulfilment_ratio
+
+	column 'Is Unit Outlier'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_unit_outlier
+
+	column 'Units Ordered'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: units_ordered
+
+	column 'Units Delivered'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: units_delivered
+
+	column 'Ordered Value'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: ordered_value
+
+	column 'Charged Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: charged_amount
+
+	column 'Live Charge Count'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: live_charge_count
+
+	column 'Order To Delivery Minutes'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: order_to_delivery_minutes
+
+	partition 'Order Lines template' = query
+		source
+			query = select * from gold.ssas_fact_order_line where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_order_line
+	annotation hnh_partition_column = order_date_key

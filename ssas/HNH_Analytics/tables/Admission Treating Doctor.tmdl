@@ -1,0 +1,47 @@
+/// Treating doctor of the admission (copy of Staff for this role).
+table 'Admission Treating Doctor'
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Staff Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: staff_name
+
+	column 'Staff Name AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: staff_name_ar
+
+	column 'Staff Grade'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: staff_grade
+
+	column Category
+		dataType: string
+		summarizeBy: none
+		sourceColumn: category
+
+	column Specialty
+		dataType: string
+		summarizeBy: none
+		sourceColumn: specialty
+
+	column 'Unified Specialty'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unified_specialty
+
+	partition 'Admission Treating Doctor' = query
+		source
+			query = select * from gold.ssas_dim_staff_role
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = role_copy
+	annotation hnh_view = ssas_dim_staff_role

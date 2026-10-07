@@ -1,0 +1,118 @@
+/// One goods receipt or return line.
+table 'Goods Receipts'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column 'Supplier Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: supplier_key
+
+	column 'Item Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: item_key
+
+	column 'Store Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: store_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Receipt Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: receipt_type
+
+	column Quantity
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: quantity
+
+	column 'Unit Price'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: unit_price
+
+	column 'Received Value'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: received_value
+
+	column 'Free Quantity'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: free_quantity
+
+	column 'Is Free Of Charge'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_free_of_charge
+
+	column 'Lot Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: lot_number
+
+	column 'Expiry Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: expiry_date
+
+	column 'Is PO Receipt'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_po_receipt
+
+	column 'Is Supplier Receipt'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_supplier_receipt
+
+	partition 'Goods Receipts' = query
+		source
+			query = select * from gold.ssas_fact_goods_receipt
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_goods_receipt

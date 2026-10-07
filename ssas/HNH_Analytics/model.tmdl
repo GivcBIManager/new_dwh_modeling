@@ -1,0 +1,94 @@
+model Model
+	culture: en-US
+	discourageImplicitMeasures
+
+ref table 'AP Invoice Lines'
+ref table 'AP Open Items'
+ref table 'AP Payments'
+ref table 'Absence Days'
+ref table 'Absence Type'
+ref table Absences
+ref table 'Admission Source'
+ref table 'Admission Treating Doctor'
+ref table Admissions
+ref table Anaesthetist
+ref table 'Appointment Outcome'
+ref table Bed
+ref table 'Bed Occupancy'
+ref table 'Booked Doctor'
+ref table Branch
+ref table Budget
+ref table 'Budget Line'
+ref table 'Care Type'
+ref table 'Cash Receipts'
+ref table 'Charge Lines'
+ref table 'Claim Lines'
+ref table 'Claim Payments'
+ref table 'Clinic Capacity'
+ref table Date
+ref table Department
+ref table 'Discharge Outcome'
+ref table 'ER Priority'
+ref table 'Eligibility Type'
+ref table Employee
+ref table Encounters
+ref table 'Episode Billing'
+ref table Episodes
+ref table 'FS Line'
+ref table 'GL Account'
+ref table 'GL Balances'
+ref table 'GL Journal Lines'
+ref table 'GL Period'
+ref table 'Goods Receipts'
+ref table Grade
+ref table 'HR Department'
+ref table Headcount
+ref table 'Income Statement'
+ref table Invoices
+ref table Item
+ref table Job
+ref table 'Leave Balances'
+ref table Location
+ref table 'Movement Type'
+ref table 'NPHIES Reason'
+ref table 'Order Lines'
+ref table Patient
+ref table 'Patient Consumption'
+ref table 'Patient Details'
+ref table 'Pay Category'
+ref table Payer
+ref table Payroll
+ref table Position
+ref table 'Pre-auth Lines'
+ref table 'Pre-auth Outcome'
+ref table 'Procedure Type'
+ref table 'Product Category'
+ref table 'Purchase Lines'
+ref table 'Revenue Adjustments'
+ref table Service
+ref table Staff
+ref table 'Staff Productivity'
+ref table 'Stock Monthly'
+ref table 'Stock Movements'
+ref table Store
+ref table Supplier
+ref table Surgeries
+ref table 'Survey Answers'
+ref table 'Survey Question'
+ref table 'Survey Responses'
+ref table 'Survey Service'
+ref table Targets
+ref table Time
+ref table 'User Access'
+ref table 'Worker Action'
+ref table 'Worker Movements'
+
+ref perspective Executive
+ref perspective 'Patient Flow'
+ref perspective 'Revenue Cycle'
+ref perspective 'Claims & Pre-auth'
+ref perspective Finance
+ref perspective Workforce
+ref perspective 'Supply Chain'
+ref perspective 'Patient Experience'
+ref perspective 'Patient Details'

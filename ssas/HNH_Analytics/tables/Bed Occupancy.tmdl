@@ -1,0 +1,67 @@
+/// One bed per day: available and occupied.
+table 'Bed Occupancy'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column 'Bed Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: bed_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Is Available'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_available
+
+	column 'Is Occupied'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_occupied
+
+	column 'Is Excluded Ward'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_excluded_ward
+
+	column 'Is Inpatient Ward'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_inpatient_ward
+
+	partition 'Bed Occupancy template' = query
+		source
+			query = select * from gold.ssas_fact_bed_occupancy_daily where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_bed_occupancy_daily
+	annotation hnh_partition_column = date_key

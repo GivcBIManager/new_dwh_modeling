@@ -1,0 +1,129 @@
+/// Fusion code combinations with natural account and FS line.
+table 'GL Account'
+
+	column 'GL Account Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: gl_account_key
+
+	column 'Code Combination ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: code_combination_id
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Branch Segment'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: branch_segment
+
+	column 'Natural Account'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: natural_account
+
+	column 'Natural Account Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: natural_account_name
+
+	column 'Specialty Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: specialty_code
+
+	column 'Specialty Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: specialty_name
+
+	column 'Service Location Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_location_code
+
+	column 'Service Location Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_location_name
+
+	column 'Service Group Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_group_code
+
+	column 'Service Group Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_group_name
+
+	column 'Intercompany Segment'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: intercompany_segment
+
+	column 'Account Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: account_type
+
+	column 'Balance Side'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: balance_side
+
+	column 'FS Line Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: fs_line_key
+
+	column 'FS Mapping Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_mapping_source
+
+	column 'Revenue Care Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: revenue_care_type
+
+	column 'Budget Line Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: budget_line_code
+
+	column 'Unified Department'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unified_department
+
+	column 'Is Enabled'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_enabled
+
+	column 'Is Summary'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_summary
+
+	partition 'GL Account' = query
+		source
+			query = select * from gold.ssas_dim_gl_account
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_gl_account

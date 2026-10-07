@@ -1,0 +1,45 @@
+/// Minutes of the day with hour, quarter hour and shift.
+table Time
+
+	column 'Time Key'
+		dataType: int64
+		isHidden
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: time_key
+
+	column 'Time Label'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Time Key'
+		sourceColumn: time_label
+
+	column Hour
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: hour
+
+	column Minute
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: minute
+
+	column 'Quarter Hour'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: quarter_hour
+
+	column Shift
+		dataType: string
+		summarizeBy: none
+		sourceColumn: shift
+
+	partition Time = query
+		source
+			query = select * from gold.ssas_dim_time
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_time

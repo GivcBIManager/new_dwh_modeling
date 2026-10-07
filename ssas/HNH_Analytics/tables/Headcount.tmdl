@@ -1,0 +1,142 @@
+/// Month-end headcount snapshot per employee.
+table Headcount
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'HR Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_department_key
+
+	column 'Job Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: job_key
+
+	column 'Grade Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: grade_key
+
+	column 'Position Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: position_key
+
+	column 'Location Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: location_key
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	column 'Is Closed Month'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_closed_month
+
+	column 'Worker Type Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: worker_type_code
+
+	column 'Is Contingent'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_contingent
+
+	column 'Assignment Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: assignment_status
+
+	column 'Is Saudi'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_saudi
+
+	column Gender
+		dataType: string
+		summarizeBy: none
+		sourceColumn: gender
+
+	column 'Age Band'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: age_band
+
+	column 'Tenure Band'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: tenure_band
+
+	column 'Headcount Units'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: headcount
+
+	column FTE
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: fte
+
+	column 'Is New Hire In Month'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_new_hire_in_month
+
+	partition Headcount = query
+		source
+			query = select * from gold.ssas_fact_headcount_monthly
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_headcount_monthly

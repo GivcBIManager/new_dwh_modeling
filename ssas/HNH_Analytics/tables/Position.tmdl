@@ -1,0 +1,38 @@
+/// Fusion positions.
+table Position
+
+	column 'Position Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: position_key
+
+	column 'Position ID'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: position_id
+
+	column 'Position Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: position_code
+
+	column 'Position Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: position_name
+
+	column 'Is Current'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_current
+
+	partition Position = query
+		source
+			query = select * from gold.ssas_dim_position
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_position

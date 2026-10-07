@@ -1,0 +1,177 @@
+/// One answered survey question with NPS band.
+table 'Survey Answers'
+
+	column 'Survey Response Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: survey_response_key
+
+	column 'Question Key'
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: question_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Survey Service Key'
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: survey_service_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: department_key
+
+	column 'Patient Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: patient_key
+
+	column 'Payer Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: payer_key
+
+	column 'Visit Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: visit_date_key
+
+	column 'Response Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: response_status
+
+	column 'Is Primary For Encounter'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_primary_for_encounter
+
+	column 'Link Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: link_status
+
+	column 'Answer Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: answer_code
+
+	column 'Answer Label En'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: answer_label_en
+
+	column 'Answer Label AR'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: answer_label_ar
+
+	column 'Answer Score'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: answer_score
+
+	column 'Is Scored'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_scored
+
+	column 'Question Class'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: question_class
+
+	column 'Scale Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: scale_type
+
+	column Band
+		dataType: string
+		summarizeBy: none
+		sourceColumn: band
+
+	column 'Is Promoter'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_promoter
+
+	column 'Is Passive'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_passive
+
+	column 'Is Detractor'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_detractor
+
+	column 'NPS Role'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: nps_role
+
+	column 'Is Option Unknown'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_option_unknown
+
+	partition 'Survey Answers' = query
+		source
+			query = select * from gold.ssas_fact_survey_answer
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_survey_answer

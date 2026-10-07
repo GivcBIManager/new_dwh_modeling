@@ -1,0 +1,22 @@
+/// How the patient was admitted.
+table 'Admission Source'
+
+	column 'Admission Source Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: admission_source_key
+
+	column 'Admission Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: admission_source
+
+	partition 'Admission Source' = query
+		source
+			query = select * from gold.ssas_dim_admission_source
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_admission_source

@@ -1,0 +1,115 @@
+/// Leave accrual periods with balance and liability; pay access only.
+table 'Leave Balances'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column 'Absence Plan Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: absence_plan_name
+
+	column 'Is Annual Plan'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_annual_plan
+
+	column 'Accrual Period Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: accrual_period_date_key
+
+	column 'Is Closed Period'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_closed_period
+
+	column 'Is Latest In Month'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_latest_in_month
+
+	column 'Is Current Balance'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_current_balance
+
+	column 'Begin Balance'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: begin_balance
+
+	column Accrued
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: accrued
+
+	column Used
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: used
+
+	column 'End Balance'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: end_balance
+
+	column 'Monthly Salary'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: monthly_salary
+
+	column 'Daily Rate'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: daily_rate
+
+	column 'Leave Liability Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: leave_liability_amount
+
+	partition 'Leave Balances' = query
+		source
+			query = select * from gold.ssas_fact_leave_balance_monthly
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_leave_balance_monthly

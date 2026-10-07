@@ -1,0 +1,93 @@
+/// Financial statement lines with sort orders and display sign.
+table 'FS Line'
+
+	column 'FS Line Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: fs_line_key
+
+	column 'FS Type'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Type Sort'
+		sourceColumn: fs_type
+
+	column 'FS Element'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Element Sort'
+		sourceColumn: fs_element
+
+	column 'FS Category'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Category Sort'
+		sourceColumn: fs_category
+
+	column 'FS Caption'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Caption Sort'
+		sourceColumn: fs_caption
+
+	column 'FS Line'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Line Sort'
+		sourceColumn: fs_line
+
+	column 'Type Sort'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: type_sort
+
+	column 'Element Sort'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: element_sort
+
+	column 'Category Sort'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: category_sort
+
+	column 'Caption Sort'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: caption_sort
+
+	column 'Line Sort'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: line_sort
+
+	column 'Statement Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: statement_group
+
+	column 'Display Sign'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: display_sign
+
+	column 'Is Not Mapped'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_not_mapped
+
+	partition 'FS Line' = query
+		source
+			query = select * from gold.ssas_dim_fs_line
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_fs_line

@@ -1,0 +1,90 @@
+/// One supplier payment.
+table 'AP Payments'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Supplier Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: supplier_key
+
+	column 'Payment Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: payment_date_key
+
+	column 'Payment Num'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: payment_num
+
+	column 'Check Number'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: check_number
+
+	column 'Payment Method'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: payment_method
+
+	column 'Payment Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: payment_status
+
+	column 'Is Voided'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_voided
+
+	column 'Is Posted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_posted
+
+	column Amount
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: amount
+
+	column 'Days Invoice To Payment'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_invoice_to_payment
+
+	column 'Days After Due'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_after_due
+
+	partition 'AP Payments' = query
+		source
+			query = select * from gold.ssas_fact_ap_payment
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_ap_payment

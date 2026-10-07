@@ -1,0 +1,220 @@
+/// Calendar days 2008-2028 with Gregorian and Hijri attributes; the date table.
+table Date
+	dataCategory: Time
+
+	hierarchy Calendar
+
+		level Year
+			column: Year
+
+		level Quarter
+			column: 'Quarter Name'
+
+		level Month
+			column: 'Month Name'
+
+		level Day
+			column: Date
+
+	column 'Date Key'
+		dataType: int64
+		isHidden
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column Date
+		dataType: dateTime
+		isKey
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: date_day
+
+	column Year
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: year
+
+	column Quarter
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: quarter
+
+	column 'Quarter Name'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: Quarter
+		sourceColumn: quarter_name
+
+	column 'Year Quarter'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: year_quarter
+
+	column Month
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: month
+
+	column 'Month Name'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: Month
+		sourceColumn: month_name
+
+	column 'Month Short'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: Month
+		sourceColumn: month_short
+
+	column 'Year Month'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: year_month
+
+	column 'Year Month Name'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Year Month'
+		sourceColumn: year_month_name
+
+	column 'Day Of Month'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: day_of_month
+
+	column 'Day Of Week'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: day_of_week
+
+	column 'Day Name'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Day Of Week'
+		sourceColumn: day_name
+
+	column 'Iso Week'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: iso_week
+
+	column 'Start Of Month'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: start_of_month
+
+	column 'End Of Month'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: end_of_month
+
+	column 'Start Of Quarter'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: start_of_quarter
+
+	column 'Start Of Year'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: start_of_year
+
+	column 'Fiscal Year'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: fiscal_year
+
+	column 'Is Weekend'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_weekend
+
+	column 'Is Clinic Working Day'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_clinic_working_day
+
+	column 'Hijri Year'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: hijri_year
+
+	column 'Hijri Month'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: hijri_month
+
+	column 'Hijri Day'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: hijri_day
+
+	column 'Hijri Month Name'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Hijri Month'
+		sourceColumn: hijri_month_name
+
+	column 'Is Public Holiday'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_public_holiday
+
+	column 'Holiday Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: holiday_name
+
+	column 'Day Offset'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: day_offset
+
+	column 'Month Offset'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: month_offset
+
+	column 'Quarter Offset'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: quarter_offset
+
+	column 'Year Offset'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: year_offset
+
+	column 'Is Past'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_past
+
+	partition Date = query
+		source
+			query = select * from gold.ssas_dim_date
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = date
+	annotation hnh_view = ssas_dim_date

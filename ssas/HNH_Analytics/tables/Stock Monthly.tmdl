@@ -1,0 +1,99 @@
+/// Month-end stock per store and item.
+table 'Stock Monthly'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	column 'Store Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: store_key
+
+	column 'Item Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: item_key
+
+	column Quantity
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: quantity
+
+	column 'Stock Value Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: stock_value
+
+	column 'Stock Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: stock_source
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Is Expiry Store'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_expiry_store
+
+	column 'Is Closed Month'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_closed_month
+
+	column 'Has Expired Lot'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: has_expired_lot
+
+	column 'Consumption Quantity'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: consumption_quantity
+
+	column 'Consumption Cost'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: consumption_cost
+
+	partition 'Stock Monthly' = query
+		source
+			query = select * from gold.ssas_fact_stock_monthly
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_stock_monthly

@@ -1,0 +1,107 @@
+/// Monthly opening, movement and closing balance per account.
+table 'GL Balances'
+
+	column 'Balance View'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: balance_view
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'GL Account Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: gl_account_key
+
+	column 'Period Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: period_key
+
+	column 'Fiscal Year'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: fiscal_year
+
+	column 'Is Prior Year Roll'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_prior_year_roll
+
+	column 'Opening Balance'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: opening_balance
+
+	column 'Period Debit'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: period_debit
+
+	column 'Period Credit'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: period_credit
+
+	column 'Period Movement'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: period_movement
+
+	column 'Period Movement Excl Opening'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: period_movement_excl_opening
+
+	column 'Closing Balance'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: closing_balance
+
+	column 'Period End Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: period_end_date_key
+
+	partition 'GL Balances' = query
+		source
+			query = select * from gold.ssas_fact_gl_balance_monthly
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_gl_balance_monthly

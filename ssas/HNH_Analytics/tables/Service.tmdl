@@ -1,0 +1,87 @@
+/// Billable services (IOS) with product groups.
+table Service
+
+	column 'Service Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column IOS
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ios
+
+	column 'IOS User'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ios_user
+
+	column 'Service Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_name
+
+	column 'IOS Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ios_type
+
+	column 'IOS Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ios_category
+
+	column 'Service Dept'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: service_dept
+
+	column 'IOS Main'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: ios_main
+
+	column 'Product Category Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: product_category_code
+
+	column 'Product Group'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: product_group
+
+	column 'Unified Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: unified_category
+
+	column 'Product Department'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: product_department
+
+	column 'High Level Department'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: high_level_department
+
+	partition Service = query
+		source
+			query = select * from gold.ssas_dim_service
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_service

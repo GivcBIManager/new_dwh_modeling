@@ -1,0 +1,120 @@
+/// One Fusion journal line.
+table 'GL Journal Lines'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'GL Account Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: gl_account_key
+
+	column 'Period Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: period_key
+
+	column 'Accounting Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: accounting_date_key
+
+	column 'Posted Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: posted_date_key
+
+	column 'Journal Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: journal_name
+
+	column 'Doc Sequence Value'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: doc_sequence_value
+
+	column 'JE Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: je_source
+
+	column 'JE Source Label'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: je_source_label
+
+	column 'JE Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: je_category
+
+	column 'Header Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: header_status
+
+	column 'Is Posted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_posted
+
+	column 'Is Opening Balance Journal'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_opening_balance_journal
+
+	column 'Is Oasis Feed'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_oasis_feed
+
+	column Debit
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: debit
+
+	column Credit
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: credit
+
+	column Amount
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: amount
+
+	partition 'GL Journal Lines template' = query
+		source
+			query = select * from gold.ssas_fact_gl_journal_line where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_gl_journal_line
+	annotation hnh_partition_column = accounting_date_key

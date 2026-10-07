@@ -1,0 +1,111 @@
+/// Daily targets from the budget.
+table Targets
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: date_key
+
+	column 'Care Type Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: care_type_key
+
+	column Scenario
+		dataType: string
+		summarizeBy: none
+		sourceColumn: scenario
+
+	column 'Stay Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: stay_type
+
+	column Creditor
+		dataType: string
+		summarizeBy: none
+		sourceColumn: creditor
+
+	column Specialty
+		dataType: string
+		summarizeBy: none
+		sourceColumn: specialty
+
+	column 'Target Census'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_census
+
+	column 'Target Episodes'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_episodes
+
+	column 'Target Revenue'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_revenue
+
+	column 'Target Cost Total'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_cost_total
+
+	column 'Target Patient Days'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_patient_days
+
+	column 'Target Cost Per Episode'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_cost_per_episode
+
+	column 'Target ALOS'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: target_alos
+
+	partition 'Targets template' = query
+		source
+			query = select * from gold.ssas_fact_target_daily where 1 = 0
+			dataSource: HNH_Gold
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_target_daily
+	annotation hnh_partition_column = date_key
