@@ -40,6 +40,11 @@ models:
         +schema: gold
         +materialized: table
         +tags: ["hnh_gold"]
+        ssas:
+          +materialized: view
+          +sql_security: definer
+          +definer: CURRENT_USER
+          +tags: ["hnh_ssas"]
 
 data_tests:
   hnh_dwh:
