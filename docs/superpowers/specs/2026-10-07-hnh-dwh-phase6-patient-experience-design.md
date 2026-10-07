@@ -310,11 +310,11 @@ All measures slice by branch, service, care type, doctor, specialty, clinic, pay
 
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
-| O-P6-1 | Khamis OP surveys January–July 2026 have no appointment (61,963) | — | Kept as `Encounter not found`; analysable by branch and service only |
+| O-P6-1 | Khamis OP surveys January–July 2026 have no appointment (61,963) | — | Kept as `Encounter not found`; analysable by branch and service only. **Closed 2026-10-07:** known source behaviour, monitored |
 | O-P6-2 | Outpatient rehab (OR) links only 50% | — | **Closed 2026-10-07:** the misses are the Khamis gap of O-P6-1 (section 11) |
-| O-P6-3 | Survey comments are always empty in the source | Free-text analysis | Out of scope until ingestion supplies text |
-| O-P6-4 | 5-point NPS is not comparable to external 0–10 benchmarks | SSAS labels | Labelled "NPS (5-point)" |
-| O-P6-5 | Ghirnata and Muhayil surveys start mid-September 2026 | — | None; it is the data's start |
+| O-P6-3 | Survey comments are always empty in the source | Free-text analysis | Out of scope until ingestion supplies text. **Closed 2026-10-07:** known source behaviour, monitored |
+| O-P6-4 | 5-point NPS is not comparable to external 0–10 benchmarks | SSAS labels | Labelled "NPS (5-point)". **Closed 2026-10-07:** known source behaviour, monitored |
+| O-P6-5 | Ghirnata and Muhayil surveys start mid-September 2026 | — | None; it is the data's start. **Closed 2026-10-07:** known source behaviour, monitored |
 | O-P6-6 | Whether the receiving dbt project already declares a source named `press_ganey` | Moving the models | **Closed 2026-10-07:** no source or model of those names in `dbt/models` |
 | O-P6-7 | Review of `map_pg_question_role` and `map_pg_background_value` drafts | Build of the facts | Drafted values used as loaded |
 

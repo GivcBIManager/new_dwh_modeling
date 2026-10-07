@@ -123,7 +123,7 @@ One row per Fusion employee whose worker number matches an Oasis staff id in the
 
 ### 6.4 fact_payroll_monthly
 **Grain:** branch × person × payroll month × pay category × source (`oasis`, `fusion`).
-**Oasis rows:** `stg_oasis__payroll_transactions` with status C, payroll month = year × 100 + period, months before the branch's `FIRST_FUSION_MONTH` (all months when the branch has no cutover row), from 2022-01.
+**Oasis rows:** `stg_oasis__payroll_transactions` with status C (and, since 2026-10-07, status P reduced by the latest-run rule of §12.2 through `int_oasis_payroll_line`), payroll month = year × 100 + period, months before the branch's `FIRST_FUSION_MONTH` (all months when the branch has no cutover row), from 2022-01.
 **Fusion rows:** pay-value run results of completed payroll actions, payroll month = effective date's month, months from the branch's `FIRST_FUSION_MONTH`.
 **Parallel-run rows:** Oasis rows in or after the cutover month are kept with `is_parallel_run = 1` and contribute nothing to `amount`-based measures (`cost_amount`, `gross_pay`, `paid_headcount`); they exist for `rec_payroll_monthly`.
 **Keys:** `branch_key` (Oasis rows: the transaction's `branch_id`; Fusion rows: the legal employer, 4.1), `employee_key` (Fusion person; for Oasis rows via the bridge, `-1` if none), `staff_key` (Oasis staff; for Fusion rows via the bridge), `pay_category_key`, `month_date_key` (month start), `hr_department_key` (from the headcount snapshot when the person has one that month, else `-1`).
@@ -190,13 +190,13 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
 | O-P4-1 | Review of `map_pay_category` (88 Oasis codes, 108 Fusion elements) | Payroll sign-off | Draft used; unmapped codes monitored |
-| O-P4-2 | Payroll cutover of Al-Rabwa, Khamis and Madinah | Their payroll after the move | Oasis until a cutover row is added |
-| O-P4-3 | Branch 8 Oasis payroll January–April 2026 duplicates branch 7 | Branch 8 early-2026 payroll | Counted as delivered; monitored |
+| O-P4-2 | Payroll cutover of Al-Rabwa, Khamis and Madinah | Their payroll after the move | Oasis until a cutover row is added. 2026-10-07: none has moved (Fusion holds no payroll for Khamis or Madinah, one person for Alrabwah); left as is by the user, without a monitor |
+| O-P4-3 | Branch 8 Oasis payroll January–April 2026 duplicates branch 7 | Branch 8 early-2026 payroll | Counted as delivered; monitored. **Closed 2026-10-07:** known source behaviour, monitored |
 | O-P4-4 | Leave liability in SAR | — | Closed 2026-10-06: monthly salary ÷ 30 per day (6.6); "monthly salary" = recurring monthly pay, to be confirmed by HR |
-| O-P4-5 | Fusion FTE values are mostly empty or 0 | FTE KPIs | FTE 1 unless a value in (0, 1.5] exists |
+| O-P4-5 | Fusion FTE values are mostly empty or 0 | FTE KPIs | **Closed 2026-10-07:** FTE 1 unless a value in (0, 1.5] exists; accurate once HR fills FTE in Fusion |
 | O-P4-6 | Whether contingent workers count in any headcount KPI | — | Closed 2026-10-06: excluded by default, flagged (`is_contingent`) |
-| O-P4-7 | Head Office employees have no Oasis staff record | Productivity of HO staff | Not linked |
-| O-P4-8 | `fact_payroll_monthly` loads only closed Oasis payroll (status C); §12 needs open payroll with the latest-run rule and a closed flag | SSAS payroll model showing the current month | Until implemented, open Oasis payroll is missing from SSAS (September 2026: Khamis 587 staff, SAR 5.25M gross) |
+| O-P4-7 | Head Office employees have no Oasis staff record | Productivity of HO staff | **Closed 2026-10-07 (by design):** Head Office staff are non-clinical; productivity covers branch staff |
+| O-P4-8 | `fact_payroll_monthly` loads only closed Oasis payroll (status C); §12 needs open payroll with the latest-run rule and a closed flag | SSAS payroll model showing the current month | **Closed 2026-10-07:** built as specified in §12 (see §12.6) |
 
 ---
 
@@ -227,7 +227,7 @@ One row per Fusion balance entry (person × absence plan × accrual period): bra
 
 ## 12. Payroll reporting rules for SSAS (decided 2026-10-06)
 
-Decided by the user while building the September 2026 payroll report (all branches, employee level): **payroll that is not yet closed is included, each employee carries a closed flag, and Oasis payroll counts only the latest payroll run.** Status of the gold model: see O-P4-8.
+Decided by the user while building the September 2026 payroll report (all branches, employee level): **payroll that is not yet closed is included, each employee carries a closed flag, and Oasis payroll counts only the latest payroll run.** Built into `fact_payroll_monthly` on 2026-10-07 (O-P4-8, §12.6).
 
 ### 12.1 Source per branch and month
 - A branch-month is paid by Fusion from its `FIRST_FUSION_MONTH` in `map_payroll_cutover`, by Oasis before (unchanged from 6.4). Oasis lines of a branch already on Fusion (parallel run) are excluded.
@@ -266,6 +266,6 @@ Signed amounts: earnings and employer charges positive, employee deductions nega
 Fusion employees (and Oasis staff linked through `bridge_employee_staff`): name from Fusion `dim_employee.full_name` (latest version), person number, job, grade, nationality, Saudi flag, gender, hire date and assignment status from `dim_employee`; department from the HR department of the month-end headcount row. Fallback for Oasis staff without a Fusion link: `dim_staff` name, position, grade, nationality and service start date, department from the staff's home department. Head Office staff have no Oasis staff id.
 
 ### 12.6 Implementation notes
-- O-P4-8: `fact_payroll_monthly` still loads Oasis status C only. To serve 12.1–12.4 from SSAS, load Oasis status P through the 12.2 rule (needs `transaction_date` in `stg_oasis__payroll_transactions`) and add `is_closed_payroll` and `open_run_date` to the fact; payroll measures then cover open and closed lines, with the status as a slicer.
+- O-P4-8 (closed 2026-10-07): `int_oasis_payroll_line` applies the 12.2 rule to every branch and payroll month (`stg_oasis__payroll_transactions` now carries `transaction_date`); `fact_payroll_monthly` reads it and carries `is_closed_payroll` (row grain: Fusion rows are 1), `payroll_status` (12.3, per payee and month) and `open_run_date`. Payroll measures cover open and closed lines; the status is a slicer. The build reproduces the September 2026 reference figures below exactly. Outside the current month the rule keeps open lines only for lone calculations that were never closed: one payee in branches 7 and 8 in 202511 (7,300 SAR each), one in branch 8 in 202605 (7,000 SAR) and early October 2026 lines in branch 1.
 - Build timing: Oasis is copied to ClickHouse around 09:10 each day. A gold build before that misses payroll closed that morning (6 Oct 2026: the 08:26 build missed the Alrabwah and Madinah September close, showing 69 and 39 paid staff instead of 953 and 482). Schedule the workforce build after the Oasis copy.
 - September 2026 reference figures (for testing the implementation): group paid employees 4,304 (3,717 closed, 587 open, all open in Khamis), gross pay SAR 42,852,632, net pay 41,706,707, total cost 44,304,326; Khamis 622 employees, gross 5,684,074 (closed 436,997, open 5,247,077).

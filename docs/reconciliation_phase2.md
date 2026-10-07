@@ -2,6 +2,44 @@
 
 Run after a successful `dbt build --select tag:hnh`. Choose one closed month with finance (open item O-P2-6). Because of the known data findings below, choose an acceptance month before July 2026, and leave branch 2 out of outpatient billing checks for January to July 2026.
 
+## Acceptance against the old server, August 2026 (2026-10-07)
+
+Measured read-only on the old warehouse (DSN `chDWH`, 172.22.25.165) with the logic of the saved Power BI models (`powerbi_tmdl/Executive Dashboard`, `RCM Authorization`, `claims`), against the gold build of 2026-10-07.
+
+**Revenue (O-P2-6): passes.** The Executive Dashboard's charge part of `mv_revenue_dataset_details` against `rec_revenue_monthly.legacy_charge_revenue`:
+
+| Branch | Old charge part | New legacy charge revenue | Difference |
+|---|---:|---:|---:|
+| 1 Alrabwah | 28,742,558.56 | 28,742,558.56 | 0 |
+| 2 Khamis | 32,407,166.42 | 32,407,166.42 | 0 |
+| 3 Jazan | 40,534,386.07 | 40,534,456.74 | 70.67 (0.0002%) |
+| 4 Unaizah | 21,698,444.50 | 21,698,444.50 | 0 |
+| 5 Madinah | 18,858,588.05 | 18,881,486.01 | 22,897.96 (0.12%) |
+| 6 Abha | 17,049,920.63 | 17,077,669.96 | 27,749.33 (0.16%) |
+| 7 Ghirnata | 3,526,829.50 | 3,526,829.50 | 0 |
+| 8 Muhayil | 444,511.03 | 444,511.03 | 0 |
+
+The old discount part equals the new `adjustments` and `legacy_discount_documents` on every branch. The differences in branches 3, 5 and 6 are 199 charge lines delivered on 1–6 August that are superseded (`R`) or cancelled (`C`) on the old server but live in the new `stg_oasis__charges` copy, beside their live replacement row (example: delivery line 23834964, rows 57191087 and 57461347). This is an ingestion gap (cancel-flag updates not reaching the new Oasis copy), raised with the ingestion owner; it overstates new revenue by about 50.7K SAR in August. New `revenue` adds uninvoiced live lines (branch 6: 17,019.50) and moves 9,270.88 (branch 2) and 18,048.75 (branch 7) from IP to Day case.
+
+**Pre-authorisation (O-P2-6, RCM Authorization): accepted on the bridge.** `legacy_approved` and `legacy_rejected` exceed the old report (+12.9% and +4.8% in August). Every old key (111,172) exists in the new fact; the extra lines are, in order of size: lines the old `vw_authorizations` drops because their only answers have `RESPONSE_TRANS_ID = REQ_API_TRANS_ID` (an old-report defect: 12,692 approved and 2,365 rejected lines), NPHIES items with no Oasis line (2,350 approved, 1,287 rejected; added by design), lines sent under another request or IOS (1,106 and 301), and lines whose last send ended in ERROR (60 and 37). The old report also counts duplicate rows from its order and delivery joins (1,553 in branch 1). The user accepted the bridge on 2026-10-07; the old defect is not reproduced. `nphies_approved_amount` now falls back to the payer benefit parsed from the pull-response JSON, because Oasis never fills `api_pre_approval_res_details.approved_amount`; approved quantities are kept as recorded (branch 4 has garbage values, e.g. 140,756,285 on authorisation 2982457, so `approved_estimated_amount` reaches 33.5bn SAR there).
+
+**Claims (O-P2B-5): accepted after two fixes.** Source lines are identical on both servers. The old claims model and `bsc.vw_rcm` keep only claim lines whose invoice and NPHIES transaction are on an AR statement (`tr_ar_statements`); `fact_claim_line.legacy_in_scope` now reproduces that scope and `rec_claims_monthly.legacy_*` sum over it. August after the fix:
+
+| Branch | Old submitted | New legacy submitted | Old rejected | New legacy rejected |
+|---|---:|---:|---:|---:|
+| 1 | 18,048,891.67 | 18,106,938.81 (+0.32%) | 2,325,584.62 | 2,325,996.78 (+0.02%) |
+| 2 | 24,860,676.68 | 24,872,657.72 (+0.05%) | 2,593,824.53 | 2,593,824.53 (0) |
+| 3 | 34,533,461.66 | 34,595,539.63 (+0.18%) | 8,166,374.02 | 8,167,842.01 (+0.02%) |
+| 4 | 18,802,825.56 | 18,872,270.25 (+0.37%) | 1,489,113.50 | 1,489,113.50 (0) |
+| 5 | 14,687,515.72 | 14,814,361.48 (+0.86%) | 1,588,456.70 | 1,590,092.90 (+0.10%) |
+| 6 | 14,675,624.24 | 15,420,907.59 (+5.08%) | 1,115,163.73 | 1,115,510.71 (+0.03%) |
+| 7 | 2,246,014.08 | 2,355,918.09 (+4.89%) | 481,293.02 | 481,576.09 (+0.06%) |
+| 8 | 23,746.02 | 23,746.02 | 0 | 0 |
+
+The remaining submitted difference in branches 5 to 7 is invoices put on an August statement after month end (e.g. branch 6 statements 20829 and 20868 prepared on 12 September, 21721 on 29 September, all ending 31 August): the old server's `tr_ar_statements` has no branch 6 statement rows created after 31 August, so it never picks them up. The new scope is the complete one. The second fix: the partially approved line's rejected amount no longer counts VAT (submitted includes it, eligible and benefit exclude it, the payer returns it as `tax`); August new rejected fell by about 1.0M (branch 2), 1.35M (branch 3) and 0.61M (branch 4). The other differences between new and old KPIs are documented corrections (latest NPHIES response, unadjudicated lines carry no approval, outcome-aware rejected amount, rejection rate over adjudicated lines). The old models report no remittance, so `fact_claim_payment` has no old baseline. August is not settled: claims without a response are 84% of submitted for branch 6 and about 50% for branches 1 and 5 (O-P2B-1).
+
+**Patient refunds (O-P2-7).** Negative patient receipts are classified by `fact_cash_receipt.receipt_kind`: a Cancellation matches an earlier receipt of the same patient, episode and amount; any other negative receipt is a Refund. 2026 to 2026-10-07: receipts 212.0M, cancellations −20.0M, refunds −15.1M (REC receipts −12.7M, AR cash receipts −2.3M, cashier −0.13M).
+
 ## Revenue (`gold.rec_revenue_monthly`)
 
 1. Export the old `mv_revenue_dataset` charge part for the month (rows with `PACKAGE_DEAL_FLAG = 'N'`, `CANCEL_FLAG = 'X'`, `DOC_ID != 0`, summed by branch).

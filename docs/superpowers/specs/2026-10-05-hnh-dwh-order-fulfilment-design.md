@@ -254,7 +254,7 @@ Every KPI defaults to `is_inpatient = 0`; the leak KPIs also need `is_in_leak_sc
 | O-OF-2 | **Eligibility join.** The old report also dropped orders whose episode had no `mv_eligibility` row; that view is not in this warehouse. | Legacy reconciliation | Closed 2026-10-05: the user accepted the gap; it is explained in the reconciliation notes |
 | O-OF-3 | **Inpatient standing orders.** Open R lines may be scheduled doses, not leakage. | IP leak rate | Closed 2026-10-05: the user confirmed inpatient is excluded from leak calculations, and all inpatient lines stay in the fact for later analysis |
 | O-OF-4 | **Branch 8 data gaps.** `dim_patient` holds only 2,554 branch 8 patients, registered from mid-2025, so 61,758 branch 8 order lines from January to May 2026 have `patient_key` -1. 40,400 branch 8 delivered-status lines in 2026 have no live charge. Branch 8 charge and patient data look incomplete. | Branch 8 patient attributes, leak rate | Open |
-| O-OF-5 | **Branches 3 and 6 clock skew.** Delivery time precedes order time on 21% (branch 3) and 27% (branch 6) of 2026 lines, by minutes. | Order-to-delivery time | Open; `warn_negative_order_turnaround` flags only gaps above 60 minutes |
+| O-OF-5 | **Branches 3 and 6 clock skew.** Delivery time precedes order time on 21% (branch 3) and 27% (branch 6) of 2026 lines, by minutes. | Order-to-delivery time | Open; `warn_negative_order_turnaround` flags only gaps above 60 minutes. **Closed 2026-10-07:** known source behaviour, monitored |
 
 ## 12. Changes during implementation (2026-10-05)
 

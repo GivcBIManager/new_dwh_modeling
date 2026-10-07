@@ -356,13 +356,13 @@ Macro tests with literal inputs for every macro in section 5. Unit tests (`_reve
 
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
-| O-P2-1 | Meaning of `authorised_flag` `Z` and `C` | `fact_preauth_line` acceptance | `Z` = Not required, `C` = Cancelled |
+| O-P2-1 | Meaning of `authorised_flag` `Z` and `C` | `fact_preauth_line` acceptance | `Z` = Not required, `C` = Cancelled. **Closed 2026-10-07:** known source behaviour, monitored |
 | O-P2-2 | Long-stay contract episodes are invoiced more than their charges (R6) | Billing reconciliation sign-off | Shown in `agg_episode_billing` and `rec_billing_monthly`; finance to explain the billing method |
-| O-P2-3 | Ingestion of `DEVDBA.API_PULL_RESPONSE_DETAILS` into `oasis` (user) | Phase 2B | 2B not started |
-| O-P2-4 | Fusion AR covers some ledgers from April 2026 only | Phase 3 collections | Insurer AR not reported |
-| O-P2-5 | Medication category list confirmed as `MD, MED, PH, CSM, RTL, MLK` | Medication revenue | As listed |
-| O-P2-6 | Closed month and old-server exports (`mv_revenue_dataset`, RCM Authorization) for acceptance | Reconciliation sign-off | — |
-| O-P2-7 | How patient cash refunds are recorded (`CSH…` `CREDITAR`, `PAYMENT` documents, or both) | Refunds in `fact_cash_receipt` | Receipts only; refunds not reported |
+| O-P2-3 | Ingestion of `DEVDBA.API_PULL_RESPONSE_DETAILS` into `oasis` (user) | Phase 2B | **Closed:** ingested 2026-10-05; Phase 2B built |
+| O-P2-4 | Fusion AR covers some ledgers from April 2026 only | Phase 3 collections | Insurer AR not reported. **Closed 2026-10-07:** folded into O-P3-11 (insurer AR ageing, still open) |
+| O-P2-5 | Medication category list confirmed as `MD, MED, PH, CSM, RTL, MLK` | Medication revenue | As listed. **Closed 2026-10-07:** known source behaviour, monitored |
+| O-P2-6 | Closed month and old-server exports (`mv_revenue_dataset`, RCM Authorization) for acceptance | Reconciliation sign-off | **Closed 2026-10-07:** August 2026 validated directly on the old server; revenue passes (≤ 0.16% per branch, differences are cancel flags missing from the new Oasis copy), pre-authorisation accepted on the line-level bridge (`docs/reconciliation_phase2.md`) |
+| O-P2-7 | How patient cash refunds are recorded (`CSH…` `CREDITAR`, `PAYMENT` documents, or both) | Refunds in `fact_cash_receipt` | **Closed 2026-10-07:** refunds are negative RECEIPT documents; `receipt_kind` separates Cancellation (matches an earlier receipt of the same patient, episode and amount) from Refund |
 
 ---
 

@@ -355,13 +355,13 @@ There is no separate fact. Department consumption is `fact_stock_movement` with 
 
 | # | Item | Owner |
 |---|---|---|
-| O-P5-1 | The Fusion interface gap (F2): is it an integration backlog or a staging-extract gap? Could `CST_INV_TRANSACTIONS` (cost ↔ inventory transaction id) be ingested, for exact Fusion costing? | Ingestion owner |
-| O-P5-2 | The CEFODOX unit cost (6,241,137 SAR per bottle, Abha, 2026-06-20) distorts Abha stock and GL inventory. The data is kept as recorded until finance corrects it. | Finance |
-| O-P5-3 | Fusion cost accounting has been mostly unaccounted since July 2026, so the GL tie-out will not tie. | Finance |
+| O-P5-1 | The Fusion interface gap (F2): is it an integration backlog or a staging-extract gap? Could `CST_INV_TRANSACTIONS` (cost ↔ inventory transaction id) be ingested, for exact Fusion costing? | **Closed 2026-10-07 (accepted):** gap lines stay sourced from Oasis (`is_fusion_gap`), monitored by `warn_fusion_interface_gap`. Measured 2026-10-07: coverage does not catch up with time (Abha May 66%, August–September 27–28%; Jazan July 54%) |
+| O-P5-2 | The CEFODOX unit cost (6,241,137 SAR per bottle, Abha, 2026-06-20) distorts Abha stock and GL inventory. The data is kept as recorded until finance corrects it. | **Closed 2026-10-07 (source-corrected):** Fusion reversed the write-off (+374.5M in June, −280.8M in July, −93.6M in August; net ≈ 0). Abha month-end stock is 10.1M from August; June (419.3M) and July (135.8M) stay as Fusion recorded them. Consumption cost was never affected. |
+| O-P5-3 | Fusion cost accounting has been mostly unaccounted since July 2026, so the GL tie-out will not tie. | Finance (2026-10-07: kept open with finance) |
 | O-P5-4 | Review the drafted `map_store_department` and `map_item_group`. | BI manager |
 | O-P5-5 | Load `bal_product_base` into `default` (daily, 12–24 months) and confirm its column names. | User |
-| O-P5-6 | Alrabwah's and Head Office's reversed Fusion opening balances: confirm they are not live on Fusion inventory, and set their go-live dates in `map_scm_cutover` when they move. | BI manager |
-| O-P5-7 | Muhayil's opening balance is dated after its first sales, so Fusion month-end stock for May–July 2026 is not reliable. | BI manager |
+| O-P5-6 | Alrabwah's and Head Office's reversed Fusion opening balances: confirm they are not live on Fusion inventory, and set their go-live dates in `map_scm_cutover` when they move. | **Closed 2026-10-07:** not live; go-live dates stay empty until they move |
+| O-P5-7 | Muhayil's opening balance is dated after its first sales, so Fusion month-end stock for May–July 2026 is not reliable. | **Closed 2026-10-07:** known; `warn_opening_balance_after_first_sale` flags it; do not use Muhayil month-end stock for May–July 2026 |
 
 ---
 

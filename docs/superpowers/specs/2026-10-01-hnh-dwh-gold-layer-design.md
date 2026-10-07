@@ -422,7 +422,7 @@ Each row is a deliberate change; the named legacy field reproduces the old behav
 ## 9. Security
 
 - `gold.sec_user_access` is built from `default.bi_users`. The password column is never loaded.
-- **Fail closed.** A user with no row sees no data. A non-admin source row without a branch grants nothing; it is reported by a test so the 88 such rows found today are assigned before go-live.
+- **Fail closed.** A user with no row sees no data. A non-admin source row without a branch grants nothing, unless it names a specialty: then it grants that specialty in every hospital branch (1–8, not Head Office), as decided on 2026-10-07 (O2). `assert_sec_no_access_without_branch` enforces both rules.
 - One SSAS role filters `dim_branch` by the user's branches and `dim_staff` by the user's unified specialties when any are set. Every fact relates to `dim_branch`.
 - Facts with no staff reference relate to the Unknown staff member, which every user may see, so a specialty restriction does not hide rows that have no doctor.
 - `dim_patient_pii` is in a separate perspective and role.
@@ -503,15 +503,15 @@ Resolution order for Phase 6: ER and inpatient by their own key; outpatient by `
 
 | # | Item | Needed before | Default if unresolved |
 |---|---|---|---|
-| O1 | dbt-core and dbt-clickhouse versions of the receiving instance, and how it resolves custom schema names | Moving the models | Developed on dbt-core 1.11 / dbt-clickhouse 1.9; unit tests and the schema macro may need adjusting |
-| O2 | 88 access rows have no branch | Go-live | Those users see nothing |
+| O1 | dbt-core and dbt-clickhouse versions of the receiving instance, and how it resolves custom schema names | Moving the models | **Closed 2026-10-07:** the receiving project pins `dbt-clickhouse>=1.9,<1.10`, its `generate_schema_name` is identical to ours, and the integrated `dbt build --select tag:hnh` completed on 2026-10-01 (`docs/receiving_project_config.md`) |
+| O2 | 88 access rows have no branch | Go-live | **Closed 2026-10-07:** 79 are admin rows (admins see every branch). The 9 non-admin rows (logins INMA-CARDIO and INMA-SURGERY, one specialty each) now grant their specialty in every hospital branch; a row with neither branch nor specialty still grants nothing |
 | O3 | Branch 8 has no budget rows and no clinic count | Scorecards for branch 8 | Targets and clinic count show as missing |
-| O4 | Machine name of the SSAS server, for `ssas_machine_name` | SSAS role test | Variable left at a placeholder; the role cannot be tested |
-| O5 | 284 of 5,375 beds (5.3%) have no classification in `map_bed_classification` | `dim_bed` | Those beds report `Not Mapped` and are never counted as Critical |
-| O6 | Hard deletes in Oasis are not propagated to staging | — | Deleted source rows remain in the warehouse |
-| O7 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build |
-| O8 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row |
-| O9 | Trigger time and SSAS processing mechanism | Orchestration | Manual run |
+| O4 | Machine name of the SSAS server, for `ssas_machine_name` | SSAS role test | **Closed 2026-10-07:** `HNHANALYTICSSRV` (SSAS instance `HNHANALYTICSSRV\REPORTSERVERDB`; the instance is not part of a login) |
+| O5 | 284 of 5,375 beds (5.3%) have no classification in `map_bed_classification` | `dim_bed` | Those beds report `Not Mapped` and are never counted as Critical. 2026-10-07: 407 beds; listed for review in the mapping review workbook (`scripts/build_mapping_review.py`) |
+| O6 | Hard deletes in Oasis are not propagated to staging | — | Deleted source rows remain in the warehouse. **Closed 2026-10-07:** known source behaviour, monitored |
+| O7 | About three hours of lag between the latest source row and the load time (F11) | — | None for a nightly build. **Closed 2026-10-07:** known source behaviour, monitored |
+| O8 | Bed availability history before a bed's first status row is unknown | `fact_bed_occupancy_daily` | Bed treated as not existing before its first row. **Closed 2026-10-07:** known source behaviour, monitored |
+| O9 | Trigger time and SSAS processing mechanism | Orchestration | Manual run. 2026-10-07: the user keeps manual runs for now; when scheduled, run the workforce models after the daily Oasis copy (about 09:10) |
 | O10 | Outpatient survey link rate (section 13.1, revised 2026-10-04: the encounter id is the appointment id, so the low match rate is probably a measurement artefact) | Phase 6 | Closed 2026-10-07: outpatient link 87% (514,659 of 589,401), ER 99.3%, IP 100%; misses are the Khamis Dec 2025 – Jul 2026 appointment gap (Phase 6 spec P6, P7) |
 
 ### Resolved on review (2026-10-01)
