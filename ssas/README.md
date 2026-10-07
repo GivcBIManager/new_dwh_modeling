@@ -33,7 +33,7 @@ Spec: `docs/superpowers/specs/2026-10-07-hnh-ssas-tabular-model-design.md`. Serv
 
 | Task | Command |
 |---|---|
-| Deploy (validate, test, promote) | `deploy.ps1 -Stage All` |
+| Deploy (validate, test, promote) | `deploy.ps1 -Stage All`. Validate = Best Practice Analyzer; schema drift is caught by the enforced dbt contracts and by the Test stage. |
 | After each successful dbt run | `process.ps1 -Mode Daily` (exit 2 = gate closed: no new successful `tag:hnh` run) |
 | Friday | `process.ps1 -Mode Weekly` |
 | Test production | `test.ps1 -Database HNH_Analytics` |

@@ -1,8 +1,10 @@
 <#
 .SYNOPSIS
-  Deploys HNH_Analytics (SSAS spec 10.2): Validate (Best Practice Analyzer + schema check) -> Test (deploy to
+  Deploys HNH_Analytics (SSAS spec 10.2): Validate (Best Practice Analyzer) -> Test (deploy to
   HNH_Analytics_Test, partition, full process, test.ps1) -> Promote (backup, deploy metadata keeping partitions,
   members and data source, load what is not processed) -> clear the test database. Rollback restores a backup.
+  Validate = Best Practice Analyzer; schema drift is caught by the enforced dbt contracts and by the Test stage
+  (no TE2 -SC: TabularEditor.exe is 32-bit and the server has only the 64-bit ClickHouse ODBC driver; spec P17).
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage All
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage Rollback -BackupFile HNH_Analytics_20261010_220000.abf
@@ -41,7 +43,7 @@ $exitCode = 0
 try {
     if (Want 'Validate') {
         Write-Host '== Validate'
-        Invoke-TabularEditor @($modelDir, '-A', $rules, '-SC', '-V')
+        Invoke-TabularEditor @($modelDir, '-A', $rules, '-V')
     }
     if (Want 'Test') {
         Write-Host '== Test: HNH_Analytics_Test'

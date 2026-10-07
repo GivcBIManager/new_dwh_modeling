@@ -325,7 +325,7 @@ Expected model size after the column rules: 6–10 GB (measured in plan; budget 
 
 ### 10.2 `deploy.ps1`
 
-1. **Validate:** TE2 CLI loads the model, runs `bpa_rules.json` (any error-severity violation stops), and runs a schema check of each table against its `gold.ssas_*` view (through a DSN of the same name `HNH_Gold` on the deploying machine).
+1. **Validate:** TE2 CLI loads the model and runs `bpa_rules.json` (any error-severity violation stops). There is no TE2 schema check (P17): schema drift is caught by the enforced dbt contracts on the `gold.ssas_*` views and by the Test stage (full process and SSAS-vs-ClickHouse row counts) before production is touched.
 2. **Test:** deploy to `HNH_Analytics_Test` with partitions (`-O -P -R`, no members), run `partitions.ps1`, full process, run `test.ps1`. Any failure stops.
 3. **Back up** `HNH_Analytics` to `HNH_Analytics_<timestamp>.abf` in the SSAS backup folder (keep the last 5).
 4. **Promote:** deploy the same commit to `HNH_Analytics` with `-O -R`, **without** `-P` (server partitions kept), `-M` (members kept) and `-C` (data source kept). Then run `partitions.ps1` and a `calculate` refresh, and read `$System.TMSCHEMA_PARTITIONS`: any partition not in state Ready (a new table, or a table whose columns changed) gets a `full` refresh, followed by a final `calculate`. If only measures, formats, perspectives or the calculation group changed, every partition is Ready and nothing is reloaded. The script prints which partitions it refreshed.
@@ -399,3 +399,4 @@ These amend the sections named; the implementation plan `plans/2026-10-07-ssas-m
 | P14 | 11.5 | Performance queries run as a single-branch user through `EffectiveUserName`, not as an administrator. | Server administrators bypass row filters, so timings without a user would miss the security cost. |
 | P15 | 6.2 | The Staff filter matches specialty only (no branch match) | HR facts reference staff of other branches (611 headcount, 1,147 payroll rows); facts stay branch-secured through Branch; unrestricted users can list other branches' staff names |
 | P16 | 4.2 | order_key dropped; an Orders count needs a gold flag (catalogue plan) | Spec 4.2 rule 3 drops order ids from the big line facts; `order_key` had 22.7M distinct 63-bit values on 58.8M rows |
+| P17 | 10.2 | Validate runs the Best Practice Analyzer only, without TE2's `-SC` schema check; schema drift is caught by the enforced dbt contracts and by the Test stage. | TabularEditor.exe is 32-bit and opens the model's ODBC data source in-process; the server has only the 64-bit ClickHouse ODBC driver and DSN. |
