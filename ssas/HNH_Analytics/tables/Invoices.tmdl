@@ -190,10 +190,11 @@ table Invoices
 		summarizeBy: none
 		sourceColumn: claim_type
 
-	partition Invoices = query
+	partition 'Invoices template' = query
 		source
-			query = select * from gold.ssas_fact_invoice
+			query = select * from gold.ssas_fact_invoice where 1 = 0
 			dataSource: HNH_Gold
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_invoice
+	annotation hnh_partition_column = invoice_date_key

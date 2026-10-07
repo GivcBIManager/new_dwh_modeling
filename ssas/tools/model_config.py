@@ -54,7 +54,7 @@ TABLES = [
     Table("ssas_fact_claim_line", "Claim Lines", "fact", "One NPHIES claim line per submission.", "statement_end_date_key"),
     Table("ssas_fact_claim_payment", "Claim Payments", "fact", "Payer remittance and advances from NPHIES."),
     Table("ssas_fact_cash_receipt", "Cash Receipts", "fact", "Patient receipts, cancellations and refunds.", "receipt_date_key"),
-    Table("ssas_fact_invoice", "Invoices", "fact", "One invoice with statement and approval status."),
+    Table("ssas_fact_invoice", "Invoices", "fact", "One invoice with statement and approval status.", "invoice_date_key"),
     Table("ssas_fact_revenue_adjustment", "Revenue Adjustments", "fact", "Post-invoice revenue adjustments."),
     Table("ssas_fact_preauth_line", "Pre-auth Lines", "fact", "One pre-authorisation line or payer advance authorisation.", "request_date_key"),
     Table("ssas_agg_episode_billing", "Episode Billing", "fact", "Claimable versus invoiced amount per episode.", "last_delivery_date_key"),
