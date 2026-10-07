@@ -109,3 +109,46 @@ unit_tests:
       rows:
         - {branch_key: 6, month_start: 2026-06-01, gl_revenue_op: 1000, gl_contractual_discount: 100, gl_net_revenue: 900, oasis_revenue_op: 880, oasis_revenue_daycase: 20, oasis_revenue_total: 900, difference: 0}
         - {branch_key: 6, month_start: 2026-07-01, gl_revenue_op: 0, gl_contractual_discount: 0, gl_net_revenue: 0, oasis_revenue_op: 500, oasis_revenue_daycase: 0, oasis_revenue_total: 500, difference: -500}
+
+  - name: rec_consumption_charge_monthly_counts_two_dispense_charge_once
+    description: >
+      Sale lines 1 and 2 dispense one drug twice on one invoice and both link to charges 1001 and 1003 (two delivery
+      lines); line 1 owns both (revenue 60), and the return line 3 links to them too. Charge 1003 is on neither line's
+      lowest charge key but is linked, so it is not a charge without cost, and its revenue counts once. Sale line 4 has
+      no charge. Fusion-sourced line 5 is a pack item costed 1 per base unit against the Oasis line's 10. Medication
+      charge 1005 (20) has no stock line; non-medication charge 1006 and zero-revenue charge 1007 are not counted;
+      medication charge 1008 (15) without cost falls in October, a month without consumption. Sale 6 (3) and return 7
+      (-1) link only to the package-component charge 1010: package_component_cost 2, outside the linked margin. Sale 8
+      (2) links only to the cancelled charge 1009: cancelled_only_cost 2, and not a sale line without charge (the columns
+      are exclusive). Return 9 (-2) has no charge: it is in patient_consumption_cost only.
+    model: rec_consumption_charge_monthly
+    given:
+      - input: ref('fact_patient_consumption')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toUInt8(3) as branch_key, toInt32(20260905) as date_key, mt as movement_type, toFloat64(c) as consumption_cost,
+                 toNullable(toFloat64(oc)) as oasis_cost_amount, rb as revenue_basis, toFloat64(r) as revenue_amount
+          from values('m UInt32, mt String, c Float64, oc Float64, rb String, r Float64',
+              (1, 'Patient sale', 5, -5, 'charge', 60), (2, 'Patient sale', 5, -5, 'charge', 0), (3, 'Patient return', -5, 5, 'charge', 0),
+              (4, 'Patient sale', 4, -4, 'none', 0), (5, 'Patient sale', 1, -10, 'charge', 50),
+              (6, 'Patient sale', 3, -3, 'package_component', 0), (7, 'Patient return', -1, 1, 'package_component', 0),
+              (8, 'Patient sale', 2, -2, 'cancelled', 0), (9, 'Patient return', -2, 2, 'none', 0))
+      - input: ref('int_consumption_charge_link')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toInt64(k) as charge_line_key, toUInt8(o) as is_revenue_owner
+          from values('m UInt32, k UInt32, o UInt8',
+              (1, 1001, 1), (1, 1003, 1), (2, 1001, 0), (2, 1003, 0), (3, 1001, 0), (3, 1003, 0), (5, 1004, 1),
+              (6, 1010, 1), (7, 1010, 0), (8, 1009, 1))
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toInt64(k) as charge_line_key, toUInt8(3) as branch_key, toInt32(d) as delivery_date_key, toFloat64(r) as revenue_amount, toUInt8(med) as is_medication
+          from values('k UInt32, d UInt32, r Float64, med UInt8',
+              (1001, 20260905, 30, 1), (1003, 20260905, 30, 1), (1004, 20260905, 50, 1), (1005, 20260906, 20, 1),
+              (1006, 20260906, 100, 0), (1007, 20260906, 0, 1), (1008, 20261002, 15, 1),
+              (1009, 20260905, 0, 1), (1010, 20260905, 0, 1))
+    expect:
+      rows:
+        - {branch_key: 3, month_start: '2026-09-01', patient_consumption_cost: 12, linked_consumption_cost: 6, linked_consumption_cost_oasis: 15, linked_revenue: 110, linked_margin: 104, sale_lines_without_charge: 1, cost_without_charge: 4, package_component_cost: 2, cancelled_only_cost: 2, medication_charges_without_cost: 1, revenue_without_cost: 20}
+        - {branch_key: 3, month_start: '2026-10-01', patient_consumption_cost: 0, linked_consumption_cost: 0, linked_consumption_cost_oasis: 0, linked_revenue: 0, linked_margin: 0, sale_lines_without_charge: 0, cost_without_charge: 0, package_component_cost: 0, cancelled_only_cost: 0, medication_charges_without_cost: 1, revenue_without_cost: 15}

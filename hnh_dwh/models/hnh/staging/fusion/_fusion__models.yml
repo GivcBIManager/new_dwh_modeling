@@ -122,3 +122,67 @@ models:
     columns:
       - name: accrual_entry_id
         tests: [unique, not_null]
+  - name: stg_fusion__inventory_orgs
+    columns:
+      - name: organization_id
+        tests: [unique, not_null]
+  - name: stg_fusion__subinventories
+    tests:
+      - hnh_unique_combination:
+          columns: [organization_id, subinventory_code]
+  - name: stg_fusion__items
+    tests:
+      - hnh_unique_combination:
+          columns: [inventory_item_id, organization_id]
+  - name: stg_fusion__item_categories
+    tests:
+      - hnh_unique_combination:
+          columns: [inventory_item_id, organization_id]
+  - name: stg_fusion__inventory_transactions
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+  - name: stg_fusion__inventory_transaction_lots
+    tests:
+      - hnh_unique_combination:
+          columns: [transaction_id, lot_number]
+  - name: stg_fusion__inventory_valuation
+    columns:
+      - name: layer_cost_id
+        tests: [unique, not_null]
+  - name: stg_fusion__inventory_onhand
+    tests:
+      - hnh_unique_combination:
+          columns: [snapshot_date, onhand_quantities_id]
+  - name: stg_fusion__inv_transaction_types
+    columns:
+      - name: transaction_type_id
+        tests: [unique, not_null]
+  - name: stg_fusion__lots
+    tests:
+      - hnh_unique_combination:
+          columns: [inventory_item_id, organization_id, lot_number]
+  - name: stg_fusion__cost_distributions
+    columns:
+      - name: distribution_line_id
+        tests: [unique, not_null]
+  - name: stg_fusion__po_distributions
+    columns:
+      - name: po_distribution_id
+        tests: [unique, not_null]
+  - name: stg_fusion__po_schedules
+    columns:
+      - name: line_location_id
+        tests: [unique, not_null]
+  - name: stg_fusion__po_line_types
+    columns:
+      - name: line_type_id
+        tests: [unique, not_null]
+  - name: stg_fusion__receipt_transactions
+    columns:
+      - name: transaction_id
+        tests: [unique, not_null]
+  - name: stg_fusion__requisition_distributions
+    columns:
+      - name: distribution_id
+        tests: [unique, not_null]

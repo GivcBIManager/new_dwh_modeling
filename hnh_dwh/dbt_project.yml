@@ -20,6 +20,9 @@ vars:
   hnh_fusion_oasis_feed_source: "300000007046804"
   hnh_hr_snapshot_start: "2026-01-01"   # first month-end of the headcount snapshot (Fusion core HR go-live)
   hnh_hr_snapshot_end: ""               # empty = today; unit tests override it
+  hnh_fusion_inventory_start: "2026-02-01"   # first month of Fusion inventory transactions (integration window)
+  hnh_fusion_item_master_org_id: 300000005019401   # Fusion item master organisation (MST)
+  hnh_stock_month_end_last: ""          # last month-end of the stock snapshot; empty = current month
 
 models:
   hnh_dwh:

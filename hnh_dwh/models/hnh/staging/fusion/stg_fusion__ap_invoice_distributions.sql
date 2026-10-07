@@ -4,6 +4,7 @@ select
     {{ hnh_str('invoice_num') }}                as invoice_num,
     {{ hnh_code('line_type_lookup_code') }}     as line_type,
     po_distribution_id,
+    rcv_transaction_id,
     {{ hnh_flag('posted_flag') }}               as is_posted,
     {{ hnh_flag('cancellation_flag') }}         as is_cancelled,
     {{ hnh_flag('reversal_flag') }}             as is_reversal,

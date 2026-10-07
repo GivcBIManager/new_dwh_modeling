@@ -18,6 +18,8 @@ select
     d.is_cancelled                                              as is_cancelled,
     d.is_reversal                                               as is_reversal,
     toUInt8(d.po_distribution_id is not null)                   as is_po_matched,
+    d.po_distribution_id                                        as po_distribution_id,
+    d.rcv_transaction_id                                        as rcv_transaction_id,
     d.amount                                                    as amount,
     if(ifNull(d.invoice_type_code, '') != 'PREPAYMENT' and ifNull(d.line_type, '') in ('ITEM', 'ACCRUAL', 'IPV', 'TRV', 'ERV', 'FREIGHT', 'MISCELLANEOUS'), d.amount, 0) as spend_amount,
     if(ifNull(d.line_type, '') in ('REC_TAX', 'NONREC_TAX'), d.amount, 0)                                         as tax_amount,

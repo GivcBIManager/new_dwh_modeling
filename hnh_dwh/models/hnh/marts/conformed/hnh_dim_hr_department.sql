@@ -3,7 +3,7 @@
 -- Department names are "<branch prefix> <specialty name>" (spec H6); the unified department reuses the Phase 3
 -- specialty mapping by name.
 with depts as (
-    select organization_id, department_name,
+    select organization_id, department_name, is_current,
            splitByChar(' ', ifNull(department_name, ''))[1]                         as branch_prefix,
            trimBoth(substring(ifNull(department_name, ''), length(splitByChar(' ', ifNull(department_name, ''))[1]) + 2)) as department_base_name
     from {{ ref('stg_fusion__hr_departments') }}
@@ -24,7 +24,8 @@ departments as (
         d.branch_prefix                                     as branch_prefix,
         d.department_base_name                              as department_base_name,
         ifNull(u.unified_dept, 'Unknown')             as unified_department,
-        {{ hnh_hr_dept_prefix_branch('d.branch_prefix') }}  as branch_key
+        {{ hnh_hr_dept_prefix_branch('d.branch_prefix') }}  as branch_key,
+        d.is_current                                        as is_current
     from depts as d
     left join unified as u on u.name_lower = lower(d.department_base_name)
     {{ hnh_settings() }}  -- left join in a CTE feeding a union: settings must sit here
@@ -34,5 +35,5 @@ select * from departments
 
 union all
 
-select toInt64(-1), null, 'Unknown', null, null, 'Unknown', toUInt8(0)
+select toInt64(-1), null, 'Unknown', null, null, 'Unknown', toUInt8(0), toUInt8(1)
 {{ hnh_settings() }}

@@ -1,0 +1,227 @@
+version: 2
+
+models:
+  - name: fact_stock_movement
+    columns:
+      - name: movement_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: transfer_store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: movement_type_key
+        tests:
+          - relationships: {to: ref('dim_movement_type'), field: movement_type_key}
+      - name: fusion_transaction_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['oasis', 'fusion']
+      - name: cost_source
+        tests:
+          - accepted_values:
+              values: ['fusion_valuation', 'oasis_line', 'none']
+      - name: oasis_cost_amount
+        description: >
+          Cost of the referenced Oasis line (signed like cost_amount) on every row with an Oasis line id, whichever
+          source the row takes; null on Fusion-only lines. Lets reports compare or switch to the Oasis cost where the
+          Fusion item cost was loaded per base unit (pack items, five branches).
+      - name: is_cost_mismatch
+        description: >
+          1 when cost_amount and oasis_cost_amount are both non-zero and their absolute ratio lies outside [0.5, 2].
+          Also fires when Fusion and Oasis quantities differ on lines costed from the Oasis unit cost.
+  - name: fact_patient_consumption
+    columns:
+      - name: movement_key
+        tests:
+          - unique
+          - not_null
+          - relationships: {to: ref('fact_stock_movement'), field: movement_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: movement_type_key
+        tests:
+          - relationships: {to: ref('dim_movement_type'), field: movement_type_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: treating_staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: billed_payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: service_key
+        tests:
+          - relationships: {to: ref('dim_service'), field: service_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: encounter_key
+        tests:
+          - relationships:
+              to: ref('fact_encounter')
+              field: encounter_key
+              config: {severity: warn, where: "encounter_key != -1"}
+      - name: oasis_cost_amount
+        description: >
+          From fact_stock_movement: the referenced Oasis line's cost (signed like cost_amount), null on Fusion-only lines.
+          Margin on Oasis cost where the Fusion pack-item cost was loaded per base unit (five branches).
+      - name: is_cost_mismatch
+        description: From fact_stock_movement; 1 when cost_amount and oasis_cost_amount differ by a ratio outside [0.5, 2].
+      - name: is_linked_to_charge
+        description: 1 when the line links to at least one live charge line (package components included).
+      - name: revenue_basis
+        description: >
+          'charge' = links to a live charge that is not a package component; 'package_component' = links to live charges
+          that are all package components (the revenue sits on the package header charge); 'cancelled' = links only to
+          cancelled (or unknown-status) charges; 'none' = links to no charge. The charge keys come from the lowest-key
+          live charge, else the lowest-key cancelled one.
+        tests:
+          - accepted_values:
+              values: ['charge', 'package_component', 'cancelled', 'none']
+  - name: fact_stock_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_end, store_key, item_key]
+    columns:
+      - name: stock_monthly_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+  - name: fact_purchase_line
+    columns:
+      - name: purchase_line_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: po_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: ship_to_store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: requisition_approved_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: first_receipt_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['oasis', 'fusion']
+      - name: ordered_value
+        description: >
+          Net of cancellations: (quantity_ordered - quantity_cancelled) x unit_price (Fusion: the schedule's amount for
+          a zero-quantity services line). Oasis cancelled lines (status C) carry their cancelled quantity, so a
+          cancelled line is 0. Sum it over is_approved_po = 1 lines. Cancellation comes from quantity_cancelled and
+          po_status (the schedule's cancel flag, which is always 0 here, is not carried).
+      - name: gross_ordered_value
+        description: The ordered quantity x unit_price before cancellations (the earlier definition of ordered_value).
+      - name: is_approved_po
+        description: >
+          0 when po_status is CANCELED, REJECTED, WITHDRAWN, INCOMPLETE or PENDING APPROVAL, else 1. Ordered-value KPIs
+          filter is_approved_po = 1.
+      - name: quantity_received
+        description: >
+          Fusion: the schedule's received quantity, net of returns to vendor. Oasis: the GRN lines on the PO line in
+          fact_goods_receipt's scope (int_oasis_stock_line, movement 'Goods receipt'), in Oasis base units, counted
+          gross (returns to supplier are not netted).
+      - name: lead_time_days
+        description: >
+          Days from the PO date to the first receipt; null when there is no receipt or when the difference is negative
+          (4 Fusion lines were received before their PO date).
+      - name: is_ap_matched
+        description: >
+          1 when the schedule has a matched Fusion AP line with non-zero spend; schedules matched only by zero-spend
+          (tax) lines are 0. ap_matched_amount is the matched spend either way.
+  - name: fact_goods_receipt
+    columns:
+      - name: goods_receipt_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: supplier_key
+        tests:
+          - relationships: {to: ref('hnh_dim_supplier'), field: supplier_key}
+      - name: item_key
+        tests:
+          - relationships: {to: ref('hnh_dim_item'), field: item_key}
+      - name: store_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: purchase_line_key
+        tests:
+          - relationships:
+              to: ref('fact_purchase_line')
+              field: purchase_line_key
+              config: {where: "purchase_line_key != -1"}
+      - name: unit_price
+        description: >
+          Fusion: the price per PO unit while quantity is in the primary unit, so quantity x unit_price is not the line
+          value (received_value is). Oasis: the line's unit cost.
+      - name: is_po_receipt
+        description: >
+          1 when the receipt links to a PO line (Fusion po_line_location_id not null; Oasis GRN or return with a resolved
+          purchase_line_key), else 0 (e.g. Fusion RECEIVE rows without a PO line are internal transfer receipts).
+          It does not mean the receipt is from a supplier: use is_supplier_receipt.
+      - name: is_supplier_receipt
+        description: >
+          1 for every Oasis GRN and return to supplier (RFN) row, also when its PO line is not in fact_purchase_line; for
+          Fusion RECEIVE / RETURN TO VENDOR rows 1 when the row has a PO line, else 0 (internal receipt). Supplier KPIs
+          filter is_supplier_receipt = 1.
+      - name: receipt_type
+        description: >
+          RECEIVE / RETURN TO VENDOR (Fusion), GRN / RETURN TO VENDOR (Oasis STOCKISS RFN, returns to supplier).
+          Returns carry a negative quantity and value.
+        tests:
+          - accepted_values:
+              values: ['RECEIVE', 'RETURN TO VENDOR', 'GRN']

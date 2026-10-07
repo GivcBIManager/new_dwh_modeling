@@ -51,6 +51,10 @@ def dt_null(v):
     return None if v in NULLS else dt(v)
 
 
+def d_null(v):
+    return None if v in NULLS else datetime.strptime(v.strip()[:10], "%Y-%m-%d").date()
+
+
 def b(v):
     return 1 if v.strip().lower() in ("1", "1.0", "true", "y") else 0
 
@@ -182,6 +186,27 @@ SMALL_TABLES = {
         [("UserName", "String", s), ("BRANCH_ID", "Nullable(UInt8)", i_null), ("IsAdmin", "UInt8", b),
          ("ModefiedDate", "Nullable(DateTime)", dt_null), ("Unified_Speciality", "Nullable(String)", s_null)],
         "UserName",
+    ),
+    # Per-branch Fusion inventory go-live date and first Fusion purchasing month (yyyymm); empty = not live (spec 4.2).
+    "map_scm_cutover": (
+        "scm_cutover.csv",
+        [("BRANCH_ID", "UInt8", i), ("INVENTORY_GO_LIVE_DATE", "Nullable(Date)", d_null),
+         ("FIRST_FUSION_PURCHASING_MONTH", "Nullable(UInt32)", i_null)],
+        "BRANCH_ID",
+    ),
+    # Store type and unified department per Oasis store and Fusion store; drafted by scripts/draft_store_department_map.py,
+    # reviewed by the BI manager (open item O-P5-4).
+    "map_store_department": (
+        "store_department_mapping.csv",
+        [("SOURCE", "LowCardinality(String)", s), ("BRANCH_ID", "UInt8", i), ("STORE_CODE", "String", s),
+         ("STORE_NAME", "String", s), ("STORE_TYPE", "LowCardinality(String)", s), ("UNIFIED_DEPARTMENT", "String", s)],
+        "(SOURCE, BRANCH_ID, STORE_CODE)",
+    ),
+    # Item group per Fusion "HNH Catalog" category code; drafted by scripts/draft_item_group_map.py (O-P5-4).
+    "map_item_group": (
+        "item_group_mapping.csv",
+        [("CATEGORY_CODE", "String", s), ("ITEM_GROUP", "LowCardinality(String)", s)],
+        "CATEGORY_CODE",
     ),
 }
 

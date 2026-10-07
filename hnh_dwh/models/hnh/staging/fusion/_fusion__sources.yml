@@ -37,3 +37,19 @@ sources:
       - name: dim_absence_type
       - name: dim_absence_plan
       - name: fact_absence_balance
+      - name: dim_inventory_org
+      - name: dim_subinventory
+      - name: dim_item
+      - name: dim_item_category
+      - name: dim_inv_transaction_type
+      - name: dim_lot
+      - name: fact_inventory_transaction
+      - name: fact_inventory_transaction_lot
+      - name: fact_inventory_valuation
+      - name: fact_inventory_onhand
+      - name: fact_cost_distribution
+      - name: fact_po_distribution
+      - name: fact_po_schedule
+      - name: dim_po_line_type
+      - name: fact_receipt_transaction
+      - name: fact_requisition_distribution

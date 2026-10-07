@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: int_inventory_org_branch
+    columns:
+      - name: organization_id
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: int_item_crosswalk
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, product_code]
+  - name: int_oasis_stock_line
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, oasis_line_id]
+    columns:
+      - name: movement_type
+        tests:
+          - accepted_values:
+              values: ['Patient sale', 'Patient return', 'Department issue', 'Transfer out', 'Transfer in', 'Goods receipt',
+                       'Return to supplier', 'Count adjustment', 'Write-off / misc']
+  - name: int_fusion_stock_line
+    columns:
+      - name: fusion_transaction_id
+        tests: [unique, not_null]
+      - name: reference_status
+        tests:
+          - accepted_values:
+              values: ['oasis_line', 'oasis_out_of_scope', 'not_in_oasis', 'no_reference', 'not_integration']
+      - name: oasis_scope_reason
+        tests:
+          - accepted_values:
+              values: ['reversed_invoice', 'creditar', 'package_header', 'not_stock_or_zero_cost', 'other']
+  - name: int_store_crosswalk
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, store_id]
+  - name: int_consumption_charge_link
+    description: >
+      Patient-sale and patient-return lines of fact_stock_movement against the fact_charge_line rows they link to,
+      through the Oasis invoice line (invoice + product -> delivery lines named by any charge row -> charge lines of those
+      delivery lines). Cancelled charge lines are kept with their status. The one link read by fact_patient_consumption
+      and rec_consumption_charge_monthly.
+    tests:
+      - hnh_unique_combination:
+          columns: [movement_key, charge_line_key]
+      - hnh_unique_combination:
+          columns: [charge_line_key]
+          config: {where: "is_revenue_owner = 1"}
+    columns:
+      - name: movement_key
+        tests:
+          - relationships: {to: ref('fact_stock_movement'), field: movement_key}
+      - name: charge_line_key
+        tests:
+          - relationships: {to: ref('fact_charge_line'), field: charge_line_key}
+      - name: is_revenue_owner
+        description: 1 on the linked patient-sale line with the lowest Oasis line id; that line carries the charge's revenue.
+      - name: charge_status
+        description: From fact_charge_line ('Live', 'Cancelled', 'Unknown'; superseded rows are not in fact_charge_line).
+        tests:
+          - accepted_values:
+              values: ['Live', 'Cancelled', 'Unknown']
+      - name: is_package_component
+        description: From fact_charge_line; 1 on a package component, whose revenue sits on the package header charge.
+  - name: int_stock_month_end
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_end, store_key, item_key]
+    columns:
+      - name: stock_source
+        tests:
+          - accepted_values:
+              values: ['snapshot', 'derived', 'oasis_batch', 'fusion_valuation']

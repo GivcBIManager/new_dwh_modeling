@@ -1,0 +1,306 @@
+version: 2
+
+unit_tests:
+  - name: fact_stock_movement_switches_at_go_live
+    description: >
+      Jazan goes live on 2026-07-12. Line 101 (11 July) stays Oasis although Fusion holds it; line 102 (12 July) is the
+      Fusion transaction, costed from valuation (12); line 103 has no Fusion transaction (gap fill); line 104 has a
+      Fusion transaction without valuation (cost from the Oasis line, 8 per unit); line 105 is an Oasis batch posting
+      after go-live (left out); line 106 was posted twice in Fusion and corrected by a reversal (three transactions net
+      to one, cost -40; its lot is the pair L2 / 2027-02-01 of the first transaction with a lot, not L1 with another
+      lot's expiry); line 107 is a pack item whose Fusion valuation (1) is the cost of one base unit against the
+      Oasis line's 10 (cost mismatch); line 108 has a Fusion transaction without valuation and an Oasis line without a
+      unit cost (0), so it has no cost. Fusion-only: 9010 a PO receipt (valuation 5), 9011 before go-live (left out),
+      9012 an integration row without reference (left out), 9013 a reference Oasis does not hold (no cost), 9014 an
+      opening balance, 9020 a reference to a reversed Oasis invoice (left out), 9021 a reference to an out-of-scope
+      zero-cost Oasis line (kept, valuation 3). Line 109 is a transfer out whose Fusion transaction has no transfer organisation: its transfer store is the
+      Oasis line's counterparty store 46. Alrabwah (no go-live) line 201 is Oasis.
+    model: fact_stock_movement
+    given:
+      - input: ref('int_oasis_stock_line')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toInt64(l) as oasis_line_id, toNullable(concat('DOC', toString(l))) as oasis_doc_no, toDate32(d) as line_date, mt as movement_type, toUInt8(bp) as is_batch_posting, toNullable(toInt64(45)) as store_id, if(l = 109, toNullable(toInt64(46)), cast(null as Nullable(Int64))) as transfer_store_id, toNullable('P1') as product_code, toInt64(777) as item_key, toFloat64(q) as primary_quantity, toFloat64(c) as cost_amount, toFloat64(uc) as unit_cost, cast(null as Nullable(String)) as lot_number, cast(null as Nullable(Date32)) as expiry_date
+          from values('b UInt8, l UInt32, d String, mt String, bp UInt8, q Float64, c Float64, uc Float64',
+              (3, 101, '2026-07-11', 'Patient sale', 0, -2, -20, 10), (3, 102, '2026-07-12', 'Patient sale', 0, -1, -10, 10),
+              (3, 103, '2026-07-12', 'Patient sale', 0, -3, -30, 10), (3, 104, '2026-07-13', 'Patient sale', 0, -1, -8, 8),
+              (3, 105, '2026-07-14', 'Write-off / misc', 1, 5, 25, 5), (3, 106, '2026-07-14', 'Transfer out', 0, -4, -40, 10),
+              (3, 107, '2026-07-15', 'Patient sale', 0, -2, -20, 10), (3, 108, '2026-07-15', 'Patient sale', 0, 0, -5, 0),
+              (3, 109, '2026-07-16', 'Transfer out', 0, -1, -10, 10),
+              (1, 201, '2026-08-01', 'Department issue', 0, -1, -3, 3))
+      - input: ref('int_fusion_stock_line')
+        format: sql
+        rows: |
+          select toInt64(t) as fusion_transaction_id, toUInt8(b) as branch_key, toNullable(toInt64(3004)) as organization_id, toNullable('IPH') as subinventory_code, cast(null as Nullable(Int64)) as transfer_organization_id, cast(null as Nullable(String)) as transfer_subinventory, toNullable(toInt64(500)) as inventory_item_id, toDate(d) as transaction_date, toFloat64(q) as primary_quantity, rs as reference_status, nullIf(sr, '') as oasis_scope_reason, if(l = 0, cast(null as Nullable(Int64)), toNullable(toInt64(l))) as oasis_line_id, toUInt8(ob) as is_opening_balance, mt as fusion_movement_type, if(v < 0, cast(null as Nullable(Float64)), toNullable(toFloat64(v))) as valuation_unit_cost, multiIf(t = 9062, toNullable('L2'), t = 9063, toNullable('L1'), cast(null as Nullable(String))) as lot_number, multiIf(t = 9062, toNullable(toDate32('2027-02-01')), t = 9063, toNullable(toDate32('2028-01-01')), cast(null as Nullable(Date32))) as expiry_date
+          from values('t UInt32, b UInt8, d String, q Float64, rs String, sr String, l UInt32, ob UInt8, mt String, v Float64',
+              (9001, 3, '2026-07-12', -2, 'oasis_line', '', 101, 0, 'Patient sale', 11), (9002, 3, '2026-07-12', -1, 'oasis_line', '', 102, 0, 'Patient sale', 12),
+              (9004, 3, '2026-07-14', -1, 'oasis_line', '', 104, 0, 'Patient sale', -1), (9005, 3, '2026-07-15', 5, 'oasis_line', '', 105, 0, 'Patient return', 5),
+              (9061, 3, '2026-07-14', -4, 'oasis_line', '', 106, 0, 'Transfer out', 10), (9062, 3, '2026-07-14', -4, 'oasis_line', '', 106, 0, 'Transfer out', 10),
+              (9063, 3, '2026-07-15', 4, 'oasis_line', '', 106, 0, 'Transfer in', 10),
+              (9007, 3, '2026-07-15', -2, 'oasis_line', '', 107, 0, 'Patient sale', 1),
+              (9008, 3, '2026-07-15', -1, 'oasis_line', '', 108, 0, 'Patient sale', -1),
+              (9009, 3, '2026-07-16', -1, 'oasis_line', '', 109, 0, 'Transfer out', 10),
+              (9010, 3, '2026-07-15', 10, 'not_integration', '', 0, 0, 'Goods receipt', 5), (9011, 3, '2026-07-10', 10, 'not_integration', '', 0, 0, 'Goods receipt', 5),
+              (9012, 3, '2026-07-15', -1, 'no_reference', '', 0, 0, 'Patient sale', 5), (9013, 3, '2026-07-16', -1, 'not_in_oasis', '', 0, 0, 'Patient sale', -1),
+              (9014, 3, '2026-07-16', 7, 'not_integration', '', 0, 1, 'Opening balance', 2),
+              (9020, 3, '2026-07-16', -1, 'oasis_out_of_scope', 'reversed_invoice', 0, 0, 'Patient sale', 5),
+              (9021, 3, '2026-07-16', -2, 'oasis_out_of_scope', 'not_stock_or_zero_cost', 0, 0, 'Patient sale', 3))
+      - input: ref('stg_ref__scm_cutover')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, if(d = '', cast(null as Nullable(Date)), toNullable(toDate(d))) as inventory_go_live_date
+          from values('b UInt8, d String', (3, '2026-07-12'), (100, ''))
+      - input: ref('dim_store')
+        format: sql
+        rows: |
+          select toInt64(1) as store_key
+          union all
+          select toInt64(bitShiftRight(cityHash64(concat(toString('oasis'), '|', toString(3), '|', toString(46), '|')), 1))
+      - input: ref('hnh_dim_item')
+        format: sql
+        rows: |
+          select toInt64(777) as item_key
+    expect:
+      rows:
+        - {oasis_line_id: 101, fusion_transaction_id: 9001, date_key: 20260711, source_system: 'oasis', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -20, cost_source: 'oasis_line', consumption_cost: 20, fusion_transaction_count: 1, oasis_cost_amount: -20, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: 102, fusion_transaction_id: 9002, date_key: 20260712, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: -12, cost_source: 'fusion_valuation', consumption_cost: 12, fusion_transaction_count: 1, oasis_cost_amount: -10, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: 103, fusion_transaction_id: null, date_key: 20260712, source_system: 'oasis', is_in_fusion: 0, is_fusion_gap: 1, movement_type: 'Patient sale', primary_quantity: -3, cost_amount: -30, cost_source: 'oasis_line', consumption_cost: 30, fusion_transaction_count: 0, oasis_cost_amount: -30, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: 104, fusion_transaction_id: 9004, date_key: 20260713, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: -8, cost_source: 'oasis_line', consumption_cost: 8, fusion_transaction_count: 1, oasis_cost_amount: -8, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: 106, fusion_transaction_id: 9061, date_key: 20260714, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Transfer out', primary_quantity: -4, cost_amount: -40, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 3, oasis_cost_amount: -40, is_cost_mismatch: 0, lot_number: 'L2', expiry_date: '2027-02-01', transfer_store_key: -1}
+        - {oasis_line_id: 107, fusion_transaction_id: 9007, date_key: 20260715, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -2, cost_source: 'fusion_valuation', consumption_cost: 2, fusion_transaction_count: 1, oasis_cost_amount: -20, is_cost_mismatch: 1, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: 108, fusion_transaction_id: 9008, date_key: 20260715, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: 0, cost_source: 'none', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: -5, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: 109, fusion_transaction_id: 9009, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Transfer out', primary_quantity: -1, cost_amount: -10, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: -10, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: 4847268598909841308}
+        - {oasis_line_id: 201, fusion_transaction_id: null, date_key: 20260801, source_system: 'oasis', is_in_fusion: 0, is_fusion_gap: 0, movement_type: 'Department issue', primary_quantity: -1, cost_amount: -3, cost_source: 'oasis_line', consumption_cost: 3, fusion_transaction_count: 0, oasis_cost_amount: -3, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: null, fusion_transaction_id: 9010, date_key: 20260715, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Goods receipt', primary_quantity: 10, cost_amount: 50, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: null, fusion_transaction_id: 9013, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -1, cost_amount: 0, cost_source: 'none', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: null, fusion_transaction_id: 9014, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Opening balance', primary_quantity: 7, cost_amount: 14, cost_source: 'fusion_valuation', consumption_cost: 0, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+        - {oasis_line_id: null, fusion_transaction_id: 9021, date_key: 20260716, source_system: 'fusion', is_in_fusion: 1, is_fusion_gap: 0, movement_type: 'Patient sale', primary_quantity: -2, cost_amount: -6, cost_source: 'fusion_valuation', consumption_cost: 6, fusion_transaction_count: 1, oasis_cost_amount: null, is_cost_mismatch: 0, lot_number: null, expiry_date: null, transfer_store_key: -1}
+
+  - name: fact_patient_consumption_counts_revenue_once
+    description: >
+      Lines 11 and 12 dispense P1 twice on invoice INV1, whose P1 delivery lines DL1 (charges 1001 of 30 and the co-pay
+      1002 of 10) and DL2 (charge 1003 of 30) link to both lines: each charge line goes to line 11 only (revenue 70,
+      line 12 none). Return line 13 links but carries no revenue. Line 14 (INV2) has no charge. Fusion-sourced line 15
+      (INV3) links through the superseded INV3 charge row of DL3 to its live charge 1004 (50) on another invoice; its
+      Fusion pack cost (6) keeps the Oasis line's cost (60) beside it. A department issue is not a patient line. The link
+      rows are those int_consumption_charge_link_follows_delivery_lines expects from the same scenario. Sale 7 links only
+      to a live package-component charge (basis package_component, linked, no revenue). Sale 8 links only to a cancelled
+      charge (basis cancelled, not linked; its keys fall back to that charge). Return 9 has a lower line id than sale 10
+      on charge 1007 (40): sale 10 owns the revenue. Sale 11 links to the cancelled charge 1000 and the live charge 1008
+      (25): its keys come from the live charge although the cancelled one has the lower key.
+    model: fact_patient_consumption
+    given:
+      - input: ref('fact_stock_movement')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toUInt8(3) as branch_key, toInt32(20260905) as date_key, toInt64(1) as store_key, toInt64(2) as item_key, toInt64(3) as movement_type_key, mt as movement_type, toNullable(toInt64(l)) as oasis_line_id, toNullable(inv) as oasis_doc_no, toNullable(p) as oasis_product_code, toFloat64(q) as primary_quantity, toFloat64(c) as cost_amount, toFloat64(-q) as consumption_quantity, toFloat64(-c) as consumption_cost, src as source_system, toUInt8(1) as is_in_oasis, toUInt8(src = 'fusion') as is_in_fusion, toUInt8(0) as is_fusion_gap, toNullable(toFloat64(if(src = 'fusion', -60, c))) as oasis_cost_amount, toUInt8(src = 'fusion') as is_cost_mismatch
+          from values('m UInt32, mt String, l UInt32, inv String, p String, q Float64, c Float64, src String',
+              (1, 'Patient sale', 11, 'INV1', 'P1', -1, -5, 'oasis'), (2, 'Patient sale', 12, 'INV1', 'P1', -1, -5, 'oasis'),
+              (3, 'Patient return', 13, 'INV1', 'P1', 1, 5, 'oasis'), (4, 'Patient sale', 14, 'INV2', 'P2', -1, -4, 'oasis'),
+              (5, 'Patient sale', 15, 'INV3', 'P3', -2, -6, 'fusion'), (6, 'Department issue', 16, 'ISS6', 'P1', -1, -5, 'oasis'),
+              (7, 'Patient sale', 17, 'INV5', 'P5', -1, -3, 'oasis'), (8, 'Patient sale', 18, 'INV6', 'P6', -1, -2, 'oasis'),
+              (9, 'Patient return', 8, 'INV7', 'P7', 1, 1, 'oasis'), (10, 'Patient sale', 19, 'INV7', 'P7', -1, -4, 'oasis'),
+              (11, 'Patient sale', 20, 'INV8', 'P8', -1, -7, 'oasis'))
+      - input: ref('int_consumption_charge_link')
+        format: sql
+        rows: |
+          select toInt64(m) as movement_key, toInt64(k) as charge_line_key, toUInt8(o) as is_revenue_owner, st as charge_status, toUInt8(pc) as is_package_component
+          from values('m UInt32, k UInt32, o UInt8, st String, pc UInt8',
+              (1, 1001, 1, 'Live', 0), (1, 1002, 1, 'Live', 0), (1, 1003, 1, 'Live', 0), (2, 1001, 0, 'Live', 0), (2, 1002, 0, 'Live', 0), (2, 1003, 0, 'Live', 0),
+              (3, 1001, 0, 'Live', 0), (3, 1002, 0, 'Live', 0), (3, 1003, 0, 'Live', 0), (5, 1004, 1, 'Live', 0),
+              (7, 1005, 1, 'Live', 1), (8, 1006, 1, 'Cancelled', 0), (9, 1007, 0, 'Live', 0), (10, 1007, 1, 'Live', 0),
+              (11, 1000, 1, 'Cancelled', 0), (11, 1008, 1, 'Live', 0))
+      - input: ref('fact_charge_line')
+        format: sql
+        rows: |
+          select toInt64(k) as charge_line_key, toFloat64(r) as revenue_amount,
+                 toInt64(e) as encounter_key, toInt64(-1) as episode_key, toInt64(-1) as patient_key, toInt64(-1) as staff_key,
+                 toInt64(-1) as billed_payer_key, toInt8(1) as care_type_key, toInt64(-1) as service_key, toInt64(-1) as department_key
+          from values('k UInt32, r Float64, e UInt32', (1001, 30, 701), (1002, 10, 701), (1003, 30, 702), (1004, 50, 703),
+              (1005, 0, 705), (1006, 0, 706), (1007, 40, 707), (1000, 0, 700), (1008, 25, 708))
+    expect:
+      rows:
+        - {movement_key: 1, is_linked_to_charge: 1, revenue_amount: 70, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 2, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: -5, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 3, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 701, charge_line_key: 1001, oasis_cost_amount: 5, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 4, is_linked_to_charge: 0, revenue_amount: 0, encounter_key: -1, charge_line_key: -1, oasis_cost_amount: -4, is_cost_mismatch: 0, revenue_basis: 'none'}
+        - {movement_key: 5, is_linked_to_charge: 1, revenue_amount: 50, encounter_key: 703, charge_line_key: 1004, oasis_cost_amount: -60, is_cost_mismatch: 1, revenue_basis: 'charge'}
+        - {movement_key: 7, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 705, charge_line_key: 1005, oasis_cost_amount: -3, is_cost_mismatch: 0, revenue_basis: 'package_component'}
+        - {movement_key: 8, is_linked_to_charge: 0, revenue_amount: 0, encounter_key: 706, charge_line_key: 1006, oasis_cost_amount: -2, is_cost_mismatch: 0, revenue_basis: 'cancelled'}
+        - {movement_key: 9, is_linked_to_charge: 1, revenue_amount: 0, encounter_key: 707, charge_line_key: 1007, oasis_cost_amount: 1, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 10, is_linked_to_charge: 1, revenue_amount: 40, encounter_key: 707, charge_line_key: 1007, oasis_cost_amount: -4, is_cost_mismatch: 0, revenue_basis: 'charge'}
+        - {movement_key: 11, is_linked_to_charge: 1, revenue_amount: 25, encounter_key: 708, charge_line_key: 1008, oasis_cost_amount: -7, is_cost_mismatch: 0, revenue_basis: 'charge'}
+  - name: fact_purchase_line_lead_time_and_quantities
+    description: >
+      Jazan buys in Fusion from 202607. Schedule 10 (1 July, 10 ordered, 8 received, 1 cancelled at 5) is first
+      received on 12 July (lead time 11), comes from requisition REQ-9 and has 40 of PO-matched AP. Schedule 11 (June)
+      is before the cutover and left out. Schedule 12 is a 300 services line with no receipt. Oasis PO line 50 (10
+      July, the overlap month) orders 30 at 14 less 50% = 7 and is received 20 + 10 from 15 July (lead time 5); a
+      cancelled GRN line does not count. Line 51 (August) is after the overlap month and left out. Alrabwah line 60 (no
+      Fusion purchasing) is a cancelled line of 12: all 12 cancelled, so its net ordered value is 0 (gross 24) and it
+      is not an approved PO. Schedule 10's net ordered value is (10 - 1) x 5 = 45 (gross 50).
+      The GRN scope is fact_goods_receipt's (int_oasis_stock_line, movement 'Goods receipt'), which holds lines 70 and 71
+      but not the cancelled line 72.
+    model: fact_purchase_line
+    given:
+      - input: ref('stg_ref__scm_cutover')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, if(m = 0, cast(null as Nullable(Int32)), toNullable(toInt32(m))) as first_fusion_purchasing_month
+          from values('b UInt8, m UInt32', (3, 202607), (1, 0))
+      - input: ref('stg_fusion__po_schedules')
+        format: sql
+        rows: |
+          select toInt64(ll) as line_location_id, toNullable(concat('PO', toString(ll))) as po_number, toNullable(toInt64(5)) as vendor_id, toNullable(toInt64(7)) as vendor_site_id, toNullable(toInt64(3004)) as ship_to_organization_id, toNullable(toInt64(500)) as item_id, toNullable('EACH') as uom_code, toNullable('OPEN') as document_status, toNullable(toInt64(lt)) as line_type_id, toUInt8(0) as is_cancelled, toNullable(toDate(d)) as po_creation_date, toFloat64(q) as quantity, toFloat64(qr) as quantity_received, toFloat64(0) as quantity_billed, toFloat64(qc) as quantity_cancelled, toFloat64(p) as unit_price, toFloat64(a) as amount, toFloat64(0) as amount_received
+          from values('ll UInt32, lt UInt32, d String, q Float64, qr Float64, qc Float64, p Float64, a Float64',
+              (10, 1, '2026-07-01', 10, 8, 1, 5, 0), (11, 1, '2026-06-15', 4, 4, 0, 5, 0), (12, 2, '2026-08-01', 0, 0, 0, 0, 300))
+      - input: ref('int_inventory_org_branch')
+        format: sql
+        rows: |
+          select toInt64(3004) as organization_id, toUInt8(3) as branch_key
+      - input: ref('stg_fusion__po_distributions')
+        format: sql
+        rows: |
+          select toInt64(100) as po_distribution_id, toNullable(toInt64(10)) as line_location_id, toNullable(toInt64(900)) as req_distribution_id
+      - input: ref('stg_fusion__requisition_distributions')
+        format: sql
+        rows: |
+          select toInt64(900) as distribution_id, toNullable('REQ-9') as requisition_number, toNullable(toDate32('2026-06-28')) as approved_date
+      - input: ref('stg_fusion__receipt_transactions')
+        format: sql
+        rows: |
+          select toNullable(tt) as transaction_type, toNullable(toInt64(10)) as po_line_location_id, toNullable(toDate(d)) as transaction_date
+          from values('tt String, d String', ('RECEIVE', '2026-07-12'), ('RECEIVE', '2026-07-20'), ('DELIVER', '2026-07-11'))
+      - input: ref('fact_ap_invoice_line')
+        format: sql
+        rows: |
+          select toNullable(toInt64(100)) as po_distribution_id, toFloat64(s) as spend_amount from values('s Float64', (25), (15))
+      - input: ref('stg_fusion__po_line_types')
+        format: sql
+        rows: |
+          select toInt64(t) as line_type_id, toNullable(n) as line_type_name from values('t UInt32, n String', (1, 'Goods'), (2, 'Fixed Price Services'))
+      - input: ref('stg_oasis__stock_documents')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, toInt64(d) as doc_id, toNullable(concat('D', toString(d))) as doc_no, toNullable('210103-901') as account_code,
+                 toNullable(st) as doc_status, toNullable(dt) as doc_type, toNullable(src) as source_code
+          from values('b UInt8, d UInt32, st String, dt String, src String', (3, 1, 'R', 'PORDER', 'PO'), (3, 2, 'P', 'STOCKRCPT', 'GRN'), (1, 3, 'R', 'PORDER', 'PO'))
+      - input: ref('stg_oasis__stock_document_lines')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, toInt64(l) as line_id, toInt64(d) as doc_id, toNullable(dt) as doc_type, toNullable(toDate32(ld)) as line_date,
+                 toNullable(toInt64(36)) as store_id, toNullable('P9') as product_code, toFloat64(qo) as qty_ordered, toFloat64(q) as quantity,
+                 toFloat64(lp) as list_unit_price, toFloat64(0) as list_discount_pct, toFloat64(dp) as discount_pct,
+                 if(ls = '', cast(null as Nullable(String)), toNullable(ls)) as line_status, if(x = 0, cast(null as Nullable(Int64)), toNullable(toInt64(x))) as cross_ref_line_id,
+                 toNullable('EACH') as uom_code
+          from values('b UInt8, l UInt32, d UInt32, dt String, ld String, qo Float64, q Float64, lp Float64, dp Float64, ls String, x UInt32',
+              (3, 50, 1, 'PORDER', '2026-07-10', 30, 0, 14, 50, 'R', 0), (3, 51, 1, 'PORDER', '2026-08-05', 5, 0, 14, 50, 'R', 0),
+              (3, 70, 2, 'STOCKRCPT', '2026-07-15', 20, 20, 0, 0, 'P', 50), (3, 71, 2, 'STOCKRCPT', '2026-07-25', 10, 10, 0, 0, 'P', 50),
+              (3, 72, 2, 'STOCKRCPT', '2026-07-26', 99, 99, 0, 0, 'C', 50), (1, 60, 3, 'PORDER', '2025-03-01', 12, 0, 2, 0, 'C', 0))
+      - input: ref('int_oasis_stock_line')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, toInt64(l) as oasis_line_id, 'Goods receipt' as movement_type
+          from values('l UInt32', (70), (71))
+      - input: ref('int_item_crosswalk')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, 'P0' as product_code, toInt64(1) as inventory_item_id, toFloat64(1) as units_per_primary
+      - input: ref('hnh_dim_supplier')
+        format: sql
+        rows: |
+          select toInt64(1) as supplier_key
+      - input: ref('hnh_dim_item')
+        format: sql
+        rows: |
+          select toInt64(1) as item_key
+      - input: ref('dim_store')
+        format: sql
+        rows: |
+          select toInt64(1) as store_key
+    expect:
+      rows:
+        - {source_system: 'fusion', po_number: 'PO10', quantity_ordered: 10, quantity_received: 8, quantity_cancelled: 1, unit_price: 5, ordered_value: 45, gross_ordered_value: 50, is_approved_po: 1, received_value: 40, lead_time_days: 11, requisition_number: 'REQ-9', is_ap_matched: 1, ap_matched_amount: 40, line_type: 'Goods', po_status: 'OPEN'}
+        - {source_system: 'fusion', po_number: 'PO12', quantity_ordered: 0, quantity_received: 0, quantity_cancelled: 0, unit_price: 0, ordered_value: 300, gross_ordered_value: 300, is_approved_po: 1, received_value: 0, lead_time_days: null, requisition_number: null, is_ap_matched: 0, ap_matched_amount: 0, line_type: 'Services', po_status: 'OPEN'}
+        - {source_system: 'oasis', po_number: 'D1', quantity_ordered: 30, quantity_received: 30, quantity_cancelled: 0, unit_price: 7, ordered_value: 210, gross_ordered_value: 210, is_approved_po: 1, received_value: 210, lead_time_days: 5, requisition_number: null, is_ap_matched: 0, ap_matched_amount: 0, line_type: 'Goods', po_status: 'RELEASED'}
+        - {source_system: 'oasis', po_number: 'D3', quantity_ordered: 12, quantity_received: 0, quantity_cancelled: 12, unit_price: 2, ordered_value: 0, gross_ordered_value: 24, is_approved_po: 0, received_value: 0, lead_time_days: null, requisition_number: null, is_ap_matched: 0, ap_matched_amount: 0, line_type: 'Goods', po_status: 'CANCELED'}
+  - name: fact_goods_receipt_receipts_and_returns
+    description: >
+      Jazan buys in Fusion from 202607. Fusion receipt 500 (12 July, 8 at 5 on schedule 10) is delivered by 501 into
+      subinventory PH01, whose inventory line carries lot L1 / 2027-01-31 (the vendor lot V1 is not used). Fusion return
+      502 (20 July, 2 at 5) has no delivery: organisation-level store, vendor lot V2, quantity and value negative.
+      Receipt 503 (30 June) is before the first Fusion purchasing month and left out; the DELIVER row is not a receipt.
+      Oasis GRN line 70 (15 July, 20 received for 140, 2 free, on PO line 50) and return to supplier line 80 (STOCKISS
+      RFN, 3 for -21, referencing GRN line 70) are kept; the return resolves to PO line 50 through its GRN line and
+      carries RETURN TO VENDOR. Fusion receipt 504 has no PO line: an internal receipt (is_po_receipt 0, is_supplier_receipt 0).
+      Oasis GRN line 75 (on PO line 51, which fact_purchase_line does not hold) and return line 81 (no PO) are supplier
+      receipts without a resolved PO line (is_po_receipt 0, is_supplier_receipt 1). Patient-sale line 90 is not a receipt.
+    model: fact_goods_receipt
+    given:
+      - input: ref('stg_ref__scm_cutover')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_id, toNullable(toInt32(202607)) as first_fusion_purchasing_month
+      - input: ref('stg_fusion__receipt_transactions')
+        format: sql
+        rows: |
+          select toInt64(t) as transaction_id, if(p = 0, cast(null as Nullable(Int64)), toNullable(toInt64(p))) as parent_transaction_id,
+                 toNullable(tt) as transaction_type, if(t = 504, cast(null as Nullable(Int64)), toNullable(toInt64(10))) as po_line_location_id, toNullable(toInt64(3004)) as organization_id,
+                 if(sub = '', cast(null as Nullable(String)), toNullable(sub)) as subinventory_code, toNullable(toInt64(5)) as vendor_id,
+                 toNullable(toInt64(7)) as vendor_site_id, toNullable(toInt64(500)) as item_id,
+                 if(vl = '', cast(null as Nullable(String)), toNullable(vl)) as vendor_lot_number, toNullable(toDate(d)) as transaction_date,
+                 toFloat64(q) as quantity, toFloat64(q) as primary_quantity, toFloat64(5) as po_unit_price, toFloat64(0) as amount
+          from values('t UInt32, p UInt32, tt String, sub String, vl String, d String, q Float64',
+              (500, 0, 'RECEIVE', '', 'V1', '2026-07-12', 8), (501, 500, 'DELIVER', 'PH01', '', '2026-07-12', 8),
+              (502, 0, 'RETURN TO VENDOR', '', 'V2', '2026-07-20', 2), (503, 0, 'RECEIVE', '', '', '2026-06-30', 4), (504, 0, 'RECEIVE', '', '', '2026-07-22', 6))
+      - input: ref('int_inventory_org_branch')
+        format: sql
+        rows: |
+          select toInt64(3004) as organization_id, toUInt8(3) as branch_key
+      - input: ref('int_fusion_stock_line')
+        format: sql
+        rows: |
+          select toNullable(toInt64(501)) as rcv_transaction_id, toNullable('L1') as lot_number, toNullable(toDate32('2027-01-31')) as expiry_date
+      - input: ref('int_oasis_stock_line')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, toInt64(l) as oasis_line_id, toDate32(d) as line_date, mt as movement_type,
+                 toNullable('210103-901') as account_code, toInt64(1) as item_key, toNullable(toInt64(36)) as store_id,
+                 if(x = 0, cast(null as Nullable(Int64)), toNullable(toInt64(x))) as cross_ref_line_id, toFloat64(q) as primary_quantity,
+                 toFloat64(7) as unit_cost, toFloat64(c) as cost_amount, toFloat64(bq) as bonus_quantity, toNullable('B1') as lot_number,
+                 toNullable(toDate32('2027-06-30')) as expiry_date
+          from values('l UInt32, d String, mt String, x UInt32, q Float64, c Float64, bq Float64',
+              (70, '2026-07-15', 'Goods receipt', 50, 20, 140, 2), (80, '2026-07-28', 'Return to supplier', 70, -3, -21, 0),
+              (75, '2026-07-16', 'Goods receipt', 51, 5, 35, 0), (81, '2026-07-29', 'Return to supplier', 0, -1, -7, 0),
+              (90, '2026-07-16', 'Patient sale', 0, -1, -7, 0))
+      - input: ref('hnh_dim_supplier')
+        format: sql
+        rows: |
+          select toInt64(1) as supplier_key
+      - input: ref('hnh_dim_item')
+        format: sql
+        rows: |
+          select toInt64(1) as item_key
+      - input: ref('dim_store')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString('fusion'), '|', toString(3004), '|', toString(s), '|')), 1)) as store_key
+          from values('s String', ('PH01'), ('*'))
+      - input: ref('fact_purchase_line')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString('fusion'), '|', toString(10), '|')), 1)) as purchase_line_key
+          union all
+          select toInt64(bitShiftRight(cityHash64(concat(toString('oasis'), '|', toString(3), '|', toString(50), '|')), 1))
+    expect:
+      # store_key: hash('fusion', 3004, 'PH01') = 3065739768012781067, hash('fusion', 3004, '*') = 3391680798086060577
+      # (Oasis store 36 is not in the dim_store fixture: -1); purchase_line_key: hash('fusion', 10) = 3303836444277286057,
+      # hash('oasis', 3, 50) = 5802234965275792194
+      rows:
+        - {fusion_transaction_id: 500, oasis_line_id: null, source_system: 'fusion', receipt_type: 'RECEIVE', date_key: 20260712, quantity: 8, unit_price: 5, received_value: 40, free_quantity: 0, is_free_of_charge: 0, lot_number: 'L1', expiry_date: '2027-01-31', store_key: 3065739768012781067, purchase_line_key: 3303836444277286057, is_po_receipt: 1, is_supplier_receipt: 1}
+        - {fusion_transaction_id: 502, oasis_line_id: null, source_system: 'fusion', receipt_type: 'RETURN TO VENDOR', date_key: 20260720, quantity: -2, unit_price: 5, received_value: -10, free_quantity: 0, is_free_of_charge: 0, lot_number: 'V2', expiry_date: null, store_key: 3391680798086060577, purchase_line_key: 3303836444277286057, is_po_receipt: 1, is_supplier_receipt: 1}
+        - {fusion_transaction_id: null, oasis_line_id: 70, source_system: 'oasis', receipt_type: 'GRN', date_key: 20260715, quantity: 20, unit_price: 7, received_value: 140, free_quantity: 2, is_free_of_charge: 1, lot_number: 'B1', expiry_date: '2027-06-30', store_key: -1, purchase_line_key: 5802234965275792194, is_po_receipt: 1, is_supplier_receipt: 1}
+        - {fusion_transaction_id: 504, oasis_line_id: null, source_system: 'fusion', receipt_type: 'RECEIVE', date_key: 20260722, quantity: 6, unit_price: 5, received_value: 30, free_quantity: 0, is_free_of_charge: 0, lot_number: null, expiry_date: null, store_key: 3391680798086060577, purchase_line_key: -1, is_po_receipt: 0, is_supplier_receipt: 0}
+        - {fusion_transaction_id: null, oasis_line_id: 75, source_system: 'oasis', receipt_type: 'GRN', date_key: 20260716, quantity: 5, unit_price: 7, received_value: 35, free_quantity: 0, is_free_of_charge: 0, lot_number: 'B1', expiry_date: '2027-06-30', store_key: -1, purchase_line_key: -1, is_po_receipt: 0, is_supplier_receipt: 1}
+        - {fusion_transaction_id: null, oasis_line_id: 81, source_system: 'oasis', receipt_type: 'RETURN TO VENDOR', date_key: 20260729, quantity: -1, unit_price: 7, received_value: -7, free_quantity: 0, is_free_of_charge: 0, lot_number: 'B1', expiry_date: '2027-06-30', store_key: -1, purchase_line_key: -1, is_po_receipt: 0, is_supplier_receipt: 1}
+        - {fusion_transaction_id: null, oasis_line_id: 80, source_system: 'oasis', receipt_type: 'RETURN TO VENDOR', date_key: 20260728, quantity: -3, unit_price: 7, received_value: -21, free_quantity: 0, is_free_of_charge: 0, lot_number: 'B1', expiry_date: '2027-06-30', store_key: -1, purchase_line_key: 5802234965275792194, is_po_receipt: 1, is_supplier_receipt: 1}

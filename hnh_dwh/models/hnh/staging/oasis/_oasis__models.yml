@@ -222,3 +222,27 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, account_transaction_no]
+  - name: stg_oasis__stock_documents
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, doc_id]
+  - name: stg_oasis__stock_document_lines
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, line_id]
+  - name: stg_oasis__stock_batch_snapshots
+    columns:
+      - name: snapshot_date
+        tests: [not_null]
+  - name: stg_oasis__stores
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, store_id]
+  - name: stg_oasis__products
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, product_code, store_id]
+  - name: stg_oasis__store_requisitions
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, bintran_id]

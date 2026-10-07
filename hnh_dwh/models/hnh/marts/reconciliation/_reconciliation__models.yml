@@ -74,3 +74,59 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_end]
+  - name: rec_consumption_charge_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+    columns:
+      - name: patient_consumption_cost
+        description: >
+          Consumption cost of all patient-sale and return lines. Equals linked_consumption_cost + package_component_cost
+          + cancelled_only_cost + cost_without_charge + the cost of patient returns with revenue_basis 'none'.
+      - name: linked_consumption_cost
+        description: >
+          Consumption cost of the patient lines (sales and returns) with revenue_basis 'charge', at the cost recorded in
+          fact_stock_movement.
+      - name: linked_consumption_cost_oasis
+        description: >
+          The same lines at the Oasis line's cost (oasis_cost_amount), for margin where Fusion pack-item costs were
+          loaded per base unit (five branches).
+      - name: linked_revenue
+        description: Revenue of the charge lines owned by revenue_basis 'charge' lines, each charge line once.
+      - name: linked_margin
+        description: linked_revenue - linked_consumption_cost (recorded cost).
+      - name: sale_lines_without_charge
+        description: Patient-sale lines with revenue_basis 'none' (no charge at all; cancelled-only lines are in cancelled_only_cost).
+      - name: cost_without_charge
+        description: Consumption cost of the sale lines counted in sale_lines_without_charge.
+      - name: package_component_cost
+        description: >
+          Consumption cost of the patient lines (sales and returns) with revenue_basis 'package_component': their live
+          charges are package components with no revenue (the package header carries it).
+      - name: cancelled_only_cost
+        description: Consumption cost of the patient lines (sales and returns) with revenue_basis 'cancelled'.
+      - name: medication_charges_without_cost
+        description: Medication charge lines with revenue that no patient-sale or return line links to (int_consumption_charge_link).
+  - name: rec_purchase_ap_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+  - name: rec_stock_interface_daily
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, line_date]
+    description: >
+        Identity on live days: lines_from_go_live = oasis_lines_in_fusion + gap_lines (post-go-live batch lines are
+        excluded from oasis_lines_in_fusion).
+    columns:
+      - name: fusion_out_of_scope_kept
+        description: Fusion rows with reference_status oasis_out_of_scope whose reason is not reversed_invoice, creditar or package_header.
+      - name: fusion_out_of_scope_reversals
+        description: >
+          Fusion integration transactions dropped as out of Oasis scope (reference_status oasis_out_of_scope with reason
+          reversed_invoice, creditar or package_header). They are in fusion_integration_transactions and fusion_quantity
+          but not in fact_stock_movement; subtract them to reconcile the daily gap figures.
+  - name: rec_inventory_gl_monthly
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]

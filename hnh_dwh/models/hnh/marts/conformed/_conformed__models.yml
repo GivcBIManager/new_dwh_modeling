@@ -183,6 +183,10 @@ models:
     columns:
       - name: supplier_key
         tests: [unique, not_null]
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['fusion', 'oasis', 'unknown']
   - name: dim_fs_line
     columns:
       - name: fs_line_key
@@ -226,22 +230,32 @@ models:
     columns:
       - name: hr_department_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_job
     columns:
       - name: job_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_grade
     columns:
       - name: grade_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_position
     columns:
       - name: position_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_location
     columns:
       - name: location_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: hnh_dim_worker_action
     columns:
       - name: worker_action_key
@@ -250,6 +264,8 @@ models:
     columns:
       - name: absence_type_key
         tests: [unique, not_null]
+      - name: is_current
+        description: "1 when Fusion's current row of this member is current; 0 for an end-dated member kept because facts still reference it."
   - name: dim_pay_category
     columns:
       - name: pay_category_key
@@ -263,3 +279,31 @@ models:
       - name: staff_key
         tests:
           - relationships: {to: ref('dim_staff'), field: staff_key}
+  - name: hnh_dim_item
+    columns:
+      - name: item_key
+        tests: [unique, not_null]
+      - name: item_group
+        tests:
+          - accepted_values:
+              values: ['Medication', 'Medical consumable', 'Implant', 'Laboratory', 'General', 'Asset', 'Other']
+      - name: source_system
+        tests:
+          - accepted_values:
+              values: ['fusion', 'oasis', 'unknown']
+  - name: dim_store
+    columns:
+      - name: store_key
+        tests: [unique, not_null]
+      - name: store_group_key
+        tests:
+          - relationships: {to: ref('dim_store'), field: store_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: dim_movement_type
+    columns:
+      - name: movement_type_key
+        tests: [unique, not_null]
+      - name: movement_type
+        tests: [unique]
