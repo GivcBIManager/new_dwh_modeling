@@ -171,3 +171,22 @@ models:
           - accepted_values:
               values: ['Medication', 'Medical consumable', 'Implant', 'Laboratory', 'General', 'Asset', 'Other']
   - name: stg_ref__stock_snapshot
+  - name: stg_ref__pg_question_role
+    tests:
+      - hnh_unique_combination:
+          columns: [service_code, question_code]
+    columns:
+      - name: role
+        tests:
+          - accepted_values:
+              values: ['Hospital NPS', 'Physician NPS', 'respondent', 'first_visit', 'booking_channel', 'admitted_via_er',
+                       'used_lab', 'used_radiology', 'used_pharmacy', 'used_insurance_office', 'used_physio', 'used_speech',
+                       'treatment_complete', 'meds_delivered', 'tele_spared_visit', 'tele_channel', 'hhc_service',
+                       'dental_service', 'dialysis_done', 'contact_consent']
+  - name: stg_ref__pg_background_value
+    tests:
+      - hnh_unique_combination:
+          columns: [service_code, question_code, answer_code]
+    columns:
+      - name: conformed_value
+        tests: [not_null]

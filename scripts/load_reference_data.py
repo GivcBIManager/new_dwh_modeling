@@ -208,6 +208,20 @@ SMALL_TABLES = {
         [("CATEGORY_CODE", "String", s), ("ITEM_GROUP", "LowCardinality(String)", s)],
         "CATEGORY_CODE",
     ),
+    # Role of each Press Ganey question per service: Hospital NPS, Physician NPS or a background attribute; drafted by
+    # scripts/draft_pg_maps.py, reviewed by the user (open item O-P6-7).
+    "map_pg_question_role": (
+        "pg_question_role.csv",
+        [("SERVICE", "LowCardinality(String)", s), ("QUESTION_CODE", "String", s), ("ROLE", "LowCardinality(String)", s)],
+        "(SERVICE, QUESTION_CODE)",
+    ),
+    # Conformed value of each background or routing answer code per service; drafted by scripts/draft_pg_maps.py (O-P6-7).
+    "map_pg_background_value": (
+        "pg_background_value.csv",
+        [("SERVICE", "LowCardinality(String)", s), ("QUESTION_CODE", "String", s), ("ANSWER_CODE", "String", s),
+         ("CONFORMED_VALUE", "String", s)],
+        "(SERVICE, QUESTION_CODE, ANSWER_CODE)",
+    ),
 }
 
 BUDGET_DDL = f"""
