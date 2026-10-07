@@ -1,12 +1,12 @@
 # Phase 6 reconciliation (patient experience)
 
-Run after a successful `dbt build --select tag:hnh`. Figures below are measured on the live tables after the full build of 2026-10-07 (`PASS=1134 WARN=50 ERROR=0 TOTAL=1184`, 15 minutes 44 seconds; peak query memory 45.0 GiB in a Phase 2 model; the Phase 6 models stay under 3.1 GiB). Branches: 1 Al-Rabwa, 2 Khamis, 3 Jazan, 4 Unaizah, 5 Madinah, 6 Abha, 7 Ghirnata, 8 Muhayil. Data is as of 2026-10-07; October 2026 is a partial month. NPS is the 5-point NPS of the spec (promoter 4–5, passive 3, detractor 1–2 on 1–5 scales; 3–4 / – / 1–2 on the 1–4 scale; 8–10 / 5–7 / 0–4 on the 0–10 scale): it is not comparable to external 0–10 NPS benchmarks (O-P6-4).
+Run after a successful `dbt build --select tag:hnh`. Figures below are measured on the live tables after the full build of 2026-10-07 (`PASS=1135 WARN=50 ERROR=0 TOTAL=1185`, about 17 minutes, re-run after the final-review fixes; peak query memory 45.0 GiB in a Phase 2 model; the Phase 6 models stay under 3.1 GiB). Branches: 1 Al-Rabwa, 2 Khamis, 3 Jazan, 4 Unaizah, 5 Madinah, 6 Abha, 7 Ghirnata, 8 Muhayil. Data is as of 2026-10-07; October 2026 is a partial month. NPS is the 5-point NPS of the spec (promoter 4–5, passive 3, detractor 1–2 on 1–5 scales; 3–4 / – / 1–2 on the 1–4 scale; 8–10 / 5–7 / 0–4 on the 0–10 scale): it is not comparable to external 0–10 NPS benchmarks (O-P6-4).
 
 Row counts at this build: `stg.stg_pg__survey_response` 702,879; `stg.stg_pg__survey_answer` 739,968; `int.int_survey_encounter_link` 702,879; `int.int_survey_background` 30,791; `gold.dim_survey_service` 18 (17 services + unknown); `gold.dim_survey_question` 307 (306 questions + unknown); `gold.fact_survey_response` 702,879; `gold.fact_survey_answer` 739,968; `gold.rec_survey_monthly` 505. Reference maps: `default.map_pg_question_role` 61 rows, `default.map_pg_background_value` 104 rows.
 
 ## 1. Source against gold (`gold.rec_survey_monthly`)
 
-Per branch, survey service and visit month, source invitations equal response-fact rows and the source's non-null answers equal answer-fact rows: 505 cells, Σ invitations 702,879, Σ answers 739,968, Σ |differences| 0 (both are error-severity tests). The answer count leaves out the 54 `initial_response` values (a stray JSON array that belongs to no question) and the `comments` key, which is null on every survey: there is no free text to model (O-P6-3).
+Per branch, survey service and visit month, source invitations equal response-fact rows and the source's non-null answers, counted on the raw `responses` JSON independently of the expansion in staging, equal answer-fact rows: 505 cells, Σ invitations 702,879, Σ answers 739,968, Σ |differences| 0 (both are error-severity tests). The answer count leaves out the 54 `initial_response` values (a stray JSON array that belongs to no question) and the `comments` key, which is null on every survey: there is no free text to model (O-P6-3).
 
 A 20-survey trace (all IP surveys with `cms_23` 0–10 and `cms_24` 1–4 answers, plus a hash sample) matched all 509 source answers to gold rows: the same answer code on all 509, the option-master score on all 449 scored answers (60 are unscored background answers), and no band differs from a recomputation. Hospital NPS for Jazan, September 2026, computed straight from the source JSON and the option master is 74.3 on 750 answers; gold gives the same 74.3 on 750.
 
@@ -24,20 +24,22 @@ Doctor: IP takes the admission's consultant, else the encounter's treating docto
 
 ## 3. Survey quality (primary invitations, visits January–September 2026)
 
-| Branch | Invitations | SMS reach % | Response rate % | Completion % | Completeness % | Median days visit → answer | Link % | Doctor attribution % |
+| Branch | Invitations | SMS reach % | Response rate % | Completion % | Completeness % | Median days visit → answer (submitted) | Link % | Doctor attribution % |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 Al-Rabwa | 115,737 | 94.8 | 4.2 | 81.4 | 75.3 | 2 | 99.0 | 99.4 |
-| 2 Khamis | 137,644 | 90.6 | 4.6 | 80.0 | 74.0 | 2 | 51.1 | 67.5 |
-| 3 Jazan | 123,999 | 91.6 | 5.7 | 81.2 | 74.6 | 3 | 99.7 | 99.7 |
+| 1 Al-Rabwa | 115,737 | 94.8 | 4.2 | 81.4 | 75.3 | 1 | 99.0 | 99.4 |
+| 2 Khamis | 137,644 | 90.6 | 4.6 | 80.0 | 74.0 | 1 | 51.1 | 67.5 |
+| 3 Jazan | 123,999 | 91.6 | 5.7 | 81.8 | 74.6 | 3 | 99.7 | 99.7 |
 | 4 Unaizah | 53,108 | 91.3 | 6.6 | 82.6 | 77.5 | 1 | 100.0 | 100.0 |
-| 5 Madinah | 86,041 | 93.3 | 5.5 | 81.9 | 76.0 | 2 | 100.0 | 100.0 |
+| 5 Madinah | 86,041 | 93.3 | 5.5 | 81.9 | 76.0 | 1 | 100.0 | 100.0 |
 | 6 Abha | 28,324 | 93.2 | 6.5 | 79.1 | 73.6 | 1 | 100.0 | 100.0 |
 | 7 Ghirnata | 1,251 | 76.1 | 10.2 | 91.3 | 81.0 | 1 | 100.0 | 100.0 |
 | 8 Muhayil | 77 | 0.0 | 11.7 | 100.0 | 88.0 | 1 | 100.0 | 100.0 |
 
 Response rate divides responded invitations by **all** primary invitations, not by those with an SMS sent: 8,259 of the 24,968 submitted surveys have no `sms_send_date` (they were answered through another channel), and none of Muhayil's 77 invitations has one. 84 surveys are `submitted` in the source but carry no answer; they count as Not started, so completion is not inflated (`source_status` keeps the source value).
 
-Repeat invitations: 79,801 branch + encounter pairs received 2–5 invitations (87,827 invitations are not primary); only 208 of those encounters have more than one answered survey. `is_primary_for_encounter` keeps the answered invitation with the latest survey date, else the latest invitation.
+Repeat invitations: 79,801 branch + encounter pairs received 2–5 invitations (87,827 invitations are not primary); only 208 of those encounters have more than one answered survey. `is_primary_for_encounter` keeps a submitted invitation, else a partial one, else any, each by latest survey date.
+
+`survey_date` is the answer date only on submitted surveys: on partial and not-started surveys it is the survey's close (expiry) date, a median 15 days after the visit (offsets of 14, 15 and 30 days dominate). `days_visit_to_answer` and `survey_date_key` are therefore filled for the 24,968 submitted surveys only (median 1 day), and a submitted survey wins the primary flag over a partial one with a later close date (47 encounters changed at the final review).
 
 ## 4. NPS
 

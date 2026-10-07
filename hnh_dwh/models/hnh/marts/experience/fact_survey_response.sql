@@ -2,9 +2,11 @@
 
 -- One row per Press Ganey survey invitation (spec 6.1). response_status: Submitted = submitted with at least one
 -- answer; Partial = answers but not submitted; Not started = no answer (also the few 'submitted' surveys that carry no
--- answer). is_primary_for_encounter marks one invitation per branch + encounter id: the answered one with the latest
--- survey date, else the latest invitation (tie-break highest surveycode). The NPS columns come from the service's
--- Hospital NPS and Physician NPS answers (spec X1).
+-- answer). survey_date is the answer date only on submitted surveys; on partial and not-started ones it is the
+-- survey's close (expiry) date, a median 15 days after the visit, so survey_date_key and days_visit_to_answer are kept
+-- for submitted surveys only. is_primary_for_encounter marks one invitation per branch + encounter id: a submitted one,
+-- else a partial one, else any, latest survey date first (tie-break highest surveycode). The NPS columns come from the
+-- service's Hospital NPS and Physician NPS answers (spec X1).
 {%- set attributes = ['respondent_type', 'first_visit', 'booking_channel', 'admitted_via_er', 'used_lab',
     'used_radiology', 'used_pharmacy', 'used_insurance_office', 'used_physio', 'used_speech', 'treatment_complete',
     'meds_delivered', 'tele_spared_visit', 'tele_channel', 'hhc_service', 'dental_service', 'dialysis_done',
@@ -94,7 +96,7 @@ select
     payer_key,
     {{ hnh_date_key('assumeNotNull(visit_date)') }}         as visit_date_key,
     {{ hnh_date_key_in_range('sms_send_date') }}            as sms_sent_date_key,
-    {{ hnh_date_key_in_range('survey_date') }}              as survey_date_key,
+    if(is_responded = 1 and source_status = 'submitted', {{ hnh_date_key_in_range('survey_date') }}, null) as survey_date_key,
     encounter_id,
     source_status,
     multiIf(is_responded = 1 and source_status = 'submitted', 'Submitted',
@@ -103,12 +105,13 @@ select
     is_responded,
     toUInt8(is_responded = 1 and source_status = 'submitted') as is_submitted,
     toUInt8(row_number() over (partition by branch_key, encounter_id
-                               order by is_responded desc, survey_date desc, surveycode desc) = 1) as is_primary_for_encounter,
+                               order by (is_responded = 1 and source_status = 'submitted') desc, is_responded desc,
+                                        survey_date desc, surveycode desc) = 1) as is_primary_for_encounter,
     answers_count,
     scored_questions_offered,
     scored_questions_answered,
     if(sms_send_date is null, null, dateDiff('day', visit_date, sms_send_date)) as days_visit_to_sms,
-    if(is_responded = 1, dateDiff('day', visit_date, survey_date), null)        as days_visit_to_answer,
+    if(is_responded = 1 and source_status = 'submitted', dateDiff('day', visit_date, survey_date), null) as days_visit_to_answer,
     link_status,
 {%- for a in attributes %}
     {{ a }},

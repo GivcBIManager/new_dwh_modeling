@@ -1,7 +1,8 @@
 {{ config(order_by='(branch_key, survey_service_key, month_start)') }}
 
 -- Source against gold per branch, survey service and visit month (spec 6.3, 8): invitations and non-null answers must
--- match exactly; link rate is monitored. Branch from dim_branch.pg_branch_code (0 when the code is unknown).
+-- match exactly (answers counted on the raw JSON); link rate is monitored. Branch from dim_branch.pg_branch_code (0 when
+-- the code is unknown).
 with branches as (
     select branch_key, pg_branch_code from {{ ref('hnh_dim_branch') }} where pg_branch_code is not null
 ),
@@ -16,11 +17,12 @@ source_invitations as (
 ),
 
 source_answers as (
+    -- counted on the raw responses JSON, independently of the expansion in stg_pg__survey_answer: non-null, non-blank
+    -- values, except the comments key and the stray initial_response array (spec P2)
     select ifNull(b.branch_key, toUInt8(0)) as a_branch_key, r.service_code as a_service, toStartOfMonth(assumeNotNull(r.visit_date)) as a_month,
-           count() as k_source_answers
-    from {{ ref('stg_pg__survey_answer') }} as a
-    inner join (select surveycode, pg_branch_code, service_code, visit_date from {{ ref('stg_pg__survey_response') }}) as r
-        on r.surveycode = a.surveycode
+           sum(arrayCount(kv -> kv.2 is not null and trimBoth(ifNull(kv.2, '')) != '' and kv.1 not in ('comments', 'initial_response'),
+                          JSONExtractKeysAndValues(r.responses_json, 'Nullable(String)'))) as k_source_answers
+    from {{ ref('stg_pg__survey_response') }} as r
     left join branches as b on b.pg_branch_code = r.pg_branch_code
     group by a_branch_key, a_service, a_month
     {{ hnh_settings() }}  -- left join in a CTE: settings must sit here

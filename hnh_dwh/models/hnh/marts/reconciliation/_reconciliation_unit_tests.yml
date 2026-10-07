@@ -152,3 +152,32 @@ unit_tests:
       rows:
         - {branch_key: 3, month_start: '2026-09-01', patient_consumption_cost: 12, linked_consumption_cost: 6, linked_consumption_cost_oasis: 15, linked_revenue: 110, linked_margin: 104, sale_lines_without_charge: 1, cost_without_charge: 4, package_component_cost: 2, cancelled_only_cost: 2, medication_charges_without_cost: 1, revenue_without_cost: 20}
         - {branch_key: 3, month_start: '2026-10-01', patient_consumption_cost: 0, linked_consumption_cost: 0, linked_consumption_cost_oasis: 0, linked_revenue: 0, linked_margin: 0, sale_lines_without_charge: 0, cost_without_charge: 0, package_component_cost: 0, cancelled_only_cost: 0, medication_charges_without_cost: 1, revenue_without_cost: 15}
+
+  - name: rec_survey_monthly_counts_answers_from_the_raw_json
+    description: >
+      The source answer count comes from the raw responses JSON, not from the expanded answer view, so an answer lost
+      in the expansion shows as a difference. S1 has three non-null values (comments and initial_response are not
+      answers, a null value is not an answer) and gold holds one of them: answer_difference = 2.
+    model: rec_survey_monthly
+    given:
+      - input: ref('stg_pg__survey_response')
+        format: sql
+        rows: |
+          select 'S1' as surveycode, 'hnhj' as pg_branch_code, 'OP' as service_code, toNullable(toDate('2026-09-01')) as visit_date,
+                 '{"a1":"5","v2":"4","n2":null,"comments":"x","initial_response":["6",null],"o4":"5"}' as responses_json
+      - input: ref('hnh_dim_branch')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, toNullable('hnhj') as pg_branch_code
+      - input: ref('fact_survey_response')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, 'OP' as survey_service_key, toInt32(20260901) as visit_date_key, 'Linked' as link_status,
+                 toUInt8(1) as is_responded, toInt64(7) as staff_key
+      - input: ref('fact_survey_answer')
+        format: sql
+        rows: |
+          select toUInt8(3) as branch_key, 'OP' as survey_service_key, toInt32(20260901) as visit_date_key
+    expect:
+      rows:
+        - {branch_key: 3, survey_service_key: OP, source_invitations: 1, gold_invitations: 1, invitation_difference: 0, source_answers: 3, gold_answers: 1, answer_difference: 2}
