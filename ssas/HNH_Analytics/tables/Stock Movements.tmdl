@@ -1,6 +1,12 @@
 /// One stock movement line from Oasis or Fusion.
 table 'Stock Movements'
 
+	/// Consumption cost in SAR: Σ consumption_cost of consumption movements (Phase 5 spec section 7).
+	measure 'Consumption Cost' =
+			CALCULATE ( SUM ( 'Stock Movements'[Consumption Cost Amount] ), 'Stock Movements'[Is Consumption] = "Yes" )
+		formatString: #,0
+		displayFolder: Consumption
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

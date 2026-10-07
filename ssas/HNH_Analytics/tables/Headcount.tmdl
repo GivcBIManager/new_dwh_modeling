@@ -1,6 +1,18 @@
 /// Month-end headcount snapshot per employee.
 table Headcount
 
+	/// Month-end headcount of the last month in the selection, contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months.
+	measure Headcount =
+			VAR LastMonth = MAX ( Headcount[Month Date Key] )
+			RETURN
+				CALCULATE (
+					SUM ( Headcount[Headcount Units] ),
+					Headcount[Month Date Key] = LastMonth,
+					Headcount[Is Contingent] = "No"
+				)
+		formatString: #,0
+		displayFolder: Headcount
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

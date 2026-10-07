@@ -1,6 +1,11 @@
 /// One invoice with statement and approval status.
 table Invoices
 
+	/// Billed amount in SAR: Σ net_amount of invoices (Phase 2 spec section 8).
+	measure 'Billed Amount' = SUM ( Invoices[Net Amount] )
+		formatString: #,0
+		displayFolder: Billing
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

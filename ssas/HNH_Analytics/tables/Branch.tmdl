@@ -1,6 +1,11 @@
 /// Hospital branches 1-8 and Head Office (100).
 table Branch
 
+	/// The login SSAS sees for this connection; use it to check row-level security from a report.
+	measure 'Current User' = USERNAME ()
+		formatString: General
+		displayFolder: Diagnostics
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

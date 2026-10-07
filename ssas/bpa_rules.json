@@ -1,0 +1,74 @@
+[
+  {
+    "ID": "HNH_AMOUNT_FIXED_DECIMAL",
+    "Name": "Amount columns use fixed decimal, not floating point",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "DataColumn",
+    "Expression": "DataType = \"Double\" and RegEx.IsMatch(Name, \"(Amount|Cost|Value|Debit|Credit|Pay|Fee|Price|Salary|Rate|Revenue)$\")"
+  },
+  {
+    "ID": "HNH_FACT_HIDDEN_NO_MDX",
+    "Name": "Hidden fact columns have no attribute hierarchy",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "DataColumn",
+    "Expression": "IsHidden and IsAvailableInMDX and Table.GetAnnotation(\"hnh_kind\") = \"fact\""
+  },
+  {
+    "ID": "HNH_NO_IMPLICIT_MEASURES",
+    "Name": "Implicit measures are switched off",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Model",
+    "Expression": "not DiscourageImplicitMeasures"
+  },
+  {
+    "ID": "HNH_NO_CALCULATED_COLUMNS",
+    "Name": "No calculated columns (logic belongs in dbt)",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "CalculatedColumn",
+    "Expression": "true"
+  },
+  {
+    "ID": "HNH_NO_CALCULATED_TABLES",
+    "Name": "No calculated tables",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "CalculatedTable",
+    "Expression": "true"
+  },
+  {
+    "ID": "HNH_MEASURE_FORMAT_FOLDER",
+    "Name": "Measures have a format string and a display folder",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Measure",
+    "Expression": "(string.IsNullOrEmpty(FormatString) and string.IsNullOrEmpty(FormatStringExpression)) or string.IsNullOrEmpty(DisplayFolder)"
+  },
+  {
+    "ID": "HNH_DESCRIPTIONS",
+    "Name": "Visible tables and measures have a description",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Table, Measure",
+    "Expression": "not IsHidden and string.IsNullOrEmpty(Description)"
+  },
+  {
+    "ID": "HNH_SINGLE_DIRECTION",
+    "Name": "Relationships filter in one direction (except Patient Details)",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Relationship",
+    "Expression": "CrossFilteringBehavior = \"BothDirections\" and FromTable.Name <> \"Patient Details\""
+  },
+  {
+    "ID": "HNH_NO_ITERATOR_OVER_LARGE_FACT",
+    "Name": "No FILTER or X-iterator over a fact with more than 1M rows",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Measure",
+    "Expression": "RegEx.IsMatch(Expression, \"(?i)(FILTER|SUMX|AVERAGEX|COUNTX|MINX|MAXX)\\s*\\(\\s*'?(Charge Lines|Order Lines|Stock Movements|Patient Consumption|Claim Lines|Cash Receipts|GL Journal Lines|Pre-auth Lines|Encounters|Episodes|Invoices|Bed Occupancy|Episode Billing|Clinic Capacity|Targets|Payroll)'?\\s*,\")"
+  }
+]

@@ -1,6 +1,21 @@
 /// One answered survey question with NPS band.
 table 'Survey Answers'
 
+	/// Hospital NPS on the 5-point "recommend" question: (promoters − detractors) ÷ answers × 100; under 30 answers shows "insufficient sample" (Phase 6 spec section 7).
+	measure 'Hospital NPS (5-point)' =
+			VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Hospital NPS" )
+			VAR Net =
+				CALCULATE (
+					SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ),
+					'Survey Answers'[NPS Role] = "Hospital NPS"
+				)
+			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+		displayFolder: NPS
+	
+		formatStringDefinition =
+				VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Hospital NPS" )
+				RETURN IF ( Answers < 30, """insufficient sample""", "0.0" )
+
 	column 'Survey Response Key'
 		dataType: int64
 		isHidden

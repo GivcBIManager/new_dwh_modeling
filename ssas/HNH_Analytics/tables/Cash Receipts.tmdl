@@ -1,6 +1,11 @@
 /// Patient receipts, cancellations and refunds.
 table 'Cash Receipts'
 
+	/// Patient collections in SAR: Σ receipt_amount; cancellations and refunds count as recorded (Phase 2 spec section 8).
+	measure 'Patient Collections' = SUM ( 'Cash Receipts'[Receipt Amount] )
+		formatString: #,0
+		displayFolder: Collections
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

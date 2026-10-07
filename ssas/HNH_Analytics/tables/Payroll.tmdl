@@ -1,6 +1,11 @@
 /// Monthly pay per employee and pay category; pay access only.
 table Payroll
 
+	/// Payroll cost in SAR: Σ cost_amount; parallel-run rows are already excluded (Phase 4 spec section 7).
+	measure 'Payroll Cost' = SUM ( Payroll[Cost Amount] )
+		formatString: #,0
+		displayFolder: Payroll
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

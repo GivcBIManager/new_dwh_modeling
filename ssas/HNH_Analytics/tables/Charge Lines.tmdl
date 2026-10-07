@@ -1,6 +1,11 @@
 /// One Oasis charge line (delivered service or item).
 table 'Charge Lines'
 
+	/// Recognised revenue in SAR: Σ revenue_amount (Phase 2 spec section 8, "Revenue").
+	measure Revenue = SUM ( 'Charge Lines'[Revenue Amount] )
+		formatString: #,0
+		displayFolder: Revenue
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden
