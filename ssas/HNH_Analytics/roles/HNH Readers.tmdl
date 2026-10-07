@@ -1,0 +1,74 @@
+role 'HNH Readers'
+	modelPermission: read
+
+	tablePermission 'User Access' = FALSE ()
+
+	tablePermission Branch =
+			Branch[Branch Key]
+				IN CALCULATETABLE (
+					VALUES ( 'User Access'[Branch Key] ),
+					'User Access'[Login Name] = USERNAME ()
+				)
+
+	tablePermission Staff =
+			VAR UserRows =
+				CALCULATETABLE (
+					SUMMARIZE ( 'User Access', 'User Access'[Branch Key], 'User Access'[Unified Specialty] ),
+					'User Access'[Login Name] = USERNAME ()
+				)
+			RETURN
+				Staff[Staff Key] = -1
+					|| NOT ISEMPTY (
+						FILTER (
+							UserRows,
+							'User Access'[Branch Key] = Staff[Branch Key]
+								&& (
+									ISBLANK ( 'User Access'[Unified Specialty] )
+										|| 'User Access'[Unified Specialty] = Staff[Unified Specialty]
+								)
+						)
+					)
+
+	tablePermission Patient =
+			Patient[Patient Key] = -1
+				|| Patient[Branch Key]
+					IN CALCULATETABLE (
+						VALUES ( 'User Access'[Branch Key] ),
+						'User Access'[Login Name] = USERNAME ()
+					)
+
+	tablePermission 'Pay Category' =
+			NOT ISEMPTY (
+				CALCULATETABLE (
+					'User Access',
+					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Can See Pay] = 1
+				)
+			)
+
+	tablePermission 'Leave Balances' =
+			NOT ISEMPTY (
+				CALCULATETABLE (
+					'User Access',
+					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Can See Pay] = 1
+				)
+			)
+
+	tablePermission 'Staff Productivity' =
+			NOT ISEMPTY (
+				CALCULATETABLE (
+					'User Access',
+					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Can See Pay] = 1
+				)
+			)
+
+	tablePermission 'Patient Details' =
+			NOT ISEMPTY (
+				CALCULATETABLE (
+					'User Access',
+					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Can See PII] = 1
+				)
+			)

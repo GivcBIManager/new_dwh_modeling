@@ -1,0 +1,89 @@
+/// Time intelligence for any measure: pick one item (SSAS spec 8.3). Snapshot measures keep their month-end value under MTD, QTD, YTD and Rolling 12M.
+table 'Time Calculation'
+
+	calculationGroup
+		precedence: 1
+
+		calculationItem Current = SELECTEDMEASURE ()
+
+		calculationItem MTD =
+				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
+				IF (
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance] ),
+					SELECTEDMEASURE (),
+					CALCULATE ( SELECTEDMEASURE (), DATESMTD ( 'Date'[Date] ) )
+				)
+
+		calculationItem QTD =
+				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
+				IF (
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance] ),
+					SELECTEDMEASURE (),
+					CALCULATE ( SELECTEDMEASURE (), DATESQTD ( 'Date'[Date] ) )
+				)
+
+		calculationItem YTD =
+				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
+				IF (
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance] ),
+					SELECTEDMEASURE (),
+					CALCULATE ( SELECTEDMEASURE (), DATESYTD ( 'Date'[Date] ) )
+				)
+
+		calculationItem PY = CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+
+		calculationItem 'PY YTD' =
+				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
+				IF (
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance] ),
+					CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) ),
+					CALCULATE ( SELECTEDMEASURE (), DATESYTD ( SAMEPERIODLASTYEAR ( 'Date'[Date] ) ) )
+				)
+
+		calculationItem 'YoY Δ' =
+				VAR Cur = SELECTEDMEASURE ()
+				VAR Prev = CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), Cur - Prev )
+
+		calculationItem 'YoY %' =
+				VAR Cur = SELECTEDMEASURE ()
+				VAR Prev = CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), DIVIDE ( Cur - Prev, ABS ( Prev ) ) )
+
+			formatStringDefinition = "0.0%"
+
+		calculationItem 'MoM Δ' =
+				VAR Cur = SELECTEDMEASURE ()
+				VAR Prev = CALCULATE ( SELECTEDMEASURE (), DATEADD ( 'Date'[Date], -1, MONTH ) )
+				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), Cur - Prev )
+
+		calculationItem 'MoM %' =
+				VAR Cur = SELECTEDMEASURE ()
+				VAR Prev = CALCULATE ( SELECTEDMEASURE (), DATEADD ( 'Date'[Date], -1, MONTH ) )
+				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), DIVIDE ( Cur - Prev, ABS ( Prev ) ) )
+
+			formatStringDefinition = "0.0%"
+
+		calculationItem 'Rolling 12M' =
+				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
+				IF (
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance] ),
+					SELECTEDMEASURE (),
+					CALCULATE ( SELECTEDMEASURE (), DATESINPERIOD ( 'Date'[Date], MAX ( 'Date'[Date] ), -12, MONTH ) )
+				)
+
+	column 'Time Calculation'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Name
+		sortByColumn: Ordinal
+
+	column Ordinal
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: Ordinal
+
+	partition 'Time Calculation' = calculationGroup
+
+	annotation hnh_kind = calculation_group
