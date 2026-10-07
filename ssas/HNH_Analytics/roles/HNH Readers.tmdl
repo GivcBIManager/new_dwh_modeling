@@ -11,23 +11,15 @@ role 'HNH Readers'
 				)
 
 	tablePermission Staff =
-			VAR UserRows =
+			VAR UserSpecialties =
 				CALCULATETABLE (
-					SUMMARIZE ( 'User Access', 'User Access'[Branch Key], 'User Access'[Unified Specialty] ),
+					VALUES ( 'User Access'[Unified Specialty] ),
 					'User Access'[Login Name] = USERNAME ()
 				)
 			RETURN
 				Staff[Staff Key] = -1
-					|| NOT ISEMPTY (
-						FILTER (
-							UserRows,
-							'User Access'[Branch Key] = Staff[Branch Key]
-								&& (
-									ISBLANK ( 'User Access'[Unified Specialty] )
-										|| 'User Access'[Unified Specialty] = Staff[Unified Specialty]
-								)
-						)
-					)
+					|| NOT ISEMPTY ( FILTER ( UserSpecialties, ISBLANK ( 'User Access'[Unified Specialty] ) ) )
+					|| Staff[Unified Specialty] IN UserSpecialties
 
 	tablePermission Patient =
 			Patient[Patient Key] = -1

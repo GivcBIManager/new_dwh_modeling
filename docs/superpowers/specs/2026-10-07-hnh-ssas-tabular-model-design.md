@@ -202,7 +202,7 @@ SSAS does not allow `USERELATIONSHIP` over a relationship whose table carries a 
 |---|---|
 | `sec_user_access` | `FALSE()` |
 | `dim_branch` | `dim_branch[branch_key] IN CALCULATETABLE(VALUES(sec_user_access[branch_key]), sec_user_access[login_name] = USERNAME())` |
-| `dim_staff` | `dim_staff[staff_key] = -1` **or** a `sec_user_access` row of the user exists with the staff member's `branch_key` and (`unified_specialty` blank **or** equal to `dim_staff[unified_specialty]`) |
+| `dim_staff` | `dim_staff[staff_key] = -1` **or** the user has a `sec_user_access` row with a blank `unified_specialty` **or** `dim_staff[unified_specialty]` is one of the user's `unified_specialty` values (specialty only, no branch match — P15) |
 | `dim_pay_category` | the user has any row with `can_see_pay = 1` |
 | `fact_leave_balance_monthly`, `agg_staff_productivity_monthly` | the user has any row with `can_see_pay = 1` |
 | `dim_patient_pii` | the user has any row with `can_see_pii = 1` |
@@ -397,3 +397,4 @@ These amend the sections named; the implementation plan `plans/2026-10-07-ssas-m
 | P12 | 8 | This plan builds the model foundation with 16 starter measures (one or more per subject area, the three snapshot measures, and a `Current User` diagnostic). The full KPI catalogue (section 8.1) is a second plan. | The catalogue is about 180 measures; it is written against the deployed column names. |
 | P13 | 4.3 | Where a measure name equals a column name in the same table, the column gets an explicit display name (`COLUMN_NAMES` in `model_config.py`), e.g. `headcount` → *Headcount Units*. | SSAS forbids a measure and a column with the same name in one table. |
 | P14 | 11.5 | Performance queries run as a single-branch user through `EffectiveUserName`, not as an administrator. | Server administrators bypass row filters, so timings without a user would miss the security cost. |
+| P15 | 6.2 | The Staff filter matches specialty only (no branch match) | HR facts reference staff of other branches (611 headcount, 1,147 payroll rows); facts stay branch-secured through Branch; unrestricted users can list other branches' staff names |
