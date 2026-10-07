@@ -37,9 +37,9 @@ function Scalar($Table) {
 
 Add-Type -Path (Join-Path $TabularEditorDir 'Microsoft.AnalysisServices.Tabular.dll')
 $tomVersion = (Get-Item (Join-Path $TabularEditorDir 'Microsoft.AnalysisServices.Tabular.dll')).VersionInfo.FileVersion
-$server = New-Object Microsoft.AnalysisServices.Tabular.Server
-$server.Connect("Data Source=$Server")
-Report 'server' ($server.ServerMode -eq 'Tabular' -and $server.Version -like '17.*') "version $($server.Version), edition $($server.Edition), mode $($server.ServerMode), TOM $tomVersion"
+$tomServer = New-Object Microsoft.AnalysisServices.Tabular.Server
+$tomServer.Connect("Data Source=$Server")
+Report 'server' ($tomServer.ServerMode -eq 'Tabular' -and $tomServer.Version -like '17.*') "version $($tomServer.Version), edition $($tomServer.Edition), mode $($tomServer.ServerMode), TOM $tomVersion"
 
 $providers = @((New-Object System.Data.OleDb.OleDbEnumerator).GetElements() | Where-Object { $_.SOURCES_NAME -like 'MSOLAP*' } | ForEach-Object { $_.SOURCES_NAME })
 Report 'msolap' ($providers.Count -gt 0) ($providers -join ', ')
@@ -55,9 +55,9 @@ $te = Join-Path $TabularEditorDir 'TabularEditor.exe'
 $out = & $te (Join-Path $PSScriptRoot 'Probe') -D $Server HNH_Probe -O -C -P -R -E -V 2>&1 | Out-String
 Report 'deploy' ($LASTEXITCODE -eq 0 -and $out -notmatch 'type=error') (($out -replace '\s+', ' ').Trim())
 
-$server.Refresh()
-$db = $server.Databases.FindByName('HNH_Probe')
-if ($db -eq $null) { Report 'database' $false 'HNH_Probe not found after deploy'; exit 1 }
+$tomServer.Refresh()
+$db = $tomServer.Databases.FindByName('HNH_Probe')
+if ($db -eq $null) { Report 'database' $false 'HNH_Probe not found after deploy'; Write-Host "$($script:failures) failure(s)"; exit 1 }
 Report 'compatibility' ($db.CompatibilityLevel -eq 1700) "level $($db.CompatibilityLevel), mode $($db.CompatibilityMode)"
 
 $member = New-Object Microsoft.AnalysisServices.Tabular.WindowsModelRoleMember
@@ -99,6 +99,6 @@ Report 'perspective' ($p -ne $null -and $p.PerspectiveTables[0].IncludeAll) 'inc
 
 $db.Drop()
 Report 'cleanup' $true 'HNH_Probe dropped'
-$server.Disconnect()
+$tomServer.Disconnect()
 Write-Host "$($script:failures) failure(s)"
 if ($script:failures -gt 0) { exit 1 }
