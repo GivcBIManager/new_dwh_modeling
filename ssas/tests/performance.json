@@ -1,0 +1,18 @@
+[
+  {"name": "Executive: revenue, visits and admissions by branch, one month",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( Branch[Branch Name], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Revenue\", [Revenue], \"OP Visits\", [OP Visits], \"Admissions\", [Admissions] )"},
+  {"name": "Revenue cycle: revenue YTD by payer category",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( Payer[Category], TREATAS ( { 202608 }, 'Date'[Year Month] ), TREATAS ( { \"YTD\" }, 'Time Calculation'[Time Calculation] ), \"Revenue YTD\", [Revenue] )"},
+  {"name": "Patient flow: occupancy by department",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( Department[Department Name], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Occupancy\", [Bed Occupancy %] )"},
+  {"name": "Claims: claimed amount by purchaser",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( Payer[Purchaser Name], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Claimed\", [Claimed Amount] )"},
+  {"name": "Finance: closing balance by FS line",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'FS Line'[FS Line], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Balance\", [GL Closing Balance] )"},
+  {"name": "Workforce: headcount and payroll by HR department",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'HR Department'[Department Name], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Headcount\", [Headcount], \"Payroll\", [Payroll Cost] )"},
+  {"name": "Supply chain: consumption and stock by item group",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( Item[Item Group], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Consumption\", [Consumption Cost], \"Stock\", [Stock Value] )"},
+  {"name": "Patient experience: NPS and response rate by branch",
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( Branch[Branch Name], TREATAS ( { 2026 }, 'Date'[Year] ), \"NPS\", [Hospital NPS (5-point)], \"Response rate\", [Response Rate %] )"}
+]
