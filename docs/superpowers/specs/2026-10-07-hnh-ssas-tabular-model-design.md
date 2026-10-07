@@ -374,3 +374,26 @@ Run by `test.ps1` against the test database at every deploy, and on demand again
 - Arabic metadata translations (the model is English; Arabic names stay as attributes).
 - Automated scheduling of dbt + processing (parent O9).
 - DirectQuery, hybrid tables, aggregations over DirectQuery.
+
+---
+
+## 14. Decisions made while planning (2026-10-07)
+
+These amend the sections named; the implementation plan `plans/2026-10-07-ssas-model-foundation.md` follows them.
+
+| # | Section | Decision | Why |
+|---|---|---|---|
+| P1 | 3, 10 | Deploy, process and test scripts run **on HNHANALYTICSSRV** (Windows PowerShell 5.1); the developer laptop builds and validates offline. The user chose this. | The laptop has no network path to the server (name does not resolve, no port answers). |
+| P2 | 4.2 rule 5 | Every `is_*`/`has_*` `UInt8` flag becomes `'Yes'`/`'No'` text; only flags that measures **sum** (e.g. `is_occupied`, `is_promoter`) stay integers (`int_flags`). | One flag column serves both slicing and measure filters; text equality on a two-value column is as fast as an integer filter. |
+| P3 | 4.2 | Every integer column becomes `Int64`; a nullable non-date `*_key` becomes `-1` when null; `LowCardinality(String)` becomes `String`; `Date32` becomes `Date`. | One integer type over ODBC; a blank key would hide fact rows from every row-filtered user (blank dimension members are filtered out). |
+| P4 | 4.3 | Fact **numeric** columns are hidden; fact **text and date** columns (degenerate attributes, Yes/No flags) stay visible for slicing. | Clarifies "every fact column hidden"; users must be able to slice by encounter type, claim status, etc. |
+| P5 | 4.3 | Surrogate keys get `encodingHint: hash`; date and time keys `value`. | Surrogate keys are 63-bit hashes (`cityHash64 >> 1`), which value encoding stores poorly. |
+| P6 | 6.2 | `Patient` (`dim_patient`) also gets a row filter: Unknown (−1) or the user's branches. | Otherwise slicers list other branches' patient ids and MRNs. The filter does not change fact totals, which are already filtered by branch. |
+| P7 | 6.2 | `isAvailableInMdx: false` is set only on hidden **fact** and security columns; dimension keys keep their attribute hierarchy. | Dimension tables are small; avoids any risk on relationship "to" columns. |
+| P8 | 9.1, 11 | The server scripts use the AMO/TOM object model (DLLs shipped with Tabular Editor 2) instead of hand-written TMSL, and run DAX through the MSOLAP OLE DB provider. Two extra views: `gold.ssas_etl_run_log` (processing gate) and `is_admin` kept in `gold.ssas_sec_user_access` (tests), so the grant stays `gold.ssas_*` only. `ssas_reader` uses `readonly = 2` (the ODBC driver sets session settings). | TOM refresh requests in one `SaveChanges` are one transaction; Tabular Editor 2 does not ship ADOMD.NET. |
+| P9 | 9.3, 11.1 | The first yearly partition is open below (`< 2023-01-01`), so a stray earlier date is never lost. Partition coverage is tested with Pester on the partition planner and by SSAS-vs-ClickHouse row counts, instead of a dbt singular test. Measure checks are JSON files (`ssas/tests/measures/*.json`). | The planner is pure code; row counts prove the deployed result. |
+| P10 | 10.1 | The Best Practice Analyzer "has a description" rule applies to tables and measures, not columns. | Column names are generated from the warehouse names. |
+| P11 | 3, 10 | `ssas/tools/generate.py` writes the table, relationship, perspective, model, database and data source files from the `gold.ssas_*` columns and `ssas/tools/model_config.py`. Roles, the calculation group, measures and hierarchies are hand-written; the generator keeps measure and hierarchy blocks of existing table files. | Relationships and perspectives are derived from the same column list, so they cannot drift from the views. |
+| P12 | 8 | This plan builds the model foundation with 16 starter measures (one or more per subject area, the three snapshot measures, and a `Current User` diagnostic). The full KPI catalogue (section 8.1) is a second plan. | The catalogue is about 180 measures; it is written against the deployed column names. |
+| P13 | 4.3 | Where a measure name equals a column name in the same table, the column gets an explicit display name (`COLUMN_NAMES` in `model_config.py`), e.g. `headcount` → *Headcount Units*. | SSAS forbids a measure and a column with the same name in one table. |
+| P14 | 11.5 | Performance queries run as a single-branch user through `EffectiveUserName`, not as an administrator. | Server administrators bypass row filters, so timings without a user would miss the security cost. |
