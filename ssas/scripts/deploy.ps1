@@ -31,9 +31,9 @@ function Invoke-TabularEditor([string[]]$Arguments) {
     Write-Host $out
     if ($LASTEXITCODE -ne 0 -or $out -match 'type=error') { throw "Tabular Editor failed: $($Arguments -join ' ')" }
 }
-function Invoke-Step([string]$Script, [string[]]$Arguments) {
-    & (Join-Path $PSScriptRoot $Script) @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Script failed with exit code $LASTEXITCODE" }
+function Invoke-Step([string]$Script, [hashtable]$Arguments) {
+    # Named parameters through a hashtable splat (Invoke-HnhStep, Deploy.Tests.ps1).
+    Invoke-HnhStep -ScriptPath (Join-Path $PSScriptRoot $Script) -Arguments $Arguments
 }
 function Want([string]$Name) { return ($Stage -eq 'All' -or $Stage -eq $Name) }
 
@@ -49,9 +49,9 @@ try {
         $srv = Connect-HnhServer $Server
         [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
         $srv.Disconnect()
-        Invoke-Step 'partitions.ps1' @('-Server', $Server, '-Database', 'HNH_Analytics_Test', '-TabularEditorDir', $TabularEditorDir, '-NoRefresh')
-        Invoke-Step 'process.ps1' @('-Server', $Server, '-Database', 'HNH_Analytics_Test', '-Mode', 'Weekly', '-Force', '-Dsn', $Dsn, '-TabularEditorDir', $TabularEditorDir)
-        Invoke-Step 'test.ps1' @('-Server', $Server, '-Database', 'HNH_Analytics_Test', '-Dsn', $Dsn, '-TabularEditorDir', $TabularEditorDir)
+        Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
+        Invoke-Step 'process.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Mode = 'Weekly'; Force = $true; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
+        Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
     }
     if (Want 'Promote') {
         Write-Host '== Promote: HNH_Analytics'
@@ -74,7 +74,7 @@ try {
         $db = Get-HnhDatabase $srv 'HNH_Analytics'
         if (Add-HnhRoleMember -Model $db.Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group added" }
         $srv.Disconnect()
-        Invoke-Step 'partitions.ps1' @('-Server', $Server, '-Database', 'HNH_Analytics', '-TabularEditorDir', $TabularEditorDir)
+        Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics'; TabularEditorDir = $TabularEditorDir }
         $srv = Connect-HnhServer $Server
         $loaded = Update-HnhUnprocessed -Model (Get-HnhDatabase $srv 'HNH_Analytics').Model
         Write-Host ("loaded {0} unprocessed partition(s): {1}" -f $loaded.Count, ($loaded -join '; '))

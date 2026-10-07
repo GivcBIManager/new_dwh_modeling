@@ -222,3 +222,10 @@ function Get-HnhScalar {
     if ($Table.Rows.Count -eq 0 -or $Table.Rows[0][0] -is [System.DBNull]) { return [double]0 }
     return [double]$Table.Rows[0][0]
 }
+
+function Invoke-HnhStep {
+    # Runs a child script with named parameters. Splat a hashtable: in PS 5.1 an array splat binds every element by position (final review C1).
+    param([Parameter(Mandatory = $true)][string]$ScriptPath, [hashtable]$Arguments = @{})
+    & $ScriptPath @Arguments
+    if ($LASTEXITCODE -ne 0) { throw "$ScriptPath failed with exit code $LASTEXITCODE" }
+}
