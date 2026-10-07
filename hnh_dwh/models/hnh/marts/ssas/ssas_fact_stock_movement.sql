@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_stock_movement', drop=['movement_key', 'movement_type', 'oasis_line_id', 'oasis_doc_no', 'oasis_product_code', 'fusion_transaction_id', 'fusion_transaction_date_key', 'unit_cost', 'lot_number', 'expiry_date'], decimals=['cost_amount', 'oasis_cost_amount', 'consumption_cost'], floats=['primary_quantity', 'consumption_quantity']) }}

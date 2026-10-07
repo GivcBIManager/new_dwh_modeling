@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_purchase_line', drop=['purchase_line_key', 'fusion_line_location_id', 'oasis_line_id'], decimals=['unit_price', 'ordered_value', 'gross_ordered_value', 'received_value', 'ap_matched_amount'], floats=['quantity_ordered', 'quantity_received', 'quantity_cancelled', 'quantity_billed']) }}

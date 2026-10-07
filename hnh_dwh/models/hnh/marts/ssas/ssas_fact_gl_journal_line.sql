@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('hnh_fact_gl_journal_line', drop=['gl_journal_line_key', 'je_header_id', 'je_line_num', 'intercompany_branch_key', 'ledger_id', 'je_batch_id', 'line_description'], decimals=['debit', 'credit', 'amount']) }}

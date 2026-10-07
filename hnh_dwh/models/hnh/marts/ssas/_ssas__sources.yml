@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: hnh_log
+    schema: gold
+    description: Run log appended by the hnh_log_run on-run-end hook (not a dbt model).
+    tables:
+      - name: etl_run_log

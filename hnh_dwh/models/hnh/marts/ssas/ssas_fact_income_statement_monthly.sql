@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_income_statement_monthly', drop=['income_statement_key', 'month_start', 'budget_line_code'], decimals=['actual_posted', 'actual_including_unposted', 'actual_excl_opening', 'budget_most_likely', 'budget_worst_case']) }}

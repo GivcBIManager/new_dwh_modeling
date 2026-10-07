@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_patient_consumption', drop=['movement_key', 'movement_type', 'encounter_key', 'episode_key', 'charge_line_key'], decimals=['cost_amount', 'consumption_cost', 'revenue_amount', 'oasis_cost_amount'], floats=['primary_quantity', 'consumption_quantity']) }}

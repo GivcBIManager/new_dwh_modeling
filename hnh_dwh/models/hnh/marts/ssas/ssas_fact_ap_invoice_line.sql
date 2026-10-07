@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_ap_invoice_line', drop=['ap_invoice_line_key', 'accounting_date_key_nn', 'invoice_id', 'po_distribution_id', 'rcv_transaction_id'], decimals=['amount', 'spend_amount', 'tax_amount', 'prepayment_amount']) }}

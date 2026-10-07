@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_leave_balance_monthly', drop=['leave_balance_key', 'absence_plan_id'], decimals=['monthly_salary', 'daily_rate', 'leave_liability_amount'], floats=['begin_balance', 'accrued', 'used', 'end_balance']) }}

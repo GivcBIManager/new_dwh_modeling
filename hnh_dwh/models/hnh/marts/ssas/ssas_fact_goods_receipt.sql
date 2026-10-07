@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_goods_receipt', drop=['goods_receipt_key', 'purchase_line_key', 'oasis_line_id', 'fusion_transaction_id'], decimals=['unit_price', 'received_value'], floats=['quantity', 'free_quantity']) }}
