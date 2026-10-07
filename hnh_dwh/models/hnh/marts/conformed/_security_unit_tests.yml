@@ -20,6 +20,10 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(b) as branch_id from values('b UInt8', (1), (2))
+      - input: ref('stg_ref__bi_user_permission')
+        format: sql
+        rows: |
+          select 'nobody' as user_name, toUInt8(0) as can_see_pay, toUInt8(0) as can_see_pii where 0
     expect:
       rows:
         - {user_name: boss, branch_key: 1, unified_specialty: null, is_admin: 1}
@@ -30,3 +34,30 @@ unit_tests:
         - {user_name: surgery, branch_key: 2, unified_specialty: Urology, is_admin: 0}
         - {user_name: surgery, branch_key: 1, unified_specialty: Ent, is_admin: 0}
         - {user_name: surgery, branch_key: 2, unified_specialty: Ent, is_admin: 0}
+
+  - name: sec_user_access_permission_flags
+    description: >
+      SSAS spec 6.1. "boss" (admin) is listed with pay but not PII, so every one of boss's rows carries
+      can_see_pay 1 and can_see_pii 0. "clerk" is not listed and gets 0 for both (fail closed).
+    model: sec_user_access
+    given:
+      - input: ref('stg_ref__bi_users')
+        format: sql
+        rows: |
+          select u as user_name, if(b = 0, cast(null as Nullable(UInt8)), toNullable(toUInt8(b))) as branch_id, toUInt8(a) as is_admin,
+                 cast(null as Nullable(String)) as unified_specialty
+          from values('u String, b UInt8, a UInt8', ('DOM\Boss', 0, 1), ('DOM\Clerk', 2, 0))
+      - input: ref('stg_ref__branch')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id from values('b UInt8', (1), (2))
+      - input: ref('stg_ref__bi_user_permission')
+        format: sql
+        rows: |
+          select 'boss' as user_name, toUInt8(1) as can_see_pay, toUInt8(0) as can_see_pii
+    expect:
+      rows:
+        - {user_name: boss, branch_key: 1, can_see_pay: 1, can_see_pii: 0}
+        - {user_name: boss, branch_key: 2, can_see_pay: 1, can_see_pii: 0}
+        - {user_name: boss, branch_key: 100, can_see_pay: 1, can_see_pii: 0}
+        - {user_name: clerk, branch_key: 2, can_see_pay: 0, can_see_pii: 0}

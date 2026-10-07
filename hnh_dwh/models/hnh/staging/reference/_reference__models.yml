@@ -1,6 +1,10 @@
 version: 2
 
 models:
+  - name: stg_ref__bi_user_permission
+    columns:
+      - name: user_name
+        tests: [unique, not_null]
   - name: stg_ref__branch
     columns:
       - name: branch_id

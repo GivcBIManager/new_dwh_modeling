@@ -68,7 +68,9 @@ select
     concat('{{ var("hnh_ssas_machine_name") }}', char(92), a.user_name)   as login_name,
     a.branch_key                                                         as branch_key,
     a.unified_specialty                                                  as unified_specialty,
-    a.is_admin                                                           as is_admin
+    a.is_admin                                                           as is_admin,
+    toUInt8(ifNull(p.can_see_pay, 0))                                    as can_see_pay,
+    toUInt8(ifNull(p.can_see_pii, 0))                                    as can_see_pii
 from (
     select * from admins
     union all
@@ -77,4 +79,5 @@ from (
     select * from specialty_wide
 ) as a
 inner join first_source_name as f on f.user_name = a.user_name
+left join {{ ref('stg_ref__bi_user_permission') }} as p on p.user_name = a.user_name
 {{ hnh_settings() }}

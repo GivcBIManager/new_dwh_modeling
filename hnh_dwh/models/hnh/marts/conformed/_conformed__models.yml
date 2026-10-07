@@ -153,6 +153,14 @@ models:
           - relationships:
               to: ref('hnh_dim_branch')
               field: branch_key
+      - name: can_see_pay
+        tests:
+          - not_null
+          - accepted_values: {values: [0, 1], quote: false}
+      - name: can_see_pii
+        tests:
+          - not_null
+          - accepted_values: {values: [0, 1], quote: false}
   - name: dim_service
     columns:
       - name: service_key

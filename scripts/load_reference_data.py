@@ -229,6 +229,11 @@ SMALL_TABLES = {
         [("BRANCH_ID", "UInt8", i), ("JE_BATCH_ID", "Int64", i), ("REASON", "String", s)],
         "JE_BATCH_ID",
     ),
+    "map_bi_user_permission": (
+        "bi_user_permission.csv",
+        [("bi_user_name", "String", s), ("can_see_pay", "UInt8", b), ("can_see_pii", "UInt8", b)],
+        "bi_user_name",
+    ),
 }
 
 BUDGET_DDL = f"""
@@ -261,6 +266,8 @@ def load_small(client, table):
     client.command(f"CREATE TABLE IF NOT EXISTS {DB}.{table} ({ddl_cols}) ENGINE = MergeTree ORDER BY {order_by}")
     if rows_in(client, table) > 0:
         return "skipped (already has rows)"
+    if not (SRC / file).exists():
+        return f"created empty ({file} not supplied)"
     with open(SRC / file, encoding="utf-8-sig", newline="") as fh:
         data = [[conv(row[name]) for name, _, conv in cols] for row in csv.DictReader(fh)]
     client.insert(f"{DB}.{table}", data, column_names=[name for name, _, _ in cols])
