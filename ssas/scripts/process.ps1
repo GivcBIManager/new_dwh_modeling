@@ -50,7 +50,7 @@ try {
         try {
             $db = Get-HnhDatabase $srv $Database
             $model = $db.Model
-            $log = Sync-HnhPartitions -Model $model -Today $Today -NoRefresh
+            $log = Sync-HnhPartitions -Model $model -Today $Today -NoRefresh -NoSave
             $log | ForEach-Object { Write-Host "partition $_" }
             $watch = [Diagnostics.Stopwatch]::StartNew()
             $dataOnly = [Microsoft.AnalysisServices.Tabular.RefreshType]::DataOnly
@@ -59,7 +59,8 @@ try {
             } else {
                 foreach ($table in @($model.Tables)) {
                     $kind = Get-HnhAnnotation $table 'hnh_kind'
-                    if ($kind -eq $null -or $kind -eq 'calculation_group') { continue }
+                    if ($kind -eq 'calculation_group') { continue }
+                    if ($kind -eq $null) { Write-Host "WARNING: table $($table.Name) has no hnh_kind annotation; not refreshed"; continue }
                     $column = Get-HnhAnnotation $table 'hnh_partition_column'
                     if ($column) {
                         foreach ($name in (Get-HnhDailyPartitionNames -Table $table.Name -Today $Today)) {
@@ -85,7 +86,7 @@ try {
             }
             Save-HnhModel $model
             Write-Host ('{0} processing of {1} committed in {2:N1} minutes' -f $Mode, $Database, $watch.Elapsed.TotalMinutes)
-            if ($finishedText) {
+            if ($status -eq 'success' -and $finishedText) {
                 @{ run_finished_at = $finishedText; processed_at = (Get-Date).ToString($format); mode = $Mode } |
                     ConvertTo-Json | Set-Content -Path $statePath -Encoding UTF8
             }

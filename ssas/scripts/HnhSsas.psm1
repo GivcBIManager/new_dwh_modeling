@@ -111,7 +111,8 @@ function Save-HnhModel {
 
 function Sync-HnhPartitions {
     # Bring every table that has an hnh_partition_column annotation to the partition plan of $Today.
-    param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][datetime]$Today, [switch]$DryRun, [switch]$NoRefresh)
+    # -NoSave leaves the changes pending on $Model (no Calculate, no SaveChanges) so the caller commits them in its own single transaction.
+    param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][datetime]$Today, [switch]$DryRun, [switch]$NoRefresh, [switch]$NoSave)
     $dataOnly = [Microsoft.AnalysisServices.Tabular.RefreshType]::DataOnly
     $dataSource = $Model.DataSources.Find('HNH_Gold')
     $log = @()
@@ -147,7 +148,7 @@ function Sync-HnhPartitions {
             if (-not $DryRun) { [void]$table.Partitions.Remove($table.Partitions.Find($name)) }
         }
     }
-    if ($log.Count -gt 0 -and -not $DryRun) {
+    if ($log.Count -gt 0 -and -not $DryRun -and -not $NoSave) {
         if (-not $NoRefresh) { $Model.RequestRefresh([Microsoft.AnalysisServices.Tabular.RefreshType]::Calculate) }
         Save-HnhModel $Model
     }
@@ -179,7 +180,7 @@ function Add-HnhRoleMember {
     foreach ($m in $r.Members) { if ($m.MemberName -eq $Member) { return $false } }
     $wm = New-Object Microsoft.AnalysisServices.Tabular.WindowsModelRoleMember
     $wm.MemberName = $Member
-    $r.Members.Add($wm)
+    [void]$r.Members.Add($wm)
     [void]$Model.SaveChanges()
     return $true
 }
