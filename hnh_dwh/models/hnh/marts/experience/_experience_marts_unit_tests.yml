@@ -1,0 +1,74 @@
+version: 2
+
+unit_tests:
+  - name: fact_survey_response_status_primary_and_nps
+    description: >
+      Encounter o1 got two invitations: A1 (older, partially answered) and A2 (newer, not started). The answered one is
+      primary although it is older. B1 is 'submitted' in the source but carries no answer: Not started. C1 is submitted,
+      its Hospital NPS answer (o4) is code 3 = Passive and its Physician NPS answer (cp10) code 5 = Promoter; it answered
+      2 of the 3 scored OP questions. D1 is an IP survey whose 0-10 answer (cms_23) is option code 9 = score 8 =
+      Promoter on that scale, while its Hospital NPS (o3) is code 2 = Detractor. Background attributes default to Not
+      answered.
+    model: fact_survey_response
+    given:
+      - input: ref('stg_pg__survey_response')
+        format: sql
+        rows: |
+          select s as surveycode, sv as service_code, e as encounter_id, toNullable(toDate(v)) as visit_date,
+                 if(sms = '', cast(null as Nullable(Date)), toNullable(toDate(sms))) as sms_send_date,
+                 toNullable(toDate(sd)) as survey_date, st as source_status
+          from values('s String, sv String, e String, v String, sms String, sd String, st String',
+              ('A1', 'OP', 'o1', '2026-09-01', '2026-09-01', '2026-09-02', 'incomplete'),
+              ('A2', 'OP', 'o1', '2026-09-01', '2026-09-05', '2026-09-05', 'NOTSTARTED'),
+              ('B1', 'OP', 'o2', '2026-09-01', '', '2026-09-03', 'submitted'),
+              ('C1', 'OP', 'o3', '2026-09-01', '2026-09-01', '2026-09-04', 'submitted'),
+              ('D1', 'IP', 'i4', '2026-09-01', '2026-09-02', '2026-09-03', 'submitted'))
+      - input: ref('int_survey_encounter_link')
+        format: sql
+        rows: |
+          select s as surveycode, toUInt8(3) as branch_key, toInt64(10) as encounter_key, toInt64(-1) as episode_key,
+                 toInt64(20) as patient_key, toInt64(30) as staff_key, toInt64(40) as department_key,
+                 toInt64(50) as payer_key, toInt8(1) as care_type_key, 'Linked' as link_status
+          from values('s String', ('A1'), ('A2'), ('B1'), ('C1'), ('D1'))
+      - input: ref('stg_pg__survey_answer')
+        format: sql
+        rows: |
+          select s as surveycode, sv as service_code, q as question_code, a as answer_code
+          from values('s String, sv String, q String, a String',
+              ('A1', 'OP', 'v2', '4'), ('C1', 'OP', 'o4', '3'), ('C1', 'OP', 'cp10', '5'), ('C1', 'OP', 'fvisit', '1'),
+              ('D1', 'IP', 'cms_23', '9'), ('D1', 'IP', 'o3', '2'))
+      - input: ref('stg_pg__survey_question')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, sc as scale_type, toUInt8(isc) as is_scored
+          from values('sv String, q String, sc String, isc UInt8',
+              ('OP', 'v2', 'rating_1_5', 1), ('OP', 'o4', 'rating_1_5', 1), ('OP', 'cp10', 'rating_1_5', 1),
+              ('OP', 'fvisit', 'categorical', 0), ('IP', 'cms_23', 'likelihood_0_10', 1), ('IP', 'o3', 'rating_1_5', 1))
+      - input: ref('stg_ref__pg_question_role')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, r as role
+          from values('sv String, q String, r String',
+              ('OP', 'o4', 'Hospital NPS'), ('OP', 'cp10', 'Physician NPS'), ('IP', 'o3', 'Hospital NPS'), ('OP', 'fvisit', 'first_visit'))
+      - input: ref('stg_pg__answer_option')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, a as answer_code, toNullable(toFloat64(sc)) as score
+          from values('sv String, q String, a String, sc Float64',
+              ('OP', 'v2', '4', 4), ('OP', 'o4', '3', 3), ('OP', 'cp10', '5', 5), ('IP', 'cms_23', '9', 8), ('IP', 'o3', '2', 2))
+      - input: ref('int_survey_background')
+        format: sql
+        rows: |
+          select 'C1' as surveycode, 'Yes' as first_visit, 'Not answered' as respondent_type, 'Not answered' as booking_channel,
+                 'Not answered' as admitted_via_er, 'Not answered' as used_lab, 'Not answered' as used_radiology,
+                 'Not answered' as used_pharmacy, 'Not answered' as used_insurance_office, 'Not answered' as used_physio,
+                 'Not answered' as used_speech, 'Not answered' as treatment_complete, 'Not answered' as meds_delivered,
+                 'Not answered' as tele_spared_visit, 'Not answered' as tele_channel, 'Not answered' as hhc_service,
+                 'Not answered' as dental_service, 'Not answered' as dialysis_done, 'Not answered' as contact_consent
+    expect:
+      rows:
+        - {surveycode: A1, response_status: Partial, is_responded: 1, is_submitted: 0, is_primary_for_encounter: 1, is_sms_sent: 1, answers_count: 1, scored_questions_offered: 3, scored_questions_answered: 1, nps_band: null, first_visit: Not answered}
+        - {surveycode: A2, response_status: Not started, is_responded: 0, is_submitted: 0, is_primary_for_encounter: 0, is_sms_sent: 1, answers_count: 0, scored_questions_offered: 3, scored_questions_answered: 0, nps_band: null, first_visit: Not answered}
+        - {surveycode: B1, response_status: Not started, is_responded: 0, is_submitted: 0, is_primary_for_encounter: 1, is_sms_sent: 0, answers_count: 0, scored_questions_offered: 3, scored_questions_answered: 0, nps_band: null, first_visit: Not answered}
+        - {surveycode: C1, response_status: Submitted, is_responded: 1, is_submitted: 1, is_primary_for_encounter: 1, is_sms_sent: 1, answers_count: 3, scored_questions_offered: 3, scored_questions_answered: 2, nps_band: Passive, first_visit: 'Yes'}
+        - {surveycode: D1, response_status: Submitted, is_responded: 1, is_submitted: 1, is_primary_for_encounter: 1, is_sms_sent: 1, answers_count: 2, scored_questions_offered: 2, scored_questions_answered: 2, nps_band: Detractor, first_visit: Not answered}

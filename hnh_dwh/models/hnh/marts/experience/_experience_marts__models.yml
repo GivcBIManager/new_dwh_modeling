@@ -19,3 +19,126 @@ models:
         tests:
           - accepted_values:
               values: ['Hospital NPS', 'Physician NPS', '']
+  - name: fact_survey_response
+    description: One row per Press Ganey survey invitation with survey-quality, background and NPS columns (spec 6.1).
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, encounter_id]
+          config: {where: "is_primary_for_encounter = 1"}
+    columns:
+      - name: survey_response_key
+        tests: [unique, not_null]
+      - name: surveycode
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: survey_service_key
+        tests:
+          - relationships: {to: ref('dim_survey_service'), field: survey_service_key}
+      - name: care_type_key
+        tests:
+          - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: patient_key
+        tests:
+          - relationships: {to: ref('dim_patient'), field: patient_key}
+      - name: payer_key
+        tests:
+          - relationships: {to: ref('dim_payer'), field: payer_key}
+      - name: visit_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: sms_sent_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: survey_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: encounter_key
+        tests:
+          - relationships:
+              to: ref('fact_encounter')
+              field: encounter_key
+              config: {severity: warn, where: "encounter_key != -1"}
+      - name: response_status
+        tests:
+          - accepted_values:
+              values: ['Submitted', 'Partial', 'Not started']
+      - name: link_status
+        tests:
+          - accepted_values:
+              values: ['Linked', 'Encounter not found', 'Bad encounter id']
+      - name: nps_band
+        tests:
+          - accepted_values:
+              values: ['Promoter', 'Passive', 'Detractor']
+      - name: physician_nps_band
+        tests:
+          - accepted_values:
+              values: ['Promoter', 'Passive', 'Detractor']
+      - name: respondent_type
+        tests:
+          - accepted_values:
+              values: ['Patient', 'Parent or guardian', 'Family member', 'Other', 'Not answered', 'Unmapped']
+      - name: booking_channel
+        tests:
+          - accepted_values:
+              values: ['Call centre', 'Reception', 'Online', 'Walk-in', 'Referral', 'Appointment', 'Not answered', 'Unmapped']
+      - name: first_visit
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: admitted_via_er
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: used_lab
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: used_radiology
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: used_pharmacy
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: used_insurance_office
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: used_physio
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: used_speech
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: treatment_complete
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: meds_delivered
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: tele_spared_visit
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: dialysis_done
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
+      - name: contact_consent
+        tests:
+          - accepted_values:
+              values: ['Yes', 'No', 'Not answered', 'Unmapped']
