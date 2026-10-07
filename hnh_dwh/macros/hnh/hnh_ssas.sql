@@ -1,7 +1,7 @@
 {#
   SSAS spec 4.2 and planning decisions P2/P3. Select list of a gold.ssas_* view over ref(model_name):
   - legacy_* and _loaded_at are always dropped, `drop` lists more; an Array column must be dropped;
-  - every Float column must be named in `decimals` (cast to Decimal(18, 4)) or `floats` (kept as Float64);
+  - every Float column must be named in `decimals` (cast to Decimal(18, 4); a non-finite value or one with abs >= 1e14 becomes NULL, because SSAS fixed decimal cannot hold it) or `floats` (kept as Float64);
   - an is_*/has_* UInt8 flag becomes 'Yes'/'No' unless named in `int_flags` (flags that measures sum);
   - every other integer becomes Int64, and a nullable non-date *_key becomes -1 when null;
   - LowCardinality text becomes String, Date32 becomes Date;
@@ -42,7 +42,7 @@ select 1 as compile_placeholder from {{ relation }}
 {%- if ns.t.startswith('Array(') -%}
     {{ exceptions.raise_compiler_error('hnh_ssas_view(' ~ model_name ~ '): drop array column ' ~ name) }}
 {%- elif ns.t.startswith('Float') -%}
-    {%- if name in decimals -%}toDecimal64({{ col }}, 4)
+    {%- if name in decimals -%}if(isFinite({{ col }}) and abs({{ col }}) < 1e14, toDecimal64({{ col }}, 4), NULL)
     {%- elif name in floats -%}toFloat64({{ col }})
     {%- else -%}{{ exceptions.raise_compiler_error('hnh_ssas_view(' ~ model_name ~ '): list float column ' ~ name ~ ' in decimals or floats') }}
     {%- endif -%}
