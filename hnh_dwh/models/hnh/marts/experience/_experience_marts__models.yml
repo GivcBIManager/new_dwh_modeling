@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: dim_survey_service
+    description: Press Ganey services (spec 5.1), unknown member '-1'.
+    columns:
+      - name: survey_service_key
+        tests: [unique, not_null]
+  - name: dim_survey_question
+    description: Press Ganey questions per service with domain, scale, class and NPS role (spec 5.2), unknown member '-1'.
+    columns:
+      - name: question_key
+        tests: [unique, not_null]
+      - name: question_class
+        tests:
+          - accepted_values:
+              values: ['Scored', 'Background', 'Routing']
+      - name: nps_role
+        tests:
+          - accepted_values:
+              values: ['Hospital NPS', 'Physician NPS', '']
