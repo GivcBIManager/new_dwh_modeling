@@ -64,6 +64,14 @@
     "Expression": "CrossFilteringBehavior = \"BothDirections\" and FromTable.Name <> \"Patient Details\""
   },
   {
+    "ID": "HNH_PII_SECURITY_ONE_DIRECTION",
+    "Name": "The Patient Details relationship applies security in one direction only",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Relationship",
+    "Expression": "FromTable.Name = \"Patient Details\" and SecurityFilteringBehavior = \"BothDirections\""
+  },
+  {
     "ID": "HNH_NO_ITERATOR_OVER_LARGE_FACT",
     "Name": "No FILTER or X-iterator over a fact with more than 1M rows",
     "Category": "HNH",

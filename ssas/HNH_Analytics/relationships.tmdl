@@ -712,6 +712,7 @@ relationship patient_consumption_treating_staff_key
 
 relationship patient_details_patient_key
 	crossFilteringBehavior: bothDirections
+	securityFilteringBehavior: oneDirection
 	fromCardinality: one
 	fromColumn: 'Patient Details'.'Patient Key'
 	toColumn: Patient.'Patient Key'

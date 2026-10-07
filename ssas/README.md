@@ -26,7 +26,7 @@ Spec: `docs/superpowers/specs/2026-10-07-hnh-ssas-tabular-model-design.md`. Serv
 
 1. Columns changed in a `gold.ssas_*` view → `python scripts/gen_view_contracts.py`, then `python ssas/tools/generate.py`.
 2. Measures: edit the table file (`measure` blocks, `///` description, `formatString`, `displayFolder`). New snapshot measures must be added to the list in every `ISSELECTEDMEASURE` of `tables/Time Calculation.tmdl`.
-3. Check offline: `TabularEditor.exe ssas\HNH_Analytics -A ssas\bpa_rules.json -V` (no `type=error`), `python -m pytest ssas/tools`, `Invoke-Pester -Script ssas\scripts\HnhSsas.Tests.ps1`.
+3. Check offline: `TabularEditor.exe ssas\HNH_Analytics -A ssas\bpa_rules.json -V` (no `type=error`), `python -m pytest ssas/tools`, `Invoke-Pester -Script ssas\scripts` (all Pester files).
 4. Copy `ssas/` to the server and run `deploy.ps1 -Stage All`.
 
 ## Run
@@ -36,6 +36,7 @@ Spec: `docs/superpowers/specs/2026-10-07-hnh-ssas-tabular-model-design.md`. Serv
 | Deploy (validate, test, promote) | `deploy.ps1 -Stage All`. Validate = Best Practice Analyzer; schema drift is caught by the enforced dbt contracts and by the Test stage. |
 | After each successful dbt run | `process.ps1 -Mode Daily` (exit 2 = gate closed: no new successful `tag:hnh` run) |
 | Friday | `process.ps1 -Mode Weekly` |
+| In January (partition roll-over) | After `process.ps1 -Mode Daily`, run `test.ps1 -Database HNH_Analytics -Stage RowCounts`. |
 | Test production | `test.ps1 -Database HNH_Analytics` |
 | Partition preview | `partitions.ps1 -Database HNH_Analytics -DryRun` |
 | Roll back | `deploy.ps1 -Stage Rollback -BackupFile HNH_Analytics_<timestamp>.abf` (last 5 backups kept in the SSAS backup folder) |

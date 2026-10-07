@@ -5,6 +5,7 @@ table 'Time Calculation'
 		precedence: 1
 
 		calculationItem Current = SELECTEDMEASURE ()
+			ordinal: 0
 
 		calculationItem MTD =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
@@ -14,6 +15,8 @@ table 'Time Calculation'
 					CALCULATE ( SELECTEDMEASURE (), DATESMTD ( 'Date'[Date] ) )
 				)
 
+			ordinal: 1
+
 		calculationItem QTD =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
 				IF (
@@ -21,6 +24,8 @@ table 'Time Calculation'
 					SELECTEDMEASURE (),
 					CALCULATE ( SELECTEDMEASURE (), DATESQTD ( 'Date'[Date] ) )
 				)
+
+			ordinal: 2
 
 		calculationItem YTD =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
@@ -30,7 +35,10 @@ table 'Time Calculation'
 					CALCULATE ( SELECTEDMEASURE (), DATESYTD ( 'Date'[Date] ) )
 				)
 
+			ordinal: 3
+
 		calculationItem PY = CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+			ordinal: 4
 
 		calculationItem 'PY YTD' =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
@@ -40,16 +48,21 @@ table 'Time Calculation'
 					CALCULATE ( SELECTEDMEASURE (), DATESYTD ( SAMEPERIODLASTYEAR ( 'Date'[Date] ) ) )
 				)
 
+			ordinal: 5
+
 		calculationItem 'YoY Δ' =
 				VAR Cur = SELECTEDMEASURE ()
 				VAR Prev = CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
 				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), Cur - Prev )
+
+			ordinal: 6
 
 		calculationItem 'YoY %' =
 				VAR Cur = SELECTEDMEASURE ()
 				VAR Prev = CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
 				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), DIVIDE ( Cur - Prev, ABS ( Prev ) ) )
 
+			ordinal: 7
 			formatStringDefinition = "0.0%"
 
 		calculationItem 'MoM Δ' =
@@ -57,11 +70,14 @@ table 'Time Calculation'
 				VAR Prev = CALCULATE ( SELECTEDMEASURE (), DATEADD ( 'Date'[Date], -1, MONTH ) )
 				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), Cur - Prev )
 
+			ordinal: 8
+
 		calculationItem 'MoM %' =
 				VAR Cur = SELECTEDMEASURE ()
 				VAR Prev = CALCULATE ( SELECTEDMEASURE (), DATEADD ( 'Date'[Date], -1, MONTH ) )
 				RETURN IF ( NOT ISBLANK ( Cur ) && NOT ISBLANK ( Prev ), DIVIDE ( Cur - Prev, ABS ( Prev ) ) )
 
+			ordinal: 9
 			formatStringDefinition = "0.0%"
 
 		calculationItem 'Rolling 12M' =
@@ -71,6 +87,8 @@ table 'Time Calculation'
 					SELECTEDMEASURE (),
 					CALCULATE ( SELECTEDMEASURE (), DATESINPERIOD ( 'Date'[Date], MAX ( 'Date'[Date] ), -12, MONTH ) )
 				)
+
+			ordinal: 10
 
 	column 'Time Calculation'
 		dataType: string

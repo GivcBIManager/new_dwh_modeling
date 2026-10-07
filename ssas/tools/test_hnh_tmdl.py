@@ -163,7 +163,7 @@ def test_render_relationships():
     text = t.render_relationships(rels, lambda table, col: t.friendly(col))
     assert "relationship charge_lines_episode_payer_key\n\tisActive: false\n" in text
     assert "\tfromColumn: 'Charge Lines'.'Episode Payer Key'\n\ttoColumn: Payer.'Payer Key'" in text
-    assert "\tcrossFilteringBehavior: bothDirections\n\tfromCardinality: one" in text
+    assert "\tcrossFilteringBehavior: bothDirections\n\tsecurityFilteringBehavior: oneDirection\n\tfromCardinality: one" in text
 
 
 def test_perspective_closure_follows_snowflake_but_not_one_to_one():

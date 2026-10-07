@@ -235,7 +235,8 @@ def render_relationships(rels: list[Relationship], col_display) -> str:
         if not r.active:
             out.append("\tisActive: false")
         if r.one_to_one_both:
-            out += ["\tcrossFilteringBehavior: bothDirections", "\tfromCardinality: one"]
+            out += ["\tcrossFilteringBehavior: bothDirections", "\tsecurityFilteringBehavior: oneDirection",
+                    "\tfromCardinality: one"]
         out.append(f"\tfromColumn: {q(r.from_table)}.{q(col_display(r.from_table, r.from_column))}")
         out.append(f"\ttoColumn: {q(r.to_table)}.{q(col_display(r.to_table, r.to_column))}")
         out.append("")

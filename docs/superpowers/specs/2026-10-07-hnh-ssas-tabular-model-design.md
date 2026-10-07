@@ -189,9 +189,9 @@ SSAS does not allow `USERELATIONSHIP` over a relationship whose table carries a 
 
 ### 6.1 Warehouse changes
 
-- New reference table `default.map_bi_user_permission` (`user_name` String — the normalised name as in `sec_user_access.user_name`, `can_see_pay` UInt8, `can_see_pii` UInt8), loaded once by a loader script and maintained by the BI manager (delivery constraint: no seeds, no CSV in git).
+- New reference table `default.map_bi_user_permission` (`bi_user_name` String — the user name as in `bi_users`, normalised like `sec_user_access.user_name`, `can_see_pay` UInt8, `can_see_pii` UInt8), loaded once by a loader script and maintained by the BI manager (delivery constraint: no seeds, no CSV in git).
 - `gold.sec_user_access` gains `can_see_pay` and `can_see_pii`, left-joined from that table, **default 0**. Admins get nothing automatically.
-- New tests: both flags are 0/1 and not null; every `map_bi_user_permission.user_name` exists in `sec_user_access` (warn).
+- New tests: both flags are 0/1 and not null; every `map_bi_user_permission.bi_user_name` (normalised) exists in `sec_user_access` (warn).
 
 ### 6.2 Role "HNH Readers"
 
