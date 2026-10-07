@@ -46,6 +46,16 @@ restricted as (
     where u.is_admin = 0 and u.branch_id is not null
 ),
 
+specialty_wide as (
+    -- A non-admin row with a specialty but no branch grants that specialty in every hospital branch (not Head Office;
+    -- open item O2). A row with neither branch nor specialty grants nothing.
+    select distinct u.user_name as user_name, b.branch_id as branch_key,
+           u.unified_specialty as unified_specialty, toUInt8(0) as is_admin
+    from users_clean as u
+    cross join (select branch_id from {{ ref('stg_ref__branch') }}) as b
+    where u.is_admin = 0 and u.branch_id is null and u.unified_specialty is not null
+),
+
 first_source_name as (
     select user_name, min(source_user_name) as source_user_name
     from users_clean
@@ -63,6 +73,8 @@ from (
     select * from admins
     union all
     select * from restricted
+    union distinct
+    select * from specialty_wide
 ) as a
 inner join first_source_name as f on f.user_name = a.user_name
 {{ hnh_settings() }}

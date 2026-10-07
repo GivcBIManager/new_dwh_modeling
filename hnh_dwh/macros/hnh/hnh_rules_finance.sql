@@ -10,8 +10,8 @@ replaceRegexpAll(replaceAll(trimBoth(ifNull({{ col }}, '')), 'Deprecition', 'Dep
                       "lower(" ~ hnh_fs_label(fs_line) ~ ")"]) }}
 {%- endmacro %}
 
-{# Care type of a GL line from the Fusion service location (segment 4). Endoscopy, Cath and Kidney Dialysis are
-   outpatient day procedures (spec open item O-P3-6). #}
+{# Care type of a GL line from the Fusion service location (segment 4). Locations 07-11 are unused in Fusion; Endoscopy,
+   Cath and Kidney Dialysis revenue posts under the encounter's OPD/IPD/ER location, so it follows the episode care type (O-P3-6). #}
 {% macro hnh_gl_care_type(location_code) -%}
 multiIf(ifNull({{ location_code }}, '') in ('01', '04', '07', '08', '09', '10', '11'), 'OP',
         ifNull({{ location_code }}, '') in ('02', '03', '05'), 'IP',

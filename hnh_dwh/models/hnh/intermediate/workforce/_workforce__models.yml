@@ -16,3 +16,10 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [person_id, month_end]
+  - name: int_oasis_payroll_line
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, account_transaction_no]
+    columns:
+      - name: open_run_date
+        description: Latest calculation date of the staff for open (status P) lines; null for closed lines.

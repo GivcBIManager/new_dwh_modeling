@@ -1,20 +1,19 @@
 {{ config(order_by='(branch_key, payroll_month, source, payee_key, pay_category_key)') }}
 
-{% set first_month = "toInt32(toYYYYMM(toDate('" ~ var('hnh_history_start_date') ~ "')))" %}
-
 with cutover as (select branch_id, first_fusion_month from {{ ref('stg_ref__payroll_cutover') }}),
 
 categories as (select pay_category_key, pay_category, is_cost, is_gross_pay, fusion_sign from {{ ref('dim_pay_category') }}),
 
 oasis_lines as (
+    -- closed and open Oasis payroll, open lines reduced to each staff's latest run (spec 12.2, int_oasis_payroll_line)
     select t.branch_id as branch_key, 'oasis' as source, t.staff_id as staff_id, cast(null as Nullable(Int64)) as person_id,
            t.payroll_month as payroll_month, ifNull(m.pay_category, 'Unmapped') as pay_category, t.amount as raw_amount,
-           toUInt8(k.first_fusion_month is not null and t.payroll_month >= k.first_fusion_month) as is_parallel_run
-    from {{ ref('stg_oasis__payroll_transactions') }} as t
+           toUInt8(k.first_fusion_month is not null and t.payroll_month >= k.first_fusion_month) as is_parallel_run,
+           t.is_closed_payroll as is_closed_payroll, t.open_run_date as open_run_date
+    from {{ ref('int_oasis_payroll_line') }} as t
     left join (select source_code, payable_type, pay_category from {{ ref('stg_ref__pay_category') }} where source = 'oasis') as m
         on m.source_code = t.trx_type and m.payable_type = t.payable_type
     left join cutover as k on k.branch_id = t.branch_id
-    where t.status = 'C' and t.payroll_month >= {{ first_month }} and t.payroll_month % 100 between 1 and 12
     {{ hnh_settings() }}  -- left joins in a CTE feeding a union
 ),
 
@@ -39,7 +38,8 @@ fusion_results as (
 fusion_lines as (
     select ifNull(b.branch_key, toUInt8(0)) as branch_key, 'fusion' as source, cast(null as Nullable(String)) as staff_id, r.person_id as person_id,
            toInt32(toYYYYMM(assumeNotNull(r.effective_date))) as payroll_month, ifNull(m.pay_category, 'Unmapped') as pay_category,
-           assumeNotNull(r.result_value) as raw_amount, toUInt8(0) as is_parallel_run
+           assumeNotNull(r.result_value) as raw_amount, toUInt8(0) as is_parallel_run,
+           toUInt8(1) as is_closed_payroll, cast(null as Nullable(Date)) as open_run_date  -- completed actions only
     from fusion_results as r
     inner join (select input_value_id from {{ ref('stg_fusion__payroll_input_values') }} where input_value_base_name = 'Pay Value') as i
         on i.input_value_id = r.input_value_id
@@ -63,19 +63,25 @@ lines as (
 aggregated as (
     select l.branch_key as branch_key, l.source as source, l.staff_id as staff_id, l.person_id as person_id,
            l.payroll_month as payroll_month, l.pay_category as pay_category, l.is_parallel_run as is_parallel_run,
+           l.is_closed_payroll as is_closed_payroll, max(l.open_run_date) as open_run_date,
            sum(if(l.source = 'fusion', l.raw_amount * c.fusion_sign, l.raw_amount)) as amount,
            any(c.pay_category_key) as pay_category_key, any(c.is_cost) as is_cost, any(c.is_gross_pay) as is_gross_pay
     from lines as l
     inner join categories as c on c.pay_category = l.pay_category
-    group by l.branch_key, l.source, l.staff_id, l.person_id, l.payroll_month, l.pay_category, l.is_parallel_run
+    group by l.branch_key, l.source, l.staff_id, l.person_id, l.payroll_month, l.pay_category, l.is_parallel_run, l.is_closed_payroll
 ),
 
 keyed as (
     select a.*,
            if(a.source = 'fusion', {{ hnh_surrogate_key(['a.person_id']) }}, toInt64(-1))           as fusion_employee_key,
            if(a.source = 'oasis', {{ hnh_surrogate_key(['a.branch_key', 'a.staff_id']) }}, toInt64(-1)) as oasis_staff_key,
-           toLastDayOfMonth(makeDate(intDiv(a.payroll_month, 100), a.payroll_month % 100, 1))       as month_end
+           toLastDayOfMonth(makeDate(intDiv(a.payroll_month, 100), a.payroll_month % 100, 1))       as month_end,
+           -- spec 12.3: Closed (all lines closed), Open (all open) or Partly closed, per payee and month
+           multiIf(min(a.is_closed_payroll) over payee_month = 1, 'Closed',
+                   max(a.is_closed_payroll) over payee_month = 0, 'Open', 'Partly closed')         as payroll_status,
+           max(a.open_run_date) over payee_month                                                    as payee_open_run_date
     from aggregated as a
+    window payee_month as (partition by a.source, a.branch_key, a.staff_id, a.person_id, a.payroll_month)
 ),
 
 resolved as (
@@ -90,7 +96,7 @@ resolved as (
 )
 
 select
-    {{ hnh_surrogate_key(['r.source', 'r.branch_key', "ifNull(toString(r.person_id), r.staff_id)", 'r.payroll_month', 'r.pay_category', 'r.is_parallel_run']) }} as payroll_key,
+    {{ hnh_surrogate_key(['r.source', 'r.branch_key', "ifNull(toString(r.person_id), r.staff_id)", 'r.payroll_month', 'r.pay_category', 'r.is_parallel_run', 'r.is_closed_payroll']) }} as payroll_key,
     r.branch_key                                                        as branch_key,
     r.source                                                            as source,
     {{ hnh_surrogate_key(['r.source', 'r.branch_key', "ifNull(toString(r.person_id), r.staff_id)"]) }} as payee_key,
@@ -104,6 +110,9 @@ select
     r.payroll_month                                                     as payroll_month,
     ifNull(h.hr_department_key, toInt64(-1))                            as hr_department_key,
     r.is_parallel_run                                                   as is_parallel_run,
+    r.is_closed_payroll                                                 as is_closed_payroll,
+    r.payroll_status                                                    as payroll_status,
+    r.payee_open_run_date                                               as open_run_date,
     r.amount                                                            as amount,
     if(r.is_parallel_run = 0 and r.is_cost = 1, r.amount, 0)            as cost_amount,
     if(r.is_parallel_run = 0 and r.is_gross_pay = 1, r.amount, 0)       as gross_pay,

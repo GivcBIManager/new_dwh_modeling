@@ -22,7 +22,9 @@ select
     j.header_status                                                     as header_status,
     j.line_description                                                  as line_description,
     toUInt8(ifNull(j.header_status, '') = 'P')                          as is_posted,
-    toUInt8(ifNull(j.je_category, '') = 'MRC Open Balances')            as is_opening_balance_journal,
+    -- Opening balance: Fusion category, or a batch listed in map_opening_balance_batch (O-P3-12).
+    toUInt8(ifNull(j.je_category, '') = 'MRC Open Balances'
+            or ifNull(j.je_batch_id, toInt64(-1)) in (select je_batch_id from {{ ref('stg_ref__opening_balance_batch') }})) as is_opening_balance_journal,
     toUInt8(ifNull(j.je_source, '') = {{ oasis_feed }})                 as is_oasis_feed,
     j.debit                                                             as debit,
     j.credit                                                            as credit,

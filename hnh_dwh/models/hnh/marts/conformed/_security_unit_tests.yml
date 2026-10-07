@@ -1,0 +1,32 @@
+version: 2
+
+unit_tests:
+  - name: sec_user_access_grants_by_branch_and_specialty
+    description: >
+      Branches 1 and 2 exist. Admin "boss" sees both branches and Head Office (100). "clerk" is limited to branch 2.
+      "surgery" has two specialties and no branch: each specialty in both hospital branches, not Head Office (O2).
+      "nobody" has neither branch nor specialty and gets no row.
+    model: sec_user_access
+    given:
+      - input: ref('stg_ref__bi_users')
+        format: sql
+        rows: |
+          select u as user_name, if(b = 0, cast(null as Nullable(UInt8)), toNullable(toUInt8(b))) as branch_id, toUInt8(a) as is_admin,
+                 if(s = '', cast(null as Nullable(String)), toNullable(s)) as unified_specialty
+          from values('u String, b UInt8, a UInt8, s String',
+              ('DOM\Boss', 0, 1, ''), ('DOM\Clerk', 2, 0, ''), ('DOM\Surgery', 0, 0, 'Urology'), ('DOM\Surgery', 0, 0, 'Ent'),
+              ('DOM\Nobody', 0, 0, ''))
+      - input: ref('stg_ref__branch')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id from values('b UInt8', (1), (2))
+    expect:
+      rows:
+        - {user_name: boss, branch_key: 1, unified_specialty: null, is_admin: 1}
+        - {user_name: boss, branch_key: 2, unified_specialty: null, is_admin: 1}
+        - {user_name: boss, branch_key: 100, unified_specialty: null, is_admin: 1}
+        - {user_name: clerk, branch_key: 2, unified_specialty: null, is_admin: 0}
+        - {user_name: surgery, branch_key: 1, unified_specialty: Urology, is_admin: 0}
+        - {user_name: surgery, branch_key: 2, unified_specialty: Urology, is_admin: 0}
+        - {user_name: surgery, branch_key: 1, unified_specialty: Ent, is_admin: 0}
+        - {user_name: surgery, branch_key: 2, unified_specialty: Ent, is_admin: 0}

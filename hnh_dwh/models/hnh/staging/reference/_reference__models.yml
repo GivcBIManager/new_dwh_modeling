@@ -190,3 +190,7 @@ models:
     columns:
       - name: conformed_value
         tests: [not_null]
+  - name: stg_ref__opening_balance_batch
+    columns:
+      - name: je_batch_id
+        tests: [unique, not_null]

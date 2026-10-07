@@ -35,5 +35,7 @@ sources:
       - name: map_store_department
       - name: map_item_group
       - name: bal_product_base
+        identifier: old_bal_product_base   # the user's load of the old warehouse's daily stock snapshots (O-P5-5)
       - name: map_pg_question_role
       - name: map_pg_background_value
+      - name: map_opening_balance_batch

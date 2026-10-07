@@ -222,6 +222,13 @@ SMALL_TABLES = {
          ("CONFORMED_VALUE", "String", s)],
         "(SERVICE, QUESTION_CODE, ANSWER_CODE)",
     ),
+    # Fusion journal batches that are opening balances although not categorised MRC Open Balances (open item O-P3-12);
+    # a row becomes redundant once finance re-categorises the batch.
+    "map_opening_balance_batch": (
+        "opening_balance_batch.csv",
+        [("BRANCH_ID", "UInt8", i), ("JE_BATCH_ID", "Int64", i), ("REASON", "String", s)],
+        "JE_BATCH_ID",
+    ),
 }
 
 BUDGET_DDL = f"""

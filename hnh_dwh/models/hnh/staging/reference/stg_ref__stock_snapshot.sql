@@ -1,4 +1,4 @@
-{#- Old-warehouse daily stock snapshots (spec S5, open item O-P5-5), loaded by the user into default.bal_product_base.
+{#- Old-warehouse daily stock snapshots (spec S5, open item O-P5-5), loaded by the user into default.old_bal_product_base (source bal_product_base).
     Until that table exists this view returns no rows. The source column names are set once in `cols`: if the loaded
     table names a column differently, change only the right-hand name here. Every output column is wrapped to its
     declared type (assumeNotNull / ifNull), so a table loaded with Nullable columns still gives non-Nullable types. -#}

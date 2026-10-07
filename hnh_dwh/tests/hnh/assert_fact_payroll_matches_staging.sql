@@ -1,4 +1,5 @@
--- Conservation, per source: Oasis status-C amounts in the window, and Fusion pay-value results of completed actions (employer
+-- Conservation, per source: Oasis status-C amounts in the window reach the fact as closed rows, the open lines kept by
+-- int_oasis_payroll_line (spec 12.2) as open rows, and Fusion pay-value results of completed actions (employer
 -- recovered from the sibling results of the action, latest regular action per person/element/employer/month plus QuickPay)
 -- in cutover months, reach the fact once (signed). Unresolved employers must reach the fact as branch 0.
 with oasis_staged as (
@@ -32,11 +33,17 @@ fusion_staged as (
       and (b.branch_key is null or b.branch_key = 0 or toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month)
     {{ hnh_settings() }}
 ),
+oasis_open as (
+    select round(sum(amount), 2) as amt from {{ ref('int_oasis_payroll_line') }} where is_closed_payroll = 0
+),
 fact as (
-    select round(sumIf(amount, source = 'oasis'), 2) as oasis_amt, round(sumIf(amount, source = 'fusion'), 2) as fusion_amt
+    select round(sumIf(amount, source = 'oasis' and is_closed_payroll = 1), 2) as oasis_amt,
+           round(sumIf(amount, source = 'oasis' and is_closed_payroll = 0), 2) as oasis_open_amt,
+           round(sumIf(amount, source = 'fusion'), 2) as fusion_amt
     from {{ ref('fact_payroll_monthly') }}
 )
-select 'payroll fact differs from staging' as failure, f.oasis_amt, o.amt as oasis_staged, f.fusion_amt, u.amt as fusion_staged
-from fact as f cross join oasis_staged as o cross join fusion_staged as u
-where abs(f.oasis_amt - o.amt) > 0.01 or abs(f.fusion_amt - u.amt) > 0.01
+select 'payroll fact differs from staging' as failure, f.oasis_amt, o.amt as oasis_staged, f.oasis_open_amt, op.amt as oasis_open_kept,
+       f.fusion_amt, u.amt as fusion_staged
+from fact as f cross join oasis_staged as o cross join oasis_open as op cross join fusion_staged as u
+where abs(f.oasis_amt - o.amt) > 0.01 or abs(f.oasis_open_amt - op.amt) > 0.01 or abs(f.fusion_amt - u.amt) > 0.01
 {{ hnh_settings() }}

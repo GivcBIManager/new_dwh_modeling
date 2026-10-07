@@ -102,15 +102,16 @@ unit_tests:
       Branch 3 cuts over in 202607. Oasis June (202606): basic 1,000 and staff GOSI −90 (an employee deduction, not cost).
       Oasis July is a parallel-run month: kept with is_parallel_run = 1 and zero cost. Fusion July: basic 1,100 and
       a delay deduction of 50 stored positive (amount −50, an earnings adjustment that lowers cost) and a GOSI
-      reference earnings result (Not pay). A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling. Oasis staff 500 and Fusion person 7 are the same person (bridge): one paid_person_key across the cutover.
+      reference earnings result (Not pay). The June GOSI line is still open (status P), so June is Partly closed. A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling. Oasis staff 500 and Fusion person 7 are the same person (bridge): one paid_person_key across the cutover.
     model: fact_payroll_monthly
     given:
-      - input: ref('stg_oasis__payroll_transactions')
+      - input: ref('int_oasis_payroll_line')
         format: sql
         rows: |
           select toUInt8(3) as branch_id, toInt64(n) as account_transaction_no, toNullable('500') as staff_id, toInt32(m) as payroll_month,
-                 t as trx_type, 'P' as payable_type, toNullable('C') as status, toFloat64(a) as amount
-          from values('n UInt32, m UInt32, t String, a Float64', (1, 202606, 'BASIC', 1000), (2, 202606, 'STAFF GOSI', -90), (3, 202607, 'BASIC', 1000))
+                 t as trx_type, 'P' as payable_type, toFloat64(a) as amount, toUInt8(c) as is_closed_payroll,
+                 if(c = 1, cast(null as Nullable(Date)), toNullable(toDate('2026-06-25'))) as open_run_date
+          from values('n UInt32, m UInt32, t String, a Float64, c UInt8', (1, 202606, 'BASIC', 1000, 1), (2, 202606, 'STAFF GOSI', -90, 0), (3, 202607, 'BASIC', 1000, 1))
       - input: ref('stg_fusion__payroll_run_results')
         format: sql
         rows: |
@@ -169,14 +170,14 @@ unit_tests:
           select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(7)), '|')), 1)) as employee_key, toDate('2026-07-31') as month_end, toInt64(-1) as hr_department_key
     expect:
       rows:
-        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1000, cost_amount: 1000, gross_pay: 1000, paid_person_key: 7559343772374295452}
-        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
-        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
-        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150, paid_person_key: 7559343772374295452}
-        - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50, paid_person_key: 7559343772374295452}
-        - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
-        - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452}
-        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0, paid_person_key: 7559343772374295452}
+        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1000, cost_amount: 1000, gross_pay: 1000, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Partly closed, open_run_date: '2026-06-25'}
+        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 0, payroll_status: Partly closed, open_run_date: '2026-06-25'}
+        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
 
   - name: fact_absence_daily_splits_across_months
     description: >

@@ -124,6 +124,18 @@ models:
         tests:
           - accepted_values:
               values: ['oasis', 'fusion']
+      - name: is_closed_payroll
+        description: >
+          1 for closed payroll (Oasis status C, every Fusion row), 0 for Oasis payroll still in progress (status P, reduced
+          to each staff's latest run by int_oasis_payroll_line, spec 12.2). Open figures can change until the branch closes
+          the month.
+      - name: payroll_status
+        description: Per payee and month (spec 12.3); Closed, Open (all lines open) or Partly closed (both).
+        tests:
+          - accepted_values:
+              values: ['Closed', 'Open', 'Partly closed']
+      - name: open_run_date
+        description: Latest Oasis calculation date of the payee's open lines in the month; null when the payee is closed.
   - name: fact_absence
     columns:
       - name: absence_key

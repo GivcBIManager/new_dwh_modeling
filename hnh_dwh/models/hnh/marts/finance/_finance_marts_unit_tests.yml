@@ -4,13 +4,14 @@ unit_tests:
   - name: hnh_fact_gl_journal_line_flags_lines
     description: >
       Header 1 is a posted Head Office opening-balance journal (branch 100, never Group 0). Header 2 is an unposted
-      Oasis-feed line at Abha. Header 3 is a budget line (actual flag B) and is left out.
+      Oasis-feed line at Abha. Header 3 is a budget line (actual flag B) and is left out. Header 4 is an Adjustment
+      batch listed in the opening-balance override table, so it is an opening-balance journal (O-P3-12).
     model: hnh_fact_gl_journal_line
     given:
       - input: ref('stg_fusion__gl_journal_lines')
         format: sql
         rows: |
-          select toInt64(h) as je_header_id, toInt64(n) as je_line_num, toNullable(toInt64(1)) as je_batch_id,
+          select toInt64(h) as je_header_id, toInt64(n) as je_line_num, toNullable(toInt64(h)) as je_batch_id,
                  toNullable('J') as journal_name, cast(null as Nullable(String)) as doc_sequence_value,
                  toNullable(toInt64(lg)) as ledger_id, toNullable(toInt64(10)) as code_combination_id, toNullable(p) as period_name,
                  toNullable(toDate('2026-01-31')) as accounting_date, cast(null as Nullable(Date)) as posted_date,
@@ -20,7 +21,12 @@ unit_tests:
               (1, 1, 300000005003375, 'Jan-26', 'Spreadsheet', 'MRC Open Balances', 'A', 'P', 100, 0),
               (1, 2, 300000005003375, 'Jan-26', 'Spreadsheet', 'MRC Open Balances', 'A', 'P', 0, 100),
               (2, 1, 300000005003384, 'Jan-26', '300000007046804', '300000005338519', 'A', 'U', 50, 0),
-              (3, 1, 300000005003384, 'Jan-26', 'Manual', 'Manual', 'B', 'P', 70, 0))
+              (3, 1, 300000005003384, 'Jan-26', 'Manual', 'Manual', 'B', 'P', 70, 0),
+              (4, 1, 300000005003384, 'Jan-26', 'Spreadsheet', 'Adjustment', 'A', 'U', 0, 40))
+      - input: ref('stg_ref__opening_balance_batch')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_id, toInt64(4) as je_batch_id, 'go-live batch' as reason
       - input: ref('hnh_dim_gl_account')
         format: sql
         rows: |
@@ -39,6 +45,7 @@ unit_tests:
         - {je_header_id: 1, je_line_num: 1, branch_key: 100, gl_account_key: 555, period_key: 202601, is_posted: 1, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: 100}
         - {je_header_id: 1, je_line_num: 2, branch_key: 100, gl_account_key: 555, period_key: 202601, is_posted: 1, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: -100}
         - {je_header_id: 2, je_line_num: 1, branch_key: 6, gl_account_key: 555, period_key: 202601, is_posted: 0, is_opening_balance_journal: 0, is_oasis_feed: 1, je_source_label: Oasis feed, amount: 50}
+        - {je_header_id: 4, je_line_num: 1, branch_key: 6, gl_account_key: 555, period_key: 202601, is_posted: 0, is_opening_balance_journal: 1, is_oasis_feed: 0, je_source_label: Spreadsheet, amount: -40}
 
   - name: fact_gl_balance_monthly_densifies_and_rolls_years
     description: >
