@@ -49,5 +49,5 @@
    "sql": "select count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
   {"name": "Response Rate %, 2026", "tolerance": 0.0001,
    "dax": "EVALUATE ROW(\"v\", CALCULATE([Response Rate %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(is_responded = 'Yes') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_sms_sent = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"}
+   "sql": "select countIf(is_responded = 'Yes') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"}
 ]

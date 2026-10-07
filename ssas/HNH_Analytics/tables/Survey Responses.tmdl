@@ -6,22 +6,16 @@ table 'Survey Responses'
 		formatString: #,0
 		displayFolder: Survey Quality
 
-	/// Responded ÷ primary invitations with an SMS sent (Phase 6 spec section 7.1).
+	/// Responded ÷ primary invitations (Phase 6 spec 7.1 as amended in the receiving notes: not ÷ SMS sent, because a third of submitted surveys have no SMS date).
 	measure 'Response Rate %' =
-			VAR Sent =
-				CALCULATE (
-					COUNTROWS ( 'Survey Responses' ),
-					'Survey Responses'[Is Primary For Encounter] = "Yes",
-					'Survey Responses'[Is SMS Sent] = "Yes"
-				)
+			VAR Invited = CALCULATE ( COUNTROWS ( 'Survey Responses' ), 'Survey Responses'[Is Primary For Encounter] = "Yes" )
 			VAR Responded =
 				CALCULATE (
 					COUNTROWS ( 'Survey Responses' ),
 					'Survey Responses'[Is Primary For Encounter] = "Yes",
-					'Survey Responses'[Is SMS Sent] = "Yes",
 					'Survey Responses'[Is Responded] = "Yes"
 				)
-			RETURN DIVIDE ( Responded, Sent )
+			RETURN DIVIDE ( Responded, Invited )
 		formatString: 0.0%
 		displayFolder: Survey Quality
 
