@@ -142,3 +142,50 @@ models:
         tests:
           - accepted_values:
               values: ['Yes', 'No', 'Not answered', 'Unmapped']
+  - name: fact_survey_answer
+    description: One row per survey and answered question, scored or not, with the NPS-style band (spec 6.2).
+    tests:
+      - hnh_unique_combination:
+          columns: [surveycode, question_code]
+    columns:
+      - name: survey_response_key
+        tests:
+          - not_null
+          - relationships: {to: ref('fact_survey_response'), field: survey_response_key}
+      - name: question_key
+        tests:
+          - relationships: {to: ref('dim_survey_question'), field: question_key}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: survey_service_key
+        tests:
+          - relationships: {to: ref('dim_survey_service'), field: survey_service_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: department_key
+        tests:
+          - relationships: {to: ref('hnh_dim_department'), field: department_key}
+      - name: visit_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: band
+        tests:
+          - accepted_values:
+              values: ['Promoter', 'Passive', 'Detractor']
+      - name: question_class
+        tests:
+          - accepted_values:
+              values: ['Scored', 'Background', 'Routing']
+      - name: nps_role
+        tests:
+          - accepted_values:
+              values: ['Hospital NPS', 'Physician NPS', '']
+      - name: is_option_unknown
+        description: 1 when the answer code has no option row (LTC csurvey 2 today, open item O-P6-7).
+        tests:
+          - accepted_values:
+              values: [0]
+              quote: false
+              config: {severity: warn}

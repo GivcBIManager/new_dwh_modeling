@@ -72,3 +72,57 @@ unit_tests:
         - {surveycode: B1, response_status: Not started, is_responded: 0, is_submitted: 0, is_primary_for_encounter: 1, is_sms_sent: 0, answers_count: 0, scored_questions_offered: 3, scored_questions_answered: 0, nps_band: null, first_visit: Not answered}
         - {surveycode: C1, response_status: Submitted, is_responded: 1, is_submitted: 1, is_primary_for_encounter: 1, is_sms_sent: 1, answers_count: 3, scored_questions_offered: 3, scored_questions_answered: 2, nps_band: Passive, first_visit: 'Yes'}
         - {surveycode: D1, response_status: Submitted, is_responded: 1, is_submitted: 1, is_primary_for_encounter: 1, is_sms_sent: 1, answers_count: 2, scored_questions_offered: 2, scored_questions_answered: 2, nps_band: Detractor, first_visit: Not answered}
+
+  - name: fact_survey_answer_scores_and_bands
+    description: >
+      The score comes from the option master, not the raw code: IP cms_23 code 11 = score 10 = Promoter, code 7 = score
+      6 = Passive. A 1-4 answer of 2 is a Detractor. An unscored background answer has no score and no band. LTC csurvey
+      code 2 has no option row: is_option_unknown = 1. The Hospital NPS question carries its role. The response's keys
+      are copied.
+    model: fact_survey_answer
+    given:
+      - input: ref('stg_pg__survey_answer')
+        format: sql
+        rows: |
+          select s as surveycode, sv as service_code, q as question_code, a as answer_code
+          from values('s String, sv String, q String, a String',
+              ('D1', 'IP', 'cms_23', '11'), ('D2', 'IP', 'cms_23', '7'), ('D1', 'IP', 'cms_24', '2'),
+              ('D1', 'IP', 'filling', '1'), ('L1', 'LTC', 'csurvey', '2'), ('D1', 'IP', 'o3', '5'))
+      - input: ref('fact_survey_response')
+        format: sql
+        rows: |
+          select s as surveycode, toInt64(k) as survey_response_key, toUInt8(5) as branch_key, sv as survey_service_key,
+                 toInt8(3) as care_type_key, toInt64(70) as encounter_key, toInt64(71) as staff_key,
+                 toInt64(72) as department_key, toInt64(73) as patient_key, toInt64(74) as payer_key,
+                 toInt32(20260901) as visit_date_key, 'Submitted' as response_status,
+                 toUInt8(1) as is_primary_for_encounter, 'Linked' as link_status
+          from values('s String, k Int64, sv String', ('D1', 1, 'IP'), ('D2', 2, 'IP'), ('L1', 3, 'LTC'))
+      - input: ref('stg_pg__survey_question')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, sc as scale_type, toUInt8(isc) as is_scored, it as item_type
+          from values('sv String, q String, sc String, isc UInt8, it String',
+              ('IP', 'cms_23', 'likelihood_0_10', 1, 'GCC Recommended'), ('IP', 'cms_24', 'definitely_1_4', 1, 'GCC Recommended'),
+              ('IP', 'filling', 'categorical', 0, 'Background'), ('LTC', 'csurvey', 'categorical', 0, 'Background'),
+              ('IP', 'o3', 'rating_1_5', 1, 'Standard'))
+      - input: ref('stg_pg__answer_option')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, a as answer_code, le as label_en, le as label_ar,
+                 if(sc < 0, cast(null as Nullable(Float64)), toNullable(toFloat64(sc))) as score
+          from values('sv String, q String, a String, le String, sc Float64',
+              ('IP', 'cms_23', '11', '10', 10), ('IP', 'cms_23', '7', '6', 6), ('IP', 'cms_24', '2', 'Probably No', 2),
+              ('IP', 'filling', '1', 'Patient', -1), ('IP', 'o3', '5', 'Very Good', 5))
+      - input: ref('stg_ref__pg_question_role')
+        format: sql
+        rows: |
+          select sv as service_code, q as question_code, r as role
+          from values('sv String, q String, r String', ('IP', 'o3', 'Hospital NPS'), ('IP', 'filling', 'respondent'))
+    expect:
+      rows:
+        - {surveycode: D1, question_key: 'IP|cms_23', answer_score: 10, band: Promoter, is_promoter: 1, is_passive: 0, is_detractor: 0, question_class: Scored, nps_role: '', is_option_unknown: 0, staff_key: 71, branch_key: 5}
+        - {surveycode: D2, question_key: 'IP|cms_23', answer_score: 6, band: Passive, is_promoter: 0, is_passive: 1, is_detractor: 0, question_class: Scored, nps_role: '', is_option_unknown: 0, staff_key: 71, branch_key: 5}
+        - {surveycode: D1, question_key: 'IP|cms_24', answer_score: 2, band: Detractor, is_promoter: 0, is_passive: 0, is_detractor: 1, question_class: Scored, nps_role: '', is_option_unknown: 0, staff_key: 71, branch_key: 5}
+        - {surveycode: D1, question_key: 'IP|filling', answer_score: null, band: null, is_promoter: 0, is_passive: 0, is_detractor: 0, question_class: Background, nps_role: '', is_option_unknown: 0, staff_key: 71, branch_key: 5}
+        - {surveycode: L1, question_key: 'LTC|csurvey', answer_score: null, band: null, is_promoter: 0, is_passive: 0, is_detractor: 0, question_class: Background, nps_role: '', is_option_unknown: 1, staff_key: 71, branch_key: 5}
+        - {surveycode: D1, question_key: 'IP|o3', answer_score: 5, band: Promoter, is_promoter: 1, is_passive: 0, is_detractor: 0, question_class: Scored, nps_role: Hospital NPS, is_option_unknown: 0, staff_key: 71, branch_key: 5}
