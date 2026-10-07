@@ -148,8 +148,9 @@ def kept_blocks(text: str) -> list[str]:
     """Measure and hierarchy blocks (with their /// descriptions) of an existing table file, verbatim."""
     blocks, current, doc = [], None, []
     for line in text.splitlines():
-        top = line.startswith("\t") and not line.startswith("\t\t")
-        outer = not line.startswith("\t") and line.strip() != ""
+        blank = line.strip() == ""
+        top = not blank and line.startswith("\t") and not line.startswith("\t\t")
+        outer = not blank and not line.startswith("\t")
         if top or outer:
             if current is not None:
                 blocks.append("\n".join(current).rstrip())

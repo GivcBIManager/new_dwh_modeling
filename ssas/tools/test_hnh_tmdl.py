@@ -116,6 +116,12 @@ def test_kept_blocks_keep_measures_and_hierarchies_verbatim():
     assert len(blocks) == 2
 
 
+def test_kept_blocks_keep_whitespace_only_lines_inside_a_block():
+    blocks = t.kept_blocks("table T\n\tmeasure A = 1\n\t\n\t\tformatString: 0\n")
+    assert len(blocks) == 1
+    assert blocks[0].endswith("\t\tformatString: 0")
+
+
 def test_render_table_puts_kept_blocks_first_and_annotations_last():
     text = t.render_table(FACT, [t.Column("delivery_date_key", "Int64")], {}, {}, ["\tmeasure X = 1"])
     lines = text.splitlines()
