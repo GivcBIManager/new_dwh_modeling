@@ -11,7 +11,9 @@ table 'Probe Dim'
 		summarizeBy: none
 		sourceColumn: dim_name
 
-	partition 'Probe Dim' = query
-		source
-			query = select toInt64(1) as dim_key, 'عنصر أول' as dim_name union all select toInt64(2), 'second'
-			dataSource: HNH_Gold
+	partition 'Probe Dim' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select toInt64(1) as dim_key, 'عنصر أول' as dim_name union all select toInt64(2), 'second'")
+				in
+				    Source

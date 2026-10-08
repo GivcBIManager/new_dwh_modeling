@@ -343,10 +343,12 @@ table 'Pre-auth Lines'
 		summarizeBy: none
 		sourceColumn: episode_link_method
 
-	partition 'Pre-auth Lines template' = query
-		source
-			query = select * from gold.ssas_fact_preauth_line where 1 = 0
-			dataSource: HNH_Gold
+	partition 'Pre-auth Lines template' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_preauth_line where 1 = 0")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_preauth_line

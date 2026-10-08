@@ -91,10 +91,12 @@ table Item
 		summarizeBy: none
 		sourceColumn: product_group
 
-	partition Item = query
-		source
-			query = select * from gold.ssas_dim_item
-			dataSource: HNH_Gold
+	partition Item = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_item")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_item

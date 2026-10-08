@@ -102,10 +102,12 @@ table 'Claim Payments'
 		summarizeBy: none
 		sourceColumn: days_to_payment
 
-	partition 'Claim Payments' = query
-		source
-			query = select * from gold.ssas_fact_claim_payment
-			dataSource: HNH_Gold
+	partition 'Claim Payments' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_claim_payment")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_claim_payment

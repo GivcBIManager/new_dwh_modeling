@@ -36,10 +36,12 @@ table 'Discharge Outcome'
 		summarizeBy: none
 		sourceColumn: moh_code
 
-	partition 'Discharge Outcome' = query
-		source
-			query = select * from gold.ssas_dim_discharge_outcome
-			dataSource: HNH_Gold
+	partition 'Discharge Outcome' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_discharge_outcome")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_discharge_outcome

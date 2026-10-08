@@ -58,12 +58,12 @@ Memory drivers found by profiling: line surrogate keys (23–66M distinct values
 gold.dim_* / fact_* / agg_* / sec_user_access        (dbt, unchanged)
         │
 gold.ssas_<table>   views (dbt, new)  — column pruning, types, Yes/No flags
-        │   ClickHouse ODBC (system DSN HNH_Gold, read-only user ssas_reader)
+        │   Power Query Odbc.Query → ClickHouse ODBC (system DSN HNH_Gold, read-only user bi_user)
         ▼
 SSAS 2025  HNHANALYTICSSRV\REPORTSERVERDB
    HNH_Analytics        (production)
    HNH_Analytics_Test   (deploy → process → test → promote; data cleared after)
-        │   live connection, viewer's Windows identity → USERNAME()
+        │   live connection, viewer's Windows identity → USERPRINCIPALNAME()
         ▼
 PBIRS May 2026 reports and Power BI Desktop RS / Excel self-service
 ```
@@ -196,12 +196,12 @@ SSAS does not allow `USERELATIONSHIP` over a relationship whose table carries a 
 ### 6.2 Role "HNH Readers"
 
 - Permission: Read. Member: the local group `HNHANALYTICSSRV\HNH_BI_Users` (created by the BI manager on the server; individual users are added to the group, never to the role). Deployments never change role membership.
-- `USERNAME()` returns `HNHANALYTICSSRV\<user>`; `sec_user_access.login_name` has the same form; DAX `=` on text is case-insensitive.
+- `USERPRINCIPALNAME()` returns `HNHANALYTICSSRV\<user>` for a local account, the same as `USERNAME()` (spike 2026-10-08, logged on as `BI_Developer`); `sec_user_access.login_name` has the same form; DAX `=` on text is case-insensitive.
 
 | Table | Row filter (DAX, abbreviated) |
 |---|---|
 | `sec_user_access` | `FALSE()` |
-| `dim_branch` | `dim_branch[branch_key] IN CALCULATETABLE(VALUES(sec_user_access[branch_key]), sec_user_access[login_name] = USERNAME())` |
+| `dim_branch` | `dim_branch[branch_key] IN CALCULATETABLE(VALUES(sec_user_access[branch_key]), sec_user_access[login_name] = USERPRINCIPALNAME())` |
 | `dim_staff` | `dim_staff[staff_key] = -1` **or** the user has a `sec_user_access` row with a blank `unified_specialty` **or** `dim_staff[unified_specialty]` is one of the user's `unified_specialty` values (specialty only, no branch match — P15) |
 | `dim_pay_category` | the user has any row with `can_see_pay = 1` |
 | `fact_leave_balance_monthly`, `agg_staff_productivity_monthly` | the user has any row with `can_see_pay = 1` |
@@ -215,7 +215,7 @@ SSAS does not allow `USERELATIONSHIP` over a relationship whose table carries a 
 
 ### 6.3 PBIRS identity
 
-PBIRS and SSAS are on the same machine, so the viewer's Windows identity should reach SSAS without Kerberos delegation. Plan task verifies `USERNAME()` from a published report (O-S3). Fallback: the report's data source uses a stored Windows credential of a service account that is an SSAS administrator, with "Impersonate the authenticated user" (`EffectiveUserName`), which keeps `USERNAME()` = the viewer.
+PBIRS and SSAS are on the same machine, so the viewer's Windows identity should reach SSAS without Kerberos delegation. Plan task verifies `USERPRINCIPALNAME()` from a published report (O-S3). Fallback: the report's data source uses a stored Windows credential of a service account that is an SSAS administrator, with "Impersonate the authenticated user" (`EffectiveUserName`), which keeps `USERPRINCIPALNAME()` = the viewer.
 
 ---
 
@@ -267,10 +267,9 @@ Snapshot and balance measures (rule 8.2.4) are excluded from MTD, QTD, YTD and R
 
 ### 9.1 Data source
 
-- Provider (legacy) data source: OLE DB Provider for ODBC (`MSDASQL`) over the ClickHouse ODBC Unicode driver, system DSN `HNH_Gold` on HNHANALYTICSSRV, database `gold`, user `ssas_reader`.
-- The password lives only in the DSN on the server. TMDL carries the connection string without credentials; deployments keep the server's data source (`-C` not used on promote).
-- Fallback if plan task 1 shows that `MSDASQL` cannot process from ClickHouse on SSAS 2025: a Power Query source `Odbc.Query("dsn=HNH_Gold", <same SQL>)` per partition.
-- `ssas_reader` (created by the ClickHouse admin, O-S6): read-only, `SELECT` on `gold.ssas_*` only (the views are `SQL SECURITY DEFINER`), `readonly = 1`, `max_execution_time` generous enough for a full year partition.
+- Structured (Power Query) ODBC data source `HNH_Gold` over the ClickHouse ODBC Unicode driver, system DSN `HNH_Gold` on HNHANALYTICSSRV, database `gold`, user `bi_user`. Every partition is an M partition `Odbc.Query("dsn=HNH_Gold", <SQL>)` (decision P24).
+- The password lives only in the DSN on the server; the data source credential is `Anonymous` and carries no secret.
+- `bi_user` (O-S6): read-only (`readonly = 2`), `max_execution_time` 3600, generous enough for a full year partition.
 
 ### 9.2 Partition queries
 
@@ -356,14 +355,16 @@ Run by `test.ps1` against the test database at every deploy, and on demand again
 | # | Item | Needed for | Status |
 |---|---|---|---|
 | O-S1 | Tabular Editor 2.27 saves/deploys TMDL at compatibility level 1700 | Source control format | Plan task 1 |
-| O-S2 | ClickHouse ODBC driver installed on HNHANALYTICSSRV and system DSN `HNH_Gold` created; SSAS 2025 processes through `MSDASQL` | Data source | User installs driver/DSN; plan task 1 verifies |
-| O-S3 | Viewer identity reaches SSAS from PBIRS (`USERNAME()`) | Security | Plan verifies with a published test report |
+| O-S2 | ClickHouse ODBC driver installed on HNHANALYTICSSRV and system DSN `HNH_Gold` created; SSAS 2025 processes through `MSDASQL` | Data source | Done 2026-10-08: driver 1.4.3 (64-bit); the user renamed the existing DSN `NewDWH` to `HNH_Gold` (ClickHouse user `bi_user`, `readonly = 2`, `max_execution_time = 600`, database `gold`). The spike processed through `MSDASQL` |
+| O-S3 | Viewer identity reaches SSAS from PBIRS (`USERPRINCIPALNAME()`) | Security | Plan verifies with a published test report |
 | O-S4 | List of users with `can_see_pay` / `can_see_pii` | `map_bi_user_permission` | User supplies |
 | O-S5 | SSAS (and SQL engine) memory settings | Processing on a shared server | User applies the recommended values |
-| O-S6 | ClickHouse user `ssas_reader` and its grants | Data source | User / ClickHouse admin creates (DDL in the plan) |
+| O-S6 | ClickHouse user `ssas_reader` and its grants | Data source | Replaced (user, 2026-10-08): `HNH_Gold` logs in as `bi_user` (`readonly_role`: `SELECT` on every database; profile `readonly_profile`, used only by `bi_user`). Its `max_execution_time = 600` is too short (a year of charge lines took 456 s through Power Query); the user raises it to 3600 with `ALTER SETTINGS PROFILE readonly_profile` |
 | O-S7 | Power BI Desktop RS May 2026 on authoring machines | Report authoring | User installs |
 | O-S8 | Rows dated 2027 in charge, order and encounter facts | Data quality | Kept in the `Later` partition; raised as a data finding |
 | O-S9 | Local group `HNHANALYTICSSRV\HNH_BI_Users` and its members | Role membership | User creates |
+| O-S10 | `EffectiveUserName` fails on HNHANALYTICSSRV (workgroup, no Active Directory: "your domain isn't available"), so the security tests (11.4), P14 and the PBIRS fallback in 6.3 cannot impersonate. The only `HNH_BI_Users` member is `Administrator`, an SSAS administrator, who bypasses row filters | Security tests | Spike 2026-10-08. Replacement: test queries run under the test user's own Windows logon (`LogonUser`, credential entered at run time); the user created the non-admin test account `HNHANALYTICSSRV\BI_Developer` in `HNH_BI_Users`. Spike 2026-10-08 passed with it: `USERPRINCIPALNAME()` = `login_name`, the `FALSE()` row filter and the filter through a relationship work |
+| O-S11 | Through `MSDASQL` the ClickHouse ODBC driver 1.4.3 reports `Decimal` with scale 0 (1,233.5678 loads as 1,233) and `String` as `SQL_VARCHAR`, so on ANSI code page 1252 Arabic arrives as UTF-8 bytes (U+0646 loads as 217) | Amounts and Arabic text | Spike 2026-10-08: a structured ODBC data source with Power Query partitions (`Odbc.Query("dsn=HNH_Gold", <SQL>)`, the fallback in section 7) loads both correctly and faster. Model switched (P24) |
 
 ---
 
@@ -405,5 +406,7 @@ These amend the sections named; the implementation plan `plans/2026-10-07-ssas-m
 | P20 | 8.2.4 | Snapshot measures (Headcount, Stock Value, GL Closing Balance) take the last period of each branch and add the branches | Branches end on different periods; one group-wide maximum dropped branches from totals |
 | P21 | 9.3 | `fact_invoice` is partitioned on `invoice_date_key` | Listed as large in 9.3; the first plan draft missed it |
 | P22 | 1, 12 | The ClickHouse user `ssas_reader` is created by the user (`scripts/create_ssas_reader.py`, password from `HNH_SSAS_READER_PASSWORD`); the server probe (`ssas/spike/spike.ps1`) and the first deployment (plan Task 16) are run by the user on HNHANALYTICSSRV | The password and the server are the user's; the laptop cannot reach the server |
+| P23 | 1, 10 | HNHANALYTICSSRV is the production server, and the working copy (`D:\new_dwh_modeling`) is now on it; scripts run from there. Anything that changes the SSAS instance, the server or ClickHouse needs the user's go-ahead each time (`CLAUDE.md`) | The same instance serves PBIRS users (D5); recorded 2026-10-08 |
+| P24 | 9.1, 9.2 | The data source is a structured ODBC source and every partition an M partition `Odbc.Query("dsn=HNH_Gold", <SQL>)` (the 9.1 fallback), instead of `MSDASQL` query partitions. `hnh_tmdl.odbc_expression` and `ConvertTo-HnhOdbcExpression` build the same text; `Sync-HnhPartitions` compares whole expressions | Spike 2026-10-08: through `MSDASQL` the ClickHouse ODBC driver 1.4.3 loses decimal fractions and garbles Arabic (O-S11); Power Query loads both correctly and was faster on 14.1M charge lines (456 s; `MSDASQL` passed 600 s without finishing) |
 
 Parked for the KPI catalogue plan or the server run: the processing gate also accepts a `dbt run` (no tests) because `etl_run_log` does not record the command; the Arabic-text test is weak; the size test reads `EstimatedSize`, not the VertiPaq total; the specialty user's branch-wide fact rows are not checked; the out-of-range warning covers only two columns.

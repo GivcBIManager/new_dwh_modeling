@@ -82,9 +82,26 @@ def test_date_key_column_override_and_sort():
 
 
 def test_partitions():
-    assert t.partition_lines(FACT)[2] == "\t\t\tquery = select * from gold.ssas_fact_charge_line where 1 = 0"
-    assert t.partition_lines(FACT)[0] == "\tpartition 'Charge Lines template' = query"
-    assert t.partition_lines(DIM)[2] == "\t\t\tquery = select * from gold.ssas_dim_branch"
+    assert t.partition_lines(FACT) == [
+        "\tpartition 'Charge Lines template' = m",
+        "\t\tsource =",
+        "\t\t\t\tlet",
+        '\t\t\t\t    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_charge_line where 1 = 0")',
+        "\t\t\t\tin",
+        "\t\t\t\t    Source",
+    ]
+    assert t.partition_lines(DIM)[3] == '\t\t\t\t    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_branch")'
+
+
+def test_odbc_expression_escapes_m_quotes():
+    assert t.odbc_expression('select "a"') == 'let\n    Source = Odbc.Query("dsn=HNH_Gold", "select ""a""")\nin\n    Source'
+
+
+def test_data_source_is_structured_odbc():
+    lines = t.DATA_SOURCES_TMDL.splitlines()
+    assert lines[0] == "dataSource HNH_Gold"
+    assert '\t\t\t      "dsn": "HNH_Gold"' in lines and "\t\tprotocol: odbc" in lines
+    assert "\t\tauthenticationKind: Anonymous" in lines and "MSDASQL" not in t.DATA_SOURCES_TMDL
 
 
 def test_kept_blocks_keep_measures_and_hierarchies_verbatim():

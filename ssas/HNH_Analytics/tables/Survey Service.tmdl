@@ -32,10 +32,12 @@ table 'Survey Service'
 		summarizeBy: none
 		sourceColumn: survey_name_ar
 
-	partition 'Survey Service' = query
-		source
-			query = select * from gold.ssas_dim_survey_service
-			dataSource: HNH_Gold
+	partition 'Survey Service' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_survey_service")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_survey_service

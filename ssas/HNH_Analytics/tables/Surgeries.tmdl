@@ -151,10 +151,12 @@ table Surgeries
 		summarizeBy: none
 		sourceColumn: recovery_handover_minutes
 
-	partition Surgeries = query
-		source
-			query = select * from gold.ssas_fact_surgery
-			dataSource: HNH_Gold
+	partition Surgeries = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_surgery")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_surgery

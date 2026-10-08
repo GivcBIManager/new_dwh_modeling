@@ -45,10 +45,12 @@ table 'User Access'
 		summarizeBy: none
 		sourceColumn: can_see_pii
 
-	partition 'User Access' = query
-		source
-			query = select * from gold.ssas_sec_user_access
-			dataSource: HNH_Gold
+	partition 'User Access' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_sec_user_access")
+				in
+				    Source
 
 	annotation hnh_kind = security
 	annotation hnh_view = ssas_sec_user_access

@@ -81,10 +81,12 @@ table 'AP Payments'
 		summarizeBy: none
 		sourceColumn: days_after_due
 
-	partition 'AP Payments' = query
-		source
-			query = select * from gold.ssas_fact_ap_payment
-			dataSource: HNH_Gold
+	partition 'AP Payments' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_ap_payment")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_ap_payment

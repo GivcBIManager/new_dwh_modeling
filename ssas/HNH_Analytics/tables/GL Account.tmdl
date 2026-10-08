@@ -120,10 +120,12 @@ table 'GL Account'
 		summarizeBy: none
 		sourceColumn: is_summary
 
-	partition 'GL Account' = query
-		source
-			query = select * from gold.ssas_dim_gl_account
-			dataSource: HNH_Gold
+	partition 'GL Account' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_gl_account")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_gl_account

@@ -60,6 +60,13 @@ function Compare-HnhPartitions {
     return [pscustomobject]@{ Add = $add; Update = $update; Remove = $remove }
 }
 
+function ConvertTo-HnhOdbcExpression {
+    # Power Query partition expression for one SQL query through the DSN; same text as hnh_tmdl.odbc_expression (decision P24).
+    param([Parameter(Mandatory = $true)][string]$Query, [string]$Dsn = 'HNH_Gold')
+    $sql = $Query.Replace('"', '""')   # outside the string: "" inside an expandable string collapses to one quote
+    return "let`n    Source = Odbc.Query(""dsn=$Dsn"", ""$sql"")`nin`n    Source"
+}
+
 function Test-HnhGate {
     # SSAS spec 9.4: process only the latest successful tag:hnh run, and only once.
     param([string]$Status, [Nullable[datetime]]$FinishedAt, [Nullable[datetime]]$LastProcessedRunAt)
@@ -114,24 +121,24 @@ function Sync-HnhPartitions {
     # -NoSave leaves the changes pending on $Model (no Calculate, no SaveChanges) so the caller commits them in its own single transaction.
     param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][datetime]$Today, [switch]$DryRun, [switch]$NoRefresh, [switch]$NoSave)
     $dataOnly = [Microsoft.AnalysisServices.Tabular.RefreshType]::DataOnly
-    $dataSource = $Model.DataSources.Find('HNH_Gold')
     $log = @()
     foreach ($table in @($Model.Tables)) {
         $column = Get-HnhAnnotation $table 'hnh_partition_column'
         if (-not $column) { continue }
         $view = Get-HnhAnnotation $table 'hnh_view'
         $plan = Get-HnhPartitionPlan -Table $table.Name -View $view -Column $column -Today $Today
+        # Partitions are Power Query (M) partitions: compare and write whole expressions, not SQL.
+        $desired = @($plan | ForEach-Object { [pscustomobject]@{ Name = $_.Name; Query = (ConvertTo-HnhOdbcExpression $_.Query) } })
         $existing = @{}
-        foreach ($p in $table.Partitions) { $existing[$p.Name] = $p.Source.Query }
-        $diff = Compare-HnhPartitions -Desired $plan -Existing $existing
+        foreach ($p in $table.Partitions) { $existing[$p.Name] = ([string]$p.Source.Expression).Replace("`r`n", "`n") }
+        $diff = Compare-HnhPartitions -Desired $desired -Existing $existing
         foreach ($p in $diff.Add) {
             $log += "add $($p.Name)"
             if ($DryRun) { continue }
             $part = New-Object Microsoft.AnalysisServices.Tabular.Partition
             $part.Name = $p.Name
-            $source = New-Object Microsoft.AnalysisServices.Tabular.QueryPartitionSource
-            $source.DataSource = $dataSource
-            $source.Query = $p.Query
+            $source = New-Object Microsoft.AnalysisServices.Tabular.MPartitionSource
+            $source.Expression = $p.Query
             $part.Source = $source
             $table.Partitions.Add($part)
             if (-not $NoRefresh) { $part.RequestRefresh($dataOnly) }
@@ -140,7 +147,7 @@ function Sync-HnhPartitions {
             $log += "update $($p.Name)"
             if ($DryRun) { continue }
             $part = $table.Partitions.Find($p.Name)
-            $part.Source.Query = $p.Query
+            $part.Source.Expression = $p.Query
             if (-not $NoRefresh) { $part.RequestRefresh($dataOnly) }
         }
         foreach ($name in $diff.Remove) {

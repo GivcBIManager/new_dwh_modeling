@@ -86,10 +86,12 @@ table Payer
 		summarizeBy: none
 		sourceColumn: nphies_license
 
-	partition Payer = query
-		source
-			query = select * from gold.ssas_dim_payer
-			dataSource: HNH_Gold
+	partition Payer = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_payer")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_payer

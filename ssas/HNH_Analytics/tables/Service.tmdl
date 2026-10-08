@@ -78,10 +78,12 @@ table Service
 		summarizeBy: none
 		sourceColumn: high_level_department
 
-	partition Service = query
-		source
-			query = select * from gold.ssas_dim_service
-			dataSource: HNH_Gold
+	partition Service = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_service")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_service

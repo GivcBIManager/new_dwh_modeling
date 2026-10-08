@@ -46,10 +46,12 @@ table 'HR Department'
 		summarizeBy: none
 		sourceColumn: is_current
 
-	partition 'HR Department' = query
-		source
-			query = select * from gold.ssas_dim_hr_department
-			dataSource: HNH_Gold
+	partition 'HR Department' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_hr_department")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_hr_department

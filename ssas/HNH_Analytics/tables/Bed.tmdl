@@ -55,10 +55,12 @@ table Bed
 		summarizeBy: none
 		sourceColumn: is_currently_available
 
-	partition Bed = query
-		source
-			query = select * from gold.ssas_dim_bed
-			dataSource: HNH_Gold
+	partition Bed = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_bed")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_bed

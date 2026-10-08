@@ -176,10 +176,12 @@ table 'Purchase Lines'
 		summarizeBy: none
 		sourceColumn: ap_matched_amount
 
-	partition 'Purchase Lines' = query
-		source
-			query = select * from gold.ssas_fact_purchase_line
-			dataSource: HNH_Gold
+	partition 'Purchase Lines' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_purchase_line")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_purchase_line

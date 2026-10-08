@@ -35,10 +35,12 @@ table 'Budget Line'
 		summarizeBy: none
 		sourceColumn: natural_side
 
-	partition 'Budget Line' = query
-		source
-			query = select * from gold.ssas_dim_budget_line
-			dataSource: HNH_Gold
+	partition 'Budget Line' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_budget_line")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_budget_line

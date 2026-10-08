@@ -96,10 +96,12 @@ table 'Clinic Capacity'
 		summarizeBy: none
 		sourceColumn: scheduled_minutes
 
-	partition 'Clinic Capacity template' = query
-		source
-			query = select * from gold.ssas_agg_clinic_capacity_daily where 1 = 0
-			dataSource: HNH_Gold
+	partition 'Clinic Capacity template' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_agg_clinic_capacity_daily where 1 = 0")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_agg_clinic_capacity_daily

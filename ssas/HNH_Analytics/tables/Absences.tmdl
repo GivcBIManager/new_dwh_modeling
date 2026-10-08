@@ -80,10 +80,12 @@ table Absences
 		summarizeBy: none
 		sourceColumn: absence_hours
 
-	partition Absences = query
-		source
-			query = select * from gold.ssas_fact_absence
-			dataSource: HNH_Gold
+	partition Absences = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_absence")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_absence

@@ -105,10 +105,12 @@ table 'Stock Monthly'
 		summarizeBy: none
 		sourceColumn: consumption_cost
 
-	partition 'Stock Monthly' = query
-		source
-			query = select * from gold.ssas_fact_stock_monthly
-			dataSource: HNH_Gold
+	partition 'Stock Monthly' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_stock_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_stock_monthly

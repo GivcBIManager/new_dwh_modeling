@@ -62,10 +62,12 @@ table Store
 		summarizeBy: none
 		sourceColumn: is_expiry_store
 
-	partition Store = query
-		source
-			query = select * from gold.ssas_dim_store
-			dataSource: HNH_Gold
+	partition Store = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_store")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_store

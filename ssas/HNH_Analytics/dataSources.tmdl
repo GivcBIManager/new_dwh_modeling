@@ -1,3 +1,17 @@
-dataSource HNH_Gold = provider
-	connectionString: Provider=MSDASQL.1;Persist Security Info=False;Data Source=HNH_Gold
-	impersonationMode: impersonateServiceAccount
+dataSource HNH_Gold
+	connectionDetails =
+			{
+			  "address": {
+			    "options": {
+			      "dsn": "HNH_Gold"
+			    }
+			  }
+			}
+		protocol: odbc
+	credential =
+			{
+			  "kind": "ODBC",
+			  "path": "dsn=HNH_Gold"
+			}
+		authenticationKind: Anonymous
+		privacySetting: Organizational

@@ -45,10 +45,12 @@ table 'Product Category'
 		summarizeBy: none
 		sourceColumn: is_medication_category
 
-	partition 'Product Category' = query
-		source
-			query = select * from gold.ssas_dim_product_category
-			dataSource: HNH_Gold
+	partition 'Product Category' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_product_category")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_product_category

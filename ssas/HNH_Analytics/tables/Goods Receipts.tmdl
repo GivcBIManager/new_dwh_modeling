@@ -109,10 +109,12 @@ table 'Goods Receipts'
 		summarizeBy: none
 		sourceColumn: is_supplier_receipt
 
-	partition 'Goods Receipts' = query
-		source
-			query = select * from gold.ssas_fact_goods_receipt
-			dataSource: HNH_Gold
+	partition 'Goods Receipts' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_goods_receipt")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_goods_receipt

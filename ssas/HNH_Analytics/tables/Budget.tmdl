@@ -43,10 +43,12 @@ table Budget
 		summarizeBy: none
 		sourceColumn: budget_amount
 
-	partition Budget = query
-		source
-			query = select * from gold.ssas_fact_budget_monthly
-			dataSource: HNH_Gold
+	partition Budget = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_budget_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_budget_monthly

@@ -75,10 +75,12 @@ table 'Income Statement'
 		summarizeBy: none
 		sourceColumn: budget_worst_case
 
-	partition 'Income Statement' = query
-		source
-			query = select * from gold.ssas_fact_income_statement_monthly
-			dataSource: HNH_Gold
+	partition 'Income Statement' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_income_statement_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_income_statement_monthly

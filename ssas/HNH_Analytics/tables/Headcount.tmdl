@@ -149,10 +149,12 @@ table Headcount
 		summarizeBy: none
 		sourceColumn: is_new_hire_in_month
 
-	partition Headcount = query
-		source
-			query = select * from gold.ssas_fact_headcount_monthly
-			dataSource: HNH_Gold
+	partition Headcount = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_headcount_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_headcount_monthly

@@ -61,6 +61,16 @@ Describe 'Compare-HnhPartitions' {
     }
 }
 
+Describe 'ConvertTo-HnhOdbcExpression' {
+    It 'wraps the SQL in Odbc.Query exactly as the generator does (hnh_tmdl.odbc_expression)' {
+        ConvertTo-HnhOdbcExpression 'select * from gold.v where d < 20230101' |
+            Should Be "let`n    Source = Odbc.Query(""dsn=HNH_Gold"", ""select * from gold.v where d < 20230101"")`nin`n    Source"
+    }
+    It 'doubles double quotes for M' {
+        ConvertTo-HnhOdbcExpression 'select "a"' | Should Be "let`n    Source = Odbc.Query(""dsn=HNH_Gold"", ""select """"a"""""")`nin`n    Source"
+    }
+}
+
 Describe 'Test-HnhGate (review focus 5)' {
     $run = Get-Date '2026-10-07 09:30:00'
     It 'opens for a successful run never processed before' { Test-HnhGate -Status 'success' -FinishedAt $run -LastProcessedRunAt $null | Should Be $true }

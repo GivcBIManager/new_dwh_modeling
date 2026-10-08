@@ -15,7 +15,9 @@ table 'Probe Users'
 		summarizeBy: none
 		sourceColumn: dim_key
 
-	partition 'Probe Users' = query
-		source
-			query = select 'set-by-spike' as login_name, toInt64(1) as dim_key
-			dataSource: HNH_Gold
+	partition 'Probe Users' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select 'set-by-spike' as login_name, toInt64(1) as dim_key")
+				in
+				    Source

@@ -12,6 +12,7 @@ ACRONYMS = {
     "tpa", "uom", "vat",
 }
 DATA_SOURCE = "HNH_Gold"
+DSN = "HNH_Gold"
 GOLD = "gold"
 
 DATABASE_TMDL = (
@@ -19,11 +20,32 @@ DATABASE_TMDL = (
     "\tcompatibilityLevel: 1700\n"
     "\tcompatibilityMode: analysisServices\n"
 )
+# Structured ODBC source read through Power Query (decision P24): MSDASQL loads the ClickHouse driver's Decimal with
+# scale 0 and its String as ANSI text. The DSN holds the password, so the credential is Anonymous.
 DATA_SOURCES_TMDL = (
-    f"dataSource {DATA_SOURCE} = provider\n"
-    "\tconnectionString: Provider=MSDASQL.1;Persist Security Info=False;Data Source=HNH_Gold\n"
-    "\timpersonationMode: impersonateServiceAccount\n"
+    f"dataSource {DATA_SOURCE}\n"
+    "\tconnectionDetails =\n"
+    "\t\t\t{\n"
+    '\t\t\t  "address": {\n'
+    '\t\t\t    "options": {\n'
+    f'\t\t\t      "dsn": "{DSN}"\n'
+    "\t\t\t    }\n"
+    "\t\t\t  }\n"
+    "\t\t\t}\n"
+    "\t\tprotocol: odbc\n"
+    "\tcredential =\n"
+    "\t\t\t{\n"
+    '\t\t\t  "kind": "ODBC",\n'
+    f'\t\t\t  "path": "dsn={DSN}"\n'
+    "\t\t\t}\n"
+    "\t\tauthenticationKind: Anonymous\n"
+    "\t\tprivacySetting: Organizational\n"
 )
+
+
+def odbc_expression(sql: str) -> str:
+    """Power Query partition expression that runs sql through the DSN (ssas/scripts/HnhSsas.psm1 builds the same)."""
+    return f'let\n    Source = Odbc.Query("dsn={DSN}", "{sql.replace(chr(34), chr(34) * 2)}")\nin\n    Source'
 
 
 @dataclass(frozen=True)
@@ -136,12 +158,8 @@ def partition_lines(table: Table) -> list[str]:
         name, where = f"{table.name} template", " where 1 = 0"
     else:
         name, where = table.name, ""
-    return [
-        f"\tpartition {q(name)} = query",
-        "\t\tsource",
-        f"\t\t\tquery = select * from {GOLD}.{table.view}{where}",
-        f"\t\t\tdataSource: {DATA_SOURCE}",
-    ]
+    expression = odbc_expression(f"select * from {GOLD}.{table.view}{where}")
+    return [f"\tpartition {q(name)} = m", "\t\tsource ="] + ["\t\t\t\t" + line for line in expression.split("\n")]
 
 
 def kept_blocks(text: str) -> list[str]:

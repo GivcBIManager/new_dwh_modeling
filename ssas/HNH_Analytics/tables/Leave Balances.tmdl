@@ -106,10 +106,12 @@ table 'Leave Balances'
 		summarizeBy: none
 		sourceColumn: leave_liability_amount
 
-	partition 'Leave Balances' = query
-		source
-			query = select * from gold.ssas_fact_leave_balance_monthly
-			dataSource: HNH_Gold
+	partition 'Leave Balances' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_leave_balance_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_leave_balance_monthly

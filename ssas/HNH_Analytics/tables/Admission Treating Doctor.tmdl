@@ -38,10 +38,12 @@ table 'Admission Treating Doctor'
 		summarizeBy: none
 		sourceColumn: unified_specialty
 
-	partition 'Admission Treating Doctor' = query
-		source
-			query = select * from gold.ssas_dim_staff_role
-			dataSource: HNH_Gold
+	partition 'Admission Treating Doctor' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_staff_role")
+				in
+				    Source
 
 	annotation hnh_kind = role_copy
 	annotation hnh_view = ssas_dim_staff_role

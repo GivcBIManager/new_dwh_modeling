@@ -67,10 +67,12 @@ table 'Revenue Adjustments'
 		summarizeBy: none
 		sourceColumn: base_invoice_net_amount
 
-	partition 'Revenue Adjustments' = query
-		source
-			query = select * from gold.ssas_fact_revenue_adjustment
-			dataSource: HNH_Gold
+	partition 'Revenue Adjustments' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_revenue_adjustment")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_revenue_adjustment

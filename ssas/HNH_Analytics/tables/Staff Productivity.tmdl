@@ -77,10 +77,12 @@ table 'Staff Productivity'
 		summarizeBy: none
 		sourceColumn: absence_days
 
-	partition 'Staff Productivity' = query
-		source
-			query = select * from gold.ssas_agg_staff_productivity_monthly
-			dataSource: HNH_Gold
+	partition 'Staff Productivity' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_agg_staff_productivity_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_agg_staff_productivity_monthly

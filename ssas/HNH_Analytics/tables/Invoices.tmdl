@@ -195,10 +195,12 @@ table Invoices
 		summarizeBy: none
 		sourceColumn: claim_type
 
-	partition 'Invoices template' = query
-		source
-			query = select * from gold.ssas_fact_invoice where 1 = 0
-			dataSource: HNH_Gold
+	partition 'Invoices template' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_invoice where 1 = 0")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_invoice

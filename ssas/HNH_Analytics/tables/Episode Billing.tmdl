@@ -93,10 +93,12 @@ table 'Episode Billing'
 		summarizeBy: none
 		sourceColumn: is_long_stay_contract
 
-	partition 'Episode Billing template' = query
-		source
-			query = select * from gold.ssas_agg_episode_billing where 1 = 0
-			dataSource: HNH_Gold
+	partition 'Episode Billing template' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_agg_episode_billing where 1 = 0")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_agg_episode_billing

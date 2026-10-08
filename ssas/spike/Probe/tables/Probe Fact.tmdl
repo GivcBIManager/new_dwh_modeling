@@ -82,7 +82,9 @@ table 'Probe Fact'
 		summarizeBy: none
 		sourceColumn: flag
 
-	partition 'Probe Fact' = query
-		source
-			query = select toInt64(1) as dim_key, toInt64(20260131) as date_key, cast(null as Nullable(Int64)) as optional_key, toDecimal64(1234.5678, 4) as amount_value, cast(null as Nullable(Decimal(18, 4))) as optional_amount, toFloat64(0.25) as ratio, 'نص عربي' as text_value, cast(null as Nullable(String)) as optional_text, toDate('2026-01-31') as day, toDateTime('2026-01-31 10:20:30', 'Asia/Riyadh') as moment, 'Yes' as flag union all select toInt64(2), toInt64(20260228), toNullable(toInt64(5)), toDecimal64(-1, 4), toNullable(toDecimal64(2, 4)), toFloat64(1.5), 'b', toNullable('x'), toDate('2026-02-28'), toDateTime('2026-02-28 00:00:00', 'Asia/Riyadh'), 'No'
-			dataSource: HNH_Gold
+	partition 'Probe Fact' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select toInt64(1) as dim_key, toInt64(20260131) as date_key, cast(null as Nullable(Int64)) as optional_key, toDecimal64(1234.5678, 4) as amount_value, cast(null as Nullable(Decimal(18, 4))) as optional_amount, toFloat64(0.25) as ratio, 'نص عربي' as text_value, cast(null as Nullable(String)) as optional_text, toDate('2026-01-31') as day, toDateTime('2026-01-31 10:20:30', 'Asia/Riyadh') as moment, 'Yes' as flag union all select toInt64(2), toInt64(20260228), toNullable(toInt64(5)), toDecimal64(-1, 4), toNullable(toDecimal64(2, 4)), toFloat64(1.5), 'b', toNullable('x'), toDate('2026-02-28'), toDateTime('2026-02-28 00:00:00', 'Asia/Riyadh'), 'No'")
+				in
+				    Source

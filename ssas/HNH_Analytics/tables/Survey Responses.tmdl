@@ -292,10 +292,12 @@ table 'Survey Responses'
 		summarizeBy: none
 		sourceColumn: physician_nps_band
 
-	partition 'Survey Responses' = query
-		source
-			query = select * from gold.ssas_fact_survey_response
-			dataSource: HNH_Gold
+	partition 'Survey Responses' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_survey_response")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_survey_response

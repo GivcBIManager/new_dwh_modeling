@@ -211,10 +211,12 @@ table Date
 		summarizeBy: none
 		sourceColumn: is_past
 
-	partition Date = query
-		source
-			query = select * from gold.ssas_dim_date
-			dataSource: HNH_Gold
+	partition Date = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_date")
+				in
+				    Source
 
 	annotation hnh_kind = date
 	annotation hnh_view = ssas_dim_date

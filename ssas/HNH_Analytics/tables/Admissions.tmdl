@@ -257,10 +257,12 @@ table Admissions
 		summarizeBy: none
 		sourceColumn: is_dama
 
-	partition Admissions = query
-		source
-			query = select * from gold.ssas_fact_admission
-			dataSource: HNH_Gold
+	partition Admissions = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_admission")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_admission

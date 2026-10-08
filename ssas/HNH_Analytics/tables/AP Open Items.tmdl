@@ -97,10 +97,12 @@ table 'AP Open Items'
 		summarizeBy: none
 		sourceColumn: days_overdue
 
-	partition 'AP Open Items' = query
-		source
-			query = select * from gold.ssas_fact_ap_open_item
-			dataSource: HNH_Gold
+	partition 'AP Open Items' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_ap_open_item")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_ap_open_item

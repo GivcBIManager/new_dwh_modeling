@@ -67,10 +67,12 @@ table 'Bed Occupancy'
 		summarizeBy: none
 		sourceColumn: is_inpatient_ward
 
-	partition 'Bed Occupancy template' = query
-		source
-			query = select * from gold.ssas_fact_bed_occupancy_daily where 1 = 0
-			dataSource: HNH_Gold
+	partition 'Bed Occupancy template' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_bed_occupancy_daily where 1 = 0")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_bed_occupancy_daily

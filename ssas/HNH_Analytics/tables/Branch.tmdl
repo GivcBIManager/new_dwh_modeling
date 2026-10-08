@@ -2,7 +2,7 @@
 table Branch
 
 	/// The login SSAS sees for this connection; use it to check row-level security from a report.
-	measure 'Current User' = USERNAME ()
+	measure 'Current User' = USERPRINCIPALNAME ()
 		formatString: General
 		displayFolder: Diagnostics
 
@@ -52,10 +52,12 @@ table Branch
 		summarizeBy: none
 		sourceColumn: pg_branch_code
 
-	partition Branch = query
-		source
-			query = select * from gold.ssas_dim_branch
-			dataSource: HNH_Gold
+	partition Branch = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_branch")
+				in
+				    Source
 
 	annotation hnh_kind = dim
 	annotation hnh_view = ssas_dim_branch

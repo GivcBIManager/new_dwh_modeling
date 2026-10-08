@@ -3,6 +3,9 @@
 Spec: `docs/superpowers/specs/2026-10-07-hnh-ssas-tabular-model-design.md`. Server `HNHANALYTICSSRV\REPORTSERVERDB`
 (SQL Server 2025 Analysis Services, compatibility level 1700). Power BI Report Server reports connect live.
 
+**HNHANALYTICSSRV is the production server.** The working copy `D:\new_dwh_modeling` is on it. Every deploy, process,
+restore or drop changes the production instance; the test slot `HNH_Analytics_Test` is on the same instance.
+
 ## Layout
 
 | Path | What |
@@ -17,7 +20,9 @@ Spec: `docs/superpowers/specs/2026-10-07-hnh-ssas-tabular-model-design.md`. Serv
 ## Prerequisites on the server
 
 - Tabular Editor 2.27 in `C:\Program Files (x86)\Tabular Editor` (or pass `-TabularEditorDir`).
-- ClickHouse ODBC driver (64-bit) and system DSN `HNH_Gold` → database `gold`, user `ssas_reader`.
+- ClickHouse ODBC driver (64-bit) and system DSN `HNH_Gold` → database `gold`, user `bi_user` (`max_execution_time` 3600).
+  The model reads it through Power Query (`Odbc.Query("dsn=HNH_Gold", …)`), not `MSDASQL`, which loses decimal
+  fractions and Arabic text with this driver (spec P24).
 - MSOLAP OLE DB provider (installed with SSMS or the AS client libraries).
 - Local group `HNHANALYTICSSRV\HNH_BI_Users`; every report user is a member and has rows in `gold.sec_user_access`.
 - Run every script in Windows PowerShell as an SSAS server administrator: `powershell -ExecutionPolicy Bypass -File ssas\scripts\<script>.ps1 …`.
@@ -27,7 +32,7 @@ Spec: `docs/superpowers/specs/2026-10-07-hnh-ssas-tabular-model-design.md`. Serv
 1. Columns changed in a `gold.ssas_*` view → `python scripts/gen_view_contracts.py`, then `python ssas/tools/generate.py`.
 2. Measures: edit the table file (`measure` blocks, `///` description, `formatString`, `displayFolder`). New snapshot measures must be added to the list in every `ISSELECTEDMEASURE` of `tables/Time Calculation.tmdl`.
 3. Check offline: `TabularEditor.exe ssas\HNH_Analytics -A ssas\bpa_rules.json -V` (no `type=error`), `python -m pytest ssas/tools`, `Invoke-Pester -Script ssas\scripts` (all Pester files).
-4. Copy `ssas/` to the server and run `deploy.ps1 -Stage All`.
+4. Run `deploy.ps1 -Stage All` from the working copy on the server (no copy step).
 
 ## Run
 

@@ -113,10 +113,12 @@ table 'GL Balances'
 		summarizeBy: none
 		sourceColumn: period_end_date_key
 
-	partition 'GL Balances' = query
-		source
-			query = select * from gold.ssas_fact_gl_balance_monthly
-			dataSource: HNH_Gold
+	partition 'GL Balances' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_gl_balance_monthly")
+				in
+				    Source
 
 	annotation hnh_kind = fact
 	annotation hnh_view = ssas_fact_gl_balance_monthly
