@@ -192,24 +192,55 @@ function Add-HnhRoleMember {
     return $true
 }
 
+if (-not ('HnhLogon' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class HnhLogon {
+    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern bool LogonUser(string user, string domain, string password, int logonType, int provider, out IntPtr token);
+    [DllImport("kernel32.dll")]
+    public static extern bool CloseHandle(IntPtr handle);
+}
+'@
+}
+
 function Invoke-HnhDax {
-    # DAX through the MSOLAP OLE DB provider; -EffectiveUserName runs the query as that user (SSAS admin only).
+    # DAX through the MSOLAP OLE DB provider. With -Credential the query runs under that user's own Windows logon: the
+    # server is in a workgroup, so EffectiveUserName cannot impersonate (spec O-S10).
     param(
         [Parameter(Mandatory = $true)][string]$Server,
         [Parameter(Mandatory = $true)][string]$Database,
         [Parameter(Mandatory = $true)][string]$Query,
-        [string]$EffectiveUserName
+        [pscredential]$Credential
     )
-    $cs = "Provider=MSOLAP;Data Source=$Server;Initial Catalog=$Database"
-    if ($EffectiveUserName) { $cs += ";EffectiveUserName=$EffectiveUserName" }
-    $conn = New-Object System.Data.OleDb.OleDbConnection $cs
-    $conn.Open()
+    # One connection string per identity, so OLE DB pooling never hands a user's query the administrator's session
+    # (MSOLAP rejects the OLE DB Services keyword that would turn pooling off).
+    $app = 'hnh-admin'
+    $context = $null; $token = [IntPtr]::Zero
+    if ($Credential) {
+        $domain, $name = $Credential.UserName.TrimStart('\').Split('\')
+        if (-not $domain -or -not $name -or $name -is [array]) { throw "Cannot log on as '$($Credential.UserName)': expected MACHINE\user" }
+        $app = 'hnh-' + $name
+        # 8 = LOGON32_LOGON_NETWORK_CLEARTEXT: needs only network access rights and keeps the credential for the SSAS connection.
+        if (-not [HnhLogon]::LogonUser($name, $domain, $Credential.GetNetworkCredential().Password, 8, 0, [ref]$token)) {
+            throw (New-Object System.ComponentModel.Win32Exception ([Runtime.InteropServices.Marshal]::GetLastWin32Error()))
+        }
+        $context = [System.Security.Principal.WindowsIdentity]::Impersonate($token)
+    }
     try {
-        $cmd = $conn.CreateCommand(); $cmd.CommandText = $Query; $cmd.CommandTimeout = 600
-        $table = New-Object System.Data.DataTable
-        [void](New-Object System.Data.OleDb.OleDbDataAdapter $cmd).Fill($table)
-        return ,$table
-    } finally { $conn.Close() }
+        $conn = New-Object System.Data.OleDb.OleDbConnection "Provider=MSOLAP;Data Source=$Server;Initial Catalog=$Database;Application Name=$app"
+        $conn.Open()
+        try {
+            $cmd = $conn.CreateCommand(); $cmd.CommandText = $Query; $cmd.CommandTimeout = 600
+            $table = New-Object System.Data.DataTable
+            [void](New-Object System.Data.OleDb.OleDbDataAdapter $cmd).Fill($table)
+            return ,$table
+        } finally { $conn.Close() }
+    } finally {
+        if ($context) { $context.Undo() }
+        if ($token -ne [IntPtr]::Zero) { [void][HnhLogon]::CloseHandle($token) }
+    }
 }
 
 function Invoke-HnhOdbc {

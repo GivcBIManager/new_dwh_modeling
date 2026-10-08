@@ -2,6 +2,8 @@
 .SYNOPSIS
   Row-count, security, measure, performance and size tests of a deployed HNH_Analytics database (SSAS spec 11).
   Run as an SSAS administrator on HNHANALYTICSSRV. Exit 0 = all passed, 1 = at least one failure.
+  The security and performance tests log on as the users in ssas/tests/security.json, with the passwords that
+  scripts/create_bi_windows_users.ps1 stored in -CredentialFile (DPAPI: readable only by the account that created it).
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File ssas\scripts\test.ps1 -Database HNH_Analytics_Test
 #>
@@ -10,6 +12,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Database,
     [string]$Dsn = 'HNH_Gold',
     [string]$TabularEditorDir = 'C:\Program Files (x86)\Tabular Editor',
+    [string]$CredentialFile = 'C:\HNH\secrets\bi_user_credentials.xml',
     [ValidateSet('All', 'RowCounts', 'Security', 'Measures', 'Performance', 'Size')][string[]]$Stage = @('All')
 )
 $ErrorActionPreference = 'Stop'
@@ -27,7 +30,17 @@ function Report([string]$Name, [bool]$Ok, [string]$Detail) {
     Write-Host ('{0} {1}: {2}' -f $word, $Name, $Detail)
 }
 function Want([string]$Name) { return ($Stage -contains 'All' -or $Stage -contains $Name) }
-function Dax([string]$Query, [string]$User) { return Invoke-HnhDax -Server $Server -Database $Database -Query $Query -EffectiveUserName $User }
+$script:credentials = $null
+function Dax([string]$Query, [string]$User) {
+    if (-not $User) { return Invoke-HnhDax -Server $Server -Database $Database -Query $Query }
+    if ($script:credentials -eq $null) {
+        if (-not (Test-Path $CredentialFile)) { throw "No credential file $CredentialFile (scripts/create_bi_windows_users.ps1 writes it)" }
+        $script:credentials = Import-Clixml $CredentialFile
+    }
+    $key = @($script:credentials.Keys | Where-Object { $_ -eq $User })   # hashtable keys from Import-Clixml: case-insensitive match
+    if ($key.Count -eq 0) { throw "No stored password for $User in $CredentialFile" }
+    return Invoke-HnhDax -Server $Server -Database $Database -Query $Query -Credential $script:credentials[$key[0]]
+}
 function Sql([string]$Query) { return Invoke-HnhOdbc -Dsn $Dsn -Query $Query }
 function ChString([string]$Value) { return "'" + $Value.Replace('\', '\\').Replace("'", "\'") + "'" }
 function CountRows([string]$TableName, [string]$User) {

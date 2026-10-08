@@ -15,7 +15,7 @@ Ask the user before anything that changes the server or the live data:
 
 Read-only work needs no confirmation: SSAS DMVs and DAX queries, `Get-OdbcDsn`, `SELECT` through a DSN, offline checks (`python -m pytest ssas/tools`, Pester, Tabular Editor `-A` BPA runs).
 
-Never write a password into the repository or into a command that echoes it. DSN passwords live only in the server's registry.
+Never write a password into the repository or into a command that echoes it. DSN passwords live only in the server's registry. The BI users' Windows passwords live only in `C:\HNH\secrets\` (Administrators only); never print or copy them.
 
 ## Server facts that affect the design
 
