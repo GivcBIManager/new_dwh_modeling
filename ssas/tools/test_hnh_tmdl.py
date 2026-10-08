@@ -176,17 +176,20 @@ def test_check_relationships():
 
 def test_render_relationships():
     rels = [t.Relationship("Charge Lines", "episode_payer_key", "Payer", "payer_key", active=False),
-            t.Relationship("Patient Details", "patient_key", "Patient", "patient_key", one_to_one_both=True)]
+            t.Relationship("Patient Details", "patient_key", "Patient", "patient_key", both_directions=True)]
     text = t.render_relationships(rels, lambda table, col: t.friendly(col))
     assert "relationship charge_lines_episode_payer_key\n\tisActive: false\n" in text
     assert "\tfromColumn: 'Charge Lines'.'Episode Payer Key'\n\ttoColumn: Payer.'Payer Key'" in text
-    assert "\tcrossFilteringBehavior: bothDirections\n\tsecurityFilteringBehavior: oneDirection\n\tfromCardinality: one" in text
+    assert ("relationship patient_details_patient_key\n\tcrossFilteringBehavior: bothDirections\n"
+            "\tsecurityFilteringBehavior: oneDirection\n\tfromColumn:") in text
+    # Decision P27: never one-to-one; SSAS applies a row filter both ways across a one-to-one relationship.
+    assert "fromCardinality" not in text
 
 
-def test_perspective_closure_follows_snowflake_but_not_one_to_one():
+def test_perspective_closure_follows_snowflake_but_not_both_directions():
     rels = [t.Relationship("GL Balances", "gl_account_key", "GL Account", "gl_account_key"),
             t.Relationship("GL Account", "fs_line_key", "FS Line", "fs_line_key"),
-            t.Relationship("Patient Details", "patient_key", "Patient", "patient_key", one_to_one_both=True)]
+            t.Relationship("Patient Details", "patient_key", "Patient", "patient_key", both_directions=True)]
     assert t.perspective_tables(["GL Balances"], rels, []) == ["FS Line", "GL Account", "GL Balances"]
     assert t.perspective_tables([], rels, ["Patient Details"]) == ["Patient Details"]
     text = t.render_perspective("Finance", ["GL Balances"])

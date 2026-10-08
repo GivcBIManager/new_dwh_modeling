@@ -12,7 +12,7 @@
   {"name": "Workforce: headcount and payroll by HR department",
    "dax": "EVALUATE SUMMARIZECOLUMNS ( 'HR Department'[Department Name], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Headcount\", [Headcount], \"Payroll\", [Payroll Cost] )"},
   {"name": "Supply chain: consumption and stock by item group",
-   "dax": "EVALUATE SUMMARIZECOLUMNS ( Item[Item Group], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Consumption\", [Consumption Cost], \"Stock\", [Stock Value] )"},
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Item'[Item Group], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Consumption\", [Consumption Cost], \"Stock\", [Stock Value] )"},
   {"name": "Patient experience: NPS and response rate by branch",
    "dax": "EVALUATE SUMMARIZECOLUMNS ( Branch[Branch Name], TREATAS ( { 2026 }, 'Date'[Year] ), \"NPS\", [Hospital NPS (5-point)], \"Response rate\", [Response Rate %] )"}
 ]

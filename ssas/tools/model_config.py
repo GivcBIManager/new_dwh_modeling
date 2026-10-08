@@ -154,8 +154,10 @@ ROLE_KEYS = {
     ("GL Account", "fs_line_key"): ("FS Line", "fs_line_key", True),
 }
 
-# Spec 5.3: one-to-one, both directions; the security filter flows only Patient -> Patient Details.
-EXTRA_RELATIONSHIPS = [Relationship("Patient Details", "patient_key", "Patient", "patient_key", True, True)]
+# Spec 5.3: one row per patient, both directions; the security filter flows only Patient -> Patient Details.
+# Declared many-to-one, not one-to-one: across a one-to-one relationship SSAS also applied the Patient Details row filter
+# to Patient, so users without PII saw no patient facts (decision P27).
+EXTRA_RELATIONSHIPS = [Relationship("Patient Details", "patient_key", "Patient", "patient_key", both_directions=True)]
 
 # Facts keep these keys hidden, with no relationship (spec 5: facts are never related to each other).
 NO_RELATIONSHIP = {

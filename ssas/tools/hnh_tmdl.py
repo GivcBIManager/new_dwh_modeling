@@ -70,7 +70,9 @@ class Relationship:
     to_table: str
     to_column: str
     active: bool = True
-    one_to_one_both: bool = False
+    # Both cross-filter directions, security filter only from the "to" table. Kept many-to-one even when the "from"
+    # side has one row per key: SSAS applies a row filter both ways across a one-to-one relationship (decision P27).
+    both_directions: bool = False
 
 
 def friendly(name: str) -> str:
@@ -252,9 +254,8 @@ def render_relationships(rels: list[Relationship], col_display) -> str:
         out.append(f"relationship {relationship_name(r)}")
         if not r.active:
             out.append("\tisActive: false")
-        if r.one_to_one_both:
-            out += ["\tcrossFilteringBehavior: bothDirections", "\tsecurityFilteringBehavior: oneDirection",
-                    "\tfromCardinality: one"]
+        if r.both_directions:
+            out += ["\tcrossFilteringBehavior: bothDirections", "\tsecurityFilteringBehavior: oneDirection"]
         out.append(f"\tfromColumn: {q(r.from_table)}.{q(col_display(r.from_table, r.from_column))}")
         out.append(f"\ttoColumn: {q(r.to_table)}.{q(col_display(r.to_table, r.to_column))}")
         out.append("")
@@ -267,7 +268,7 @@ def perspective_tables(facts: list[str], rels: list[Relationship], extra: list[s
     while changed:
         changed = False
         for r in rels:
-            if r.from_table in tables and r.to_table not in tables and not r.one_to_one_both:
+            if r.from_table in tables and r.to_table not in tables and not r.both_directions:
                 tables.add(r.to_table)
                 changed = True
     return sorted(tables)

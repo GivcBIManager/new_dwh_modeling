@@ -72,6 +72,14 @@
     "Expression": "FromTable.Name = \"Patient Details\" and SecurityFilteringBehavior = \"BothDirections\""
   },
   {
+    "ID": "HNH_NO_ONE_TO_ONE",
+    "Name": "No one-to-one relationships: SSAS applies a row filter both ways across them (spec P27)",
+    "Category": "HNH",
+    "Severity": 3,
+    "Scope": "Relationship",
+    "Expression": "FromCardinality = \"One\""
+  },
+  {
     "ID": "HNH_NO_ITERATOR_OVER_LARGE_FACT",
     "Name": "No FILTER or X-iterator over a fact with more than 1M rows",
     "Category": "HNH",
