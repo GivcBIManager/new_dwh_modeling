@@ -50,3 +50,9 @@ perspective 'Revenue Cycle'
 
 	perspectiveTable 'Time Calculation'
 		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure 'Billed Amount'
+		perspectiveMeasure 'Current User'
+		perspectiveMeasure 'Patient Collections'
+		perspectiveMeasure Revenue

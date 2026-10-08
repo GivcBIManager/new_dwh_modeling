@@ -1,7 +1,8 @@
 """Write the TMDL folder ssas/HNH_Analytics from the gold.ssas_* views and model_config.py (SSAS plan task 9).
 
 Usage: python ssas/tools/generate.py
-Keeps measure and hierarchy blocks of existing table files; never touches roles/ or tables/Time Calculation.tmdl.
+Keeps measure and hierarchy blocks of existing table files; never touches roles/, tables/Time Calculation.tmdl or
+tables/_Measures.tmdl (all measures; perspectives list them by display folder domain).
 """
 import sys
 from pathlib import Path
@@ -65,10 +66,13 @@ def main():
     write(MODEL_DIR / "relationships.tmdl", t.render_relationships(rels, col_display))
 
     has_calc_group = (tables_dir / f"{CALC_GROUP}.tmdl").exists()
+    measures_path = tables_dir / f"{t.MEASURE_TABLE}.tmdl"
+    folders = t.measure_folders(measures_path.read_text(encoding="utf-8")) if measures_path.exists() else []
     for name, facts in cfg.PERSPECTIVES.items():
         tables = t.perspective_tables(facts, rels, cfg.PERSPECTIVE_EXTRA.get(name, []))
+        measures = t.perspective_measures(name, folders, cfg.PERSPECTIVE_MEASURE_DOMAINS)
         write(MODEL_DIR / "perspectives" / f"{name}.tmdl",
-              t.render_perspective(name, tables + ([CALC_GROUP] if has_calc_group else [])))
+              t.render_perspective(name, tables + ([CALC_GROUP] if has_calc_group else []), measures))
 
     write(MODEL_DIR / "database.tmdl", t.DATABASE_TMDL)
     write(MODEL_DIR / "dataSources.tmdl", t.DATA_SOURCES_TMDL)

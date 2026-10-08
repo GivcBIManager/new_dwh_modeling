@@ -59,3 +59,8 @@ perspective Workforce
 
 	perspectiveTable 'Time Calculation'
 		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure 'Current User'
+		perspectiveMeasure Headcount
+		perspectiveMeasure 'Payroll Cost'

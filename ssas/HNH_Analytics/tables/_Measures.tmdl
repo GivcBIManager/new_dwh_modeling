@@ -1,0 +1,158 @@
+/// Every measure of the model, in display folders by domain (<domain>\<topic>). Each perspective shows the measures of its domain (decision P26).
+table _Measures
+
+	/// Countable admissions by admit date (gold spec section 8).
+	measure Admissions = CALCULATE ( COUNTROWS ( Admissions ), Admissions[Is Countable] = "Yes" )
+		formatString: #,0
+		displayFolder: Patient Flow\Admissions
+
+	/// Occupied ÷ available bed-days on inpatient wards that are not excluded (gold spec section 8; receiving notes).
+	measure 'Bed Occupancy %' =
+			CALCULATE (
+				DIVIDE ( SUM ( 'Bed Occupancy'[Is Occupied] ), SUM ( 'Bed Occupancy'[Is Available] ) ),
+				'Bed Occupancy'[Is Inpatient Ward] = "Yes",
+				'Bed Occupancy'[Is Excluded Ward] = "No"
+			)
+		formatString: 0.0%
+		displayFolder: Patient Flow\Occupancy
+
+	/// Outpatient visits: arrived, not cancelled OP encounters (gold spec section 8).
+	measure 'OP Visits' =
+			CALCULATE (
+				COUNTROWS ( Encounters ),
+				KEEPFILTERS ( Encounters[Encounter Type] = "OP" ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Visits
+
+	/// Billed amount in SAR: Σ net_amount of invoices (Phase 2 spec section 8).
+	measure 'Billed Amount' = SUM ( Invoices[Net Amount] )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
+
+	/// Patient collections in SAR: Σ receipt_amount over receipts and cancellations; refunds are excluded (receiving note: refunds = Σ over Refund).
+	measure 'Patient Collections' = CALCULATE ( SUM ( 'Cash Receipts'[Receipt Amount] ), 'Cash Receipts'[Receipt Kind] IN { "Receipt", "Cancellation" } )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Collections
+
+	/// Recognised revenue in SAR: Σ revenue_amount (Phase 2 spec section 8, "Revenue").
+	measure Revenue = SUM ( 'Charge Lines'[Revenue Amount] )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Claimed amount in SAR of the latest, not cancelled submission (Phase 2B spec section 7; receiving notes).
+	measure 'Claimed Amount' =
+			CALCULATE (
+				SUM ( 'Claim Lines'[Line Claimed Amount] ),
+				'Claim Lines'[Is Latest Submission] = "Yes",
+				'Claim Lines'[Is Cancelled Claim] = "No"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Posted closing balance in SAR at the last period of the selection (an adjustment period wins over its month), signed for display (Phase 3 spec section 8). Snapshot. The last period is taken per branch, so a multi-branch total keeps every branch.
+	measure 'GL Closing Balance' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				RETURN
+					CALCULATE (
+						SUMX ( 'GL Balances', 'GL Balances'[Closing Balance] * RELATED ( 'FS Line'[Display Sign] ) ),
+						'GL Balances'[Period Key] = LastPeriod,
+						'GL Balances'[Balance View] = "posted"
+					)
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+	/// Month-end headcount of the last closed month (is_closed_month) in the selection; the projected current month is excluded. Contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months. The last period is taken per branch, so a multi-branch total keeps every branch.
+	measure Headcount =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
+				RETURN
+					CALCULATE (
+						SUM ( Headcount[Headcount Units] ),
+						Headcount[Month Date Key] = LastMonth,
+						Headcount[Is Closed Month] = "Yes",
+						Headcount[Is Contingent] = "No"
+					)
+			)
+		formatString: #,0
+		displayFolder: Workforce\Headcount
+
+	/// Payroll cost in SAR: Σ cost_amount; parallel-run rows are already excluded (Phase 4 spec section 7).
+	measure 'Payroll Cost' = SUM ( Payroll[Cost Amount] )
+		formatString: #,0
+		displayFolder: Workforce\Payroll
+
+	/// Consumption cost in SAR: Σ consumption_cost of consumption movements (Phase 5 spec section 7).
+	measure 'Consumption Cost' =
+			CALCULATE ( SUM ( 'Stock Movements'[Consumption Cost Amount] ), 'Stock Movements'[Is Consumption] = "Yes" )
+		formatString: #,0
+		displayFolder: Supply Chain\Consumption
+
+	/// Stock value in SAR at the last month-end of the selection, expiry stores excluded (Phase 5 spec section 7). Snapshot. The last period is taken per branch, so a multi-branch total keeps every branch.
+	measure 'Stock Value' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				RETURN
+					CALCULATE (
+						SUM ( 'Stock Monthly'[Stock Value Amount] ),
+						'Stock Monthly'[Month Date Key] = LastMonth,
+						'Stock Monthly'[Is Expiry Store] = "No"
+					)
+			)
+		formatString: #,0
+		displayFolder: Supply Chain\Stock
+
+	/// Hospital NPS on the 5-point "recommend" question: (promoters − detractors) ÷ answers × 100; under 30 answers shows "insufficient sample" (Phase 6 spec section 7).
+	measure 'Hospital NPS (5-point)' =
+			VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Hospital NPS" )
+			VAR Net =
+				CALCULATE (
+					SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ),
+					'Survey Answers'[NPS Role] = "Hospital NPS"
+				)
+			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+		displayFolder: Patient Experience\NPS
+	
+		formatStringDefinition =
+				VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Hospital NPS" )
+				RETURN IF ( Answers < 30, """insufficient sample""", "0.0" )
+
+	/// Primary survey invitations (Phase 6 spec section 7.1).
+	measure Invitations = CALCULATE ( COUNTROWS ( 'Survey Responses' ), 'Survey Responses'[Is Primary For Encounter] = "Yes" )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Responded ÷ primary invitations (Phase 6 spec 7.1 as amended in the receiving notes: not ÷ SMS sent, because a third of submitted surveys have no SMS date).
+	measure 'Response Rate %' =
+			VAR Invited = CALCULATE ( COUNTROWS ( 'Survey Responses' ), 'Survey Responses'[Is Primary For Encounter] = "Yes" )
+			VAR Responded =
+				CALCULATE (
+					COUNTROWS ( 'Survey Responses' ),
+					'Survey Responses'[Is Primary For Encounter] = "Yes",
+					'Survey Responses'[Is Responded] = "Yes"
+				)
+			RETURN DIVIDE ( Responded, Invited )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// The login SSAS sees for this connection; use it to check row-level security from a report.
+	measure 'Current User' = USERPRINCIPALNAME ()
+		formatString: General
+		displayFolder: Diagnostics
+
+	column Measure
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: Measure
+
+	partition _Measures = m
+		source =
+				#table(type table [Measure = text], {})

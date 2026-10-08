@@ -53,3 +53,8 @@ perspective 'Supply Chain'
 
 	perspectiveTable 'Time Calculation'
 		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure 'Consumption Cost'
+		perspectiveMeasure 'Current User'
+		perspectiveMeasure 'Stock Value'

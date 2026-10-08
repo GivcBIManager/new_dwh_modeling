@@ -1,16 +1,6 @@
 /// One bed per day: available and occupied.
 table 'Bed Occupancy'
 
-	/// Occupied ÷ available bed-days on inpatient wards that are not excluded (gold spec section 8; receiving notes).
-	measure 'Bed Occupancy %' =
-			CALCULATE (
-				DIVIDE ( SUM ( 'Bed Occupancy'[Is Occupied] ), SUM ( 'Bed Occupancy'[Is Available] ) ),
-				'Bed Occupancy'[Is Inpatient Ward] = "Yes",
-				'Bed Occupancy'[Is Excluded Ward] = "No"
-			)
-		formatString: 0.0%
-		displayFolder: Occupancy
-
 	column 'Branch Key'
 		dataType: int64
 		isHidden

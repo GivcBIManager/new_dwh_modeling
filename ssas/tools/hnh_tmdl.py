@@ -273,10 +273,56 @@ def perspective_tables(facts: list[str], rels: list[Relationship], extra: list[s
     return sorted(tables)
 
 
-def render_perspective(name: str, tables: list[str]) -> str:
+MEASURE_TABLE = "_Measures"
+DIAGNOSTICS = "Diagnostics"
+
+
+def _object_name(text: str) -> str:
+    """Name at the start of a TMDL declaration remainder: 'quoted ''name''' or a bare word."""
+    if text.startswith("'"):
+        i, out = 1, []
+        while i < len(text):
+            if text[i] == "'":
+                if text[i + 1:i + 2] == "'":
+                    out.append("'")
+                    i += 2
+                    continue
+                break
+            out.append(text[i])
+            i += 1
+        return "".join(out)
+    return re.split(r"[\s=]", text, maxsplit=1)[0]
+
+
+def measure_folders(text: str) -> list[tuple[str, str]]:
+    """(measure, display folder) of every measure in a table file, in file order (decision P26)."""
+    found, current = [], None
+    for line in text.splitlines():
+        if line.startswith("\tmeasure "):
+            current = _object_name(line[len("\tmeasure "):])
+            found.append([current, ""])
+        elif line.startswith("\t") and not line.startswith("\t\t") and line.strip():
+            current = None
+        elif current is not None and line.startswith("\t\tdisplayFolder: "):
+            found[-1][1] = line[len("\t\tdisplayFolder: "):].strip()
+    return [(name, folder) for name, folder in found]
+
+
+def perspective_measures(perspective: str, folders: list[tuple[str, str]], domains: dict) -> list[str]:
+    """Measures of the measure table shown in a perspective: those whose top display folder is one of the perspective's
+    domains (default: its own name; None = every measure), plus Diagnostics."""
+    wanted = domains.get(perspective, [perspective])
+    names = [name for name, folder in folders
+             if wanted is None or folder.split("\\")[0] in set(wanted) | {DIAGNOSTICS}]
+    return sorted(names)
+
+
+def render_perspective(name: str, tables: list[str], measures: Optional[list[str]] = None) -> str:
     out = [f"perspective {q(name)}"]
     for table in tables:
         out += ["", f"\tperspectiveTable {q(table)}", "\t\tincludeAll"]
+    if measures:
+        out += ["", f"\tperspectiveTable {q(MEASURE_TABLE)}"] + [f"\t\tperspectiveMeasure {q(m)}" for m in measures]
     return "\n".join(out) + "\n"
 
 

@@ -1,11 +1,6 @@
 /// One inpatient admission with length of stay and outcomes.
 table Admissions
 
-	/// Countable admissions by admit date (gold spec section 8).
-	measure Admissions = CALCULATE ( COUNTROWS ( Admissions ), Admissions[Is Countable] = "Yes" )
-		formatString: #,0
-		displayFolder: Admissions
-
 	column 'Branch Key'
 		dataType: int64
 		isHidden

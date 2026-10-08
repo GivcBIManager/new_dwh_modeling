@@ -65,3 +65,12 @@ perspective 'Patient Details'
 
 	perspectiveTable 'Time Calculation'
 		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure Admissions
+		perspectiveMeasure 'Bed Occupancy %'
+		perspectiveMeasure 'Billed Amount'
+		perspectiveMeasure 'Current User'
+		perspectiveMeasure 'OP Visits'
+		perspectiveMeasure 'Patient Collections'
+		perspectiveMeasure Revenue

@@ -1,17 +1,6 @@
 /// One outpatient, emergency or inpatient encounter.
 table Encounters
 
-	/// Outpatient visits: arrived, not cancelled OP encounters (gold spec section 8).
-	measure 'OP Visits' =
-			CALCULATE (
-				COUNTROWS ( Encounters ),
-				KEEPFILTERS ( Encounters[Encounter Type] = "OP" ),
-				Encounters[Is Arrived] = "Yes",
-				Encounters[Is Cancelled] = "No"
-			)
-		formatString: #,0
-		displayFolder: Visits
-
 	column 'Branch Key'
 		dataType: int64
 		isHidden

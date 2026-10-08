@@ -38,3 +38,7 @@ perspective 'Claims & Pre-auth'
 
 	perspectiveTable 'Time Calculation'
 		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure 'Claimed Amount'
+		perspectiveMeasure 'Current User'

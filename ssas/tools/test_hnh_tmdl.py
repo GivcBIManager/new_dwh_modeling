@@ -193,6 +193,56 @@ def test_perspective_closure_follows_snowflake_but_not_one_to_one():
     assert text == "perspective Finance\n\n\tperspectiveTable 'GL Balances'\n\t\tincludeAll\n"
 
 
+MEASURES_TMDL = (
+    "table _Measures\n"
+    "\n"
+    "\t/// Revenue.\n"
+    "\tmeasure Revenue = SUM ( 'Charge Lines'[Revenue Amount] )\n"
+    "\t\tformatString: #,0\n"
+    "\t\tdisplayFolder: Revenue Cycle\\Revenue\n"
+    "\n"
+    "\tmeasure 'Hospital NPS (5-point)' =\n"
+    "\t\t\tVAR x = 1\n"
+    "\t\t\tRETURN x\n"
+    "\t\tdisplayFolder: Patient Experience\\NPS\n"
+    "\t\n"
+    "\t\tformatStringDefinition =\n"
+    "\t\t\t\t\"0.0\"\n"
+    "\n"
+    "\tmeasure 'Current User' = USERPRINCIPALNAME ()\n"
+    "\t\tdisplayFolder: Diagnostics\n"
+    "\n"
+    "\tcolumn Measure\n"
+    "\t\tdataType: string\n"
+)
+
+
+def test_measure_folders_reads_names_and_folders():
+    assert t.measure_folders(MEASURES_TMDL) == [
+        ("Revenue", "Revenue Cycle\\Revenue"),
+        ("Hospital NPS (5-point)", "Patient Experience\\NPS"),
+        ("Current User", "Diagnostics"),
+    ]
+
+
+def test_perspective_measures_by_folder_domain():
+    folders = t.measure_folders(MEASURES_TMDL)
+    assert t.perspective_measures("Revenue Cycle", folders, {}) == ["Current User", "Revenue"]
+    assert t.perspective_measures("Executive", folders, {"Executive": None}) == [
+        "Current User", "Hospital NPS (5-point)", "Revenue"]
+    assert t.perspective_measures("Patient Details", folders, {"Patient Details": ["Revenue Cycle"]}) == [
+        "Current User", "Revenue"]
+
+
+def test_render_perspective_lists_measures_of_the_measure_table():
+    text = t.render_perspective("Finance", ["GL Balances"], ["Current User", "GL Closing Balance"])
+    assert text.endswith(
+        "\n\tperspectiveTable _Measures\n"
+        "\t\tperspectiveMeasure 'Current User'\n"
+        "\t\tperspectiveMeasure 'GL Closing Balance'\n"
+    )
+
+
 def test_render_model():
     text = t.render_model(["Branch", "Charge Lines"], ["HNH Readers"], ["Finance"])
     assert text.startswith("model Model\n\tculture: en-US\n\tdiscourageImplicitMeasures\n")

@@ -77,3 +77,9 @@ perspective 'Patient Flow'
 
 	perspectiveTable 'Time Calculation'
 		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure Admissions
+		perspectiveMeasure 'Bed Occupancy %'
+		perspectiveMeasure 'Current User'
+		perspectiveMeasure 'OP Visits'

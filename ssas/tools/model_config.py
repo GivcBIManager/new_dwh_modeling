@@ -229,3 +229,6 @@ PERSPECTIVES = {
     "Patient Details": ["Encounters", "Admissions", "Episodes", "Invoices"],
 }
 PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"]}
+# Measures live in _Measures with display folder "<domain>\<topic>" (decision P26). A perspective shows the measures of
+# its own domain plus Diagnostics; these override that (None = every measure).
+PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"]}

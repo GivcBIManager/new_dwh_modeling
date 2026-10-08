@@ -1,16 +1,6 @@
 /// One NPHIES claim line per submission.
 table 'Claim Lines'
 
-	/// Claimed amount in SAR of the latest, not cancelled submission (Phase 2B spec section 7; receiving notes).
-	measure 'Claimed Amount' =
-			CALCULATE (
-				SUM ( 'Claim Lines'[Line Claimed Amount] ),
-				'Claim Lines'[Is Latest Submission] = "Yes",
-				'Claim Lines'[Is Cancelled Claim] = "No"
-			)
-		formatString: #,0
-		displayFolder: Claims
-
 	column 'Branch Key'
 		dataType: int64
 		isHidden
