@@ -249,7 +249,7 @@ Key `(branch_id, eligibility_type)`. Description, attendance type, free follow-u
 `dim_appointment_outcome`, `dim_discharge_outcome`, `dim_admission_source`, `dim_er_priority`, `dim_procedure_type`. Each: branch-level code and description, plus the group-level label from the matching macro. `dim_admission_source` and `dim_procedure_type` are static lists.
 
 ### sec_user_access
-One row per user and permitted branch. Columns: `user_name`, `login_name`, `branch_key`, `unified_specialty` (nullable — no restriction), `is_admin`. Users are local accounts on the SSAS server, so `login_name` is the SSAS machine name (`var('ssas_machine_name')`), a backslash, then `user_name` — the value SSAS `USERNAME()` returns. An admin has one row per branch. A source row with no branch and `is_admin = 0` produces **no** access row. See section 9.
+One row per user and permitted branch. Columns: `user_name`, `login_name`, `branch_key`, `unified_specialty` (nullable — no restriction), `is_admin`. Users are local accounts on the SSAS server, so `login_name` is the SSAS machine name (`var('ssas_machine_name')`), a backslash, then `user_name` — the value SSAS `USERPRINCIPALNAME()` returns. An admin has one row per branch. A source row with no branch and `is_admin = 0` produces **no** access row. See section 9.
 
 ---
 
@@ -426,7 +426,7 @@ Each row is a deliberate change; the named legacy field reproduces the old behav
 - One SSAS role filters `dim_branch` by the user's branches and `dim_staff` by the user's unified specialties when any are set. Every fact relates to `dim_branch`.
 - Facts with no staff reference relate to the Unknown staff member, which every user may see, so a specialty restriction does not hide rows that have no doctor.
 - `dim_patient_pii` is in a separate perspective and role.
-- **User names** are local accounts created on the SSAS server by the BI manager. The role compares `USERNAME()` with `sec_user_access.login_name`. The machine name is a dbt variable, set once.
+- **User names** are local accounts created on the SSAS server by the BI manager. The role compares `USERPRINCIPALNAME()` with `sec_user_access.login_name`. The machine name is a dbt variable, set once.
 
 ---
 

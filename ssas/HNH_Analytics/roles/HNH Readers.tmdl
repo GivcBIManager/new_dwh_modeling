@@ -7,14 +7,14 @@ role 'HNH Readers'
 			Branch[Branch Key]
 				IN CALCULATETABLE (
 					VALUES ( 'User Access'[Branch Key] ),
-					'User Access'[Login Name] = USERNAME ()
+					'User Access'[Login Name] = USERPRINCIPALNAME ()
 				)
 
 	tablePermission Staff =
 			VAR UserSpecialties =
 				CALCULATETABLE (
 					VALUES ( 'User Access'[Unified Specialty] ),
-					'User Access'[Login Name] = USERNAME ()
+					'User Access'[Login Name] = USERPRINCIPALNAME ()
 				)
 			RETURN
 				Staff[Staff Key] = -1
@@ -26,14 +26,14 @@ role 'HNH Readers'
 				|| Patient[Branch Key]
 					IN CALCULATETABLE (
 						VALUES ( 'User Access'[Branch Key] ),
-						'User Access'[Login Name] = USERNAME ()
+						'User Access'[Login Name] = USERPRINCIPALNAME ()
 					)
 
 	tablePermission 'Pay Category' =
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See Pay] = 1
 				)
 			)
@@ -42,7 +42,7 @@ role 'HNH Readers'
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See Pay] = 1
 				)
 			)
@@ -51,7 +51,7 @@ role 'HNH Readers'
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See Pay] = 1
 				)
 			)
@@ -60,7 +60,7 @@ role 'HNH Readers'
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See PII] = 1
 				)
 			)

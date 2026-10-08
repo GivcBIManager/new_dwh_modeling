@@ -3005,7 +3005,7 @@ from (
 )
 ```
 
-`login_name` is the value SSAS `USERNAME()` returns for a local account: machine name, a backslash, the user name. The machine name comes from the dbt variable `hnh_ssas_machine_name`.
+`login_name` is the value SSAS `USERPRINCIPALNAME()` returns for a local account: machine name, a backslash, the user name. The machine name comes from the dbt variable `hnh_ssas_machine_name`.
 
 - [ ] **Step 4: Build and test**
 

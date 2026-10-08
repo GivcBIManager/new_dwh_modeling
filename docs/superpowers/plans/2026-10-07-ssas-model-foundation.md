@@ -17,7 +17,7 @@
 - Data source `HNH_Gold` = `provider`, connection string `Provider=MSDASQL.1;Persist Security Info=False;Data Source=HNH_Gold`, `impersonationMode: impersonateServiceAccount`. No credential in git; the password lives only in the system DSN on the server.
 - ClickHouse user `ssas_reader`: `readonly = 2`, `max_execution_time = 3600`, `GRANT SELECT ON gold.ssas_*` only.
 - Views: dbt folder `hnh_dwh/models/hnh/marts/ssas/`, name `ssas_<gold table name without hnh_>`, `materialized: view`, `sql_security: definer`, `definer: CURRENT_USER`, tag `hnh_ssas`; built by `hnh_ssas_view()` (spec 4.2 + P2, P3).
-- Role `HNH Readers` (read); its only member is the local group `HNHANALYTICSSRV\HNH_BI_Users`; `USERNAME()` = `HNHANALYTICSSRV\<user>` = `sec_user_access.login_name`.
+- Role `HNH Readers` (read); its only member is the local group `HNHANALYTICSSRV\HNH_BI_Users`; `USERPRINCIPALNAME()` = `HNHANALYTICSSRV\<user>` = `sec_user_access.login_name`.
 - Partitions (large tables): yearly from 2022 to Y−2 (first one open below), monthly for Y−1 and Y, plus `<Table> Later` and `<Table> No date`. Daily = dimensions + last 3 months + Later + No date + small facts, then Calculate; Weekly = full.
 - Budgets: model ≤ 10 GB (VertiPaq estimate); report-style queries < 1 s warm, < 3 s cold, run as a single-branch user.
 - PowerShell scripts must run in Windows PowerShell 5.1: no ternary, no `??`, no `&&`/`||` pipeline chains, no `-Parallel`. Default Tabular Editor folder `C:\Program Files (x86)\Tabular Editor`.
@@ -201,7 +201,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ### Task 2: Server feasibility probe (run on HNHANALYTICSSRV by the user)
 
-Throwaway. It proves, before any model work, that: TE2 deploys a 1700 / analysisServices TMDL model; SSAS processes through `MSDASQL` + ClickHouse ODBC with `SaveOptions.MaxParallelism`; Int64, nullable, Decimal, Float, Unicode text, Date and DateTime survive; a hidden fact key with `isAvailableInMdx: false` works in a relationship; the `FALSE()` security-table pattern and `USERNAME()` work through `EffectiveUserName`; `includeAll` perspectives deploy; DAX runs through the MSOLAP OLE DB provider.
+Throwaway. It proves, before any model work, that: TE2 deploys a 1700 / analysisServices TMDL model; SSAS processes through `MSDASQL` + ClickHouse ODBC with `SaveOptions.MaxParallelism`; Int64, nullable, Decimal, Float, Unicode text, Date and DateTime survive; a hidden fact key with `isAvailableInMdx: false` works in a relationship; the `FALSE()` security-table pattern and `USERPRINCIPALNAME()` work through `EffectiveUserName`; `includeAll` perspectives deploy; DAX runs through the MSOLAP OLE DB provider.
 
 **Files:**
 - Create: `ssas/spike/Probe/database.tmdl`, `ssas/spike/Probe/dataSources.tmdl`, `ssas/spike/Probe/model.tmdl`, `ssas/spike/Probe/relationships.tmdl`, `ssas/spike/Probe/tables/Probe Dim.tmdl`, `ssas/spike/Probe/tables/Probe Fact.tmdl`, `ssas/spike/Probe/tables/Probe Users.tmdl`, `ssas/spike/Probe/roles/Probe Readers.tmdl`, `ssas/spike/Probe/perspectives/Probe View.tmdl`, `ssas/spike/spike.ps1`
@@ -397,7 +397,7 @@ role 'Probe Readers'
 			'Probe Dim'[Dim Key]
 				IN CALCULATETABLE (
 					VALUES ( 'Probe Users'[Dim Key] ),
-					'Probe Users'[Login Name] = USERNAME ()
+					'Probe Users'[Login Name] = USERPRINCIPALNAME ()
 				)
 ```
 
@@ -505,8 +505,8 @@ try {
     Report 'unicode' ([int]$code -eq 1606) "first character code $code (expected 1606, Arabic noon)"
     $adminDims = Scalar (Invoke-Dax "EVALUATE ROW(""n"", COUNTROWS('Probe Dim'))" $null)
     Report 'admin rows' ([int]$adminDims -eq 2) "admin sees $adminDims dimension rows"
-    $who = Scalar (Invoke-Dax 'EVALUATE ROW("u", USERNAME())' $TestUser)
-    Report 'username' ($who -eq $TestUser) "USERNAME() = $who"
+    $who = Scalar (Invoke-Dax 'EVALUATE ROW("u", USERPRINCIPALNAME())' $TestUser)
+    Report 'username' ($who -eq $TestUser) "USERPRINCIPALNAME() = $who"
     $userDims = Scalar (Invoke-Dax "EVALUATE ROW(""n"", COUNTROWS('Probe Dim'))" $TestUser)
     Report 'row filter' ([int]$userDims -eq 1) "test user sees $userDims dimension rows (FALSE() security table pattern)"
     $userFacts = Scalar (Invoke-Dax "EVALUATE ROW(""n"", COUNTROWS('Probe Fact'))" $TestUser)
@@ -2099,14 +2099,14 @@ role 'HNH Readers'
 			Branch[Branch Key]
 				IN CALCULATETABLE (
 					VALUES ( 'User Access'[Branch Key] ),
-					'User Access'[Login Name] = USERNAME ()
+					'User Access'[Login Name] = USERPRINCIPALNAME ()
 				)
 
 	tablePermission Staff =
 			VAR UserRows =
 				CALCULATETABLE (
 					SUMMARIZE ( 'User Access', 'User Access'[Branch Key], 'User Access'[Unified Specialty] ),
-					'User Access'[Login Name] = USERNAME ()
+					'User Access'[Login Name] = USERPRINCIPALNAME ()
 				)
 			RETURN
 				Staff[Staff Key] = -1
@@ -2126,14 +2126,14 @@ role 'HNH Readers'
 				|| Patient[Branch Key]
 					IN CALCULATETABLE (
 						VALUES ( 'User Access'[Branch Key] ),
-						'User Access'[Login Name] = USERNAME ()
+						'User Access'[Login Name] = USERPRINCIPALNAME ()
 					)
 
 	tablePermission 'Pay Category' =
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See Pay] = 1
 				)
 			)
@@ -2142,7 +2142,7 @@ role 'HNH Readers'
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See Pay] = 1
 				)
 			)
@@ -2151,7 +2151,7 @@ role 'HNH Readers'
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See Pay] = 1
 				)
 			)
@@ -2160,7 +2160,7 @@ role 'HNH Readers'
 			NOT ISEMPTY (
 				CALCULATETABLE (
 					'User Access',
-					'User Access'[Login Name] = USERNAME (),
+					'User Access'[Login Name] = USERPRINCIPALNAME (),
 					'User Access'[Can See PII] = 1
 				)
 			)
@@ -2576,7 +2576,7 @@ Insert each block directly after the `table …` header line (before the first c
 ```
 
 	/// The login SSAS sees for this connection; use it to check row-level security from a report.
-	measure 'Current User' = USERNAME ()
+	measure 'Current User' = USERPRINCIPALNAME ()
 		formatString: General
 		displayFolder: Diagnostics
 ```

@@ -7,5 +7,5 @@ role 'Probe Readers'
 			'Probe Dim'[Dim Key]
 				IN CALCULATETABLE (
 					VALUES ( 'Probe Users'[Dim Key] ),
-					'Probe Users'[Login Name] = USERNAME ()
+					'Probe Users'[Login Name] = USERPRINCIPALNAME ()
 				)
