@@ -411,6 +411,26 @@ def table_columns(text: str) -> tuple[str, set]:
     return table, {_object_name(found) for found in re.findall(r"^\tcolumn (.+)$", text, re.M)}
 
 
+def contract_columns(text: str) -> dict:
+    """{view: [Column]} from the dbt contract file _ssas__models.yml, which scripts/gen_view_contracts.py writes from the
+    built views; generate.py --from-contracts uses it where ClickHouse is not reachable from Python."""
+    views, current, name = {}, None, None
+    for line in text.splitlines():
+        found = re.match(r"^  - name: (\S+)$", line)
+        if found:
+            current, name = views.setdefault(found.group(1), []), None
+            continue
+        found = re.match(r"^      - name: (\S+)$", line)
+        if found:
+            name = found.group(1)
+            continue
+        found = re.match(r'^        data_type: "(.*)"$', line)
+        if found and current is not None and name is not None:
+            current.append(Column(name, found.group(1)))
+            name = None
+    return views
+
+
 def replace_perspective_measures(text: str, measures: list[str]) -> str:
     """A perspective file with its measure-table block replaced by `measures` (the layout of render_perspective)."""
     head = text.split(f"\n\n\tperspectiveTable {q(MEASURE_TABLE)}\n", 1)[0].rstrip("\n")

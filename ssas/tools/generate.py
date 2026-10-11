@@ -1,6 +1,8 @@
 """Write the TMDL folder ssas/HNH_Analytics from the gold.ssas_* views and model_config.py (SSAS plan task 9).
 
-Usage: python ssas/tools/generate.py
+Usage: python ssas/tools/generate.py [--from-contracts]
+--from-contracts reads the view columns from hnh_dwh/models/hnh/marts/ssas/_ssas__models.yml instead of ClickHouse
+(for a machine without clickhouse_connect); the sortByColumn pairs are then not checked.
 Keeps measure and hierarchy blocks of existing table files; never touches roles/, tables/Time Calculation.tmdl or
 tables/_Measures.tmdl (all measures; perspectives list them by display folder domain).
 """
@@ -18,6 +20,7 @@ from ch_env import client  # noqa: E402
 
 MODEL_DIR = ROOT / "ssas" / "HNH_Analytics"
 CALC_GROUP = "Time Calculation"
+CONTRACTS = ROOT / "hnh_dwh" / "models" / "hnh" / "marts" / "ssas" / "_ssas__models.yml"
 
 
 def read_columns(ch, view):
@@ -45,10 +48,18 @@ def write(path, text):
 
 
 def main():
-    ch = client()
     by_name = {table.name: table for table in cfg.TABLES}
-    columns = {table.name: read_columns(ch, table.view) for table in cfg.TABLES}
-    check_sort_pairs(ch)
+    if "--from-contracts" in sys.argv[1:]:
+        contracts = t.contract_columns(CONTRACTS.read_text(encoding="utf-8"))
+        missing = [table.view for table in cfg.TABLES if table.view not in contracts]
+        if missing:
+            raise SystemExit(f"no contract for {', '.join(missing)} in {CONTRACTS.name}")
+        columns = {table.name: contracts[table.view] for table in cfg.TABLES}
+        print("columns from the dbt contracts; sortByColumn pairs not checked (needs ClickHouse)")
+    else:
+        ch = client()
+        columns = {table.name: read_columns(ch, table.view) for table in cfg.TABLES}
+        check_sort_pairs(ch)
 
     rels = list(cfg.EXTRA_RELATIONSHIPS)
     for table in cfg.TABLES:
