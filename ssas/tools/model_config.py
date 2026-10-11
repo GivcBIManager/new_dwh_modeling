@@ -35,6 +35,7 @@ TABLES = [
     Table("ssas_dim_store", "Store", "dim", "Stores and subinventories with store type."),
     Table("ssas_dim_movement_type", "Movement Type", "dim", "Stock movement types with direction and consumption flag."),
     Table("ssas_dim_employee", "Employee", "dim", "Fusion workers (current state) with age and tenure bands."),
+    Table("ssas_dim_employee_pii", "Employee Details", "dim", "Employee names; visible only to users with pay access, for their branches."),
     Table("ssas_dim_hr_department", "HR Department", "dim", "Fusion HR departments with unified department."),
     Table("ssas_dim_job", "Job", "dim", "Fusion jobs."),
     Table("ssas_dim_grade", "Grade", "dim", "Fusion grades."),
@@ -154,10 +155,11 @@ ROLE_KEYS = {
     ("GL Account", "fs_line_key"): ("FS Line", "fs_line_key", True),
 }
 
-# Spec 5.3: one row per patient, both directions; the security filter flows only Patient -> Patient Details.
-# Declared many-to-one, not one-to-one: across a one-to-one relationship SSAS also applied the Patient Details row filter
-# to Patient, so users without PII saw no patient facts (decision P27).
-EXTRA_RELATIONSHIPS = [Relationship("Patient Details", "patient_key", "Patient", "patient_key", both_directions=True)]
+# Spec 5.3: one row per patient (employee), both directions; the security filter flows only Patient -> Patient Details
+# (Employee -> Employee Details, P37). Declared many-to-one, not one-to-one: across a one-to-one relationship SSAS also
+# applied the Patient Details row filter to Patient, so users without PII saw no patient facts (decision P27).
+EXTRA_RELATIONSHIPS = [Relationship("Patient Details", "patient_key", "Patient", "patient_key", both_directions=True),
+                       Relationship("Employee Details", "employee_key", "Employee", "employee_key", both_directions=True)]
 
 # Facts keep these keys hidden, with no relationship (spec 5: facts are never related to each other).
 NO_RELATIONSHIP = {
@@ -230,7 +232,7 @@ PERSPECTIVES = {
     "Patient Experience": ["Survey Responses", "Survey Answers"],
     "Patient Details": ["Encounters", "Admissions", "Episodes", "Invoices"],
 }
-PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"]}
+PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"], "Workforce": ["Employee Details"]}
 # Measures live in _Measures with display folder "<domain>\<topic>" (decision P26). A perspective shows the measures of
 # its own domain plus Diagnostics; these override that (None = every measure).
 PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"]}

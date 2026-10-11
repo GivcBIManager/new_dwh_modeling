@@ -64,3 +64,17 @@ role 'HNH Readers'
 					'User Access'[Can See PII] = 1
 				)
 			)
+
+	tablePermission 'Employee Details' =
+			'Employee Details'[Branch Key]
+				IN CALCULATETABLE (
+					VALUES ( 'User Access'[Branch Key] ),
+					'User Access'[Login Name] = USERPRINCIPALNAME ()
+				)
+				&& NOT ISEMPTY (
+					CALCULATETABLE (
+						'User Access',
+						'User Access'[Login Name] = USERPRINCIPALNAME (),
+						'User Access'[Can See Pay] = 1
+					)
+				)

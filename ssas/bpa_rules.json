@@ -57,19 +57,19 @@
   },
   {
     "ID": "HNH_SINGLE_DIRECTION",
-    "Name": "Relationships filter in one direction (except Patient Details)",
+    "Name": "Relationships filter in one direction (except the PII tables Patient Details and Employee Details)",
     "Category": "HNH",
     "Severity": 3,
     "Scope": "Relationship",
-    "Expression": "CrossFilteringBehavior = \"BothDirections\" and FromTable.Name <> \"Patient Details\""
+    "Expression": "CrossFilteringBehavior = \"BothDirections\" and FromTable.Name <> \"Patient Details\" and FromTable.Name <> \"Employee Details\""
   },
   {
     "ID": "HNH_PII_SECURITY_ONE_DIRECTION",
-    "Name": "The Patient Details relationship applies security in one direction only",
+    "Name": "The PII relationships (Patient Details, Employee Details) apply security in one direction only",
     "Category": "HNH",
     "Severity": 3,
     "Scope": "Relationship",
-    "Expression": "FromTable.Name = \"Patient Details\" and SecurityFilteringBehavior = \"BothDirections\""
+    "Expression": "(FromTable.Name = \"Patient Details\" or FromTable.Name = \"Employee Details\") and SecurityFilteringBehavior = \"BothDirections\""
   },
   {
     "ID": "HNH_NO_ONE_TO_ONE",

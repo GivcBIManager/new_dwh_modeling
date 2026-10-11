@@ -105,6 +105,12 @@ try {
                 Report "$($p.Name) pay" (($payRows -gt 0) -eq $pay) "pay categories visible: $payRows, can_see_pay: $pay"
                 $piiRows = CountRows 'Patient Details' $login
                 Report "$($p.Name) PII" (($piiRows -gt 0) -eq ($pii -and $branches.Count -gt 0)) "patient details visible: $piiRows, can_see_pii: $pii"
+                $employeeRows = CountRows 'Employee Details' $login
+                $employeeExpected = 0
+                if ($pay -and $branches.Count -gt 0) {
+                    $employeeExpected = Get-HnhScalar (Sql ('select count() from gold.ssas_dim_employee_pii where branch_key in ({0})' -f ($branches -join ',')))
+                }
+                Report "$($p.Name) employee names" ($employeeRows -eq $employeeExpected) "employee details visible: $employeeRows, expected $employeeExpected (can_see_pay: $pay)"
 
                 if ($specialties.Count -eq 0) {
                     # Review focus 1: every fact row of the user's branches is visible (no orphan keys hidden by a row filter).

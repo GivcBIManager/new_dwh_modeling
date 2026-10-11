@@ -329,6 +329,12 @@ relationship clinic_capacity_staff_key
 	fromColumn: 'Clinic Capacity'.'Staff Key'
 	toColumn: Staff.'Staff Key'
 
+relationship employee_details_employee_key
+	crossFilteringBehavior: bothDirections
+	securityFilteringBehavior: oneDirection
+	fromColumn: 'Employee Details'.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
 relationship encounters_arrival_date_key
 	isActive: false
 	fromColumn: Encounters.'Arrival Date Key'
