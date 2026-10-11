@@ -188,7 +188,8 @@ Patient experience (Phase 6, spec `2026-10-07-hnh-dwh-phase6-patient-experience-
 
 ## SSAS views and access (2026-10-07)
 
-- `models/hnh/marts/ssas/` builds 79 `gold.ssas_*` views (tag `hnh_ssas`, `SQL SECURITY DEFINER`, enforced contracts). SSAS reads only these views.
+- `models/hnh/marts/ssas/` builds 80 `gold.ssas_*` views (tag `hnh_ssas`, `SQL SECURITY DEFINER`, enforced contracts). SSAS reads only these views.
+- `gold.dim_employee_pii` (employee key, branch, Fusion `full_name`) holds employee names: build it with the rest of `tag:hnh`; SSAS shows it as Employee Details to pay users only. Treat it like `dim_patient_pii`.
 - After changing a view's columns on purpose, run `python scripts/gen_view_contracts.py` in the development repository and copy the regenerated `_ssas__models.yml`.
 - Reference table `default.map_bi_user_permission (bi_user_name, can_see_pay, can_see_pii)` holds the pay and PII permissions; a user not listed has neither (fail closed). Load it with `scripts/load_reference_data.py --only map_bi_user_permission`.
 - ClickHouse user `ssas_reader` (`readonly = 2`, `SELECT ON gold.ssas_*`) is created by `scripts/create_ssas_reader.py`; the SSAS server's system DSN `HNH_Gold` uses it.

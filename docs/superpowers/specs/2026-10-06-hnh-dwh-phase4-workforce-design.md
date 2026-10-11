@@ -63,7 +63,7 @@ models/hnh/marts/reconciliation/ + rec_payroll_monthly, rec_headcount_monthly
 macros/hnh/hnh_rules_workforce.sql
 ```
 
-All models are full rebuilds. Eight model names exist in the receiving project's own Fusion models (`dim_employee`, `dim_job`, `dim_grade`, `dim_position`, `dim_location`, `dim_worker_action`, `dim_absence_type`, `fact_worker_movement`); those models carry the `hnh_` prefix and an `alias` to the gold table name, as in Phase 3. Names, phone numbers, e-mail, bank details and national ids are never staged.
+All models are full rebuilds. Eight model names exist in the receiving project's own Fusion models (`dim_employee`, `dim_job`, `dim_grade`, `dim_position`, `dim_location`, `dim_worker_action`, `dim_absence_type`, `fact_worker_movement`); those models carry the `hnh_` prefix and an `alias` to the gold table name, as in Phase 3. Phone numbers, e-mail, bank details and national ids are never staged. Names are staged only for `dim_employee_pii` (`stg_fusion__employee_names`), which SSAS shows to pay users only (SSAS spec P37, user decision 2026-10-11).
 
 ---
 

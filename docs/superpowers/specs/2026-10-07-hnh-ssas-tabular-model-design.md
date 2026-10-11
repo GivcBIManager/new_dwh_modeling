@@ -62,7 +62,7 @@ gold.ssas_<table>   views (dbt, new)  — column pruning, types, Yes/No flags
         ▼
 SSAS 2025  HNHANALYTICSSRV\REPORTSERVERDB
    HNH_Analytics        (production)
-   HNH_Analytics_Test   (deploy → process → test → promote; data cleared after)
+   HNH_Analytics_Test   (deploy → load changes → test → promote; kept loaded, P38)
         │   live connection, viewer's Windows identity → USERPRINCIPALNAME()
         ▼
 PBIRS May 2026 reports and Power BI Desktop RS / Excel self-service
@@ -230,7 +230,7 @@ Perspectives are navigation, not security. Each lists its facts, their measures,
 | **Revenue Cycle** | charge lines, order lines, invoices, cash receipts, revenue adjustments, episode billing |
 | **Claims & Pre-auth** | claim lines, claim payments, pre-auth lines |
 | **Finance** | GL journal lines, GL balance, income statement, budget, AP invoice lines, AP open items, AP payments |
-| **Workforce** | headcount, worker movements, absence, absence daily, payroll, leave balances, staff productivity |
+| **Workforce** | headcount, worker movements, absence, absence daily, payroll, leave balances, staff productivity, Employee Details (names, pay users) |
 | **Supply Chain** | stock movements, stock monthly, patient consumption, purchase lines, goods receipts |
 | **Patient Experience** | survey responses, survey answers |
 | **Patient Details** | `dim_patient_pii` with encounters, admissions, episodes, invoices |
@@ -310,7 +310,7 @@ Users keep querying the previous data until the transaction commits; a failure r
 
 ### 9.5 Memory
 
-Expected model size after the column rules: 6–10 GB (measured in plan; budget ≤ 10 GB). Recommended SSAS instance settings, applied by the BI manager (O-S5): `LowMemoryLimit` 45, `TotalMemoryLimit` 60, `HardMemoryLimit` 70 (percent of 256 GB), `VertiPaqPagingPolicy` 1. The SQL Server engine that hosts the PBIRS catalog should have `max server memory` set so the three services cannot starve each other. The test database's data is cleared after each promotion.
+Expected model size after the column rules: 6–10 GB (measured in plan; budget ≤ 10 GB). Recommended SSAS instance settings, applied by the BI manager (O-S5): `LowMemoryLimit` 45, `TotalMemoryLimit` 60, `HardMemoryLimit` 70 (percent of 256 GB), `VertiPaqPagingPolicy` 1. The SQL Server engine that hosts the PBIRS catalog should have `max server memory` set so the three services cannot starve each other. The test database stays loaded between deploys (about 6 GB more; P38).
 
 ---
 
@@ -320,15 +320,15 @@ Expected model size after the column rules: 6–10 GB (measured in plan; budget 
 
 - `ssas/HNH_Analytics/` is a TMDL folder saved by Tabular Editor 2. Fallback if TE 2.27 cannot save TMDL at level 1700 (O-S1): TE2's "Save to folder" JSON format.
 - Git holds measures, relationships, roles (without members), perspectives, the calculation group and template partitions. It holds no credentials and no membership.
-- `ssas/bpa_rules.json` (Best Practice Analyzer) includes at least: no `Double` amount columns; hidden columns have `IsAvailableInMDX = false`; no implicit measures; no calculated columns or tables; every measure has a format string and a display folder; every relationship is single-direction except the PII one-to-one; no `FILTER(<table>)` over a fact in a measure; every visible object has a description.
+- `ssas/bpa_rules.json` (Best Practice Analyzer) includes at least: no `Double` amount columns; hidden columns have `IsAvailableInMDX = false`; no implicit measures; no calculated columns or tables; every measure has a format string and a display folder; every relationship is single-direction except the two PII tables (many-to-one, security one direction; P27, P37); no `FILTER(<table>)` over a fact in a measure; every visible object has a description.
 
 ### 10.2 `deploy.ps1`
 
 1. **Validate:** TE2 CLI loads the model and runs `bpa_rules.json` (any error-severity violation stops). There is no TE2 schema check (P17): schema drift is caught by the enforced dbt contracts on the `gold.ssas_*` views and by the Test stage (full process and SSAS-vs-ClickHouse row counts) before production is touched.
-2. **Test:** deploy to `HNH_Analytics_Test` with partitions (`-O -P -R`, no members), run `partitions.ps1`, full process, run `test.ps1`. Any failure stops.
+2. **Test:** if HNH_Analytics_Test holds data, deploy metadata only (-O -R), load new or changed tables, run a Daily refresh; otherwise, or with -Full, deploy with partitions (-O -C -P -R) and process fully. Run partitions.ps1 and test.ps1. Any failure stops (P38).
 3. **Back up** `HNH_Analytics` to `HNH_Analytics_<timestamp>.abf` in the SSAS backup folder (keep the last 5).
 4. **Promote:** deploy the same commit to `HNH_Analytics` with `-O -R`, **without** `-P` (server partitions kept), `-M` (members kept) and `-C` (data source kept). Then run `partitions.ps1` and a `calculate` refresh, and read `$System.TMSCHEMA_PARTITIONS`: any partition not in state Ready (a new table, or a table whose columns changed) gets a `full` refresh, followed by a final `calculate`. If only measures, formats, perspectives or the calculation group changed, every partition is Ready and nothing is reloaded. The script prints which partitions it refreshed.
-5. **Clear** `HNH_Analytics_Test` (`clearValues`).
+5. **Keep** HNH_Analytics_Test loaded (P38).
 6. **Tag** the commit `ssas-YYYY.MM.DD[-n]`.
 
 **Rollback:** `Restore-ASDatabase` of the latest `.abf` over `HNH_Analytics`.
@@ -420,5 +420,8 @@ These amend the sections named; the implementation plan `plans/2026-10-07-ssas-m
 | P34 | 11.2 | Every measure outside Diagnostics has at least one check in `ssas/tests/measures/*.json`; a check where SSAS and ClickHouse both return 0 fails unless it sets `allow_zero` | Blank becomes 0 in `Get-HnhScalar`, so two empty answers proved nothing |
 | P35 | 10.2 | `deploy.ps1 -Stage TestMeasures` deploys metadata to `HNH_Analytics_Test` keeping its partitions, loads what is not processed and runs the measure checks | A measure change needs no full process of the test database |
 | P36 | 7 | `ssas/tools/sync_perspectives.py` rewrites the perspectives' measure lists offline; generate.py writes the same blocks | The server has no `clickhouse_connect`, and measures change more often than views |
+| P37 | 4.1, 5.3, 6.2, 7 | **Employee Details** (`gold.dim_employee_pii` → `ssas_dim_employee_pii`): employee key, branch and the latest current Fusion `full_name`, one row per employee. Many-to-one to Employee, cross-filtering both directions, security one direction (as P27); row filter: the employee's branch is one of the user's branches **and** the user has `can_see_pay` (user, 2026-10-11). In the Workforce perspective. 24 employees without a branch (branch 0) are visible to server administrators only | Names are personal data; pay users already see the pay of the same employees |
+| P38 | 9.5, 10.2 | The Test stage reuses a loaded HNH_Analytics_Test: metadata deploy, load of new or changed tables, Daily refresh, full tests. `-Full`, a missing or cleared database forces the full path. Promote no longer clears the test database (user, 2026-10-11) | A deploy no longer reloads about 260M rows; costs about 6 GB of SSAS memory. If old partitions drift from ClickHouse (row-count test fails on a month older than 3 months), rerun with `-Full` |
+| P39 | 3, 10 | `generate.py --from-contracts` reads the view columns from `_ssas__models.yml` (the enforced dbt contracts) instead of ClickHouse; the sortByColumn check is skipped in that mode | The server has no `clickhouse_connect`; the contracts equal the built views by construction (enforced at dbt build) |
 
 Parked for the KPI catalogue plan or the server run: the processing gate also accepts a `dbt run` (no tests) because `etl_run_log` does not record the command; the Arabic-text test is weak; the size test reads `EstimatedSize`, not the VertiPaq total; the specialty user's branch-wide fact rows are not checked; the out-of-range warning covers only two columns. The KPI catalogue plan did not change them.
