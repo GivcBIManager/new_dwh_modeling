@@ -180,6 +180,27 @@ function Update-HnhUnprocessed {
     return ,$names
 }
 
+function Select-HnhTestMode {
+    # Changes-only test (decision P38): reuse the loaded test database unless -Full is asked for, the database does not
+    # exist, or no partition holds data (a cleared or freshly created database).
+    param([bool]$Exists, [int]$ReadyPartitions, [bool]$Full)
+    if ($Full -or -not $Exists -or $ReadyPartitions -le 0) { return 'Full' }
+    return 'Changes'
+}
+
+function Get-HnhReadyPartitionCount {
+    # Partitions whose data is loaded (state Ready); calculation groups are not counted.
+    param([Parameter(Mandatory = $true)]$Model)
+    $count = 0
+    foreach ($table in @($Model.Tables)) {
+        foreach ($p in $table.Partitions) {
+            if ($p.SourceType -eq [Microsoft.AnalysisServices.Tabular.PartitionSourceType]::CalculationGroup) { continue }
+            if ($p.State -eq [Microsoft.AnalysisServices.Tabular.ObjectState]::Ready) { $count++ }
+        }
+    }
+    return $count
+}
+
 function Add-HnhRoleMember {
     param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][string]$Role, [Parameter(Mandatory = $true)][string]$Member)
     $r = $Model.Roles.Find($Role)

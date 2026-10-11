@@ -83,3 +83,10 @@ Describe 'Test-HnhGate (review focus 5)' {
 Describe 'Format-HnhTableRef' {
     It 'quotes table names for DAX' { Format-HnhTableRef "Patient's" | Should Be "'Patient''s'" }
 }
+
+Describe 'Select-HnhTestMode (decision P38)' {
+    It 'tests only the changes when the test database holds data' { Select-HnhTestMode -Exists $true -ReadyPartitions 529 -Full $false | Should Be 'Changes' }
+    It 'loads everything when -Full is asked for' { Select-HnhTestMode -Exists $true -ReadyPartitions 529 -Full $true | Should Be 'Full' }
+    It 'loads everything when the test database does not exist' { Select-HnhTestMode -Exists $false -ReadyPartitions 0 -Full $false | Should Be 'Full' }
+    It 'loads everything when the test database was cleared' { Select-HnhTestMode -Exists $true -ReadyPartitions 0 -Full $false | Should Be 'Full' }
+}

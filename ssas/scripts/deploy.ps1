@@ -1,12 +1,15 @@
 <#
 .SYNOPSIS
-  Deploys HNH_Analytics (SSAS spec 10.2): Validate (Best Practice Analyzer) -> Test (deploy to
-  HNH_Analytics_Test, partition, full process, test.ps1) -> Promote (backup, deploy metadata keeping partitions,
-  members and data source, load what is not processed) -> clear the test database. Rollback restores a backup.
+  Deploys HNH_Analytics (SSAS spec 10.2): Validate (Best Practice Analyzer) -> Test (HNH_Analytics_Test: when it holds
+  data, deploy metadata only, load new or changed tables and refresh the last 3 months; otherwise or with -Full, deploy
+  with partitions and process fully; then test.ps1) -> Promote (backup, deploy metadata keeping partitions, members and
+  data source, load what is not processed). The test database stays loaded for the next deploy (decision P38).
+  Rollback restores a backup.
   Validate = Best Practice Analyzer; schema drift is caught by the enforced dbt contracts and by the Test stage
   (no TE2 -SC: TabularEditor.exe is 32-bit and the server has only the 64-bit ClickHouse ODBC driver; spec P17).
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage All
+  powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage All -Full
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage Rollback -BackupFile HNH_Analytics_20261010_220000.abf
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage TestMeasures
 #>
@@ -15,7 +18,8 @@ param(
     [string]$Server = 'HNHANALYTICSSRV\REPORTSERVERDB',
     [string]$TabularEditorDir = 'C:\Program Files (x86)\Tabular Editor',
     [string]$Dsn = 'HNH_Gold',
-    [string]$BackupFile
+    [string]$BackupFile,
+    [switch]$Full
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -48,12 +52,32 @@ try {
     }
     if (Want 'Test') {
         Write-Host '== Test: HNH_Analytics_Test'
-        Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-C', '-P', '-R', '-E', '-V')
+        $srv = Connect-HnhServer $Server
+        $testDb = $srv.Databases.FindByName('HNH_Analytics_Test')
+        $ready = 0
+        if ($testDb -ne $null) { $ready = Get-HnhReadyPartitionCount -Model $testDb.Model }
+        $mode = Select-HnhTestMode -Exists ($testDb -ne $null) -ReadyPartitions $ready -Full $Full.IsPresent
+        $srv.Disconnect()
+        Write-Host ("test mode: {0} ({1} loaded partitions)" -f $mode, $ready)
+        if ($mode -eq 'Full') {
+            Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-C', '-P', '-R', '-E', '-V')
+        } else {
+            # Metadata only: partitions, data and the data source stay; new or changed tables are loaded below.
+            Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-R', '-E', '-V')
+        }
         $srv = Connect-HnhServer $Server
         [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
         $srv.Disconnect()
         Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
-        Invoke-Step 'process.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Mode = 'Weekly'; Force = $true; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
+        if ($mode -eq 'Full') {
+            Invoke-Step 'process.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Mode = 'Weekly'; Force = $true; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
+        } else {
+            $srv = Connect-HnhServer $Server
+            $loaded = Update-HnhUnprocessed -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
+            $srv.Disconnect()
+            Write-Host ("loaded {0} unprocessed partition(s): {1}" -f $loaded.Count, ($loaded -join '; '))
+            Invoke-Step 'process.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Mode = 'Daily'; Force = $true; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
+        }
         Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
     }
     if (Want 'Promote') {
@@ -81,12 +105,7 @@ try {
         $srv = Connect-HnhServer $Server
         $loaded = Update-HnhUnprocessed -Model (Get-HnhDatabase $srv 'HNH_Analytics').Model
         Write-Host ("loaded {0} unprocessed partition(s): {1}" -f $loaded.Count, ($loaded -join '; '))
-        $test = $srv.Databases.FindByName('HNH_Analytics_Test')
-        if ($test -ne $null) {
-            $test.Model.RequestRefresh([Microsoft.AnalysisServices.Tabular.RefreshType]::ClearValues)
-            [void]$test.Model.SaveChanges()
-            Write-Host 'HNH_Analytics_Test cleared'
-        }
+        Write-Host 'HNH_Analytics_Test kept loaded for the next changes-only test (decision P38)'
         $srv.Disconnect()
         Write-Host 'Promoted. Tag the deployed commit on the development machine: git tag ssas-YYYY.MM.DD'
     }
