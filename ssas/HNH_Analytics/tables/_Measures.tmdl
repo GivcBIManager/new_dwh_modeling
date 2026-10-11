@@ -1201,7 +1201,7 @@ table _Measures
 	measure 'Leave Balance (days)' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastDate =
+				VAR LastDay =
 					CALCULATE (
 						MAX ( 'Leave Balances'[Accrual Period Date Key] ),
 						'Leave Balances'[Is Latest In Month] = "Yes",
@@ -1213,7 +1213,7 @@ table _Measures
 						SUM ( 'Leave Balances'[End Balance] ),
 						'Leave Balances'[Is Latest In Month] = "Yes",
 						'Leave Balances'[Is Closed Period] = "Yes",
-						'Date'[Year Month] = INT ( LastDate / 100 )
+						'Date'[Year Month] = INT ( LastDay / 100 )
 					)
 			)
 		formatString: #,0.0
@@ -1225,7 +1225,7 @@ table _Measures
 	measure 'Leave Liability' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastDate =
+				VAR LastDay =
 					CALCULATE (
 						MAX ( 'Leave Balances'[Accrual Period Date Key] ),
 						'Leave Balances'[Is Latest In Month] = "Yes",
@@ -1237,7 +1237,7 @@ table _Measures
 						SUM ( 'Leave Balances'[Leave Liability Amount] ),
 						'Leave Balances'[Is Latest In Month] = "Yes",
 						'Leave Balances'[Is Closed Period] = "Yes",
-						'Date'[Year Month] = INT ( LastDate / 100 )
+						'Date'[Year Month] = INT ( LastDay / 100 )
 					)
 			)
 		formatString: #,0
@@ -1283,7 +1283,7 @@ table _Measures
 	/// Consumption cost in SAR at pharmacy stores, plus medication issued from wards (Phase 5 spec section 7).
 	measure 'Pharmacy Consumption Cost' =
 			CALCULATE ( [Consumption Cost], KEEPFILTERS ( Store[Store Type] = "Pharmacy" ) )
-				+ CALCULATE ( [Consumption Cost], KEEPFILTERS ( Store[Store Type] = "Ward" ), KEEPFILTERS ( Item[Item Group] = "Medication" ) )
+				+ CALCULATE ( [Consumption Cost], KEEPFILTERS ( Store[Store Type] = "Ward" ), KEEPFILTERS ( 'Item'[Item Group] = "Medication" ) )
 		formatString: #,0
 		displayFolder: Supply Chain\Consumption
 
@@ -1336,18 +1336,18 @@ table _Measures
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
 					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
-					VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
-					RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( [Consumption Cost], DATESINPERIOD ( 'Date'[Date], LastDate, -12, MONTH ) ) )
+					VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+					RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( [Consumption Cost], DATESINPERIOD ( 'Date'[Date], LastDay, -12, MONTH ) ) )
 				)
 			VAR AverageStock =
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
 					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
-					VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+					VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 					RETURN
 						IF (
 							NOT ISBLANK ( LastMonth ),
-							CALCULATE ( AVERAGEX ( VALUES ( 'Date'[Year Month] ), [Stock Value] ), DATESINPERIOD ( 'Date'[Date], LastDate, -12, MONTH ) )
+							CALCULATE ( AVERAGEX ( VALUES ( 'Date'[Year Month] ), [Stock Value] ), DATESINPERIOD ( 'Date'[Date], LastDay, -12, MONTH ) )
 						)
 				)
 			RETURN DIVIDE ( Consumption12, AverageStock )
@@ -1361,7 +1361,7 @@ table _Measures
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
 				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
-				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
 						VALUES ( 'Stock Monthly'[Item Key] ),
@@ -1373,7 +1373,7 @@ table _Measures
 					CALCULATETABLE (
 						VALUES ( 'Stock Movements'[Item Key] ),
 						'Stock Movements'[Is Consumption] = "Yes",
-						DATESINPERIOD ( 'Date'[Date], LastDate, -90, DAY )
+						DATESINPERIOD ( 'Date'[Date], LastDay, -90, DAY )
 					)
 				RETURN IF ( NOT ISBLANK ( LastMonth ), COUNTROWS ( EXCEPT ( InStock, Consumed ) ) )
 			)
@@ -1387,7 +1387,7 @@ table _Measures
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
 				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
-				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
 						VALUES ( 'Stock Monthly'[Item Key] ),
@@ -1399,7 +1399,7 @@ table _Measures
 					CALCULATETABLE (
 						VALUES ( 'Stock Movements'[Item Key] ),
 						'Stock Movements'[Is Consumption] = "Yes",
-						DATESINPERIOD ( 'Date'[Date], LastDate, -90, DAY )
+						DATESINPERIOD ( 'Date'[Date], LastDay, -90, DAY )
 					)
 				RETURN
 					IF (
@@ -1423,7 +1423,7 @@ table _Measures
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
 				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
-				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
 						VALUES ( 'Stock Monthly'[Item Key] ),
@@ -1435,7 +1435,7 @@ table _Measures
 					CALCULATETABLE (
 						VALUES ( 'Stock Movements'[Item Key] ),
 						'Stock Movements'[Is Consumption] = "Yes",
-						DATESINPERIOD ( 'Date'[Date], LastDate, -180, DAY )
+						DATESINPERIOD ( 'Date'[Date], LastDay, -180, DAY )
 					)
 				RETURN IF ( NOT ISBLANK ( LastMonth ), COUNTROWS ( EXCEPT ( InStock, Consumed ) ) )
 			)
@@ -1449,7 +1449,7 @@ table _Measures
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
 				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
-				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
 						VALUES ( 'Stock Monthly'[Item Key] ),
@@ -1461,7 +1461,7 @@ table _Measures
 					CALCULATETABLE (
 						VALUES ( 'Stock Movements'[Item Key] ),
 						'Stock Movements'[Is Consumption] = "Yes",
-						DATESINPERIOD ( 'Date'[Date], LastDate, -180, DAY )
+						DATESINPERIOD ( 'Date'[Date], LastDay, -180, DAY )
 					)
 				RETURN
 					IF (
@@ -1507,7 +1507,7 @@ table _Measures
 	/// Unit price of the latest approved PO line for one item and one supplier (the highest price if several lines share that date); blank otherwise (Phase 5 spec section 7).
 	measure 'Last PO Unit Price' =
 			IF (
-				HASONEVALUE ( Item[Item Key] ) && HASONEVALUE ( Supplier[Supplier Key] ),
+				HASONEVALUE ( 'Item'[Item Key] ) && HASONEVALUE ( Supplier[Supplier Key] ),
 				VAR LastPo = CALCULATE ( MAX ( 'Purchase Lines'[PO Date Key] ), 'Purchase Lines'[Is Approved PO] = "Yes" )
 				RETURN
 					CALCULATE (
@@ -1522,7 +1522,7 @@ table _Measures
 	/// Latest ÷ previous approved PO unit price − 1, for one item and one supplier (Phase 5 spec section 7).
 	measure 'PO Price Change %' =
 			IF (
-				HASONEVALUE ( Item[Item Key] ) && HASONEVALUE ( Supplier[Supplier Key] ),
+				HASONEVALUE ( 'Item'[Item Key] ) && HASONEVALUE ( Supplier[Supplier Key] ),
 				VAR LastPo = CALCULATE ( MAX ( 'Purchase Lines'[PO Date Key] ), 'Purchase Lines'[Is Approved PO] = "Yes" )
 				VAR PreviousPo =
 					CALCULATE (

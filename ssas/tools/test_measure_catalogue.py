@@ -84,3 +84,26 @@ def test_perspectives_list_their_domain_measures():
 def test_nps_measures_show_insufficient_sample():
     bad = [m.name for m in MEASURES if "NPS (5-point)" in m.name and "insufficient sample" not in m.format_expression]
     assert bad == []
+
+
+# DAX function names a VAR may not take (the engine rejects "VAR LastDate": LASTDATE is a function; first test deploy
+# of the KPI catalogue, 2026-10-11).
+DAX_FUNCTIONS = {"LASTDATE", "FIRSTDATE", "DATE", "TODAY", "NOW", "YEAR", "MONTH", "DAY", "VALUES", "FILTER", "ALL",
+                 "MAX", "MIN", "SUM", "COUNT", "AVERAGE", "MEDIAN", "DIVIDE", "ENDOFMONTH", "STARTOFMONTH",
+                 "PREVIOUSMONTH", "NEXTMONTH", "DATESYTD", "DATESMTD", "DATESQTD", "DATESINPERIOD", "RANK", "BLANK"}
+# Table names the engine does not accept unquoted ("The syntax for 'Item' is incorrect", same deploy).
+QUOTE_ALWAYS = {"Item"}
+
+
+def test_var_names_are_not_dax_functions():
+    bad = {m.name: names for m in MEASURES
+           if (names := sorted({v for v in t.re.findall(r"\bVAR\s+(\w+)", m.expression + "\n" + m.format_expression)
+                                if v.upper() in DAX_FUNCTIONS}))}
+    assert bad == {}
+
+
+def test_reserved_table_names_are_quoted():
+    pattern = t.re.compile(r"(?<![\w'])(" + "|".join(sorted(QUOTE_ALWAYS)) + r")\[")
+    texts = {m.name: m.expression + "\n" + m.format_expression for m in MEASURES}
+    texts.update({"check: " + c["name"]: c["dax"] for c in CHECKS})
+    assert sorted(name for name, text in texts.items() if pattern.search(text)) == []
