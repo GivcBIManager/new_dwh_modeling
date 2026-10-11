@@ -115,10 +115,15 @@ perspective Executive
 		includeAll
 
 	perspectiveTable _Measures
+		perspectiveMeasure '% Detractors'
+		perspectiveMeasure '% Passives'
+		perspectiveMeasure '% Promoters'
 		perspectiveMeasure 'ALOS (days)'
 		perspectiveMeasure Admissions
 		perspectiveMeasure 'Advance Approved Amount'
 		perspectiveMeasure 'Advance Authorisations'
+		perspectiveMeasure 'All Invitations'
+		perspectiveMeasure 'Answer Completeness %'
 		perspectiveMeasure 'Approved First Time %'
 		perspectiveMeasure 'Average ER LOS (min)'
 		perspectiveMeasure 'Average FTE'
@@ -140,6 +145,7 @@ perspective Executive
 		perspectiveMeasure 'Claims Rejected'
 		perspectiveMeasure 'Claims Submitted'
 		perspectiveMeasure 'Clinic Utilisation %'
+		perspectiveMeasure 'Completion Rate %'
 		perspectiveMeasure 'Consumption Cost'
 		perspectiveMeasure 'Consumption Quantity'
 		perspectiveMeasure 'Conversion Rate %'
@@ -152,12 +158,14 @@ perspective Executive
 		perspectiveMeasure 'Delivered Without Approval'
 		perspectiveMeasure 'Delivered Without Approval Amount'
 		perspectiveMeasure Discharges
+		perspectiveMeasure 'Doctor Attribution %'
 		perspectiveMeasure 'Drug and Supply Margin'
 		perspectiveMeasure 'Drug and Supply Margin %'
 		perspectiveMeasure EBITDA
 		perspectiveMeasure 'EBITDA Margin %'
 		perspectiveMeasure 'ER Visits'
 		perspectiveMeasure 'Early Fee'
+		perspectiveMeasure 'Encounter Link %'
 		perspectiveMeasure Episodes
 		perspectiveMeasure FTE
 		perspectiveMeasure 'First-pass Rejection Rate %'
@@ -191,11 +199,14 @@ perspective Executive
 		perspectiveMeasure 'Line Discount'
 		perspectiveMeasure 'Lost Lines'
 		perspectiveMeasure 'Lost Value'
+		perspectiveMeasure 'Median Days Visit to Answer'
 		perspectiveMeasure 'Median Days to Pay'
 		perspectiveMeasure 'Median Days to Payment'
 		perspectiveMeasure 'Median Wait (min)'
 		perspectiveMeasure 'Medication Revenue'
 		perspectiveMeasure 'NPHIES Fee'
+		perspectiveMeasure 'NPS (5-point)'
+		perspectiveMeasure 'NPS Answers'
 		perspectiveMeasure 'Net Profit'
 		perspectiveMeasure 'Net Revenue After Adjustments'
 		perspectiveMeasure 'New Patients'
@@ -226,6 +237,7 @@ perspective Executive
 		perspectiveMeasure 'Payroll Cost per Visit'
 		perspectiveMeasure 'Pending Adjudication'
 		perspectiveMeasure 'Pharmacy Consumption Cost'
+		perspectiveMeasure 'Physician NPS (5-point)'
 		perspectiveMeasure 'Post-invoice Discount'
 		perspectiveMeasure 'Pre-auth Approval Rate %'
 		perspectiveMeasure 'Pre-auth Lost Revenue'
@@ -240,6 +252,7 @@ perspective Executive
 		perspectiveMeasure 'Profit for the Year (incl. Unposted)'
 		perspectiveMeasure 'Readmission Rate 30d %'
 		perspectiveMeasure Remitted
+		perspectiveMeasure 'Repeat Invitation Rate %'
 		perspectiveMeasure 'Request to Sent Avg (min)'
 		perspectiveMeasure 'Request to Sent Median (min)'
 		perspectiveMeasure 'Response Rate %'
@@ -248,6 +261,7 @@ perspective Executive
 		perspectiveMeasure Revenue
 		perspectiveMeasure 'Revenue by Episode Payer'
 		perspectiveMeasure 'Revenue per Payroll SAR'
+		perspectiveMeasure 'SMS Reach %'
 		perspectiveMeasure 'Saudisation Rate %'
 		perspectiveMeasure 'Sent to Response Avg (min)'
 		perspectiveMeasure 'Sent to Response Median (min)'

@@ -1558,6 +1558,115 @@ table _Measures
 		formatString: 0.0%
 		displayFolder: Supply Chain\Interface
 
+	/// Every survey invitation, primary or repeat (Phase 6 spec 7.1, secondary measure).
+	measure 'All Invitations' = COUNTROWS ( 'Survey Responses' )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Primary invitations with an SMS sent ÷ primary invitations (Phase 6 spec 7.1).
+	measure 'SMS Reach %' = DIVIDE ( CALCULATE ( [Invitations], 'Survey Responses'[Is SMS Sent] = "Yes" ), [Invitations] )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Submitted ÷ responded primary invitations (Phase 6 spec 7.1).
+	measure 'Completion Rate %' =
+			DIVIDE (
+				CALCULATE ( [Invitations], 'Survey Responses'[Is Submitted] = "Yes" ),
+				CALCULATE ( [Invitations], 'Survey Responses'[Is Responded] = "Yes" )
+			)
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Scored questions answered ÷ offered, over responded primary invitations (Phase 6 spec 7.1).
+	measure 'Answer Completeness %' =
+			CALCULATE (
+				DIVIDE ( SUM ( 'Survey Responses'[Scored Questions Answered] ), SUM ( 'Survey Responses'[Scored Questions Offered] ) ),
+				'Survey Responses'[Is Primary For Encounter] = "Yes",
+				'Survey Responses'[Is Responded] = "Yes"
+			)
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Median days from visit to answer of responded primary invitations; only submitted surveys have it (Phase 6 spec 7.1; receiving notes).
+	measure 'Median Days Visit to Answer' =
+			CALCULATE (
+				MEDIAN ( 'Survey Responses'[Days Visit To Answer] ),
+				'Survey Responses'[Is Primary For Encounter] = "Yes",
+				'Survey Responses'[Is Responded] = "Yes"
+			)
+		formatString: #,0.0
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Primary invitations linked to an encounter ÷ primary invitations (Phase 6 spec 7.1).
+	measure 'Encounter Link %' =
+			DIVIDE ( CALCULATE ( [Invitations], KEEPFILTERS ( 'Survey Responses'[Link Status] = "Linked" ) ), [Invitations] )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Responded primary invitations with a known doctor ÷ responded primary invitations (Phase 6 spec 7.1; receiving notes: staff_key <> -1).
+	measure 'Doctor Attribution %' =
+			VAR Responded = CALCULATE ( [Invitations], 'Survey Responses'[Is Responded] = "Yes" )
+			VAR Attributed =
+				CALCULATE ( [Invitations], 'Survey Responses'[Is Responded] = "Yes", 'Survey Responses'[Staff Key] <> -1 )
+			RETURN DIVIDE ( Attributed, Responded )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Repeat (non-primary) invitations ÷ all invitations (Phase 6 spec 7.1).
+	measure 'Repeat Invitation Rate %' =
+			DIVIDE ( CALCULATE ( [All Invitations], 'Survey Responses'[Is Primary For Encounter] = "No" ), [All Invitations] )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Quality
+
+	/// Physician NPS on the 5-point question: (promoters − detractors) ÷ answers × 100; under 30 answers shows "insufficient sample" (Phase 6 spec 7.2).
+	measure 'Physician NPS (5-point)' =
+			VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Physician NPS" )
+			VAR Net =
+				CALCULATE (
+					SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ),
+					'Survey Answers'[NPS Role] = "Physician NPS"
+				)
+			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+		displayFolder: Patient Experience\NPS
+	
+		formatStringDefinition =
+				VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Physician NPS" )
+				RETURN IF ( Answers < 30, """insufficient sample""", "0.0" )
+
+	/// NPS of any selection (domain, question, doctor, specialty) over scored answers; under 30 answers shows "insufficient sample" (Phase 6 spec 7.2).
+	measure 'NPS (5-point)' =
+			VAR Answers = [NPS Answers]
+			VAR Net =
+				CALCULATE (
+					SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ),
+					'Survey Answers'[Is Scored] = "Yes"
+				)
+			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+		displayFolder: Patient Experience\NPS
+	
+		formatStringDefinition =
+				IF ( [NPS Answers] < 30, """insufficient sample""", "0.0" )
+
+	/// Scored answers (n), shown next to every NPS (Phase 6 spec 7.2).
+	measure 'NPS Answers' = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[Is Scored] = "Yes" )
+		formatString: #,0
+		displayFolder: Patient Experience\NPS
+
+	/// Promoter answers ÷ scored answers (Phase 6 spec 7.2).
+	measure '% Promoters' = DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ), 'Survey Answers'[Is Scored] = "Yes" ), [NPS Answers] )
+		formatString: 0.0%
+		displayFolder: Patient Experience\NPS
+
+	/// Passive answers ÷ scored answers (Phase 6 spec 7.2).
+	measure '% Passives' = DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Passive] ), 'Survey Answers'[Is Scored] = "Yes" ), [NPS Answers] )
+		formatString: 0.0%
+		displayFolder: Patient Experience\NPS
+
+	/// Detractor answers ÷ scored answers (Phase 6 spec 7.2).
+	measure '% Detractors' = DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[Is Scored] = "Yes" ), [NPS Answers] )
+		formatString: 0.0%
+		displayFolder: Patient Experience\NPS
+
 	column Measure
 		dataType: string
 		isHidden

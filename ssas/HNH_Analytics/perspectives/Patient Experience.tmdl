@@ -37,7 +37,21 @@ perspective 'Patient Experience'
 		includeAll
 
 	perspectiveTable _Measures
+		perspectiveMeasure '% Detractors'
+		perspectiveMeasure '% Passives'
+		perspectiveMeasure '% Promoters'
+		perspectiveMeasure 'All Invitations'
+		perspectiveMeasure 'Answer Completeness %'
+		perspectiveMeasure 'Completion Rate %'
 		perspectiveMeasure 'Current User'
+		perspectiveMeasure 'Doctor Attribution %'
+		perspectiveMeasure 'Encounter Link %'
 		perspectiveMeasure 'Hospital NPS (5-point)'
 		perspectiveMeasure Invitations
+		perspectiveMeasure 'Median Days Visit to Answer'
+		perspectiveMeasure 'NPS (5-point)'
+		perspectiveMeasure 'NPS Answers'
+		perspectiveMeasure 'Physician NPS (5-point)'
+		perspectiveMeasure 'Repeat Invitation Rate %'
 		perspectiveMeasure 'Response Rate %'
+		perspectiveMeasure 'SMS Reach %'
