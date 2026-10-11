@@ -424,6 +424,198 @@ table _Measures
 		formatString: #,0.0
 		displayFolder: Patient Flow\Targets
 
+	/// Gross charges in SAR of recognised revenue lines (Phase 2 spec section 9).
+	measure 'Gross Charges' = CALCULATE ( SUM ( 'Charge Lines'[Gross Amount] ), 'Charge Lines'[Is Recognised Revenue] = "Yes" )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Line discount in SAR of recognised revenue lines (Phase 2 spec section 9).
+	measure 'Line Discount' = CALCULATE ( SUM ( 'Charge Lines'[Line Discount Amount] ), 'Charge Lines'[Is Recognised Revenue] = "Yes" )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// VAT in SAR of recognised revenue lines (Phase 2 spec section 9).
+	measure VAT = CALCULATE ( SUM ( 'Charge Lines'[VAT Amount] ), 'Charge Lines'[Is Recognised Revenue] = "Yes" )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Claimable revenue in SAR: Σ claimable_amount (Phase 2 spec section 9).
+	measure 'Claimable Revenue' = SUM ( 'Charge Lines'[Claimable Amount] )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Revenue in SAR of patient-share (deductible and co-pay) lines (Phase 2 spec section 9).
+	measure 'Patient Share Revenue' = CALCULATE ( [Revenue], KEEPFILTERS ( 'Charge Lines'[Is Patient Share] = "Yes" ) )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Revenue in SAR of cash-billed lines (Phase 2 spec section 9).
+	measure 'Cash Revenue' = CALCULATE ( [Revenue], KEEPFILTERS ( 'Charge Lines'[Is Cash Billed] = "Yes" ) )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Revenue in SAR of medication lines (Phase 2 spec section 9).
+	measure 'Medication Revenue' = CALCULATE ( [Revenue], KEEPFILTERS ( 'Charge Lines'[Is Medication] = "Yes" ) )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Revenue in SAR by the episode's payer, so a payer's patients include their co-pay; Revenue slices by the billed payer (Phase 2 spec section 9).
+	measure 'Revenue by Episode Payer' =
+			CALCULATE ( [Revenue], USERELATIONSHIP ( 'Charge Lines'[Episode Payer Key], Payer[Payer Key] ) )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Package content value in SAR: Σ package_content_amount (Phase 2 spec section 9).
+	measure 'Package Content Value' = SUM ( 'Charge Lines'[Package Content Amount] )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Net amount in SAR of cancelled charge lines (Phase 2 spec section 9).
+	measure 'Cancelled Charges' = CALCULATE ( SUM ( 'Charge Lines'[Net Amount] ), KEEPFILTERS ( 'Charge Lines'[Charge Status] = "Cancelled" ) )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Post-invoice discount in SAR: Σ adjustment_amount of the credit documents (Phase 2 spec section 9).
+	measure 'Post-invoice Discount' = SUM ( 'Revenue Adjustments'[Adjustment Amount] )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Revenue plus post-invoice discount in SAR (Phase 2 spec section 9).
+	measure 'Net Revenue After Adjustments' = [Revenue] + [Post-invoice Discount]
+		formatString: #,0
+		displayFolder: Revenue Cycle\Revenue
+
+	/// Billed amount in SAR of verified invoices (Phase 2 spec section 9).
+	measure 'Verified Billed Amount' = CALCULATE ( [Billed Amount], KEEPFILTERS ( Invoices[Is Verified] = "Yes" ) )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
+
+	/// Unbilled amount in SAR of episodes, by the episode's last delivery date (Phase 2 spec section 9).
+	measure 'Unbilled Amount' = SUM ( 'Episode Billing'[Unbilled Amount] )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
+
+	/// Refunds paid back to patients in SAR: Σ receipt_amount of Refund rows (receiving notes).
+	measure 'Patient Refunds' = CALCULATE ( SUM ( 'Cash Receipts'[Receipt Amount] ), 'Cash Receipts'[Receipt Kind] = "Refund" )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Collections
+
+	/// Outpatient order lines in leak scope; inpatient lines only when Is Inpatient is selected (order fulfilment spec section 8; receiving notes).
+	measure 'Order Lines' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			RETURN CALCULATE ( COUNTROWS ( 'Order Lines' ), Inpatient, 'Order Lines'[Is In Leak Scope] = "Yes" )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Lost order lines in leak scope, outpatient by default (order fulfilment spec section 8).
+	measure 'Lost Lines' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			RETURN
+				CALCULATE (
+					COUNTROWS ( 'Order Lines' ),
+					Inpatient,
+					'Order Lines'[Is In Leak Scope] = "Yes",
+					'Order Lines'[Is Lost] = "Yes"
+				)
+		formatString: #,0
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Lost lines ÷ order lines (order fulfilment spec section 8).
+	measure 'Leak Rate %' = DIVIDE ( [Lost Lines], [Order Lines] )
+		formatString: 0.0%
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Ordered value in SAR of lost lines, unit outliers excluded (order fulfilment spec section 8).
+	measure 'Lost Value' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			RETURN
+				CALCULATE (
+					SUM ( 'Order Lines'[Ordered Value] ),
+					Inpatient,
+					'Order Lines'[Is In Leak Scope] = "Yes",
+					'Order Lines'[Is Lost] = "Yes",
+					'Order Lines'[Is Unit Outlier] = "No"
+				)
+		formatString: #,0
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Average of the per-line unit fulfilment ratio (capped at 1) over lines in leak scope; outliers kept (order fulfilment spec section 8).
+	measure 'Unit Fulfilment Rate %' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			RETURN CALCULATE ( AVERAGE ( 'Order Lines'[Unit Fulfilment Ratio] ), Inpatient, 'Order Lines'[Is In Leak Scope] = "Yes" )
+		formatString: 0.0%
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Partially delivered lines in leak scope, unit outliers excluded (order fulfilment spec section 8; receiving notes).
+	measure 'Partially Delivered Lines' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			RETURN
+				CALCULATE (
+					COUNTROWS ( 'Order Lines' ),
+					Inpatient,
+					'Order Lines'[Is In Leak Scope] = "Yes",
+					'Order Lines'[Is Partially Delivered] = "Yes",
+					'Order Lines'[Is Unit Outlier] = "No"
+				)
+		formatString: #,0
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Lost lines in context ÷ lost lines with every filter except the ordering doctor's specialty (order fulfilment spec section 8).
+	measure 'Share of Total Lost %' =
+			DIVIDE ( [Lost Lines], CALCULATE ( [Lost Lines], REMOVEFILTERS ( Staff[Unified Specialty], Staff[Specialty] ) ) )
+		formatString: 0.0%
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Median minutes from order to first delivery of delivered lines; Consultation and Package are left out (charged at order time) (order fulfilment spec section 8).
+	measure 'Order to Delivery Median (min)' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			RETURN
+				CALCULATE (
+					MEDIAN ( 'Order Lines'[Order To Delivery Minutes] ),
+					Inpatient,
+					'Order Lines'[Line Status] = "Delivered",
+					KEEPFILTERS ( NOT ( 'Order Lines'[Order Category] IN { "Consultation", "Package" } ) )
+				)
+		formatString: #,0.0
+		displayFolder: Revenue Cycle\Order Fulfilment
+
+	/// Cancelled lines ÷ all lines (cancelled lines are out of leak scope, so no scope filter), outpatient by default (order fulfilment spec section 8).
+	measure 'Order Cancellation Rate %' =
+			VAR Inpatient =
+				FILTER (
+					ALL ( 'Order Lines'[Is Inpatient] ),
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+				)
+			VAR AllLines = CALCULATE ( COUNTROWS ( 'Order Lines' ), Inpatient )
+			VAR Cancelled = CALCULATE ( COUNTROWS ( 'Order Lines' ), Inpatient, 'Order Lines'[Line Status] = "Cancelled" )
+			RETURN DIVIDE ( Cancelled, AllLines )
+		formatString: 0.0%
+		displayFolder: Revenue Cycle\Order Fulfilment
+
 	column Measure
 		dataType: string
 		isHidden
