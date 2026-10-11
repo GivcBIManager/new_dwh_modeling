@@ -616,6 +616,282 @@ table _Measures
 		formatString: 0.0%
 		displayFolder: Revenue Cycle\Order Fulfilment
 
+	/// Claimed amount in SAR of sent lines of the latest, not cancelled submission (Phase 2B spec section 8).
+	measure 'Claims Submitted' =
+			CALCULATE (
+				SUM ( 'Claim Lines'[Line Claimed Amount] ),
+				'Claim Lines'[Is Sent] = "Yes",
+				'Claim Lines'[Is Latest Submission] = "Yes",
+				'Claim Lines'[Is Cancelled Claim] = "No"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Approved amount in SAR of the latest, not cancelled submission (Phase 2B spec section 8).
+	measure 'Claims Approved' =
+			CALCULATE (
+				SUM ( 'Claim Lines'[Approved Amount] ),
+				'Claim Lines'[Is Latest Submission] = "Yes",
+				'Claim Lines'[Is Cancelled Claim] = "No"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Outcome-aware rejected amount in SAR of the latest, not cancelled submission; slice by NPHIES Reason for rejections by reason (Phase 2B spec section 8).
+	measure 'Claims Rejected' =
+			CALCULATE (
+				SUM ( 'Claim Lines'[Rejected Amount] ),
+				'Claim Lines'[Is Latest Submission] = "Yes",
+				'Claim Lines'[Is Cancelled Claim] = "No"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Rejected ÷ submitted amount of adjudicated lines of the latest, not cancelled submission (Phase 2B spec section 8; receiving notes).
+	measure 'Claim Rejection Rate %' =
+			VAR Rejected = CALCULATE ( [Claims Rejected], 'Claim Lines'[Adjudication Status] = "Adjudicated" )
+			VAR Submitted =
+				CALCULATE (
+					SUM ( 'Claim Lines'[Submitted Amount] ),
+					'Claim Lines'[Is Latest Submission] = "Yes",
+					'Claim Lines'[Is Cancelled Claim] = "No",
+					'Claim Lines'[Adjudication Status] = "Adjudicated"
+				)
+			RETURN DIVIDE ( Rejected, Submitted )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Rejection rate of first submissions (submission 1 as sent, cancelled claims included: the one exception to the cancelled rule) (Phase 2B spec section 8; receiving notes).
+	measure 'First-pass Rejection Rate %' =
+			VAR Rejected =
+				CALCULATE (
+					SUM ( 'Claim Lines'[Rejected Amount] ),
+					'Claim Lines'[Submission Number] = 1,
+					'Claim Lines'[Adjudication Status] = "Adjudicated"
+				)
+			VAR Submitted =
+				CALCULATE (
+					SUM ( 'Claim Lines'[Submitted Amount] ),
+					'Claim Lines'[Submission Number] = 1,
+					'Claim Lines'[Adjudication Status] = "Adjudicated"
+				)
+			RETURN DIVIDE ( Rejected, Submitted )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Approved amount in SAR of latest, not cancelled resubmissions (submission number above 1) (Phase 2B spec section 8).
+	measure 'Resubmission Recovery' =
+			CALCULATE (
+				SUM ( 'Claim Lines'[Approved Amount] ),
+				'Claim Lines'[Is Latest Submission] = "Yes",
+				'Claim Lines'[Is Cancelled Claim] = "No",
+				'Claim Lines'[Submission Number] > 1
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Claimed amount in SAR of sent, latest, not cancelled lines with no response or pended (Phase 2B spec section 8).
+	measure 'Pending Adjudication' =
+			CALCULATE (
+				SUM ( 'Claim Lines'[Line Claimed Amount] ),
+				'Claim Lines'[Is Sent] = "Yes",
+				'Claim Lines'[Is Latest Submission] = "Yes",
+				'Claim Lines'[Is Cancelled Claim] = "No",
+				KEEPFILTERS ( 'Claim Lines'[Adjudication Status] IN { "No response", "Pended" } )
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Claims
+
+	/// Claim remittance in SAR from NPHIES payment lines; advances are in Payer Advances; not insurer AR (Phase 2B spec section 8; receiving notes).
+	measure Remitted = CALCULATE ( SUM ( 'Claim Payments'[Payment Amount] ), 'Claim Payments'[Detail Type] = "payment" )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Payments
+
+	/// Money paid by payers as advances in SAR (detail type advance); not claim remittance (receiving notes).
+	measure 'Payer Advances' = CALCULATE ( SUM ( 'Claim Payments'[Payment Amount] ), 'Claim Payments'[Detail Type] = "advance" )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Payments
+
+	/// Early fee in SAR as signed by the payer; reported beside the NPHIES fee, never netted (Phase 2B spec section 8).
+	measure 'Early Fee' = SUM ( 'Claim Payments'[Early Fee] )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Payments
+
+	/// NPHIES fee in SAR as signed by the payer (Phase 2B spec section 8).
+	measure 'NPHIES Fee' = SUM ( 'Claim Payments'[NPHIES Fee] )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Payments
+
+	/// Median days from statement to payment of payment lines, for one payment month only (blank over longer periods: bulk back-settlements skew them) (Phase 2B spec section 8; receiving notes).
+	measure 'Median Days to Payment' =
+			IF (
+				HASONEVALUE ( 'Date'[Year Month] ),
+				CALCULATE ( MEDIAN ( 'Claim Payments'[Days To Payment] ), 'Claim Payments'[Detail Type] = "payment" )
+			)
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Payments
+
+	/// Pre-auth service lines, payer advance authorisations excluded (Phase 2 spec section 9; receiving notes).
+	measure 'Pre-auth Services' =
+			CALCULATE ( COUNTROWS ( 'Pre-auth Lines' ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Distinct pre-auth requests per branch, added over branches; payer advances excluded (Phase 2 spec section 9).
+	measure 'Pre-auth Requests' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				CALCULATE (
+					DISTINCTCOUNTNOBLANK ( 'Pre-auth Lines'[Request No] ),
+					KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" )
+				)
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Approved lines with a final response ÷ lines with a final response (Phase 2 spec section 9; receiving notes).
+	measure 'Pre-auth Approval Rate %' =
+			VAR Final = CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Has Final Response] = "Yes" )
+			VAR Approved =
+				CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Has Final Response] = "Yes", 'Pre-auth Lines'[Is Approved] = "Yes" )
+			RETURN DIVIDE ( Approved, Final )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Rejected lines with a final response ÷ lines with a final response (Phase 2 spec section 9; receiving notes).
+	measure 'Pre-auth Rejection Rate %' =
+			DIVIDE ( [Pre-auth Rejected Lines], CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Has Final Response] = "Yes" ) )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Lines approved at the first response ÷ approved lines with a final response (Phase 2 spec section 9).
+	measure 'Approved First Time %' =
+			VAR Approved =
+				CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Has Final Response] = "Yes", 'Pre-auth Lines'[Is Approved] = "Yes" )
+			VAR FirstTime =
+				CALCULATE (
+					[Pre-auth Services],
+					'Pre-auth Lines'[Has Final Response] = "Yes",
+					'Pre-auth Lines'[Is Approved] = "Yes",
+					'Pre-auth Lines'[Is First Response Approved] = "Yes"
+				)
+			RETURN DIVIDE ( FirstTime, Approved )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Requests with a resubmitted line ÷ requests (Phase 2 spec section 9).
+	measure 'Pre-auth Resubmission Rate %' =
+			DIVIDE ( CALCULATE ( [Pre-auth Requests], 'Pre-auth Lines'[Is Resubmitted] = "Yes" ), [Pre-auth Requests] )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Transfer lines ÷ lines (Phase 2 spec section 9).
+	measure 'Pre-auth Transfer Rate %' =
+			DIVIDE ( CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Is Transfer] = "Yes" ), [Pre-auth Services] )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Average minutes from request to first send (Phase 2 spec section 9).
+	measure 'Request to Sent Avg (min)' =
+			CALCULATE ( AVERAGE ( 'Pre-auth Lines'[Request To Sent Minutes] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Pre-auth Turnaround
+
+	/// Median minutes from request to first send (Phase 2 spec section 9).
+	measure 'Request to Sent Median (min)' =
+			CALCULATE ( MEDIAN ( 'Pre-auth Lines'[Request To Sent Minutes] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Pre-auth Turnaround
+
+	/// Average minutes from send to the final response (Phase 2 spec section 9).
+	measure 'Sent to Response Avg (min)' =
+			CALCULATE ( AVERAGE ( 'Pre-auth Lines'[Sent To Response Minutes] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Pre-auth Turnaround
+
+	/// Median minutes from send to the final response (Phase 2 spec section 9).
+	measure 'Sent to Response Median (min)' =
+			CALCULATE ( MEDIAN ( 'Pre-auth Lines'[Sent To Response Minutes] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Pre-auth Turnaround
+
+	/// Average minutes from request to the final response (Phase 2 spec section 9).
+	measure 'Total Turnaround Avg (min)' =
+			CALCULATE ( AVERAGE ( 'Pre-auth Lines'[Total Turnaround Minutes] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Pre-auth Turnaround
+
+	/// Median minutes from request to the final response (Phase 2 spec section 9).
+	measure 'Total Turnaround Median (min)' =
+			CALCULATE ( MEDIAN ( 'Pre-auth Lines'[Total Turnaround Minutes] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ) )
+		formatString: #,0.0
+		displayFolder: Claims & Pre-auth\Pre-auth Turnaround
+
+	/// Approved lines that were never delivered (Phase 2 spec section 9).
+	measure 'Unutilised Approvals' = CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Is Approved Not Delivered] = "Yes" )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Unutilised approvals ÷ lines (Phase 2 spec section 9).
+	measure 'Unutilised Approval Rate %' = DIVIDE ( [Unutilised Approvals], [Pre-auth Services] )
+		formatString: 0.0%
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Approved estimated amount in SAR of approved, undelivered lines on the latest request for the service (Phase 2 spec section 9).
+	measure 'Pre-auth Lost Revenue' =
+			CALCULATE (
+				SUM ( 'Pre-auth Lines'[Approved Estimated Amount] ),
+				KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ),
+				'Pre-auth Lines'[Is Approved Not Delivered] = "Yes",
+				'Pre-auth Lines'[Is Latest Request For Service] = "Yes"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Estimated amount in SAR of rejected lines on the latest request for the service (Phase 2 spec section 9).
+	measure 'Pre-auth Rejected Revenue' =
+			CALCULATE (
+				SUM ( 'Pre-auth Lines'[Estimated Amount] ),
+				KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ),
+				'Pre-auth Lines'[Preauth Outcome] = "Rejected",
+				'Pre-auth Lines'[Is Latest Request For Service] = "Yes"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Lines delivered without an approval (Phase 2 spec section 9).
+	measure 'Delivered Without Approval' = CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Is Delivered Not Approved] = "Yes" )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Estimated amount in SAR of lines delivered without an approval (Phase 2 spec section 9).
+	measure 'Delivered Without Approval Amount' =
+			CALCULATE (
+				SUM ( 'Pre-auth Lines'[Estimated Amount] ),
+				KEEPFILTERS ( 'Pre-auth Lines'[Line Source] <> "Payer advance" ),
+				'Pre-auth Lines'[Is Delivered Not Approved] = "Yes"
+			)
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Rejected pre-auth lines with a final response; slice by NPHIES Reason for rejections by reason (Phase 2B spec section 8).
+	measure 'Pre-auth Rejected Lines' =
+			CALCULATE ( [Pre-auth Services], 'Pre-auth Lines'[Preauth Outcome] = "Rejected", 'Pre-auth Lines'[Has Final Response] = "Yes" )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Pre-auth
+
+	/// Payer-initiated advance authorisations, by the payer's creation date (receiving notes).
+	measure 'Advance Authorisations' =
+			CALCULATE ( COUNTROWS ( 'Pre-auth Lines' ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] = "Payer advance" ) )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Advance Authorisations
+
+	/// Payer approved amount in SAR of advance authorisations, placeholders of 0 and 1 SAR included as sent (receiving notes).
+	measure 'Advance Approved Amount' =
+			CALCULATE ( SUM ( 'Pre-auth Lines'[Payer Approved Amount] ), KEEPFILTERS ( 'Pre-auth Lines'[Line Source] = "Payer advance" ) )
+		formatString: #,0
+		displayFolder: Claims & Pre-auth\Advance Authorisations
+
 	column Measure
 		dataType: string
 		isHidden
