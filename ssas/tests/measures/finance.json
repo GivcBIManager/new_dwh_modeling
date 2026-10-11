@@ -76,5 +76,6 @@
    "sql": "select quantileExactInclusive(0.5)(toFloat64(days_invoice_to_payment)) from gold.ssas_fact_ap_payment where is_voided = 'No' and payment_date_key >= 20260101 and payment_date_key < 20270101"},
   {"name": "On-time Payment Rate %, all branches, 2026", "tolerance": 0.0001,
    "dax": "EVALUATE ROW(\"v\", CALCULATE([On-time Payment Rate %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(days_after_due <= 0) / count() from gold.ssas_fact_ap_payment where is_voided = 'No' and payment_date_key >= 20260101 and payment_date_key < 20270101"}
+   "sql": "select countIf(days_after_due <= 0) / count() from gold.ssas_fact_ap_payment where is_voided = 'No' and payment_date_key >= 20260101 and payment_date_key < 20270101"},
+  {"name": "IS Budget (Comparable), DC_MEDICINES selected by name, branch 3, 2026-08 (review I5)", "tolerance": 0.01, "dax": "EVALUATE ROW(\"v\", CALCULATE([IS Budget (Comparable)], Branch[Branch Key] = 3, 'Date'[Year Month] = 202608, 'Budget Line'[Budget Line Name] = \"Cost of medicines\"))", "sql": "select sum(i.budget_most_likely) from gold.ssas_fact_income_statement_monthly as i inner join gold.ssas_dim_budget_line as b on b.budget_line_key = i.budget_line_key where i.branch_key = 3 and i.month_date_key >= 20260801 and i.month_date_key < 20260901 and b.budget_line_code in ('DC_MEDICINES', 'DC_CONSUMABLES')"}
 ]

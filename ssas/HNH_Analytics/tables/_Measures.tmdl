@@ -56,7 +56,7 @@ table _Measures
 	measure 'GL Closing Balance' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ), REMOVEFILTERS ( 'GL Balances' ), VALUES ( 'Date'[Date] ), VALUES ( 'GL Period'[Period Key] ), VALUES ( Branch[Branch Key] ) )
 				RETURN
 					CALCULATE (
 						SUMX ( 'GL Balances', 'GL Balances'[Closing Balance] * RELATED ( 'FS Line'[Display Sign] ) ),
@@ -73,7 +73,7 @@ table _Measures
 	measure Headcount =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
+				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), REMOVEFILTERS ( Headcount ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					CALCULATE (
 						SUM ( Headcount[Headcount Units] ),
@@ -102,7 +102,7 @@ table _Measures
 	measure 'Stock Value' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ) )
 				RETURN
 					CALCULATE (
 						SUM ( 'Stock Monthly'[Stock Value Amount] ),
@@ -324,11 +324,18 @@ table _Measures
 
 	/// Countable admissions from OP or ER ÷ OP and ER episodes whose consultant's specialty admits (gold spec section 8; episodes as in the Episodes measure).
 	measure 'Conversion Rate %' =
-			VAR Converted = CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } )
+			VAR Converted =
+				CALCULATE (
+					[Admissions],
+					REMOVEFILTERS ( 'Care Type' ),
+					KEEPFILTERS ( 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
+					KEEPFILTERS ( TREATAS ( VALUES ( 'Care Type'[Care Type] ), 'Admission Source'[Admission Source] ) )
+				)
 			VAR Eligible =
 				CALCULATE (
 					[Episodes],
-					'Care Type'[Care Type] IN { "OP", "ER" },
+					KEEPFILTERS ( 'Care Type'[Care Type] IN { "OP", "ER" } ),
+					KEEPFILTERS ( TREATAS ( VALUES ( 'Admission Source'[Admission Source] ), 'Care Type'[Care Type] ) ),
 					Staff[Is Non Admitting Specialty] = "No"
 				)
 			RETURN DIVIDE ( Converted, Eligible )
@@ -505,7 +512,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			RETURN CALCULATE ( COUNTROWS ( 'Order Lines' ), Inpatient, 'Order Lines'[Is In Leak Scope] = "Yes" )
 		formatString: #,0
@@ -516,7 +523,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			RETURN
 				CALCULATE (
@@ -538,7 +545,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			RETURN
 				CALCULATE (
@@ -556,7 +563,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			RETURN CALCULATE ( AVERAGE ( 'Order Lines'[Unit Fulfilment Ratio] ), Inpatient, 'Order Lines'[Is In Leak Scope] = "Yes" )
 		formatString: 0.0%
@@ -567,7 +574,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			RETURN
 				CALCULATE (
@@ -591,7 +598,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			RETURN
 				CALCULATE (
@@ -608,7 +615,7 @@ table _Measures
 			VAR Inpatient =
 				FILTER (
 					ALL ( 'Order Lines'[Is Inpatient] ),
-					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
+					IF ( ISFILTERED ( 'Order Lines'[Is Inpatient] ) || ISFILTERED ( 'Care Type' ), 'Order Lines'[Is Inpatient] IN VALUES ( 'Order Lines'[Is Inpatient] ), 'Order Lines'[Is Inpatient] = "No" )
 				)
 			VAR AllLines = CALCULATE ( COUNTROWS ( 'Order Lines' ), Inpatient )
 			VAR Cancelled = CALCULATE ( COUNTROWS ( 'Order Lines' ), Inpatient, 'Order Lines'[Line Status] = "Cancelled" )
@@ -896,7 +903,7 @@ table _Measures
 	measure 'GL Closing Balance (incl. Unposted)' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ), REMOVEFILTERS ( 'GL Balances' ), VALUES ( 'Date'[Date] ), VALUES ( 'GL Period'[Period Key] ), VALUES ( Branch[Branch Key] ) )
 				RETURN
 					CALCULATE (
 						SUMX ( 'GL Balances', 'GL Balances'[Closing Balance] * RELATED ( 'FS Line'[Display Sign] ) ),
@@ -949,7 +956,7 @@ table _Measures
 	measure 'Profit for the Year' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ), REMOVEFILTERS ( 'GL Balances' ), VALUES ( 'Date'[Date] ), VALUES ( 'GL Period'[Period Key] ), VALUES ( Branch[Branch Key] ) )
 				RETURN
 					- CALCULATE (
 						SUM ( 'GL Balances'[Closing Balance] ),
@@ -967,7 +974,7 @@ table _Measures
 	measure 'Profit for the Year (incl. Unposted)' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ), REMOVEFILTERS ( 'GL Balances' ), VALUES ( 'Date'[Date] ), VALUES ( 'GL Period'[Period Key] ), VALUES ( Branch[Branch Key] ) )
 				RETURN
 					- CALCULATE (
 						SUM ( 'GL Balances'[Closing Balance] ),
@@ -1013,6 +1020,7 @@ table _Measures
 					SELECTEDVALUE ( 'Budget Line'[Budget Line Code] ) = "DC_MEDICINES",
 					CALCULATE (
 						SUM ( 'Income Statement'[Budget Most Likely] ),
+						REMOVEFILTERS ( 'Budget Line' ),
 						'Budget Line'[Budget Line Code] IN { "DC_MEDICINES", "DC_CONSUMABLES" }
 					),
 					[IS Budget]
@@ -1094,7 +1102,7 @@ table _Measures
 	measure FTE =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
+				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), REMOVEFILTERS ( Headcount ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					CALCULATE (
 						SUM ( Headcount[FTE] ),
@@ -1204,6 +1212,9 @@ table _Measures
 				VAR LastDay =
 					CALCULATE (
 						MAX ( 'Leave Balances'[Accrual Period Date Key] ),
+						REMOVEFILTERS ( 'Leave Balances' ),
+						VALUES ( 'Date'[Date] ),
+						VALUES ( Branch[Branch Key] ),
 						'Leave Balances'[Is Latest In Month] = "Yes",
 						'Leave Balances'[Is Closed Period] = "Yes",
 						'Date'[Is Past] = "Yes"
@@ -1228,6 +1239,9 @@ table _Measures
 				VAR LastDay =
 					CALCULATE (
 						MAX ( 'Leave Balances'[Accrual Period Date Key] ),
+						REMOVEFILTERS ( 'Leave Balances' ),
+						VALUES ( 'Date'[Date] ),
+						VALUES ( Branch[Branch Key] ),
 						'Leave Balances'[Is Latest In Month] = "Yes",
 						'Leave Balances'[Is Closed Period] = "Yes",
 						'Date'[Is Past] = "Yes"
@@ -1316,33 +1330,39 @@ table _Measures
 		formatString: #,0
 		displayFolder: Supply Chain\Margin
 
-	/// Stock value at the last month-end ÷ (that month's consumption cost ÷ days in the month), per branch, then summed (Phase 5 spec section 7). Snapshot.
+	/// Stock value at the last closed month-end ÷ (that month's consumption cost ÷ days in the month), per branch, then summed (Phase 5 spec section 7). Snapshot.
 	measure 'Days of Stock' =
 			VAR DailyUse =
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 					RETURN DIVIDE ( CALCULATE ( [Consumption Cost], 'Date'[Year Month] = INT ( LastMonth / 100 ) ), MOD ( LastMonth, 100 ) )
 				)
-			RETURN DIVIDE ( [Stock Value], DailyUse )
+			VAR StockValue =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
+					RETURN CALCULATE ( SUM ( 'Stock Monthly'[Stock Value Amount] ), 'Stock Monthly'[Month Date Key] = LastMonth, 'Stock Monthly'[Is Expiry Store] = "No" )
+				)
+			RETURN DIVIDE ( StockValue, DailyUse )
 		formatString: #,0.0
 		displayFolder: Supply Chain\Stock
 
 		annotation hnh_snapshot = 1
 
-	/// Consumption cost of the 12 months to the last month-end ÷ average month-end stock value of those months, per branch, then summed (Phase 5 spec section 7). Snapshot.
+	/// Consumption cost of the 12 months to the last closed month-end ÷ average month-end stock value of those months, per branch, then summed (Phase 5 spec section 7). Snapshot.
 	measure 'Inventory Turnover' =
 			VAR Consumption12 =
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 					VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 					RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( [Consumption Cost], DATESINPERIOD ( 'Date'[Date], LastDay, -12, MONTH ) ) )
 				)
 			VAR AverageStock =
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 					VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 					RETURN
 						IF (
@@ -1356,11 +1376,11 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 
-	/// Items with stock at the last month-end and no consumption in the 90 days to it, per branch (Phase 5 spec section 7). Snapshot.
+	/// Items with stock at the last closed month-end and no consumption in the 90 days to it, per branch (Phase 5 spec section 7). Snapshot.
 	measure 'Slow-Moving Items' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
@@ -1382,11 +1402,11 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 
-	/// Stock value in SAR at the last month-end of items with no consumption in the 90 days to it (Phase 5 spec section 7). Snapshot.
+	/// Stock value in SAR at the last closed month-end of items with no consumption in the 90 days to it (Phase 5 spec section 7). Snapshot.
 	measure 'Slow-Moving Stock Value' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
@@ -1418,11 +1438,11 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 
-	/// Items with stock at the last month-end and no consumption in the 180 days to it, per branch (Phase 5 spec section 7). Snapshot.
+	/// Items with stock at the last closed month-end and no consumption in the 180 days to it, per branch (Phase 5 spec section 7). Snapshot.
 	measure 'Dead Stock Items' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (
@@ -1444,11 +1464,11 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 
-	/// Stock value in SAR at the last month-end of items with no consumption in the 180 days to it (Phase 5 spec section 7). Snapshot.
+	/// Stock value in SAR at the last closed month-end of items with no consumption in the 180 days to it (Phase 5 spec section 7). Snapshot.
 	measure 'Dead Stock Value' =
 			SUMX (
 				VALUES ( Branch[Branch Key] ),
-				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Stock Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), 'Stock Monthly'[Is Closed Month] = "Yes" )
 				VAR LastDay = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
 				VAR InStock =
 					CALCULATETABLE (

@@ -67,5 +67,7 @@
    "sql": "select sum(encounters_seen) / sum(fte) from gold.ssas_agg_staff_productivity_monthly where month_date_key = 20260801"},
   {"name": "Payroll Cost per Visit, 2026-08", "tolerance": 0.01,
    "dax": "EVALUATE ROW(\"v\", CALCULATE([Payroll Cost per Visit], 'Date'[Year Month] = 202608))",
-   "sql": "select sum(payroll_cost) / sum(encounters_seen) from gold.ssas_agg_staff_productivity_monthly where month_date_key = 20260801"}
+   "sql": "select sum(payroll_cost) / sum(encounters_seen) from gold.ssas_agg_staff_productivity_monthly where month_date_key = 20260801"},
+  {"name": "Headcount is blank for an employee without a row in the last closed month, 2026 Q3 (review I2)", "tolerance": 0, "dax": "EVALUATE ROW(\"v\", INT(ISBLANK(CALCULATE([Headcount], 'Date'[Year Quarter] = 20263, Employee[Employee Key] = 4008546684021054252))))", "sql": "select 1"},
+  {"name": "Sick Leave Rate %, 2026 YTD to August (nested measures under a calculation item)", "tolerance": 0.0001, "dax": "EVALUATE ROW(\"v\", CALCULATE([Sick Leave Rate %], 'Date'[Year Month] = 202608, 'Time Calculation'[Time Calculation] = \"YTD\"))", "sql": "select (select sum(d.absence_days) from gold.ssas_fact_absence_daily as d inner join gold.ssas_dim_absence_type as t on t.absence_type_key = d.absence_type_key where t.absence_category = 'Sick' and d.date_key >= 20260101 and d.date_key < 20260901) / (select sum(f * (m % 100)) from (select month_date_key as m, sum(fte) as f from gold.ssas_fact_headcount_monthly where is_contingent = 'No' and is_closed_month = 'Yes' and month_date_key >= 20260131 and month_date_key <= 20260831 group by month_date_key))"}
 ]

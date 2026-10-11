@@ -73,5 +73,6 @@
    "sql": "select quantileExactInclusive(0.5)(toFloat64(order_to_delivery_minutes)) from gold.ssas_fact_order_line where branch_key = 1 and order_date_key >= 20260801 and order_date_key < 20260901 and is_inpatient = 'No' and line_status = 'Delivered' and order_category not in ('Consultation', 'Package')"},
   {"name": "Order Cancellation Rate %, branch 1, 2026-08", "tolerance": 0.0001,
    "dax": "EVALUATE ROW(\"v\", CALCULATE([Order Cancellation Rate %], Branch[Branch Key] = 1, 'Date'[Year Month] = 202608))",
-   "sql": "select countIf(line_status = 'Cancelled') / count() from gold.ssas_fact_order_line where branch_key = 1 and order_date_key >= 20260801 and order_date_key < 20260901 and is_inpatient = 'No'"}
+   "sql": "select countIf(line_status = 'Cancelled') / count() from gold.ssas_fact_order_line where branch_key = 1 and order_date_key >= 20260801 and order_date_key < 20260901 and is_inpatient = 'No'"},
+  {"name": "Order Lines, branch 1, 2026-08, Care Type IP selected (review I3)", "tolerance": 0, "dax": "EVALUATE ROW(\"v\", CALCULATE([Order Lines], Branch[Branch Key] = 1, 'Date'[Year Month] = 202608, 'Care Type'[Care Type] = \"IP\"))", "sql": "select count() from gold.ssas_fact_order_line as o inner join gold.ssas_dim_care_type as c on c.care_type_key = o.care_type_key where o.branch_key = 1 and o.order_date_key >= 20260801 and o.order_date_key < 20260901 and o.is_in_leak_scope = 'Yes' and c.care_type = 'IP'"}
 ]
