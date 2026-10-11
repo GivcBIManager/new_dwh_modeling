@@ -121,6 +121,8 @@ perspective Executive
 		perspectiveMeasure 'Advance Authorisations'
 		perspectiveMeasure 'Approved First Time %'
 		perspectiveMeasure 'Average ER LOS (min)'
+		perspectiveMeasure 'Average FTE'
+		perspectiveMeasure 'Average Headcount'
 		perspectiveMeasure 'Average Wait (min)'
 		perspectiveMeasure 'Bed Occupancy %'
 		perspectiveMeasure 'Bed Turnover'
@@ -140,6 +142,8 @@ perspective Executive
 		perspectiveMeasure 'Clinic Utilisation %'
 		perspectiveMeasure 'Consumption Cost'
 		perspectiveMeasure 'Conversion Rate %'
+		perspectiveMeasure 'Current Leave Balance (days)'
+		perspectiveMeasure 'Current Leave Liability'
 		perspectiveMeasure 'Current User'
 		perspectiveMeasure 'Delivered Without Approval'
 		perspectiveMeasure 'Delivered Without Approval Amount'
@@ -149,6 +153,7 @@ perspective Executive
 		perspectiveMeasure 'ER Visits'
 		perspectiveMeasure 'Early Fee'
 		perspectiveMeasure Episodes
+		perspectiveMeasure FTE
 		perspectiveMeasure 'First-pass Rejection Rate %'
 		perspectiveMeasure 'GL Closing Balance'
 		perspectiveMeasure 'GL Closing Balance (incl. Unposted)'
@@ -157,8 +162,11 @@ perspective Executive
 		perspectiveMeasure 'GL Movement Trend'
 		perspectiveMeasure 'GL Movement Trend (incl. Unposted)'
 		perspectiveMeasure 'Gross Charges'
+		perspectiveMeasure 'Gross Pay'
+		perspectiveMeasure 'Gross Pay (Open Payroll)'
 		perspectiveMeasure 'Gross Profit'
 		perspectiveMeasure Headcount
+		perspectiveMeasure Hires
 		perspectiveMeasure 'Hospital NPS (5-point)'
 		perspectiveMeasure 'ICU Readmissions 48h'
 		perspectiveMeasure 'IS Actual'
@@ -168,6 +176,9 @@ perspective Executive
 		perspectiveMeasure 'IS Budget (Comparable)'
 		perspectiveMeasure Invitations
 		perspectiveMeasure 'Leak Rate %'
+		perspectiveMeasure 'Leave Balance (days)'
+		perspectiveMeasure 'Leave Liability'
+		perspectiveMeasure Leavers
 		perspectiveMeasure 'Line Discount'
 		perspectiveMeasure 'Lost Lines'
 		perspectiveMeasure 'Lost Value'
@@ -187,6 +198,7 @@ perspective Executive
 		perspectiveMeasure 'Order Lines'
 		perspectiveMeasure 'Order to Delivery Median (min)'
 		perspectiveMeasure 'Overdue Payables'
+		perspectiveMeasure 'Overtime Share %'
 		perspectiveMeasure 'Package Content Value'
 		perspectiveMeasure 'Partially Delivered Lines'
 		perspectiveMeasure 'Patient Collections'
@@ -194,6 +206,8 @@ perspective Executive
 		perspectiveMeasure 'Patient Share Revenue'
 		perspectiveMeasure 'Payer Advances'
 		perspectiveMeasure 'Payroll Cost'
+		perspectiveMeasure 'Payroll Cost per FTE'
+		perspectiveMeasure 'Payroll Cost per Visit'
 		perspectiveMeasure 'Pending Adjudication'
 		perspectiveMeasure 'Post-invoice Discount'
 		perspectiveMeasure 'Pre-auth Approval Rate %'
@@ -216,9 +230,13 @@ perspective Executive
 		perspectiveMeasure 'Returning Patients'
 		perspectiveMeasure Revenue
 		perspectiveMeasure 'Revenue by Episode Payer'
+		perspectiveMeasure 'Revenue per Payroll SAR'
+		perspectiveMeasure 'Saudisation Rate %'
 		perspectiveMeasure 'Sent to Response Avg (min)'
 		perspectiveMeasure 'Sent to Response Median (min)'
 		perspectiveMeasure 'Share of Total Lost %'
+		perspectiveMeasure 'Sick Days'
+		perspectiveMeasure 'Sick Leave Rate %'
 		perspectiveMeasure 'Stock Value'
 		perspectiveMeasure 'Supplier Spend'
 		perspectiveMeasure 'Target ALOS (days)'
@@ -230,6 +248,7 @@ perspective Executive
 		perspectiveMeasure 'Total Turnaround Avg (min)'
 		perspectiveMeasure 'Total Turnaround Median (min)'
 		perspectiveMeasure 'Total Wait (min)'
+		perspectiveMeasure 'Turnover Rate %'
 		perspectiveMeasure 'Unbilled Amount'
 		perspectiveMeasure 'Unique Patients'
 		perspectiveMeasure 'Unit Fulfilment Rate %'
@@ -237,3 +256,6 @@ perspective Executive
 		perspectiveMeasure 'Unutilised Approvals'
 		perspectiveMeasure VAT
 		perspectiveMeasure 'Verified Billed Amount'
+		perspectiveMeasure 'Visits per FTE'
+		perspectiveMeasure 'Voluntary Leavers'
+		perspectiveMeasure 'Voluntary Turnover Rate %'

@@ -1090,6 +1090,190 @@ table _Measures
 		formatString: 0.0%
 		displayFolder: Finance\Payables
 
+	/// Month-end FTE of the last closed month in the selection per branch, contingent workers excluded (Phase 4 spec section 7). Snapshot.
+	measure FTE =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
+				RETURN
+					CALCULATE (
+						SUM ( Headcount[FTE] ),
+						Headcount[Month Date Key] = LastMonth,
+						Headcount[Is Closed Month] = "Yes",
+						Headcount[Is Contingent] = "No"
+					)
+			)
+		formatString: #,0.0
+		displayFolder: Workforce\Headcount
+
+		annotation hnh_snapshot = 1
+
+	/// Saudi headcount ÷ headcount at the last closed month (Phase 4 spec section 7). Snapshot.
+	measure 'Saudisation Rate %' = DIVIDE ( CALCULATE ( [Headcount], KEEPFILTERS ( Headcount[Is Saudi] = "Yes" ) ), [Headcount] )
+		formatString: 0.0%
+		displayFolder: Workforce\Headcount
+
+		annotation hnh_snapshot = 1
+
+	/// Average month-end headcount over the closed months of the selection, from 2026 (Phase 4 spec section 7; receiving notes).
+	measure 'Average Headcount' = AVERAGEX ( VALUES ( 'Date'[Year Month] ), [Headcount] )
+		formatString: #,0.0
+		displayFolder: Workforce\Headcount
+
+	/// Hire movements in the period (Phase 4 spec section 7).
+	measure Hires = CALCULATE ( COUNTROWS ( 'Worker Movements' ), 'Worker Movements'[Is Hire] = "Yes" )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+
+	/// Leaver movements in the period (Phase 4 spec section 7).
+	measure Leavers = CALCULATE ( COUNTROWS ( 'Worker Movements' ), 'Worker Movements'[Is Leaver] = "Yes" )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+
+	/// Voluntary leaver movements in the period (Phase 4 spec section 7).
+	measure 'Voluntary Leavers' = CALCULATE ( COUNTROWS ( 'Worker Movements' ), 'Worker Movements'[Is Voluntary Leaver] = "Yes" )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+
+	/// Leavers ÷ average month-end headcount of the period, from 2026 (Phase 4 spec section 7; receiving notes).
+	measure 'Turnover Rate %' = DIVIDE ( [Leavers], [Average Headcount] )
+		formatString: 0.0%
+		displayFolder: Workforce\Movements
+
+	/// Voluntary leavers ÷ average month-end headcount of the period, from 2026 (Phase 4 spec section 7).
+	measure 'Voluntary Turnover Rate %' = DIVIDE ( [Voluntary Leavers], [Average Headcount] )
+		formatString: 0.0%
+		displayFolder: Workforce\Movements
+
+	/// Gross pay in SAR: Σ gross_pay, parallel-run rows already excluded; open Oasis payroll included (Phase 4 spec section 7; receiving notes).
+	measure 'Gross Pay' = SUM ( Payroll[Gross Pay] )
+		formatString: #,0
+		displayFolder: Workforce\Payroll
+
+	/// Gross pay in SAR of payroll the branch has not closed yet; it changes until the month is closed (receiving notes).
+	measure 'Gross Pay (Open Payroll)' = CALCULATE ( [Gross Pay], KEEPFILTERS ( Payroll[Is Closed Payroll] = "No" ) )
+		formatString: #,0
+		displayFolder: Workforce\Payroll
+
+	/// Overtime gross pay ÷ gross pay (Phase 4 spec section 7).
+	measure 'Overtime Share %' =
+			DIVIDE ( CALCULATE ( [Gross Pay], KEEPFILTERS ( 'Pay Category'[Pay Category] = "Overtime" ) ), [Gross Pay] )
+		formatString: 0.0%
+		displayFolder: Workforce\Payroll
+
+	/// Average month-end FTE over the closed months of the selection (Phase 4 spec section 7).
+	measure 'Average FTE' = AVERAGEX ( VALUES ( 'Date'[Year Month] ), [FTE] )
+		formatString: #,0.0
+		displayFolder: Workforce\Headcount
+
+	/// Payroll cost in SAR ÷ average FTE of the period (Phase 4 spec section 7).
+	measure 'Payroll Cost per FTE' = DIVIDE ( [Payroll Cost], [Average FTE] )
+		formatString: #,0
+		displayFolder: Workforce\Payroll
+
+	/// Counted sick-leave days up to today (receiving notes: planned absence runs into 2027).
+	measure 'Sick Days' =
+			CALCULATE (
+				SUM ( 'Absence Days'[Absence Days] ),
+				KEEPFILTERS ( 'Absence Type'[Absence Category] = "Sick" ),
+				'Date'[Is Past] = "Yes"
+			)
+		formatString: #,0
+		displayFolder: Workforce\Absence
+
+	/// Sick days ÷ (month-end FTE × past calendar days), over months with a closed headcount (Phase 4 spec section 7).
+	measure 'Sick Leave Rate %' =
+			VAR Months =
+				FILTER (
+					ADDCOLUMNS (
+						VALUES ( 'Date'[Year Month] ),
+						"@Fte", [FTE],
+						"@Days", CALCULATE ( COUNTROWS ( 'Date' ), 'Date'[Is Past] = "Yes" ),
+						"@Sick", [Sick Days]
+					),
+					NOT ISBLANK ( [@Fte] )
+				)
+			RETURN DIVIDE ( SUMX ( Months, [@Sick] ), SUMX ( Months, [@Fte] * [@Days] ) )
+		formatString: 0.0%
+		displayFolder: Workforce\Absence
+
+	/// Leave balance in days at the last closed accrual month of the selection per branch: the latest period of each employee and plan in that month (receiving notes). Snapshot.
+	measure 'Leave Balance (days)' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastDate =
+					CALCULATE (
+						MAX ( 'Leave Balances'[Accrual Period Date Key] ),
+						'Leave Balances'[Is Latest In Month] = "Yes",
+						'Leave Balances'[Is Closed Period] = "Yes",
+						'Date'[Is Past] = "Yes"
+					)
+				RETURN
+					CALCULATE (
+						SUM ( 'Leave Balances'[End Balance] ),
+						'Leave Balances'[Is Latest In Month] = "Yes",
+						'Leave Balances'[Is Closed Period] = "Yes",
+						'Date'[Year Month] = INT ( LastDate / 100 )
+					)
+			)
+		formatString: #,0.0
+		displayFolder: Workforce\Leave
+
+		annotation hnh_snapshot = 1
+
+	/// Leave liability in SAR at the last closed accrual month of the selection per branch (receiving notes). Snapshot.
+	measure 'Leave Liability' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastDate =
+					CALCULATE (
+						MAX ( 'Leave Balances'[Accrual Period Date Key] ),
+						'Leave Balances'[Is Latest In Month] = "Yes",
+						'Leave Balances'[Is Closed Period] = "Yes",
+						'Date'[Is Past] = "Yes"
+					)
+				RETURN
+					CALCULATE (
+						SUM ( 'Leave Balances'[Leave Liability Amount] ),
+						'Leave Balances'[Is Latest In Month] = "Yes",
+						'Leave Balances'[Is Closed Period] = "Yes",
+						'Date'[Year Month] = INT ( LastDate / 100 )
+					)
+			)
+		formatString: #,0
+		displayFolder: Workforce\Leave
+
+		annotation hnh_snapshot = 1
+
+	/// Leave balance in days at the latest closed accrual period, whatever dates are selected (receiving notes: latest-position KPI).
+	measure 'Current Leave Balance (days)' =
+			CALCULATE ( SUM ( 'Leave Balances'[End Balance] ), 'Leave Balances'[Is Current Balance] = "Yes", REMOVEFILTERS ( 'Date' ) )
+		formatString: #,0.0
+		displayFolder: Workforce\Leave
+
+	/// Leave liability in SAR at the latest closed accrual period, whatever dates are selected (receiving notes).
+	measure 'Current Leave Liability' =
+			CALCULATE ( SUM ( 'Leave Balances'[Leave Liability Amount] ), 'Leave Balances'[Is Current Balance] = "Yes", REMOVEFILTERS ( 'Date' ) )
+		formatString: #,0
+		displayFolder: Workforce\Leave
+
+	/// Revenue ÷ payroll cost of linked doctors and nurses, a ratio of sums (Phase 4 spec section 7; receiving notes).
+	measure 'Revenue per Payroll SAR' =
+			DIVIDE ( SUM ( 'Staff Productivity'[Revenue Amount] ), SUM ( 'Staff Productivity'[Payroll Cost] ) )
+		formatString: #,0.00
+		displayFolder: Workforce\Productivity
+
+	/// Encounters seen ÷ FTE-months of linked doctors and nurses (Phase 4 spec section 7).
+	measure 'Visits per FTE' = DIVIDE ( SUM ( 'Staff Productivity'[Encounters Seen] ), SUM ( 'Staff Productivity'[FTE] ) )
+		formatString: #,0.0
+		displayFolder: Workforce\Productivity
+
+	/// Payroll cost in SAR ÷ encounters seen of linked doctors and nurses (Phase 4 spec section 7).
+	measure 'Payroll Cost per Visit' =
+			DIVIDE ( SUM ( 'Staff Productivity'[Payroll Cost] ), SUM ( 'Staff Productivity'[Encounters Seen] ) )
+		formatString: #,0
+		displayFolder: Workforce\Productivity
+
 	column Measure
 		dataType: string
 		isHidden
