@@ -234,6 +234,13 @@ models:
       - name: branch_key
         tests:
           - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+  - name: dim_employee_pii
+    columns:
+      - name: employee_key
+        tests:
+          - unique
+          - not_null
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key}
   - name: hnh_dim_hr_department
     columns:
       - name: hr_department_key

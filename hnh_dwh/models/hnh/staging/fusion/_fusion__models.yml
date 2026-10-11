@@ -50,6 +50,10 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [person_id, valid_from]
+  - name: stg_fusion__employee_names
+    columns:
+      - name: person_id
+        tests: [not_null]
   - name: stg_fusion__assignments
     tests:
       - hnh_unique_combination:

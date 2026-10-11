@@ -380,6 +380,16 @@ models:
         data_type: "Int64"
       - name: assignment_status
         data_type: "Nullable(String)"
+  - name: ssas_dim_employee_pii
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: employee_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: full_name
+        data_type: "Nullable(String)"
   - name: ssas_dim_er_priority
     config:
       contract: {enforced: true}
