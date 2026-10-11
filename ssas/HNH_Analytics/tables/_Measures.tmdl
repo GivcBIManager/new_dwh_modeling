@@ -1687,6 +1687,73 @@ table _Measures
 		formatString: 0.0%
 		displayFolder: Patient Experience\NPS
 
+	/// Trial balance opening balance in SAR (natural sign: debit +, credit −) at the first period of the selection per branch; under YTD the opening of the year. Posted unless a Balance View is selected (Phase 3 spec section 1, F4).
+	measure 'TB Opening Balance' =
+			VAR View =
+				FILTER (
+					ALL ( 'GL Balances'[Balance View] ),
+					IF ( ISFILTERED ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] IN VALUES ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] = "posted" )
+				)
+			RETURN
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR FirstPeriod = CALCULATE ( MIN ( 'GL Balances'[Period Key] ), REMOVEFILTERS ( 'GL Balances' ), VALUES ( 'Date'[Date] ), VALUES ( 'GL Period'[Period Key] ), VALUES ( Branch[Branch Key] ) )
+					RETURN CALCULATE ( SUM ( 'GL Balances'[Opening Balance] ), 'GL Balances'[Period Key] = FirstPeriod, View )
+				)
+		formatString: #,0
+		displayFolder: Finance\Trial Balance
+
+	/// Trial balance debits in SAR of the periods in the selection; posted unless a Balance View is selected (Phase 3 spec F4).
+	measure 'TB Debit' =
+			VAR View =
+				FILTER (
+					ALL ( 'GL Balances'[Balance View] ),
+					IF ( ISFILTERED ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] IN VALUES ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] = "posted" )
+				)
+			RETURN CALCULATE ( SUM ( 'GL Balances'[Period Debit] ), View )
+		formatString: #,0
+		displayFolder: Finance\Trial Balance
+
+	/// Trial balance credits in SAR of the periods in the selection; posted unless a Balance View is selected (Phase 3 spec F4).
+	measure 'TB Credit' =
+			VAR View =
+				FILTER (
+					ALL ( 'GL Balances'[Balance View] ),
+					IF ( ISFILTERED ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] IN VALUES ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] = "posted" )
+				)
+			RETURN CALCULATE ( SUM ( 'GL Balances'[Period Credit] ), View )
+		formatString: #,0
+		displayFolder: Finance\Trial Balance
+
+	/// Trial balance net movement in SAR (debit − credit, natural sign) of the periods in the selection; posted unless a Balance View is selected (Phase 3 spec F4).
+	measure 'TB Net Movement' =
+			VAR View =
+				FILTER (
+					ALL ( 'GL Balances'[Balance View] ),
+					IF ( ISFILTERED ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] IN VALUES ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] = "posted" )
+				)
+			RETURN CALCULATE ( SUM ( 'GL Balances'[Period Movement] ), View )
+		formatString: #,0
+		displayFolder: Finance\Trial Balance
+
+	/// Trial balance closing balance in SAR (natural sign) at the last period of the selection per branch (an adjustment period wins over its month); all accounts net to 0. Posted unless a Balance View is selected (Phase 3 spec section 8, F4). Snapshot.
+	measure 'TB Closing Balance' =
+			VAR View =
+				FILTER (
+					ALL ( 'GL Balances'[Balance View] ),
+					IF ( ISFILTERED ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] IN VALUES ( 'GL Balances'[Balance View] ), 'GL Balances'[Balance View] = "posted" )
+				)
+			RETURN
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ), REMOVEFILTERS ( 'GL Balances' ), VALUES ( 'Date'[Date] ), VALUES ( 'GL Period'[Period Key] ), VALUES ( Branch[Branch Key] ) )
+					RETURN CALCULATE ( SUM ( 'GL Balances'[Closing Balance] ), 'GL Balances'[Period Key] = LastPeriod, View )
+				)
+		formatString: #,0
+		displayFolder: Finance\Trial Balance
+
+		annotation hnh_snapshot = 1
+
 	column Measure
 		dataType: string
 		isHidden
