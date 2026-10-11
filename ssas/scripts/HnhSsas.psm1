@@ -213,6 +213,18 @@ function Add-HnhRoleMember {
     return $true
 }
 
+function Remove-HnhRoleMember {
+    # The test database stays loaded (P38), so report users must not stay its role members after the tests.
+    param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][string]$Role, [Parameter(Mandatory = $true)][string]$Member)
+    $r = $Model.Roles.Find($Role)
+    if ($r -eq $null) { throw "Role $Role not found" }
+    $found = @($r.Members | Where-Object { $_.MemberName -eq $Member })
+    if ($found.Count -eq 0) { return $false }
+    foreach ($m in $found) { [void]$r.Members.Remove($m) }
+    [void]$Model.SaveChanges()
+    return $true
+}
+
 if (-not ('HnhLogon' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;

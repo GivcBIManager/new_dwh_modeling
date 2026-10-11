@@ -78,7 +78,13 @@ try {
             Write-Host ("loaded {0} unprocessed partition(s): {1}" -f $loaded.Count, ($loaded -join '; '))
             Invoke-Step 'process.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Mode = 'Daily'; Force = $true; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
         }
-        Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
+        try {
+            Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
+        } finally {
+            $srv = Connect-HnhServer $Server
+            if (Remove-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group removed from HNH_Analytics_Test" }
+            $srv.Disconnect()
+        }
     }
     if (Want 'Promote') {
         Write-Host '== Promote: HNH_Analytics'
@@ -128,7 +134,13 @@ try {
         $loaded = Update-HnhUnprocessed -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
         $srv.Disconnect()
         Write-Host ("loaded {0} unprocessed partition(s)" -f $loaded.Count)
-        Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir; Stage = @('Measures') }
+        try {
+            Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir; Stage = @('Measures') }
+        } finally {
+            $srv = Connect-HnhServer $Server
+            if (Remove-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group removed from HNH_Analytics_Test" }
+            $srv.Disconnect()
+        }
     }
     if ($Stage -eq 'Rollback') {
         if (-not $BackupFile) { throw 'Rollback needs -BackupFile <file name in the SSAS backup folder>' }
