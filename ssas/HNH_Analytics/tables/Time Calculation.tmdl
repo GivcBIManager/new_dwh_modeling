@@ -10,7 +10,7 @@ table 'Time Calculation'
 		calculationItem MTD =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
 				IF (
-					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability] ),
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability], [Days of Stock], [Inventory Turnover], [Slow-Moving Items], [Slow-Moving Stock Value], [Dead Stock Items], [Dead Stock Value] ),
 					SELECTEDMEASURE (),
 					CALCULATE ( SELECTEDMEASURE (), DATESMTD ( 'Date'[Date] ) )
 				)
@@ -20,7 +20,7 @@ table 'Time Calculation'
 		calculationItem QTD =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
 				IF (
-					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability] ),
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability], [Days of Stock], [Inventory Turnover], [Slow-Moving Items], [Slow-Moving Stock Value], [Dead Stock Items], [Dead Stock Value] ),
 					SELECTEDMEASURE (),
 					CALCULATE ( SELECTEDMEASURE (), DATESQTD ( 'Date'[Date] ) )
 				)
@@ -30,7 +30,7 @@ table 'Time Calculation'
 		calculationItem YTD =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
 				IF (
-					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability] ),
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability], [Days of Stock], [Inventory Turnover], [Slow-Moving Items], [Slow-Moving Stock Value], [Dead Stock Items], [Dead Stock Value] ),
 					SELECTEDMEASURE (),
 					CALCULATE ( SELECTEDMEASURE (), DATESYTD ( 'Date'[Date] ) )
 				)
@@ -43,7 +43,7 @@ table 'Time Calculation'
 		calculationItem 'PY YTD' =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
 				IF (
-					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability] ),
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability], [Days of Stock], [Inventory Turnover], [Slow-Moving Items], [Slow-Moving Stock Value], [Dead Stock Items], [Dead Stock Value] ),
 					CALCULATE ( SELECTEDMEASURE (), SAMEPERIODLASTYEAR ( 'Date'[Date] ) ),
 					CALCULATE ( SELECTEDMEASURE (), DATESYTD ( SAMEPERIODLASTYEAR ( 'Date'[Date] ) ) )
 				)
@@ -83,7 +83,7 @@ table 'Time Calculation'
 		calculationItem 'Rolling 12M' =
 				-- Snapshot measures: keep this list identical in MTD, QTD, YTD, PY YTD and Rolling 12M
 				IF (
-					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability] ),
+					ISSELECTEDMEASURE ( [Headcount], [Stock Value], [GL Closing Balance], [GL Closing Balance (incl. Unposted)], [Profit for the Year], [Profit for the Year (incl. Unposted)], [Open Payables], [Overdue Payables], [FTE], [Saudisation Rate %], [Leave Balance (days)], [Leave Liability], [Days of Stock], [Inventory Turnover], [Slow-Moving Items], [Slow-Moving Stock Value], [Dead Stock Items], [Dead Stock Value] ),
 					SELECTEDMEASURE (),
 					CALCULATE ( SELECTEDMEASURE (), DATESINPERIOD ( 'Date'[Date], MAX ( 'Date'[Date] ), -12, MONTH ) )
 				)

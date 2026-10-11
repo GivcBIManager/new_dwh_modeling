@@ -1274,6 +1274,290 @@ table _Measures
 		formatString: #,0
 		displayFolder: Workforce\Productivity
 
+	/// Consumption quantity in primary units of consumption movements (patient sales − returns + department issues) (Phase 5 spec section 7).
+	measure 'Consumption Quantity' =
+			CALCULATE ( SUM ( 'Stock Movements'[Consumption Quantity] ), 'Stock Movements'[Is Consumption] = "Yes" )
+		formatString: #,0
+		displayFolder: Supply Chain\Consumption
+
+	/// Consumption cost in SAR at pharmacy stores, plus medication issued from wards (Phase 5 spec section 7).
+	measure 'Pharmacy Consumption Cost' =
+			CALCULATE ( [Consumption Cost], KEEPFILTERS ( Store[Store Type] = "Pharmacy" ) )
+				+ CALCULATE ( [Consumption Cost], KEEPFILTERS ( Store[Store Type] = "Ward" ), KEEPFILTERS ( Item[Item Group] = "Medication" ) )
+		formatString: #,0
+		displayFolder: Supply Chain\Consumption
+
+	/// Recorded cost in SAR of patient consumption lines (Phase 5 spec section 7).
+	measure 'Patient Consumption Cost' = SUM ( 'Patient Consumption'[Cost Amount] )
+		formatString: #,0
+		displayFolder: Supply Chain\Consumption
+
+	/// Revenue − consumption cost in SAR of patient consumption lines whose revenue basis is a charge (receiving notes; package components are separate).
+	measure 'Drug and Supply Margin' =
+			CALCULATE (
+				SUM ( 'Patient Consumption'[Revenue Amount] ) - SUM ( 'Patient Consumption'[Consumption Cost] ),
+				'Patient Consumption'[Revenue Basis] = "charge"
+			)
+		formatString: #,0
+		displayFolder: Supply Chain\Margin
+
+	/// Margin ÷ revenue of charge-based patient consumption, a ratio of sums (Phase 5 spec section 7).
+	measure 'Drug and Supply Margin %' =
+			DIVIDE (
+				[Drug and Supply Margin],
+				CALCULATE ( SUM ( 'Patient Consumption'[Revenue Amount] ), 'Patient Consumption'[Revenue Basis] = "charge" )
+			)
+		formatString: 0.0%
+		displayFolder: Supply Chain\Margin
+
+	/// Consumption cost in SAR of package-component dispenses, whose revenue is on the package header (receiving notes).
+	measure 'Package Component Cost' =
+			CALCULATE ( SUM ( 'Patient Consumption'[Consumption Cost] ), 'Patient Consumption'[Revenue Basis] = "package_component" )
+		formatString: #,0
+		displayFolder: Supply Chain\Margin
+
+	/// Stock value at the last month-end ÷ (that month's consumption cost ÷ days in the month), per branch, then summed (Phase 5 spec section 7). Snapshot.
+	measure 'Days of Stock' =
+			VAR DailyUse =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+					RETURN DIVIDE ( CALCULATE ( [Consumption Cost], 'Date'[Year Month] = INT ( LastMonth / 100 ) ), MOD ( LastMonth, 100 ) )
+				)
+			RETURN DIVIDE ( [Stock Value], DailyUse )
+		formatString: #,0.0
+		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
+
+	/// Consumption cost of the 12 months to the last month-end ÷ average month-end stock value of those months, per branch, then summed (Phase 5 spec section 7). Snapshot.
+	measure 'Inventory Turnover' =
+			VAR Consumption12 =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+					VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+					RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( [Consumption Cost], DATESINPERIOD ( 'Date'[Date], LastDate, -12, MONTH ) ) )
+				)
+			VAR AverageStock =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+					VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+					RETURN
+						IF (
+							NOT ISBLANK ( LastMonth ),
+							CALCULATE ( AVERAGEX ( VALUES ( 'Date'[Year Month] ), [Stock Value] ), DATESINPERIOD ( 'Date'[Date], LastDate, -12, MONTH ) )
+						)
+				)
+			RETURN DIVIDE ( Consumption12, AverageStock )
+		formatString: #,0.00
+		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
+
+	/// Items with stock at the last month-end and no consumption in the 90 days to it, per branch (Phase 5 spec section 7). Snapshot.
+	measure 'Slow-Moving Items' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR InStock =
+					CALCULATETABLE (
+						VALUES ( 'Stock Monthly'[Item Key] ),
+						'Stock Monthly'[Month Date Key] = LastMonth,
+						'Stock Monthly'[Is Expiry Store] = "No",
+						'Stock Monthly'[Quantity] > 0
+					)
+				VAR Consumed =
+					CALCULATETABLE (
+						VALUES ( 'Stock Movements'[Item Key] ),
+						'Stock Movements'[Is Consumption] = "Yes",
+						DATESINPERIOD ( 'Date'[Date], LastDate, -90, DAY )
+					)
+				RETURN IF ( NOT ISBLANK ( LastMonth ), COUNTROWS ( EXCEPT ( InStock, Consumed ) ) )
+			)
+		formatString: #,0
+		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
+
+	/// Stock value in SAR at the last month-end of items with no consumption in the 90 days to it (Phase 5 spec section 7). Snapshot.
+	measure 'Slow-Moving Stock Value' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR InStock =
+					CALCULATETABLE (
+						VALUES ( 'Stock Monthly'[Item Key] ),
+						'Stock Monthly'[Month Date Key] = LastMonth,
+						'Stock Monthly'[Is Expiry Store] = "No",
+						'Stock Monthly'[Quantity] > 0
+					)
+				VAR Consumed =
+					CALCULATETABLE (
+						VALUES ( 'Stock Movements'[Item Key] ),
+						'Stock Movements'[Is Consumption] = "Yes",
+						DATESINPERIOD ( 'Date'[Date], LastDate, -90, DAY )
+					)
+				RETURN
+					IF (
+						NOT ISBLANK ( LastMonth ),
+						CALCULATE (
+							SUM ( 'Stock Monthly'[Stock Value Amount] ),
+							'Stock Monthly'[Month Date Key] = LastMonth,
+							'Stock Monthly'[Is Expiry Store] = "No",
+							'Stock Monthly'[Quantity] > 0,
+							EXCEPT ( InStock, Consumed )
+						)
+					)
+			)
+		formatString: #,0
+		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
+
+	/// Items with stock at the last month-end and no consumption in the 180 days to it, per branch (Phase 5 spec section 7). Snapshot.
+	measure 'Dead Stock Items' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR InStock =
+					CALCULATETABLE (
+						VALUES ( 'Stock Monthly'[Item Key] ),
+						'Stock Monthly'[Month Date Key] = LastMonth,
+						'Stock Monthly'[Is Expiry Store] = "No",
+						'Stock Monthly'[Quantity] > 0
+					)
+				VAR Consumed =
+					CALCULATETABLE (
+						VALUES ( 'Stock Movements'[Item Key] ),
+						'Stock Movements'[Is Consumption] = "Yes",
+						DATESINPERIOD ( 'Date'[Date], LastDate, -180, DAY )
+					)
+				RETURN IF ( NOT ISBLANK ( LastMonth ), COUNTROWS ( EXCEPT ( InStock, Consumed ) ) )
+			)
+		formatString: #,0
+		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
+
+	/// Stock value in SAR at the last month-end of items with no consumption in the 180 days to it (Phase 5 spec section 7). Snapshot.
+	measure 'Dead Stock Value' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastMonth = CALCULATE ( MAX ( 'Stock Monthly'[Month Date Key] ) )
+				VAR LastDate = DATE ( INT ( LastMonth / 10000 ), MOD ( INT ( LastMonth / 100 ), 100 ), MOD ( LastMonth, 100 ) )
+				VAR InStock =
+					CALCULATETABLE (
+						VALUES ( 'Stock Monthly'[Item Key] ),
+						'Stock Monthly'[Month Date Key] = LastMonth,
+						'Stock Monthly'[Is Expiry Store] = "No",
+						'Stock Monthly'[Quantity] > 0
+					)
+				VAR Consumed =
+					CALCULATETABLE (
+						VALUES ( 'Stock Movements'[Item Key] ),
+						'Stock Movements'[Is Consumption] = "Yes",
+						DATESINPERIOD ( 'Date'[Date], LastDate, -180, DAY )
+					)
+				RETURN
+					IF (
+						NOT ISBLANK ( LastMonth ),
+						CALCULATE (
+							SUM ( 'Stock Monthly'[Stock Value Amount] ),
+							'Stock Monthly'[Month Date Key] = LastMonth,
+							'Stock Monthly'[Is Expiry Store] = "No",
+							'Stock Monthly'[Quantity] > 0,
+							EXCEPT ( InStock, Consumed )
+						)
+					)
+			)
+		formatString: #,0
+		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
+
+	/// Median days from PO to first receipt of approved POs; prefer it to the average (Oasis outliers above 365 days) (Phase 5 spec section 7; receiving notes).
+	measure 'PO Lead Time Median (days)' =
+			CALCULATE ( MEDIAN ( 'Purchase Lines'[Lead Time Days] ), 'Purchase Lines'[Is Approved PO] = "Yes" )
+		formatString: #,0.0
+		displayFolder: Supply Chain\Purchasing
+
+	/// Average days from PO to first receipt of approved POs (Phase 5 spec section 7).
+	measure 'PO Lead Time Average (days)' =
+			CALCULATE ( AVERAGE ( 'Purchase Lines'[Lead Time Days] ), 'Purchase Lines'[Is Approved PO] = "Yes" )
+		formatString: #,0.0
+		displayFolder: Supply Chain\Purchasing
+
+	/// Quantity received ÷ (quantity ordered − quantity cancelled) of approved POs, in the ordering unit (Phase 5 spec section 7).
+	measure 'PO Fill Rate %' =
+			CALCULATE (
+				DIVIDE (
+					SUM ( 'Purchase Lines'[Quantity Received] ),
+					SUM ( 'Purchase Lines'[Quantity Ordered] ) - SUM ( 'Purchase Lines'[Quantity Cancelled] )
+				),
+				'Purchase Lines'[Is Approved PO] = "Yes"
+			)
+		formatString: 0.0%
+		displayFolder: Supply Chain\Purchasing
+
+	/// Unit price of the latest approved PO line for one item and one supplier (the highest price if several lines share that date); blank otherwise (Phase 5 spec section 7).
+	measure 'Last PO Unit Price' =
+			IF (
+				HASONEVALUE ( Item[Item Key] ) && HASONEVALUE ( Supplier[Supplier Key] ),
+				VAR LastPo = CALCULATE ( MAX ( 'Purchase Lines'[PO Date Key] ), 'Purchase Lines'[Is Approved PO] = "Yes" )
+				RETURN
+					CALCULATE (
+						MAX ( 'Purchase Lines'[Unit Price] ),
+						'Purchase Lines'[PO Date Key] = LastPo,
+						'Purchase Lines'[Is Approved PO] = "Yes"
+					)
+			)
+		formatString: #,0.00
+		displayFolder: Supply Chain\Purchasing
+
+	/// Latest ÷ previous approved PO unit price − 1, for one item and one supplier (Phase 5 spec section 7).
+	measure 'PO Price Change %' =
+			IF (
+				HASONEVALUE ( Item[Item Key] ) && HASONEVALUE ( Supplier[Supplier Key] ),
+				VAR LastPo = CALCULATE ( MAX ( 'Purchase Lines'[PO Date Key] ), 'Purchase Lines'[Is Approved PO] = "Yes" )
+				VAR PreviousPo =
+					CALCULATE (
+						MAX ( 'Purchase Lines'[PO Date Key] ),
+						'Purchase Lines'[Is Approved PO] = "Yes",
+						'Purchase Lines'[PO Date Key] < LastPo
+					)
+				VAR PreviousPrice =
+					CALCULATE (
+						MAX ( 'Purchase Lines'[Unit Price] ),
+						'Purchase Lines'[PO Date Key] = PreviousPo,
+						'Purchase Lines'[Is Approved PO] = "Yes"
+					)
+				VAR Ratio = DIVIDE ( [Last PO Unit Price], PreviousPrice )
+				RETURN IF ( NOT ISBLANK ( PreviousPo ) && NOT ISBLANK ( Ratio ), Ratio - 1 )
+			)
+		formatString: 0.0%
+		displayFolder: Supply Chain\Purchasing
+
+	/// AP spend matched to POs ÷ total AP spend (Phase 5 spec section 7, with Phase 3's AP invoice lines).
+	measure 'PO-Matched Spend Share %' =
+			DIVIDE ( CALCULATE ( [Supplier Spend], KEEPFILTERS ( 'AP Invoice Lines'[Is PO Matched] = "Yes" ) ), [Supplier Spend] )
+		formatString: 0.0%
+		displayFolder: Supply Chain\Purchasing
+
+	/// Oasis lines Fusion has not received ÷ Oasis lines from go-live (in Fusion or a gap), as rec_stock_interface_daily (Phase 5 spec section 7).
+	measure 'Fusion Interface Gap %' =
+			VAR Gap =
+				CALCULATE ( COUNTROWS ( 'Stock Movements' ), 'Stock Movements'[Is Fusion Gap] = "Yes", 'Stock Movements'[Is In Oasis] = "Yes" )
+			VAR InFusion =
+				CALCULATE ( COUNTROWS ( 'Stock Movements' ), 'Stock Movements'[Source System] = "fusion", 'Stock Movements'[Is In Oasis] = "Yes" )
+			RETURN DIVIDE ( Gap, Gap + InFusion )
+		formatString: 0.0%
+		displayFolder: Supply Chain\Interface
+
 	column Measure
 		dataType: string
 		isHidden
