@@ -67,6 +67,8 @@ table _Measures
 		formatString: #,0
 		displayFolder: Finance\Balances
 
+		annotation hnh_snapshot = 1
+
 	/// Month-end headcount of the last closed month (is_closed_month) in the selection; the projected current month is excluded. Contingent workers excluded (Phase 4 spec section 7). Snapshot: never summed over months. The last period is taken per branch, so a multi-branch total keeps every branch.
 	measure Headcount =
 			SUMX (
@@ -82,6 +84,8 @@ table _Measures
 			)
 		formatString: #,0
 		displayFolder: Workforce\Headcount
+
+		annotation hnh_snapshot = 1
 
 	/// Payroll cost in SAR: Σ cost_amount; parallel-run rows are already excluded (Phase 4 spec section 7).
 	measure 'Payroll Cost' = SUM ( Payroll[Cost Amount] )
@@ -108,6 +112,8 @@ table _Measures
 			)
 		formatString: #,0
 		displayFolder: Supply Chain\Stock
+
+		annotation hnh_snapshot = 1
 
 	/// Hospital NPS on the 5-point "recommend" question: (promoters − detractors) ÷ answers × 100; under 30 answers shows "insufficient sample" (Phase 6 spec section 7).
 	measure 'Hospital NPS (5-point)' =

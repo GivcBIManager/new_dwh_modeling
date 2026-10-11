@@ -3,7 +3,7 @@
 generate.py does the I/O. Nothing here talks to ClickHouse, so the rules are unit-tested in test_hnh_tmdl.py.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 ACRONYMS = {
@@ -325,6 +325,99 @@ def render_perspective(name: str, tables: list[str], measures: Optional[list[str
     if measures:
         out += ["", f"\tperspectiveTable {q(MEASURE_TABLE)}"] + [f"\t\tperspectiveMeasure {q(m)}" for m in measures]
     return "\n".join(out) + "\n"
+
+
+@dataclass
+class Measure:
+    """One measure of a table file, as the measure catalogue test reads it."""
+    name: str
+    description: str = ""
+    folder: str = ""
+    format_string: str = ""
+    format_expression: str = ""
+    expression: str = ""
+    annotations: dict = field(default_factory=dict)
+
+
+def _declaration_rest(text: str, name: str) -> str:
+    """What follows the object name in a declaration remainder (the counterpart of _object_name)."""
+    size = len(name) + name.count("'") + 2 if text.startswith("'") else len(name)
+    return text[size:]
+
+
+def measures(text: str) -> list[Measure]:
+    """Every measure of a table file in file order, with its /// description, display folder, format string or format
+    string expression, annotations and DAX expression."""
+    found, description, current, target = [], [], None, "expression"
+    for line in text.splitlines():
+        if line.startswith("\t///"):
+            description.append(line[len("\t///"):].strip())
+            continue
+        if line.startswith("\tmeasure "):
+            declaration = line[len("\tmeasure "):]
+            name = _object_name(declaration)
+            expression = _declaration_rest(declaration, name).strip().lstrip("=").strip()
+            current = Measure(name, " ".join(description), expression=expression)
+            found.append(current)
+            description, target = [], "expression"
+            continue
+        if line.startswith("\t") and not line.startswith("\t\t") and line.strip():
+            current, description = None, []
+            continue
+        if current is None or not line.strip():
+            continue
+        if line.startswith("\t\t") and not line.startswith("\t\t\t"):
+            body = line.strip()
+            if body.startswith("formatStringDefinition"):
+                target = "format_expression"
+                current.format_expression = body.partition("=")[2].strip()
+            elif body.startswith("annotation "):
+                key, _, value = body[len("annotation "):].partition("=")
+                current.annotations[key.strip()] = value.strip()
+            elif body.startswith("formatString:"):
+                current.format_string = body.partition(":")[2].strip()
+            elif body.startswith("displayFolder:"):
+                current.folder = body.partition(":")[2].strip()
+            continue
+        setattr(current, target, (getattr(current, target) + "\n" + line.strip()).strip())
+    return found
+
+
+_DAX_STRING = re.compile(r'"(?:[^"]|"")*"')
+_DAX_COMMENT = re.compile(r"(?:--|//)[^\n]*")
+_DAX_COLUMN = re.compile(r"(?:'((?:[^']|'')+)'|(?<![\w'\]])([A-Za-z_][A-Za-z0-9_]*))\[([^\]]+)\]")
+_DAX_MEASURE = re.compile(r"\[([^\]]+)\]")
+
+
+def dax_references(dax: str) -> tuple[set, set]:
+    """({(table, column)}, {measure}) referenced by a DAX expression. String literals and comments are ignored, and
+    ADDCOLUMNS names (written [@name]) are not measures."""
+    text = _DAX_COMMENT.sub("", _DAX_STRING.sub('""', dax))
+    columns = {(quoted.replace("''", "'") if quoted else bare, column)
+               for quoted, bare, column in _DAX_COLUMN.findall(text)}
+    names = {name for name in _DAX_MEASURE.findall(_DAX_COLUMN.sub(" ", text)) if not name.startswith("@")}
+    return columns, names
+
+
+def snapshot_lists(text: str) -> list[list[str]]:
+    """The measure names of every ISSELECTEDMEASURE ( [a], [b], ... ) call, in file order (Time Calculation)."""
+    calls = re.findall(r"ISSELECTEDMEASURE\s*\(\s*((?:\[[^\]]+\]\s*,?\s*)+)\)", text)
+    return [re.findall(r"\[([^\]]+)\]", call) for call in calls]
+
+
+def table_columns(text: str) -> tuple[str, set]:
+    """(table name, {column name}) of a table file."""
+    table = _object_name(re.search(r"^table (.+)$", text, re.M).group(1))
+    return table, {_object_name(found) for found in re.findall(r"^\tcolumn (.+)$", text, re.M)}
+
+
+def replace_perspective_measures(text: str, measures: list[str]) -> str:
+    """A perspective file with its measure-table block replaced by `measures` (the layout of render_perspective)."""
+    head = text.split(f"\n\n\tperspectiveTable {q(MEASURE_TABLE)}\n", 1)[0].rstrip("\n")
+    if not measures:
+        return head + "\n"
+    return head + f"\n\n\tperspectiveTable {q(MEASURE_TABLE)}\n" + "".join(
+        f"\t\tperspectiveMeasure {q(m)}\n" for m in measures)
 
 
 def render_model(table_names: list[str], role_names: list[str], perspective_names: list[str]) -> str:

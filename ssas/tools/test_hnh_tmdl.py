@@ -252,3 +252,57 @@ def test_render_model():
     assert "ref table 'Charge Lines'\n" in text and "ref role 'HNH Readers'\n" in text
     assert text.endswith("ref perspective Finance\n")
     assert "compatibilityMode: analysisServices" in t.DATABASE_TMDL
+
+
+SNAPSHOT_TMDL = (
+    "\t/// Stock value.\n"
+    "\tmeasure 'Stock Value' = 1\n"
+    "\t\tformatString: #,0\n"
+    "\t\tdisplayFolder: Supply Chain\\Stock\n"
+    "\n"
+    "\t\tannotation hnh_snapshot = 1\n"
+)
+
+
+def test_measures_reads_descriptions_properties_annotations_and_dax():
+    found = t.measures(MEASURES_TMDL + SNAPSHOT_TMDL)
+    assert [m.name for m in found] == ["Revenue", "Hospital NPS (5-point)", "Current User", "Stock Value"]
+    revenue, nps, user, stock = found
+    assert (revenue.description, revenue.folder, revenue.format_string) == ("Revenue.", "Revenue Cycle\\Revenue", "#,0")
+    assert revenue.expression == "SUM ( 'Charge Lines'[Revenue Amount] )"
+    assert nps.description == ""
+    assert nps.expression == "VAR x = 1\nRETURN x"
+    assert nps.format_expression == '"0.0"'
+    assert user.expression == "USERPRINCIPALNAME ()"
+    assert stock.annotations == {"hnh_snapshot": "1"}
+    assert revenue.annotations == {}
+
+
+def test_dax_references_skip_strings_comments_and_addcolumns_names():
+    columns, names = t.dax_references(
+        "CALCULATE ( [OP Visits], 'Date'[Year] = 2026, Branch[Branch Key] = 1 ) -- [Not A Measure]\n"
+        "+ SUMX ( ADDCOLUMNS ( VALUES ( 'Date'[Year Month] ), \"@Fte\", [FTE] ), [@Fte] ) & \"[text]\""
+    )
+    assert columns == {("Date", "Year"), ("Branch", "Branch Key"), ("Date", "Year Month")}
+    assert names == {"OP Visits", "FTE"}
+
+
+def test_snapshot_lists_read_names_with_parentheses():
+    text = (
+        "IF ( ISSELECTEDMEASURE ( [Headcount], [GL Closing Balance (incl. Unposted)] ), x )\n"
+        "IF ( ISSELECTEDMEASURE ( [Stock Value] ), y )"
+    )
+    assert t.snapshot_lists(text) == [["Headcount", "GL Closing Balance (incl. Unposted)"], ["Stock Value"]]
+
+
+def test_table_columns():
+    assert t.table_columns(MEASURES_TMDL) == ("_Measures", {"Measure"})
+
+
+def test_replace_perspective_measures_matches_render_perspective():
+    bare = t.render_perspective("Finance", ["GL Balances"])
+    one = t.render_perspective("Finance", ["GL Balances"], ["Current User"])
+    two = t.render_perspective("Finance", ["GL Balances"], ["Current User", "GL Movement"])
+    assert t.replace_perspective_measures(one, ["Current User", "GL Movement"]) == two
+    assert t.replace_perspective_measures(bare, ["Current User"]) == one
+    assert t.replace_perspective_measures(two, []) == bare
