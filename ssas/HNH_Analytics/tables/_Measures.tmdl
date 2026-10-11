@@ -892,6 +892,204 @@ table _Measures
 		formatString: #,0
 		displayFolder: Claims & Pre-auth\Advance Authorisations
 
+	/// Closing balance in SAR including unposted journals, at the last period of the selection per branch, signed for display (Phase 3 spec section 8; receiving notes). Snapshot.
+	measure 'GL Closing Balance (incl. Unposted)' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				RETURN
+					CALCULATE (
+						SUMX ( 'GL Balances', 'GL Balances'[Closing Balance] * RELATED ( 'FS Line'[Display Sign] ) ),
+						'GL Balances'[Period Key] = LastPeriod,
+						'GL Balances'[Balance View] = "including_unposted"
+					)
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+		annotation hnh_snapshot = 1
+
+	/// Posted period movement in SAR, signed for display; use it for balances and year to date (Phase 3 spec section 8).
+	measure 'GL Movement' =
+			CALCULATE (
+				SUMX ( 'GL Balances', 'GL Balances'[Period Movement] * RELATED ( 'FS Line'[Display Sign] ) ),
+				'GL Balances'[Balance View] = "posted"
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+	/// Period movement in SAR including unposted journals, signed for display (Phase 3 spec section 8).
+	measure 'GL Movement (incl. Unposted)' =
+			CALCULATE (
+				SUMX ( 'GL Balances', 'GL Balances'[Period Movement] * RELATED ( 'FS Line'[Display Sign] ) ),
+				'GL Balances'[Balance View] = "including_unposted"
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+	/// Posted movement in SAR without the go-live opening-balance journals, for monthly trends (Phase 3 spec section 8; receiving notes).
+	measure 'GL Movement Trend' =
+			CALCULATE (
+				SUMX ( 'GL Balances', 'GL Balances'[Period Movement Excl Opening] * RELATED ( 'FS Line'[Display Sign] ) ),
+				'GL Balances'[Balance View] = "posted"
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+	/// Movement in SAR including unposted journals, without opening-balance journals, for monthly trends (Phase 3 spec section 8).
+	measure 'GL Movement Trend (incl. Unposted)' =
+			CALCULATE (
+				SUMX ( 'GL Balances', 'GL Balances'[Period Movement Excl Opening] * RELATED ( 'FS Line'[Display Sign] ) ),
+				'GL Balances'[Balance View] = "including_unposted"
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+	/// Equity line Profit for the year in SAR = −Σ posted closing balance of income-statement accounts at the last period per branch, so assets = liabilities + equity (receiving notes). Snapshot.
+	measure 'Profit for the Year' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				RETURN
+					- CALCULATE (
+						SUM ( 'GL Balances'[Closing Balance] ),
+						'GL Balances'[Period Key] = LastPeriod,
+						'GL Balances'[Balance View] = "posted",
+						'GL Account'[Balance Side] = "IS"
+					)
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+		annotation hnh_snapshot = 1
+
+	/// Profit for the year in SAR including unposted journals (receiving notes). Snapshot.
+	measure 'Profit for the Year (incl. Unposted)' =
+			SUMX (
+				VALUES ( Branch[Branch Key] ),
+				VAR LastPeriod = CALCULATE ( MAX ( 'GL Balances'[Period Key] ) )
+				RETURN
+					- CALCULATE (
+						SUM ( 'GL Balances'[Closing Balance] ),
+						'GL Balances'[Period Key] = LastPeriod,
+						'GL Balances'[Balance View] = "including_unposted",
+						'GL Account'[Balance Side] = "IS"
+					)
+			)
+		formatString: #,0
+		displayFolder: Finance\Balances
+
+		annotation hnh_snapshot = 1
+
+	/// Posted actual in SAR of one budget code, on the code's natural side; blank across several codes, whose sum is meaningless (Phase 3 spec section 8; receiving notes).
+	measure 'IS Actual' =
+			IF ( HASONEVALUE ( 'Budget Line'[Budget Line Code] ), SUM ( 'Income Statement'[Actual Posted] ) )
+		formatString: #,0
+		displayFolder: Finance\Statement
+
+	/// Actual in SAR including unposted journals, of one budget code (Phase 3 spec section 8).
+	measure 'IS Actual (incl. Unposted)' =
+			IF ( HASONEVALUE ( 'Budget Line'[Budget Line Code] ), SUM ( 'Income Statement'[Actual Including Unposted] ) )
+		formatString: #,0
+		displayFolder: Finance\Statement
+
+	/// Actual in SAR without opening-balance journals, of one budget code, for monthly trends (Phase 3 spec 6.3).
+	measure 'IS Actual (excl. Opening)' =
+			IF ( HASONEVALUE ( 'Budget Line'[Budget Line Code] ), SUM ( 'Income Statement'[Actual Excl Opening] ) )
+		formatString: #,0
+		displayFolder: Finance\Statement
+
+	/// Most likely budget in SAR of one budget code (Phase 3 spec section 8; budget covers branches 1-6).
+	measure 'IS Budget' =
+			IF ( HASONEVALUE ( 'Budget Line'[Budget Line Code] ), SUM ( 'Income Statement'[Budget Most Likely] ) )
+		formatString: #,0
+		displayFolder: Finance\Budget
+
+	/// Budget to compare with the actual: IS Budget, except DC_MEDICINES, which compares with the DC_MEDICINES + DC_CONSUMABLES budget (receiving notes, O-P3-8).
+	measure 'IS Budget (Comparable)' =
+			IF (
+				HASONEVALUE ( 'Budget Line'[Budget Line Code] ),
+				IF (
+					SELECTEDVALUE ( 'Budget Line'[Budget Line Code] ) = "DC_MEDICINES",
+					CALCULATE (
+						SUM ( 'Income Statement'[Budget Most Likely] ),
+						'Budget Line'[Budget Line Code] IN { "DC_MEDICINES", "DC_CONSUMABLES" }
+					),
+					[IS Budget]
+				)
+			)
+		formatString: #,0
+		displayFolder: Finance\Budget
+
+	/// Actual − comparable budget in SAR of one budget code (Phase 3 spec section 8).
+	measure 'Budget Variance' = [IS Actual] - [IS Budget (Comparable)]
+		formatString: #,0
+		displayFolder: Finance\Budget
+
+	/// Budget variance ÷ the absolute comparable budget (Phase 3 spec section 8).
+	measure 'Budget Variance %' = DIVIDE ( [Budget Variance], ABS ( [IS Budget (Comparable)] ) )
+		formatString: 0.0%
+		displayFolder: Finance\Budget
+
+	/// EBITDA in SAR: the EBITDA subtotal of the income statement, posted (Phase 3 spec section 8; never re-derived in DAX).
+	measure EBITDA = CALCULATE ( SUM ( 'Income Statement'[Actual Posted] ), 'Budget Line'[Budget Line Code] = "EBITDA" )
+		formatString: #,0
+		displayFolder: Finance\Statement
+
+	/// Gross profit in SAR: the GROSS_PROFIT subtotal, posted (Phase 3 spec section 8).
+	measure 'Gross Profit' = CALCULATE ( SUM ( 'Income Statement'[Actual Posted] ), 'Budget Line'[Budget Line Code] = "GROSS_PROFIT" )
+		formatString: #,0
+		displayFolder: Finance\Statement
+
+	/// Net profit in SAR: the NET_PROFIT subtotal, posted (Phase 3 spec section 8).
+	measure 'Net Profit' = CALCULATE ( SUM ( 'Income Statement'[Actual Posted] ), 'Budget Line'[Budget Line Code] = "NET_PROFIT" )
+		formatString: #,0
+		displayFolder: Finance\Statement
+
+	/// EBITDA ÷ net revenue (REV_NET) (Phase 3 spec section 8).
+	measure 'EBITDA Margin %' =
+			DIVIDE ( [EBITDA], CALCULATE ( SUM ( 'Income Statement'[Actual Posted] ), 'Budget Line'[Budget Line Code] = "REV_NET" ) )
+		formatString: 0.0%
+		displayFolder: Finance\Statement
+
+	/// Supplier spend in SAR: Σ spend_amount of AP invoice lines by accounting date (Phase 3 spec section 8).
+	measure 'Supplier Spend' = SUM ( 'AP Invoice Lines'[Spend Amount] )
+		formatString: #,0
+		displayFolder: Finance\Payables
+
+	/// Open payables in SAR at the last refresh, by invoice date; credit memos reduce it; filter Invoice Type for invoices only (Phase 3 spec section 8; receiving notes). Snapshot.
+	measure 'Open Payables' = SUM ( 'AP Open Items'[Amount Remaining] )
+		formatString: #,0
+		displayFolder: Finance\Payables
+
+		annotation hnh_snapshot = 1
+
+	/// Open payables in SAR past their due date (days overdue above 0) at the last refresh (Phase 3 spec section 8). Snapshot.
+	measure 'Overdue Payables' = CALCULATE ( SUM ( 'AP Open Items'[Amount Remaining] ), 'AP Open Items'[Days Overdue] > 0 )
+		formatString: #,0
+		displayFolder: Finance\Payables
+
+		annotation hnh_snapshot = 1
+
+	/// Median days from invoice to payment of payments that are not voided (Phase 3 spec section 8).
+	measure 'Median Days to Pay' =
+			CALCULATE ( MEDIAN ( 'AP Payments'[Days Invoice To Payment] ), 'AP Payments'[Is Voided] = "No" )
+		formatString: #,0.0
+		displayFolder: Finance\Payables
+
+	/// Payments made on or before the due date ÷ payments, voided payments excluded (Phase 3 spec section 8).
+	measure 'On-time Payment Rate %' =
+			VAR Payments = CALCULATE ( COUNTROWS ( 'AP Payments' ), 'AP Payments'[Is Voided] = "No" )
+			VAR OnTime =
+				CALCULATE (
+					COUNTROWS ( 'AP Payments' ),
+					'AP Payments'[Is Voided] = "No",
+					'AP Payments'[Days After Due] <= 0 && NOT ISBLANK ( 'AP Payments'[Days After Due] )
+				)
+			RETURN DIVIDE ( OnTime, Payments )
+		formatString: 0.0%
+		displayFolder: Finance\Payables
+
 	column Measure
 		dataType: string
 		isHidden
