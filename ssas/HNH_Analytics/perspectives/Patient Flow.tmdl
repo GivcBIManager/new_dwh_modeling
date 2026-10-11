@@ -79,7 +79,32 @@ perspective 'Patient Flow'
 		includeAll
 
 	perspectiveTable _Measures
+		perspectiveMeasure 'ALOS (days)'
 		perspectiveMeasure Admissions
+		perspectiveMeasure 'Average ER LOS (min)'
+		perspectiveMeasure 'Average Wait (min)'
 		perspectiveMeasure 'Bed Occupancy %'
+		perspectiveMeasure 'Bed Turnover'
+		perspectiveMeasure 'Cancellation Rate %'
+		perspectiveMeasure Census
+		perspectiveMeasure 'Clinic Utilisation %'
+		perspectiveMeasure 'Conversion Rate %'
 		perspectiveMeasure 'Current User'
+		perspectiveMeasure Discharges
+		perspectiveMeasure 'ER Visits'
+		perspectiveMeasure Episodes
+		perspectiveMeasure 'ICU Readmissions 48h'
+		perspectiveMeasure 'Median Wait (min)'
+		perspectiveMeasure 'New Patients'
+		perspectiveMeasure 'No-show Rate %'
 		perspectiveMeasure 'OP Visits'
+		perspectiveMeasure 'Readmission Rate 30d %'
+		perspectiveMeasure 'Returning Patients'
+		perspectiveMeasure 'Target ALOS (days)'
+		perspectiveMeasure 'Target Census'
+		perspectiveMeasure 'Target Cost per Episode'
+		perspectiveMeasure 'Target Episodes'
+		perspectiveMeasure 'Target Revenue'
+		perspectiveMeasure 'Theatre Volume'
+		perspectiveMeasure 'Total Wait (min)'
+		perspectiveMeasure 'Unique Patients'

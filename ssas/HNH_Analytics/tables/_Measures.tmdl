@@ -153,6 +153,277 @@ table _Measures
 		formatString: General
 		displayFolder: Diagnostics
 
+	/// Emergency visits: ER encounters that are not cancelled (gold spec section 8).
+	measure 'ER Visits' =
+			CALCULATE (
+				COUNTROWS ( Encounters ),
+				KEEPFILTERS ( Encounters[Encounter Type] = "ER" ),
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Visits
+
+	/// Census: OP visits plus ER visits (gold spec section 8).
+	measure Census = [OP Visits] + [ER Visits]
+		formatString: #,0
+		displayFolder: Patient Flow\Visits
+
+	/// Distinct patients with an arrived, not cancelled OP or ER encounter (gold spec section 8; IP rows are admissions).
+	measure 'Unique Patients' =
+			CALCULATE (
+				DISTINCTCOUNT ( Encounters[Patient Key] ),
+				KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Patients
+
+	/// Arrived OP and ER encounters with visit type New patient (gold spec section 8).
+	measure 'New Patients' =
+			CALCULATE (
+				COUNTROWS ( Encounters ),
+				KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+				KEEPFILTERS ( Encounters[Visit Type] = "New patient" ),
+				Encounters[Is Arrived] = "Yes"
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Patients
+
+	/// Distinct returning patients (is_returning) among arrived, not cancelled OP and ER encounters (gold spec section 8).
+	measure 'Returning Patients' =
+			CALCULATE (
+				DISTINCTCOUNT ( Encounters[Patient Key] ),
+				KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No",
+				Encounters[Is Returning] = "Yes"
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Patients
+
+	/// Average waiting minutes of arrived, not cancelled OP and ER encounters; ER wait is arrival to treatment start (gold spec section 8; receiving notes).
+	measure 'Average Wait (min)' =
+			CALCULATE (
+				AVERAGE ( Encounters[Wait Minutes] ),
+				KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0.0
+		displayFolder: Patient Flow\Waiting
+
+	/// Median waiting minutes of arrived, not cancelled OP and ER encounters (gold spec section 8).
+	measure 'Median Wait (min)' =
+			CALCULATE (
+				MEDIAN ( Encounters[Wait Minutes] ),
+				KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0.0
+		displayFolder: Patient Flow\Waiting
+
+	/// Sum of waiting minutes, the figure the old reports published; use the average or median for comparisons (gold spec section 8 corrections).
+	measure 'Total Wait (min)' =
+			CALCULATE (
+				SUM ( Encounters[Wait Minutes] ),
+				KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Waiting
+
+	/// Average ER length of stay in minutes, arrival to completion, of arrived, not cancelled ER encounters (receiving notes).
+	measure 'Average ER LOS (min)' =
+			CALCULATE (
+				AVERAGE ( Encounters[ER LOS Minutes] ),
+				KEEPFILTERS ( Encounters[Encounter Type] = "ER" ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: #,0.0
+		displayFolder: Patient Flow\Waiting
+
+	/// No-shows ÷ booked appointments that are not walk-ins and not cancelled (gold spec section 8).
+	measure 'No-show Rate %' =
+			VAR Booked =
+				CALCULATE (
+					COUNTROWS ( Encounters ),
+					KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+					Encounters[Is Walk In] = "No",
+					Encounters[Is Cancelled] = "No"
+				)
+			VAR NoShows =
+				CALCULATE (
+					COUNTROWS ( Encounters ),
+					KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+					Encounters[Is Walk In] = "No",
+					Encounters[Is Cancelled] = "No",
+					Encounters[Is No Show] = "Yes"
+				)
+			RETURN DIVIDE ( NoShows, Booked )
+		formatString: 0.0%
+		displayFolder: Patient Flow\Appointments
+
+	/// Cancelled ÷ booked appointments (not walk-ins), cancelled ones included in the denominator (gold spec section 8).
+	measure 'Cancellation Rate %' =
+			VAR Booked =
+				CALCULATE (
+					COUNTROWS ( Encounters ),
+					KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+					Encounters[Is Walk In] = "No"
+				)
+			VAR Cancelled =
+				CALCULATE (
+					COUNTROWS ( Encounters ),
+					KEEPFILTERS ( Encounters[Encounter Type] IN { "OP", "ER" } ),
+					Encounters[Is Walk In] = "No",
+					Encounters[Is Cancelled] = "Yes"
+				)
+			RETURN DIVIDE ( Cancelled, Booked )
+		formatString: 0.0%
+		displayFolder: Patient Flow\Appointments
+
+	/// Episodes with an arrived encounter that is not a follow-up, by episode start date (gold spec section 8).
+	measure Episodes = CALCULATE ( COUNTROWS ( Episodes ), Episodes[Has Arrived Non Follow Up Encounter] = "Yes" )
+		formatString: #,0
+		displayFolder: Patient Flow\Episodes
+
+	/// Countable admissions by physical discharge date (gold spec section 8).
+	measure Discharges =
+			CALCULATE (
+				COUNTROWS ( Admissions ),
+				Admissions[Is Countable] = "Yes",
+				USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] )
+			)
+		formatString: #,0
+		displayFolder: Patient Flow\Admissions
+
+	/// Average length of stay in days of countable stays discharged in the period; slice by Is LTC for the LTC split (gold spec section 8).
+	measure 'ALOS (days)' =
+			CALCULATE (
+				AVERAGE ( Admissions[LOS Days] ),
+				Admissions[Is Countable] = "Yes",
+				USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] )
+			)
+		formatString: #,0.0
+		displayFolder: Patient Flow\Admissions
+
+	/// 30-day readmissions (previous discharge to this admit) ÷ countable admissions, by admit date (gold spec section 8).
+	measure 'Readmission Rate 30d %' =
+			DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Readmission 30d] = "Yes" ), [Admissions] )
+		formatString: 0.0%
+		displayFolder: Patient Flow\Admissions
+
+	/// Countable admissions readmitted to a critical bed within 48 hours (gold spec section 8).
+	measure 'ICU Readmissions 48h' = CALCULATE ( [Admissions], Admissions[Is ICU Readmission 48h] = "Yes" )
+		formatString: #,0
+		displayFolder: Patient Flow\Admissions
+
+	/// Countable admissions from OP or ER ÷ OP and ER episodes whose consultant's specialty admits (gold spec section 8; episodes as in the Episodes measure).
+	measure 'Conversion Rate %' =
+			VAR Converted = CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } )
+			VAR Eligible =
+				CALCULATE (
+					[Episodes],
+					'Care Type'[Care Type] IN { "OP", "ER" },
+					Staff[Is Non Admitting Specialty] = "No"
+				)
+			RETURN DIVIDE ( Converted, Eligible )
+		formatString: 0.0%
+		displayFolder: Patient Flow\Admissions
+
+	/// Discharges ÷ average available beds of inpatient, not excluded wards over the days in the period (gold spec section 8).
+	measure 'Bed Turnover' =
+			VAR BedDays =
+				CALCULATE (
+					SUM ( 'Bed Occupancy'[Is Available] ),
+					'Bed Occupancy'[Is Inpatient Ward] = "Yes",
+					'Bed Occupancy'[Is Excluded Ward] = "No"
+				)
+			VAR Days =
+				CALCULATE (
+					DISTINCTCOUNT ( 'Bed Occupancy'[Date Key] ),
+					'Bed Occupancy'[Is Inpatient Ward] = "Yes",
+					'Bed Occupancy'[Is Excluded Ward] = "No"
+				)
+			RETURN DIVIDE ( [Discharges], DIVIDE ( BedDays, Days ) )
+		formatString: #,0.00
+		displayFolder: Patient Flow\Occupancy
+
+	/// Attended ÷ scheduled clinic slots (gold spec section 8).
+	measure 'Clinic Utilisation %' =
+			DIVIDE ( SUM ( 'Clinic Capacity'[Slots Attended] ), SUM ( 'Clinic Capacity'[Slots Total] ) )
+		formatString: 0.0%
+		displayFolder: Patient Flow\Clinics
+
+	/// Operations that are not cancelled, by operation date (gold spec section 8).
+	measure 'Theatre Volume' = CALCULATE ( COUNTROWS ( Surgeries ), Surgeries[Is Cancelled] = "No" )
+		formatString: #,0
+		displayFolder: Patient Flow\Theatre
+
+	/// Target census of the most likely scenario unless a scenario is selected (gold spec 7.7).
+	measure 'Target Census' =
+			VAR Scenario =
+				FILTER (
+					ALL ( Targets[Scenario] ),
+					IF ( ISFILTERED ( Targets[Scenario] ), Targets[Scenario] IN VALUES ( Targets[Scenario] ), Targets[Scenario] = "most_likely" )
+				)
+			RETURN CALCULATE ( SUM ( Targets[Target Census] ), Scenario )
+		formatString: #,0
+		displayFolder: Patient Flow\Targets
+
+	/// Target episodes of the most likely scenario unless a scenario is selected (gold spec 7.7).
+	measure 'Target Episodes' =
+			VAR Scenario =
+				FILTER (
+					ALL ( Targets[Scenario] ),
+					IF ( ISFILTERED ( Targets[Scenario] ), Targets[Scenario] IN VALUES ( Targets[Scenario] ), Targets[Scenario] = "most_likely" )
+				)
+			RETURN CALCULATE ( SUM ( Targets[Target Episodes] ), Scenario )
+		formatString: #,0
+		displayFolder: Patient Flow\Targets
+
+	/// Target revenue in SAR of the most likely scenario unless a scenario is selected (gold spec 7.7).
+	measure 'Target Revenue' =
+			VAR Scenario =
+				FILTER (
+					ALL ( Targets[Scenario] ),
+					IF ( ISFILTERED ( Targets[Scenario] ), Targets[Scenario] IN VALUES ( Targets[Scenario] ), Targets[Scenario] = "most_likely" )
+				)
+			RETURN CALCULATE ( SUM ( Targets[Target Revenue] ), Scenario )
+		formatString: #,0
+		displayFolder: Patient Flow\Targets
+
+	/// Target cost per episode in SAR = Σ target_cost_total ÷ Σ target_episodes, never a sum of the per-row value (receiving notes).
+	measure 'Target Cost per Episode' =
+			VAR Scenario =
+				FILTER (
+					ALL ( Targets[Scenario] ),
+					IF ( ISFILTERED ( Targets[Scenario] ), Targets[Scenario] IN VALUES ( Targets[Scenario] ), Targets[Scenario] = "most_likely" )
+				)
+			RETURN CALCULATE ( DIVIDE ( SUM ( Targets[Target Cost Total] ), SUM ( Targets[Target Episodes] ) ), Scenario )
+		formatString: #,0
+		displayFolder: Patient Flow\Targets
+
+	/// Target ALOS in days of inpatient stay types = Σ target patient days ÷ Σ target episodes (the episode-weighted target_alos; receiving notes).
+	measure 'Target ALOS (days)' =
+			VAR Scenario =
+				FILTER (
+					ALL ( Targets[Scenario] ),
+					IF ( ISFILTERED ( Targets[Scenario] ), Targets[Scenario] IN VALUES ( Targets[Scenario] ), Targets[Scenario] = "most_likely" )
+				)
+			RETURN
+				CALCULATE (
+					DIVIDE ( SUM ( Targets[Target Patient Days] ), SUM ( Targets[Target Episodes] ) ),
+					Scenario,
+					KEEPFILTERS ( Targets[Stay Type] IN { "Non-LTC", "LTC" } )
+				)
+		formatString: #,0.0
+		displayFolder: Patient Flow\Targets
+
 	column Measure
 		dataType: string
 		isHidden
