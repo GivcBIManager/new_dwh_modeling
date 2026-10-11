@@ -132,7 +132,11 @@ try {
                 try {
                     $value = Get-HnhScalar (Dax $check.dax $null)
                     $expected = Get-HnhScalar (Sql $check.sql)
-                    Report "measure $($check.name)" ([math]::Abs($value - $expected) -le [double]$check.tolerance) "SSAS $value, ClickHouse $expected"
+                    # Review focus 1 (KPI catalogue plan): blank becomes 0, so two zeros prove nothing unless blank is the answer.
+                    $bothZero = ($value -eq 0) -and ($expected -eq 0) -and -not $check.allow_zero
+                    $detail = "SSAS $value, ClickHouse $expected"
+                    if ($bothZero) { $detail += ' (both zero: pick a filter with data, or set allow_zero)' }
+                    Report "measure $($check.name)" ((-not $bothZero) -and ([math]::Abs($value - $expected) -le [double]$check.tolerance)) $detail
                 } catch {
                     Report "measure $($check.name)" $false $_.Exception.Message
                 }

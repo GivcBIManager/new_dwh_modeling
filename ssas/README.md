@@ -30,7 +30,7 @@ restore or drop changes the production instance; the test slot `HNH_Analytics_Te
 ## Change the model
 
 1. Columns changed in a `gold.ssas_*` view → `python scripts/gen_view_contracts.py`, then `python ssas/tools/generate.py`.
-2. Measures: edit `tables/_Measures.tmdl` (`measure` blocks, `///` description, `formatString`, `displayFolder`). The display folder is `<domain>\<topic>`, where the domain is a perspective name (`Patient Flow`, `Revenue Cycle`, `Claims & Pre-auth`, `Finance`, `Workforce`, `Supply Chain`, `Patient Experience`) or `Diagnostics`; each perspective shows its domain's measures (`PERSPECTIVE_MEASURE_DOMAINS` in `tools/model_config.py` for Executive and Patient Details). New snapshot measures must be added to the list in every `ISSELECTEDMEASURE` of `tables/Time Calculation.tmdl`.
+2. Measures: edit `tables/_Measures.tmdl` (`measure` blocks, `///` description, `formatString`, `displayFolder`). The display folder is `<domain>\<topic>`, where the domain is a perspective name (`Patient Flow`, `Revenue Cycle`, `Claims & Pre-auth`, `Finance`, `Workforce`, `Supply Chain`, `Patient Experience`) or `Diagnostics`; each perspective shows its domain's measures (`PERSPECTIVE_MEASURE_DOMAINS` in `tools/model_config.py` for Executive and Patient Details). New snapshot measures carry `annotation hnh_snapshot = 1` and are added to the list in every `ISSELECTEDMEASURE` of `tables/Time Calculation.tmdl`. Every measure needs at least one check in `tests/measures/<domain>.json` (`allow_zero: true` only where blank is the intended answer). After editing measures run `python ssas/tools/sync_perspectives.py`.
 3. Check offline: `TabularEditor.exe ssas\HNH_Analytics -A ssas\bpa_rules.json -V` (no `type=error`), `python -m pytest ssas/tools`, `Invoke-Pester -Script ssas\scripts` (all Pester files).
 4. Run `deploy.ps1 -Stage All` from the working copy on the server (no copy step).
 
@@ -39,6 +39,7 @@ restore or drop changes the production instance; the test slot `HNH_Analytics_Te
 | Task | Command |
 |---|---|
 | Deploy (validate, test, promote) | `deploy.ps1 -Stage All`. Validate = Best Practice Analyzer; schema drift is caught by the enforced dbt contracts and by the Test stage. |
+| Try measure changes on the test database | `deploy.ps1 -Stage TestMeasures` (validate, metadata to `HNH_Analytics_Test` keeping its data, load unprocessed partitions, measure checks). The first run after a promotion loads the whole test database. |
 | After each successful dbt run | `process.ps1 -Mode Daily` (exit 2 = gate closed: no new successful `tag:hnh` run) |
 | Friday | `process.ps1 -Mode Weekly` |
 | In January (partition roll-over) | After `process.ps1 -Mode Daily`, run `test.ps1 -Database HNH_Analytics -Stage RowCounts`. |

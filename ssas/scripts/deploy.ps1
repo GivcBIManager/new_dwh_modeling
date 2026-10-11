@@ -8,9 +8,10 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage All
   powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage Rollback -BackupFile HNH_Analytics_20261010_220000.abf
+  powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage TestMeasures
 #>
 param(
-    [ValidateSet('All', 'Validate', 'Test', 'Promote', 'Rollback')][string]$Stage = 'All',
+    [ValidateSet('All', 'Validate', 'Test', 'Promote', 'Rollback', 'TestMeasures')][string]$Stage = 'All',
     [string]$Server = 'HNHANALYTICSSRV\REPORTSERVERDB',
     [string]$TabularEditorDir = 'C:\Program Files (x86)\Tabular Editor',
     [string]$Dsn = 'HNH_Gold',
@@ -88,6 +89,27 @@ try {
         }
         $srv.Disconnect()
         Write-Host 'Promoted. Tag the deployed commit on the development machine: git tag ssas-YYYY.MM.DD'
+    }
+    if ($Stage -eq 'TestMeasures') {
+        # Measure work (KPI catalogue plan): metadata to the test database, keeping its partitions and data source, load
+        # only what is not processed (everything after a promotion cleared it), then run the measure checks.
+        Write-Host '== Validate'
+        Invoke-TabularEditor @($modelDir, '-A', $rules, '-V')
+        Write-Host '== Measures: HNH_Analytics_Test'
+        $srv = Connect-HnhServer $Server
+        $exists = ($srv.Databases.FindByName('HNH_Analytics_Test') -ne $null)
+        $srv.Disconnect()
+        if (-not $exists) { throw 'HNH_Analytics_Test does not exist: run deploy.ps1 -Stage Test first' }
+        Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-R', '-E', '-V')
+        $srv = Connect-HnhServer $Server
+        [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
+        $srv.Disconnect()
+        Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
+        $srv = Connect-HnhServer $Server
+        $loaded = Update-HnhUnprocessed -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
+        $srv.Disconnect()
+        Write-Host ("loaded {0} unprocessed partition(s)" -f $loaded.Count)
+        Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir; Stage = @('Measures') }
     }
     if ($Stage -eq 'Rollback') {
         if (-not $BackupFile) { throw 'Rollback needs -BackupFile <file name in the SSAS backup folder>' }
