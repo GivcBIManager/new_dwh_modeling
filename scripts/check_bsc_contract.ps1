@@ -20,8 +20,9 @@ if ($Inline.Count) { $pyArgs += @('--inline', ($Inline -join ',')) }
 foreach ($r in $Replace) { $pyArgs += @('--replace', $r) }
 & python @pyArgs
 if ($LASTEXITCODE -ne 0) { throw "render_model_sql.py failed for $Model" }
-$actual = @(Invoke-HnhSelect -Dsn HNH_Gold -Sql ([IO.File]::ReadAllText($out)) |
-    ForEach-Object { [pscustomobject]@{ Name = $_.name; Type = $_.type } })
+# Invoke-HnhSelect returns its rows as one array: assign it, never wrap it in @() or pipe it.
+$described = Invoke-HnhSelect -Dsn HNH_Gold -Sql ([IO.File]::ReadAllText($out))
+$actual = @(foreach ($d in $described) { [pscustomobject]@{ Name = $d.name; Type = $d.type } })
 $problems = Compare-HnhColumns -Expected $expected -Actual $actual
 if ($problems.Count) { $problems | ForEach-Object { Write-Host $_ }; exit 1 }
 Write-Host "$Model`: $($expected.Count) columns match the contract"

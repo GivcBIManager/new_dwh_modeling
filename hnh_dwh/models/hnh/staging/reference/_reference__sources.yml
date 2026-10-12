@@ -38,5 +38,9 @@ sources:
         identifier: old_bal_product_base   # the user's load of the old warehouse's daily stock snapshots (O-P5-5)
       - name: map_pg_question_role
       - name: map_pg_background_value
+      - name: map_gl_cutover              # GL source per branch (bsc spec B5), scripts/load_bsc_reference.ps1
+      - name: map_budget_line_item        # copy of the old server's budget.income_statement_line_items
+      - name: bsc_targets                 # copy of the old server's bsc.targets (hand-loaded KPI targets)
+      - name: bsc_patient_satisfaction    # copy of the old server's bsc.patient_satisfaction
       - name: map_opening_balance_batch
       - name: map_bi_user_permission

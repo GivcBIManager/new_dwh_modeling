@@ -152,6 +152,17 @@ models:
     columns:
       - name: branch_id
         tests: [unique, not_null]
+  - name: stg_ref__gl_cutover
+    columns:
+      - name: branch_id
+        tests:
+          - unique
+          - not_null
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+  - name: stg_ref__budget_line_item
+    columns:
+      - name: code
+        tests: [unique, not_null]
   - name: stg_ref__store_department
     tests:
       - hnh_unique_combination:
