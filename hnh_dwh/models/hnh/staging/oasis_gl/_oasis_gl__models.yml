@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_bsc__oasis_gl_line
+    columns:
+      - name: oasis_gl_account_key
+        tests: [not_null]
+  - name: stg_bsc__oasis_gl_account
+    columns:
+      - name: oasis_gl_account_key
+        tests: [unique, not_null]

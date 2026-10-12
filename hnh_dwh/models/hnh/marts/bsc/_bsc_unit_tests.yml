@@ -1,0 +1,69 @@
+version: 2
+
+unit_tests:
+  - name: fact_gl_fs_monthly_switches_source_and_rolls_balances
+    description: >
+      Branch 1 has no cutover row, so it stays on Oasis. Account 1101 (balance sheet) has a January brought-forward
+      of 100 and a February posting; March has no posting but keeps the balance. Account 4101 (revenue) restarts each
+      year (December 2025, then January 2026). An unposted line and a 2021 line are left out. Branch 6 moves to
+      Fusion in February 2026: its Oasis January row stays, its Oasis February row and Fusion January row are
+      dropped, and the Fusion February row keeps the go-live journal apart from the movement. Head Office (100) and
+      the posted balance view are not used.
+    model: fact_gl_fs_monthly
+    given:
+      - input: ref('stg_bsc__oasis_gl_line')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toInt64(k) as oasis_gl_account_key, toNullable(toDate(m)) as month_start,
+                 toUInt8(p) as is_posted, toUInt8(f) as is_brought_forward, toFloat64(a) as amount
+          from values('b UInt8, k UInt32, m String, p UInt8, f UInt8, a Float64',
+              (1, 1, '2026-01-01', 1, 1, 100), (1, 1, '2026-02-01', 1, 0, 20),
+              (1, 2, '2025-12-01', 1, 0, -40), (1, 2, '2026-01-01', 1, 0, -50), (1, 2, '2026-03-01', 1, 0, -30),
+              (1, 2, '2026-03-01', 0, 0, -999), (1, 2, '2021-12-01', 1, 0, -5),
+              (6, 3, '2026-01-01', 1, 0, -10), (6, 3, '2026-02-01', 1, 0, -10))
+      - input: ref('stg_bsc__oasis_gl_account')
+        format: sql
+        rows: |
+          select toInt64(k) as oasis_gl_account_key, toUInt8(b) as branch_key, c as account_code, t as fs_type, e as fs_element,
+                 g as fs_category, p as fs_caption, l as fs_line
+          from values('k UInt32, b UInt8, c String, t String, e String, g String, p String, l String',
+              (1, 1, '1101', 'bs', 'assets', 'current assets', 'trade receivables, net', 'receivables'),
+              (2, 1, '4101', 'is', 'revenue', 'revenue', 'revenue inpatient', 'inpatient'),
+              (3, 6, '4101', 'is', 'revenue', 'revenue', 'revenue inpatient', 'inpatient'))
+      - input: ref('stg_ref__gl_cutover')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_id, toInt32(202602) as first_fusion_gl_month, toDate('2026-02-01') as first_fusion_gl_month_start
+      - input: ref('fact_gl_balance_monthly')
+        format: sql
+        rows: |
+          select v as balance_view, toUInt8(b) as branch_key, toInt64(a) as gl_account_key, toInt32(p) as period_key,
+                 toFloat64(o) as opening_balance, toFloat64(m) as period_movement, toFloat64(x) as period_movement_excl_opening
+          from values('v String, b UInt8, a UInt32, p UInt32, o Float64, m Float64, x Float64',
+              ('including_unposted', 6, 900, 202601, 0, -7, -7), ('including_unposted', 6, 900, 202602, 0, -15, -12),
+              ('posted', 6, 900, 202602, 0, -1, -1), ('including_unposted', 100, 900, 202602, 0, -3, -3))
+      - input: ref('hnh_dim_gl_period')
+        format: sql
+        rows: |
+          select toInt32(p) as period_key, toDate(m) as month_start, toUInt8(0) as is_adjustment
+          from values('p UInt32, m String', (202601, '2026-01-01'), (202602, '2026-02-01'))
+      - input: ref('hnh_dim_gl_account')
+        format: sql
+        rows: |
+          select toInt64(900) as gl_account_key, toInt64(77) as fs_line_key
+      - input: ref('dim_fs_line')
+        format: sql
+        rows: |
+          select toInt64(77) as fs_line_key, 'IS' as fs_type, 'Revenue' as fs_element, 'Revenue' as fs_category,
+                 'Revenue cash' as fs_caption, 'Cash' as fs_line
+    expect:
+      rows:
+        - {branch_key: 1, month_start: '2026-01-01', source_system: oasis, account_code: '1101', opening_balance: 0, opening_journal_amount: 100, movement: 0, closing_balance: 100}
+        - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '1101', opening_balance: 100, opening_journal_amount: 0, movement: 20, closing_balance: 120}
+        - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '1101', opening_balance: 120, opening_journal_amount: 0, movement: 0, closing_balance: 120}
+        - {branch_key: 1, month_start: '2025-12-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -40, closing_balance: -40}
+        - {branch_key: 1, month_start: '2026-01-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -50, closing_balance: -50}
+        - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: 0, closing_balance: -50}
+        - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: -30, closing_balance: -80}
+        - {branch_key: 6, month_start: '2026-01-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -10, closing_balance: -10}
+        - {branch_key: 6, month_start: '2026-02-01', source_system: fusion, account_code: '900', opening_balance: 0, opening_journal_amount: -3, movement: -12, closing_balance: -15}

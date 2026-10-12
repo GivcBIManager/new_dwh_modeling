@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: gold_oasis_gl
+    schema: gold
+    description: >
+      Oasis GL models built outside this repository on 2026-10-12 (bsc spec O-B1). Read through hnh_oasis_gl_source(),
+      which uses ref() in the receiving project (var hnh_oasis_gl_as_ref).
+    tables:
+      - name: fact_oasis_gl_line
+      - name: dim_oasis_gl_account
