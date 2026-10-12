@@ -55,7 +55,7 @@ def test_checks_reference_existing_columns_and_measures():
 
 def test_every_measure_has_a_check():
     checked = set().union(*(t.dax_references(c["dax"])[1] for c in CHECKS))
-    assert sorted(m.name for m in MEASURES if m.folder != t.DIAGNOSTICS and m.name not in checked) == []
+    assert sorted(m.name for m in MEASURES if m.folder.split("\\")[0] != t.DIAGNOSTICS and m.name not in checked) == []
 
 
 def test_check_names_are_unique():
@@ -107,3 +107,9 @@ def test_reserved_table_names_are_quoted():
     texts = {m.name: m.expression + "\n" + m.format_expression for m in MEASURES}
     texts.update({"check: " + c["name"]: c["dax"] for c in CHECKS})
     assert sorted(name for name, text in texts.items() if pattern.search(text)) == []
+
+
+def test_measure_guards_are_current():
+    import measure_guards
+    rels, kinds = measure_guards.model_inputs(MODEL)
+    assert measure_guards.render(MEASURES_TEXT, rels, kinds) == MEASURES_TEXT, "run python ssas/tools/measure_guards.py"
