@@ -141,7 +141,8 @@ unit_tests:
       (counted in headcount, doctors and medical, 0.5 FTE); doctor 13 is in the headcount, doctor 15 is paid,
       nurse 16 is not a doctor and doctor 17 nets to 0 revenue. December 2025: paid 501 (doctor) counts; 502 has
       no pay and 503 is a parallel run. Resignations: Khamis from Oasis staff termination; Abha from Fusion voluntary
-      leavers (its Oasis termination and Khamis's Fusion leaver are not used).
+      leavers from 2026 (its 2026 Oasis termination and Khamis's Fusion leaver are not used), and from Oasis before
+      Fusion HR started (December 2025).
     model: bsc_vw_work_force
     overrides:
       vars: {hnh_bsc_as_of: '2026-10-12'}
@@ -164,7 +165,8 @@ unit_tests:
               (11, 1, 'NURSE', 'NURSING', '', ''), (13, 1, 'DOC', 'DOCTORS', '', ''), (14, 1, 'DOC', 'DOCTORS', '', ''),
               (15, 1, 'DOC', 'DOCTORS', '', ''), (16, 1, 'NURSE', 'NURSING', '', ''), (17, 1, 'DOC', 'DOCTORS', '', ''),
               (21, 1, 'DOC', 'DOCTORS', '', ''), (22, 1, 'ADMIN', 'ADMIN', '', ''),
-              (31, 2, 'ADMIN', 'ADMIN', '2026-09-15', 'Resignation'), (32, 6, 'ADMIN', 'ADMIN', '2026-09-10', 'Resignation'))
+              (31, 2, 'ADMIN', 'ADMIN', '2026-09-15', 'Resignation'), (32, 6, 'ADMIN', 'ADMIN', '2026-09-10', 'Resignation'),
+              (33, 6, 'ADMIN', 'ADMIN', '2025-12-10', 'Resignation'))
       - input: ref('fact_headcount_monthly')
         format: sql
         rows: |
@@ -202,4 +204,4 @@ unit_tests:
         from values('p String, b UInt8, hc UInt32, rs UInt32, md UInt32, dc UInt32, pt UInt32, fte Float64',
             ('2025-12-01', 1, 1, 0, 1, 1, 0, 1), ('2026-09-01', 1, 4, 0, 3, 2, 1, 3.5),
             ('2025-12-01', 2, 0, 0, 0, 0, 0, 0), ('2026-09-01', 2, 0, 1, 0, 0, 0, 0),
-            ('2025-12-01', 6, 0, 0, 0, 0, 0, 0), ('2026-09-01', 6, 0, 1, 0, 0, 0, 0))
+            ('2025-12-01', 6, 0, 1, 0, 0, 0, 0), ('2026-09-01', 6, 0, 1, 0, 0, 0, 0))

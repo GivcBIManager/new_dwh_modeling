@@ -3,8 +3,9 @@
 -- Old bsc.vw_work_force (bsc spec 7.5) for closed months from January of last year. Heads: Fusion month-end
 -- headcount (employees, not contingent) from hnh_hr_snapshot_start, paid people (gross pay > 0, no parallel run)
 -- before it. Part-time doctors are doctors with revenue in the month who are neither in that month's headcount nor
--- paid; they are added to headcount, doctors and medical, and count 0.5 FTE, as in the old view. Resignations: Oasis
--- staff termination for branches 1-5 and Fusion voluntary leavers for 6-8, where Fusion leaver reasons are kept (F10).
+-- paid; they are added to headcount, doctors and medical, and count 0.5 FTE, as in the old view. Resignations: Fusion
+-- voluntary leavers for branches 6-8 from hnh_hr_snapshot_start, where Fusion leaver reasons are kept (F10); Oasis
+-- staff termination otherwise (branches 1-5, and every branch before Fusion HR started).
 with
     ifNull(toDateOrNull('{{ var('hnh_bsc_as_of') }}'), today()) as today_,
     subtractYears(toStartOfYear(today_ - 1), 1) as from_date_,
@@ -77,12 +78,13 @@ part_time as (
 resignations as (
     select branch_key, toDate(toStartOfMonth(termination_date)) as period, count() as resigned
     from staff
-    where termination_reason = 'Resignation' and branch_key between 1 and 5 and termination_date is not null
+    where termination_reason = 'Resignation' and termination_date is not null
+      and (branch_key between 1 and 5 or toDate(toStartOfMonth(termination_date)) < fusion_start_)
     group by branch_key, period
     union all
     select branch_key, toStartOfMonth(YYYYMMDDToDate(toUInt32(action_date_key))) as period, countIf(is_voluntary_leaver = 1)
     from {{ ref('hnh_fact_worker_movement') }}
-    where branch_key between 6 and 8
+    where branch_key between 6 and 8 and toStartOfMonth(YYYYMMDDToDate(toUInt32(action_date_key))) >= fusion_start_
     group by branch_key, period
 )
 select
