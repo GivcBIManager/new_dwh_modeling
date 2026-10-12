@@ -75,7 +75,8 @@ unit_tests:
       revenue; receivables carry an opening and a go-live amount. Branch 6 (Fusion vocabulary): depreciation has its
       own category; cost of medicines is consumables; budget subtotals give operating expenses, G&A without
       marketing and consumables. Branch 2 has a budget and no actuals yet: actuals are 0. Branch 1 has no budget: the
-      budget columns are NULL. A 2023 row is before the window (January two years back from 2026-10-12).
+      budget columns are NULL. A 2023 row is before the window (January two years back from 2026-10-12). Abha's
+      November 2026 accrual and carried balance are after the current month and do not appear.
     model: bsc_vw_financial
     overrides:
       vars: {hnh_bsc_as_of: '2026-10-12'}
@@ -101,7 +102,9 @@ unit_tests:
               (6, '2026-08-01', 'is', 'revenue', 'revenue', 'revenue cash', 0, 0, -200),
               (6, '2026-08-01', 'is', 'expenses', 'depreciation and amortization', 'depreciation expense', 0, 0, 20),
               (6, '2026-08-01', 'is', 'expenses', 'direct cost', 'cost of medicines', 0, 0, 15),
-              (6, '2026-08-01', 'is', 'expenses', 'general and administrative expenses', 'employee cost', 0, 0, 5))
+              (6, '2026-08-01', 'is', 'expenses', 'general and administrative expenses', 'employee cost', 0, 0, 5),
+              (6, '2026-11-01', 'is', 'expenses', 'zakat', 'zakat', 0, 0, 9),
+              (6, '2026-11-01', 'bs', 'assets', 'current assets', 'trade receivables, net', 70, 0, 0))
       - input: ref('fact_income_statement_monthly')
         format: sql
         rows: |

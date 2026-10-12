@@ -26,7 +26,8 @@ actual as (
         sumIf(closing_balance, fs_element = 'assets')                                                as assets_close,
         sumIf(opening_balance + opening_journal_amount, fs_element = 'assets')                       as assets_open
     from {{ ref('fact_gl_fs_monthly') }}
-    where month_start >= from_month_
+    -- Fusion holds postings for periods not yet started (accruals); actuals stop at the current month
+    where month_start between from_month_ and toStartOfMonth(today_)
     group by branch_key, month_start
 ),
 budget as (
@@ -53,23 +54,23 @@ keys as (
 select
     toUInt64(k.branch_key)                                                 as branch_id,
     toNullable(toDate32(k.month_start))                                    as month_date,
-    CAST(round(ifNull(a.net_rev, 0), 2) AS Decimal(38, 10))                as net_revenue_actual,
-    CAST(round(ifNull(a.sub_rev, 0), 2) AS Decimal(38, 10))                as sub_revenue_actual,
-    CAST(round(ifNull(a.opex, 0), 2) AS Decimal(38, 10))                   as operating_expenses,
-    CAST(round(ifNull(a.net_rev, 0) - ifNull(a.opex, 0), 2) AS Decimal(38, 10)) as ebitda_actual,
-    CAST(round(ifNull(a.ar_close, 0), 2) AS Decimal(38, 10))               as account_receivable_actual,
-    CAST(round(ifNull(a.ar_open, 0), 2) AS Decimal(38, 10))                as account_receivable_actual_opening_balance,
-    CAST(round(ifNull(a.ga, 0), 2) AS Decimal(38, 10))                     as ga_expenses_actual,
-    CAST(round(ifNull(a.consumables, 0), 2) AS Decimal(38, 10))            as consumables_actual,
-    CAST(round(ifNull(a.assets_close, 0), 2) AS Decimal(38, 10))           as assets,
-    CAST(round(ifNull(a.assets_open, 0), 2) AS Decimal(38, 10))            as assets_opening_balance,
-    CAST(round(ifNull(a.income, 0), 2) AS Decimal(38, 10))                 as income,
-    CAST(round(b.net_rev_b, 2) AS Nullable(Decimal(38, 2)))                as net_revenue_budget,
-    CAST(round(b.sub_rev_b, 2) AS Nullable(Decimal(38, 2)))                as sub_revenue_budget,
-    CAST(round(b.opex_b, 2) AS Nullable(Decimal(38, 2)))                   as operating_expenses_budget,
-    CAST(round(b.ebitda_b, 2) AS Nullable(Decimal(38, 2)))                 as ebitda_budget,
-    CAST(round(b.ga_b, 2) AS Nullable(Decimal(38, 2)))                     as ga_expenses_budget,
-    CAST(round(b.consumables_b, 2) AS Nullable(Decimal(38, 2)))            as consumables_budget
+    CAST(round(toDecimal128(ifNull(a.net_rev, 0), 4), 2) AS Decimal(38, 10))                as net_revenue_actual,
+    CAST(round(toDecimal128(ifNull(a.sub_rev, 0), 4), 2) AS Decimal(38, 10))                as sub_revenue_actual,
+    CAST(round(toDecimal128(ifNull(a.opex, 0), 4), 2) AS Decimal(38, 10))                   as operating_expenses,
+    CAST(round(toDecimal128(ifNull(a.net_rev, 0) - ifNull(a.opex, 0), 4), 2) AS Decimal(38, 10)) as ebitda_actual,
+    CAST(round(toDecimal128(ifNull(a.ar_close, 0), 4), 2) AS Decimal(38, 10))               as account_receivable_actual,
+    CAST(round(toDecimal128(ifNull(a.ar_open, 0), 4), 2) AS Decimal(38, 10))                as account_receivable_actual_opening_balance,
+    CAST(round(toDecimal128(ifNull(a.ga, 0), 4), 2) AS Decimal(38, 10))                     as ga_expenses_actual,
+    CAST(round(toDecimal128(ifNull(a.consumables, 0), 4), 2) AS Decimal(38, 10))            as consumables_actual,
+    CAST(round(toDecimal128(ifNull(a.assets_close, 0), 4), 2) AS Decimal(38, 10))           as assets,
+    CAST(round(toDecimal128(ifNull(a.assets_open, 0), 4), 2) AS Decimal(38, 10))            as assets_opening_balance,
+    CAST(round(toDecimal128(ifNull(a.income, 0), 4), 2) AS Decimal(38, 10))                 as income,
+    CAST(round(toDecimal128(b.net_rev_b, 4), 2) AS Nullable(Decimal(38, 2)))                as net_revenue_budget,
+    CAST(round(toDecimal128(b.sub_rev_b, 4), 2) AS Nullable(Decimal(38, 2)))                as sub_revenue_budget,
+    CAST(round(toDecimal128(b.opex_b, 4), 2) AS Nullable(Decimal(38, 2)))                   as operating_expenses_budget,
+    CAST(round(toDecimal128(b.ebitda_b, 4), 2) AS Nullable(Decimal(38, 2)))                 as ebitda_budget,
+    CAST(round(toDecimal128(b.ga_b, 4), 2) AS Nullable(Decimal(38, 2)))                     as ga_expenses_budget,
+    CAST(round(toDecimal128(b.consumables_b, 4), 2) AS Nullable(Decimal(38, 2)))            as consumables_budget
 from keys as k
 left join actual as a on a.branch_key = k.branch_key and a.month_start = k.month_start
 left join budget as b on b.branch_key = k.branch_key and b.month_start = k.month_start

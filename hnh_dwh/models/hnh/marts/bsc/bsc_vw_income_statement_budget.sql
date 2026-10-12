@@ -16,8 +16,8 @@ select
     toLowCardinality(toString(b.line_item_code))                            as line_item_code,
     toLowCardinality(li.name)                                               as line_name,
     toLowCardinality(li.category)                                           as category,
-    CAST(round(b.assumption_percentage, 4) AS Nullable(Decimal(10, 4)))     as assumption_percentage,
+    CAST(round(toDecimal128(b.assumption_percentage, 6), 4) AS Nullable(Decimal(10, 4)))     as assumption_percentage,
     makeDate(b.fiscal_year, b.month_number, 1)                              as month_date,
-    CAST(round(b.month_value, 2) AS Nullable(Decimal(18, 2)))               as month_value
+    CAST(round(toDecimal128(b.month_value, 4), 2) AS Nullable(Decimal(18, 2)))               as month_value
 from budget as b
 inner join {{ ref('stg_ref__budget_line_item') }} as li on li.code = b.line_item_code
