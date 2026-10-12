@@ -67,3 +67,65 @@ unit_tests:
         - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: -30, closing_balance: -80}
         - {branch_key: 6, month_start: '2026-01-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -10, closing_balance: -10}
         - {branch_key: 6, month_start: '2026-02-01', source_system: fusion, account_code: '900', opening_balance: 0, opening_journal_amount: -3, movement: -12, closing_balance: -15}
+
+  - name: bsc_vw_financial_uses_both_vocabularies
+    description: >
+      Branch 1 (Oasis vocabulary): depreciation sits under direct cost and is left out of operating expenses by its
+      caption; medical consumables and cost of goods sold are consumables; the settlement discount is out of sub
+      revenue; receivables carry an opening and a go-live amount. Branch 6 (Fusion vocabulary): depreciation has its
+      own category; cost of medicines is consumables; budget subtotals give operating expenses, G&A without
+      marketing and consumables. Branch 2 has a budget and no actuals yet: actuals are 0. Branch 1 has no budget: the
+      budget columns are NULL. A 2023 row is before the window (January two years back from 2026-10-12).
+    model: bsc_vw_financial
+    overrides:
+      vars: {hnh_bsc_as_of: '2026-10-12'}
+    given:
+      - input: ref('fact_gl_fs_monthly')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toDate(m) as month_start, t as fs_type, e as fs_element, g as fs_category,
+                 p as fs_caption, toFloat64(o) as opening_balance, toFloat64(j) as opening_journal_amount,
+                 toFloat64(v) as movement, toFloat64(o + j + v) as closing_balance
+          from values('b UInt8, m String, t String, e String, g String, p String, o Float64, j Float64, v Float64',
+              (1, '2026-08-01', 'is', 'revenue', 'revenue', 'revenue inpatient', 0, 0, -100),
+              (1, '2026-08-01', 'is', 'revenue', 'revenue - discounts', 'revenue - settlement discount', 0, 0, 5),
+              (1, '2026-08-01', 'is', 'expenses', 'direct cost', 'employee costs', 0, 0, 30),
+              (1, '2026-08-01', 'is', 'expenses', 'direct cost', 'depreciation', 0, 0, 10),
+              (1, '2026-08-01', 'is', 'expenses', 'direct cost', 'medical consumables', 0, 0, 4),
+              (1, '2026-08-01', 'is', 'expenses', 'direct cost', 'cost of goods sold', 0, 0, 6),
+              (1, '2026-08-01', 'is', 'expenses', 'general and administrative expenses', 'other indirect expenses', 0, 0, 8),
+              (1, '2026-08-01', 'is', 'expenses', 'finance cost', 'finance cost', 0, 0, 2),
+              (1, '2026-08-01', 'is', 'expenses', 'zakat', 'zakat', 0, 0, 1),
+              (1, '2026-08-01', 'bs', 'assets', 'current assets', 'trade receivables, net', 40, 10, 20),
+              (1, '2023-12-01', 'is', 'revenue', 'revenue', 'revenue inpatient', 0, 0, -1),
+              (6, '2026-08-01', 'is', 'revenue', 'revenue', 'revenue cash', 0, 0, -200),
+              (6, '2026-08-01', 'is', 'expenses', 'depreciation and amortization', 'depreciation expense', 0, 0, 20),
+              (6, '2026-08-01', 'is', 'expenses', 'direct cost', 'cost of medicines', 0, 0, 15),
+              (6, '2026-08-01', 'is', 'expenses', 'general and administrative expenses', 'employee cost', 0, 0, 5))
+      - input: ref('fact_income_statement_monthly')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toDate(m) as month_start, c as budget_line_code, toFloat64(v) as budget_most_likely
+          from values('b UInt8, m String, c String, v Float64',
+              (6, '2026-08-01', 'REV_NET', 210), (6, '2026-08-01', 'REV_SUB', 220), (6, '2026-08-01', 'TOTAL_DC', 50),
+              (6, '2026-08-01', 'TOTAL_GA', 25), (6, '2026-08-01', 'EBITDA', 100), (6, '2026-08-01', 'GA_MARKETING', 5),
+              (6, '2026-08-01', 'DC_MEDICINES', 12), (6, '2026-08-01', 'DC_CONSUMABLES', 3),
+              (2, '2026-08-01', 'REV_NET', 50))
+    expect:
+      format: sql
+      rows: |
+        select toUInt64(b) as branch_id, toNullable(toDate32(toDate(m))) as month_date,
+               CAST(nr AS Decimal(38, 10)) as net_revenue_actual, CAST(sr AS Decimal(38, 10)) as sub_revenue_actual,
+               CAST(ox AS Decimal(38, 10)) as operating_expenses, CAST(eb AS Decimal(38, 10)) as ebitda_actual,
+               CAST(ar AS Decimal(38, 10)) as account_receivable_actual,
+               CAST(aro AS Decimal(38, 10)) as account_receivable_actual_opening_balance,
+               CAST(ga AS Decimal(38, 10)) as ga_expenses_actual, CAST(cs AS Decimal(38, 10)) as consumables_actual,
+               CAST(asst AS Decimal(38, 10)) as assets, CAST(asso AS Decimal(38, 10)) as assets_opening_balance,
+               CAST(inc AS Decimal(38, 10)) as income,
+               CAST(nrb AS Nullable(Decimal(38, 2))) as net_revenue_budget, CAST(srb AS Nullable(Decimal(38, 2))) as sub_revenue_budget,
+               CAST(oxb AS Nullable(Decimal(38, 2))) as operating_expenses_budget, CAST(ebb AS Nullable(Decimal(38, 2))) as ebitda_budget,
+               CAST(gab AS Nullable(Decimal(38, 2))) as ga_expenses_budget, CAST(csb AS Nullable(Decimal(38, 2))) as consumables_budget
+        from values('b UInt8, m String, nr Float64, sr Float64, ox Float64, eb Float64, ar Float64, aro Float64, ga Float64, cs Float64, asst Float64, asso Float64, inc Float64, nrb Nullable(Float64), srb Nullable(Float64), oxb Nullable(Float64), ebb Nullable(Float64), gab Nullable(Float64), csb Nullable(Float64)',
+            (1, '2026-08-01', 95, 100, 48, 47, 70, 50, 8, 10, 70, 50, 34, null, null, null, null, null, null),
+            (6, '2026-08-01', 200, 200, 20, 180, 0, 0, 5, 15, 0, 0, 160, 210, 220, 75, 100, 20, 15),
+            (2, '2026-08-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0))
