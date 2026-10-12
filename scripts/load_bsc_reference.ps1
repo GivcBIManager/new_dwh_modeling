@@ -8,7 +8,7 @@
   Copies keep the old column types. A table that already has rows is skipped; name it in -Replace to truncate and
   reload it. -DryRun reads the sources and prints what would be loaded; it does not connect to the new server.
     powershell -ExecutionPolicy Bypass -File scripts\load_bsc_reference.ps1 -DryRun
-    powershell -ExecutionPolicy Bypass -File scripts\load_bsc_reference.ps1 [-Replace map_gl_cutover]
+    powershell -ExecutionPolicy Bypass -File scripts\load_bsc_reference.ps1 [-Replace map_gl_cutover,bsc_targets]
   It asks for a ClickHouse user that may create, truncate and insert into tables in database default.
 #>
 param(
@@ -19,6 +19,8 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'HnhCh.psm1') -Force
+# powershell -File passes a,b as one string: split the list
+$Replace = @($Replace | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 
 $loads = @()
 $cut = @(Import-Csv -Path $CutoverCsv -Encoding UTF8)
@@ -46,6 +48,7 @@ foreach ($copy in @(@('budget', 'income_statement_line_items', 'map_budget_line_
     }
 }
 foreach ($l in $loads) { Write-Host ("default.{0}: {1} rows, {2} columns" -f $l.Table, $l.Lines.Count, $l.Columns.Count) }
+if ($Replace.Count) { Write-Host "replace: $($Replace -join ', ') ($($Replace.Count) tables)" }
 if ($DryRun) { Write-Host '(dry run) nothing written'; return }
 
 $admin = Get-Credential -Message 'ClickHouse user that may create, truncate and insert into tables in database default'

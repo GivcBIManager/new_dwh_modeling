@@ -4,10 +4,10 @@
   for the given months and one whole year. Numeric columns are summed per key; a relative difference above
   -Tolerance (default 0.5%) is listed. Writes docs\reconciliation_bsc_differences.md for attribution in
   docs\reconciliation_bsc.md. Run after the new bsc views are built.
-    powershell -ExecutionPolicy Bypass -File scripts\compare_bsc.ps1 [-Months 2026-08-01] [-Year 2025] [-Only vw_rcm,vw_hospital]
+    powershell -ExecutionPolicy Bypass -File scripts\compare_bsc.ps1 [-Months 2026-08-01,2026-09-01] [-Year 2025] [-Only vw_rcm,vw_hospital]
   -NewDsn chDWH compares the old server with itself (a smoke test of the script: every view must show 0 differences).
 #>
-param([string[]]$Months = @('2026-08-01'), [int]$Year = 2025, [double]$Tolerance = 0.005, [int]$MaxRows = 200,
+param([string[]]$Months = @('2026-08-01', '2026-09-01'), [int]$Year = 2025, [double]$Tolerance = 0.005, [int]$MaxRows = 200,
       [string[]]$Only = @(), [string]$NewDsn = 'HNH_Gold')
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'HnhCh.psm1') -Force
@@ -26,7 +26,9 @@ $views = @(
     @{ View = 'targets'; Keys = @('hospital_id', 'period_id', 'kpi_no', 'strategy_segment'); Date = $null },
     @{ View = 'patient_satisfaction'; Keys = @('hospital_id', 'period_id'); Date = $null }
 )
-$Only = @($Only | ForEach-Object { $_ -split "," } | Where-Object { $_ })   # -File passes a,b as one string
+# powershell -File passes a,b as one string: split the list parameters
+$Only = @($Only | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+$Months = @($Months | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 if ($Only.Count) { $views = @($views | Where-Object { $Only -contains $_.View }) }
 $monthList = ($Months | ForEach-Object { "'$_'" }) -join ', '
 $lines = New-Object System.Collections.Generic.List[string]
@@ -47,8 +49,18 @@ foreach ($v in $views) {
     }
     $sql = "SELECT $(($keySql + $valSql) -join ', ') FROM bsc.``$($v.View)`` $where GROUP BY $($keyNames -join ', ')"
     # these functions return their rows as one array: assign, never wrap in @() (it would nest the array)
-    $old = Invoke-HnhSelect -Dsn chDWH -Sql $sql
-    $new = Invoke-HnhSelect -Dsn $NewDsn -Sql $sql
+    try {
+        $old = Invoke-HnhSelect -Dsn chDWH -Sql $sql
+        $new = Invoke-HnhSelect -Dsn $NewDsn -Sql $sql
+    } catch {
+        # the old vw_financial can run past the DSN timeout: record it and go on with the other views
+        $lines.Add('')
+        $lines.Add("## $($v.View)")
+        $lines.Add('')
+        $lines.Add("Not compared: $(($_.Exception.Message -split "`n")[0])")
+        Write-Host "$($v.View): not compared ($($_.Exception.Message))"
+        continue
+    }
     $diffs = Compare-HnhBscRows -Old $old -New $new -Keys $keyNames -Columns $valNames -Tolerance $Tolerance
     $lines.Add('')
     $lines.Add("## $($v.View)")

@@ -93,7 +93,7 @@ The `bsc` database re-creates the old server's balanced-scorecard objects on gol
             +tags: ["hnh_bsc"]
   ```
 
-- Before the first build, load the reference tables (`powershell -ExecutionPolicy Bypass -File scripts\load_bsc_reference.ps1` on HNHANALYTICSSRV): `map_gl_cutover`, `map_budget_line_item`, `bsc_targets`, `bsc_patient_satisfaction`. When finance changes a GL go-live month, edit `static_mappings\gl_cutover.csv`, reload with `-Replace map_gl_cutover` and rebuild `fact_gl_fs_monthly+`. When the scorecard's targets or satisfaction sheets change, reload them on the old server as before, then `-Replace bsc_targets bsc_patient_satisfaction` here (until the old server is retired, O-B7).
+- Before the first build, load the reference tables (`powershell -ExecutionPolicy Bypass -File scripts\load_bsc_reference.ps1` on HNHANALYTICSSRV): `map_gl_cutover`, `map_budget_line_item`, `bsc_targets`, `bsc_patient_satisfaction`. When finance changes a GL go-live month, edit `static_mappings\gl_cutover.csv`, reload with `-Replace map_gl_cutover` and rebuild `fact_gl_fs_monthly+`. When the scorecard's targets or satisfaction sheets change, reload them on the old server as before, then `-Replace bsc_targets,bsc_patient_satisfaction` here (until the old server is retired, O-B7).
 - The scorecard's ClickHouse login needs only `SELECT` on `bsc.*` (the views run with the definer's rights).
 
 ## Reference tables that must exist in `default`
