@@ -1,7 +1,7 @@
 # HNH Data Warehouse — Balanced Scorecard (`bsc`) Views on the New Server
 
 - **Date:** 2026-10-12
-- **Status:** Draft for review. Implementation plan not yet written.
+- **Status:** Approved 2026-10-12. Implementation plan not yet written.
 - **Parent specs:**
   - `2026-10-01-hnh-dwh-gold-layer-design.md`: architecture, keys, conventions. Everything in it applies unless this document says otherwise.
   - Phase 1 (patient flow), Phase 2 and 2b (revenue, claims, pre-authorisation), Phase 3 (finance), Phase 4 (workforce).
