@@ -1,7 +1,7 @@
 # HNH Data Warehouse — Phase 7 Patient Profitability: Encounter Costing and Margin
 
 - **Date:** 2026-10-12
-- **Status:** Draft for review. Design only, for later implementation.
+- **Status:** Approved 2026-10-12. Implementation plan not yet written.
 - **Parent specs:**
   - `2026-10-01-hnh-dwh-gold-layer-design.md`: architecture, keys, conventions, security. Everything in it applies unless this document says otherwise.
   - Phase 2 (revenue: `fact_charge_line`, `fact_revenue_adjustment`).
