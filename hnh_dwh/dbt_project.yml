@@ -23,6 +23,8 @@ vars:
   hnh_fusion_inventory_start: "2026-02-01"   # first month of Fusion inventory transactions (integration window)
   hnh_fusion_item_master_org_id: 300000005019401   # Fusion item master organisation (MST)
   hnh_stock_month_end_last: ""          # last month-end of the stock snapshot; empty = current month
+  hnh_oasis_gl_as_ref: false            # true in the receiving project: the Oasis GL models are read with ref() (bsc spec O-B1)
+  hnh_bsc_as_of: ""                     # date the bsc views treat as today; empty = today(); unit tests set it
 
 models:
   hnh_dwh:
@@ -45,6 +47,12 @@ models:
           +sql_security: definer
           +definer: CURRENT_USER
           +tags: ["hnh_ssas"]
+        bsc:
+          +schema: bsc
+          +materialized: view
+          +sql_security: definer
+          +definer: CURRENT_USER
+          +tags: ["hnh_bsc"]
 
 data_tests:
   hnh_dwh:

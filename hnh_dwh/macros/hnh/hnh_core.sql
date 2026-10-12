@@ -86,3 +86,9 @@ lower(trimBoth(arrayElement(splitByChar(char(92), trimBoth({{ col }})), -1)))
 {% macro hnh_fusion_source(table_name) -%}
 {%- if var('hnh_fusion_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('fusion', table_name) }}{%- endif -%}
 {%- endmacro %}
+
+{#- Oasis GL models (fact_oasis_gl_line, dim_oasis_gl_account) are built outside this repository (bsc spec O-B1):
+    ref() in the receiving project (var hnh_oasis_gl_as_ref), source('gold_oasis_gl', ...) here. -#}
+{% macro hnh_oasis_gl_source(table_name) -%}
+{%- if var('hnh_oasis_gl_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('gold_oasis_gl', table_name) }}{%- endif -%}
+{%- endmacro %}
