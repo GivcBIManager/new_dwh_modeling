@@ -183,7 +183,8 @@ select
     toFloat64(b.op_volume_target)                                             as op_volume_target,
     toFloat64(b.op_episodes_target)                                           as op_episodes_target,
     toFloat64(b.er_volume_target)                                             as er_volume_target,
-    toFloat64(b.admissions_volume_target)                                     as admissions_volume_target
+    toFloat64(b.admissions_volume_target)                                     as admissions_volume_target,
+    toLowCardinality('oasis')                                                 as data_source   -- hospital system data (added 2026-10-13)
 from keys as k
 left join rev as r on r.branch_key = k.branch_key and r.period = k.period
 left join cen as c on c.branch_key = k.branch_key and c.period = k.period

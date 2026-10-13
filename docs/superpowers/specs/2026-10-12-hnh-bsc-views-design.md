@@ -385,6 +385,18 @@ Fusion employees with no staff link (`staff_key = -1`, 0–22 per branch) count 
 
 Recruiting covers only branches that use Oracle Recruiting: 89 requisitions from 2026-04, mostly Abha and Head Office, against about 1,000 hires in 2026. Fusion positions are a title catalogue, not budgeted seats, so they are not used for vacancies (research 2026-10-13).
 
+### 7.7 Source flag (added 2026-10-13)
+
+Every view built from source data ends with `data_source LowCardinality(String)`. The contract generator appends it after the old columns.
+
+| View | `data_source` |
+|---|---|
+| `vw_financial`, `vw_gl_transactions`, `vw_gl_openning_balance` | `oasis` before the branch's first Fusion GL month (`map_gl_cutover`), `fusion` from it; `oasis` for a branch without a cutover row |
+| `vw_work_force` | `oasis` before the Fusion HR start (`hnh_hr_snapshot_start`, 2026-01); `both` from it (Fusion headcount and recruiting, part-time doctors from Oasis revenue) |
+| `vw_customer`, `vw_hospital_beds_utilization`, `vw_rcm` | `oasis` (hospital system data) |
+
+`vw_hospital`, `vw_date_dim`, `targets`, `patient_satisfaction` and `vw_income_statement_budget` hold reference data and have no flag. `scripts/compare_bsc.ps1` shows the flag of each difference row in a Source column.
+
 ### 7.6 Shared notes
 
 - Joins use `join_use_nulls = 0`, so a branch-month with no activity gives 0, as in the old views.

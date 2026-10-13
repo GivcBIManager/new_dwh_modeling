@@ -52,6 +52,9 @@ keys as (
     select branch_key, month_start from actual
     union distinct
     select branch_key, month_start from budget
+),
+cutover as (
+    select branch_id, first_fusion_gl_month_start from {{ ref('stg_ref__gl_cutover') }}
 )
 select
     toUInt64(k.branch_key)                                                 as branch_id,
@@ -72,8 +75,12 @@ select
     CAST(round(toDecimal128(b.opex_b, 4), 2) AS Nullable(Decimal(38, 2)))                   as operating_expenses_budget,
     CAST(round(toDecimal128(b.ebitda_b, 4), 2) AS Nullable(Decimal(38, 2)))                 as ebitda_budget,
     CAST(round(toDecimal128(b.ga_b, 4), 2) AS Nullable(Decimal(38, 2)))                     as ga_expenses_budget,
-    CAST(round(toDecimal128(b.consumables_b, 4), 2) AS Nullable(Decimal(38, 2)))            as consumables_budget
+    CAST(round(toDecimal128(b.consumables_b, 4), 2) AS Nullable(Decimal(38, 2)))            as consumables_budget,
+    -- GL source of the branch-month (added 2026-10-13): Fusion from the branch's first Fusion GL month, Oasis before
+    toLowCardinality(if(c.first_fusion_gl_month_start is not null and k.month_start >= c.first_fusion_gl_month_start,
+                        'fusion', 'oasis'))                                    as data_source
 from keys as k
 left join actual as a on a.branch_key = k.branch_key and a.month_start = k.month_start
 left join budget as b on b.branch_key = k.branch_key and b.month_start = k.month_start
+left join cutover as c on c.branch_id = k.branch_key
 settings join_use_nulls = 1

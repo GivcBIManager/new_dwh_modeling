@@ -12,8 +12,9 @@ select
     toLowCardinality(fs_caption)                                                  as FS_CAPTION,
     toLowCardinality(fs_line)                                                     as FS_LINE,
     CAST(round(toDecimal128(sum(movement), 4), 2) AS Decimal(38, 10))                              as Transaction_Balance,
-    CAST(round(toDecimal128(sum(opening_balance + opening_journal_amount), 4), 2) AS Decimal(38, 10)) as OpeningBalance
+    CAST(round(toDecimal128(sum(opening_balance + opening_journal_amount), 4), 2) AS Decimal(38, 10)) as OpeningBalance,
+    toLowCardinality(toString(source_system))                                    as data_source   -- added 2026-10-13
 from {{ ref('fact_gl_fs_monthly') }}
 where toYear(month_start) >= toYear(today_ - 1) - 2
   and month_start <= toStartOfMonth(today_)    -- Fusion periods not yet started stay out
-group by BranchId, Period, AccountType, FS_ELEMENT, FS_CATEGORY, FS_CAPTION, FS_LINE
+group by BranchId, Period, AccountType, FS_ELEMENT, FS_CATEGORY, FS_CAPTION, FS_LINE, data_source

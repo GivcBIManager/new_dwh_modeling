@@ -62,20 +62,27 @@ foreach ($v in $views) {
         continue
     }
     $diffs = Compare-HnhBscRows -Old $old -New $new -Keys $keyNames -Columns $valNames -Tolerance $Tolerance
+    # data_source (oasis / fusion / both) of each key on the new server, when the view has it
+    $sourceOf = @{}
+    $hasSource = Invoke-HnhSelect -Dsn $NewDsn -Sql "SELECT count() AS n FROM system.columns WHERE database = 'bsc' AND table = '$($v.View)' AND name = 'data_source'"
+    if ($diffs.Count -and $hasSource[0].n -gt 0) {
+        $srcRows = Invoke-HnhSelect -Dsn $NewDsn -Sql "SELECT $($keySql -join ', '), arrayStringConcat(arraySort(groupUniqArray(toString(data_source))), '+') AS src FROM bsc.``$($v.View)`` $where GROUP BY $($keyNames -join ', ')"
+        foreach ($sr in $srcRows) { $sourceOf[(($keyNames | ForEach-Object { [string]$sr.$_ }) -join '|')] = $sr.src }
+    }
     $lines.Add('')
     $lines.Add("## $($v.View)")
     $lines.Add('')
     $lines.Add("Keys ($($v.Keys -join ', ')): old $($old.Count), new $($new.Count). Differences: $($diffs.Count).")
     if ($diffs.Count -eq 0) { continue }
     $lines.Add('')
-    $lines.Add('| Key | Column | Old | New | Status |')
-    $lines.Add('|---|---|---|---|---|')
+    $lines.Add('| Key | Source | Column | Old | New | Status |')
+    $lines.Add('|---|---|---|---|---|---|')
     foreach ($d in ($diffs | Select-Object -First $MaxRows)) {
         $col = $d.Column
         if ($col -like 'val_*') { $col = $numeric[[int]($col.Substring(4))] }
-        $lines.Add("| $($d.Key) | $col | $($d.Old) | $($d.New) | $($d.Status) |")
+        $lines.Add("| $($d.Key) | $($sourceOf[$d.Key]) | $col | $($d.Old) | $($d.New) | $($d.Status) |")
     }
-    if ($diffs.Count -gt $MaxRows) { $lines.Add("| ... | $($diffs.Count - $MaxRows) more | | | |") }
+    if ($diffs.Count -gt $MaxRows) { $lines.Add("| ... | | $($diffs.Count - $MaxRows) more | | | |") }
 }
 $out = Join-Path $PSScriptRoot '..\docs\reconciliation_bsc_differences.md'
 [IO.File]::WriteAllText($out, ($lines -join "`n") + "`n", (New-Object System.Text.UTF8Encoding $false))

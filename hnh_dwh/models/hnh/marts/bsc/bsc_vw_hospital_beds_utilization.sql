@@ -49,7 +49,8 @@ select
     CAST(d.alos_other AS Nullable(Float64))                                         as non_ltc_alos,
     toInt64(o.bed_days_occupied)                                                    as total_bed_nights,
     toFloat64(o.bed_days_available)                                                 as available_bed_nights,
-    toFloat64(if(o.bed_days_available = 0, 0, o.bed_days_occupied / o.bed_days_available)) as occupancy_rate
+    toFloat64(if(o.bed_days_available = 0, 0, o.bed_days_occupied / o.bed_days_available)) as occupancy_rate,
+    toLowCardinality('oasis')                                                 as data_source   -- hospital system data (added 2026-10-13)
 from stays as s
 left join occupancy as o on o.branch_key = s.branch_key and o.period = s.period
 left join discharges as d on d.branch_key = s.branch_key and d.period = s.period

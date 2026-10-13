@@ -173,6 +173,8 @@ models:
         data_type: "Float64"
       - name: admissions_volume_target
         data_type: "Float64"
+      - name: data_source
+        data_type: "LowCardinality(String)"
   - name: bsc_vw_date_dim
     config:
       contract: {enforced: true}
@@ -285,6 +287,8 @@ models:
         data_type: "Nullable(Decimal(38, 2))"
       - name: consumables_budget
         data_type: "Nullable(Decimal(38, 2))"
+      - name: data_source
+        data_type: "LowCardinality(String)"
   - name: bsc_vw_gl_openning_balance
     config:
       contract: {enforced: true}
@@ -307,6 +311,8 @@ models:
         data_type: "Decimal(38, 10)"
       - name: forwarded_balance
         data_type: "Decimal(38, 10)"
+      - name: data_source
+        data_type: "LowCardinality(String)"
   - name: bsc_vw_gl_transactions
     config:
       contract: {enforced: true}
@@ -329,6 +335,8 @@ models:
         data_type: "Decimal(38, 10)"
       - name: OpeningBalance
         data_type: "Decimal(38, 10)"
+      - name: data_source
+        data_type: "LowCardinality(String)"
   - name: bsc_vw_hospital
     config:
       contract: {enforced: true}
@@ -365,6 +373,8 @@ models:
         data_type: "Float64"
       - name: occupancy_rate
         data_type: "Float64"
+      - name: data_source
+        data_type: "LowCardinality(String)"
   - name: bsc_vw_income_statement_budget
     config:
       contract: {enforced: true}
@@ -415,6 +425,8 @@ models:
         data_type: "Nullable(Float64)"
       - name: avg_tat_minutes
         data_type: "Nullable(Float64)"
+      - name: data_source
+        data_type: "LowCardinality(String)"
   - name: bsc_vw_work_force
     config:
       contract: {enforced: true}
@@ -445,3 +457,5 @@ models:
         data_type: "UInt64"
       - name: avg_time_to_fill_days
         data_type: "Nullable(Float64)"
+      - name: data_source
+        data_type: "LowCardinality(String)"

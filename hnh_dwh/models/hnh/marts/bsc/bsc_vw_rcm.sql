@@ -52,7 +52,8 @@ select
     toUInt64(p.approved_final)                                                  as approved_orders,
     toUInt64(p.unutilised)                                                      as approved_not_done,
     round(100 * p.unutilised / nullIf(p.services, 0), 2)                        as approved_not_done_pct,
-    CAST(round(p.sent_to_response, 1) AS Nullable(Float64))                     as avg_tat_minutes
+    CAST(round(p.sent_to_response, 1) AS Nullable(Float64))                     as avg_tat_minutes,
+    toLowCardinality('oasis')                                                 as data_source   -- hospital system data (added 2026-10-13)
 from keys as k
 left join claims as c on c.branch_key = k.branch_key and c.period = k.period
 left join preauth as p on p.branch_key = k.branch_key and p.period = k.period

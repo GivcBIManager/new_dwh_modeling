@@ -130,7 +130,9 @@ select
     toUInt64(o.open_reqs)                                    as open_requisitions,
     toUInt64(o.openings)                                     as vacant_positions,
     toUInt64(f.filled_openings)                              as filled_positions,
-    CAST(round(f.days_to_fill, 1) AS Nullable(Float64))      as avg_time_to_fill_days
+    CAST(round(f.days_to_fill, 1) AS Nullable(Float64))      as avg_time_to_fill_days,
+    -- 'both' from the Fusion HR start: Fusion headcount and recruiting, part-time doctors from Oasis revenue
+    toLowCardinality(if(sp.period >= fusion_start_, 'both', 'oasis')) as data_source
 from spine as sp
 left join heads as h on h.branch_key = sp.branch_key and h.period = sp.period
 left join part_time as pt on pt.branch_key = sp.branch_key and pt.period = sp.period
