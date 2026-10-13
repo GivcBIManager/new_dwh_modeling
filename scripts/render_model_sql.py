@@ -1,7 +1,7 @@
 """Render an hnh dbt model to plain ClickHouse SQL, for read-only checks through an ODBC DSN.
 
 dbt is not installed on HNHANALYTICSSRV. This handles only the Jinja the bsc models use: config(), ref(), source(),
-var(), hnh_settings() and hnh_oasis_gl_source(); anything else stops with an error.
+var(), hnh_settings(), hnh_oasis_gl_source() and hnh_fusion_source(); anything else stops with an error.
 
   python scripts/render_model_sql.py bsc_vw_financial --inline fact_gl_fs_monthly,stg_bsc__oasis_gl_line \
       --replace stg_ref__gl_cutover=scripts/fixtures/gl_cutover_stub.sql --wrap "DESCRIBE ({model})" --out m.sql
@@ -73,6 +73,9 @@ def render(name, inline=frozenset(), replace=None, depth=0):
         m = re.fullmatch(r"hnh_oasis_gl_source\('(\w+)'\)", expr)
         if m:
             return f"gold.{m.group(1)}"
+        m = re.fullmatch(r"hnh_fusion_source\('(\w+)'\)", expr)
+        if m:
+            return f"fusion.{m.group(1)}"
         m = re.fullmatch(r"var\('(\w+)'\)", expr)
         if m:
             return variables[m.group(1)]

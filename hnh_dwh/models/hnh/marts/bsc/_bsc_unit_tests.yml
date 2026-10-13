@@ -143,7 +143,11 @@ unit_tests:
       nurse 16 is not a doctor and doctor 17 nets to 0 revenue. December 2025: paid 501 (doctor) counts; 502 has
       no pay and 503 is a parallel run. Resignations: Khamis from Oasis staff termination; Abha from Fusion voluntary
       leavers from 2026 (its 2026 Oasis termination and Khamis's Fusion leaver are not used), and from Oasis before
-      Fusion HR started (December 2025).
+      Fusion HR started (December 2025). Saudi headcount counts Saudi heads only (2026-10-13): 101 and 103 in September,
+      paid 501 in December; part-time doctor 14 is Saudi but not counted, nor contingent 104. Requisitions (Abha unless
+      noted): one approved in August and still open (2 openings); two filled in September after 20 and 10 days; one
+      filled before its approval date (counted as filled, not in the time to fill); a deleted one, one pending approval,
+      one without a branch department and an Alrabwah one approved in October are not counted for September.
     model: bsc_vw_work_force
     overrides:
       vars: {hnh_bsc_as_of: '2026-10-12'}
@@ -161,7 +165,7 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(k) as staff_key, toUInt8(b) as branch_key, toNullable(c) as classification, toNullable(g) as category,
-                 toDate32OrNull(t) as termination_date, if(r = '', null, toNullable(r)) as termination_reason
+                 toDate32OrNull(t) as termination_date, if(r = '', null, toNullable(r)) as termination_reason, toUInt8(k in (14, 21)) as is_saudi
           from values('k UInt32, b UInt8, c String, g String, t String, r String',
               (11, 1, 'NURSE', 'NURSING', '', ''), (13, 1, 'DOC', 'DOCTORS', '', ''), (14, 1, 'DOC', 'DOCTORS', '', ''),
               (15, 1, 'DOC', 'DOCTORS', '', ''), (16, 1, 'NURSE', 'NURSING', '', ''), (17, 1, 'DOC', 'DOCTORS', '', ''),
@@ -172,7 +176,7 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(b) as branch_key, toDate(m) as month_end, toInt64(e) as employee_key, toInt64(s) as staff_key,
-                 toUInt8(1) as headcount, toFloat64(1) as fte, toUInt8(c) as is_contingent
+                 toUInt8(1) as headcount, toFloat64(1) as fte, toUInt8(c) as is_contingent, toUInt8(e in (101, 103, 104)) as is_saudi
           from values('b UInt8, m String, e UInt32, s Int64, c UInt8',
               (1, '2026-09-30', 101, 11, 0), (1, '2026-09-30', 102, -1, 0), (1, '2026-09-30', 103, 13, 0),
               (1, '2026-09-30', 104, -1, 1), (1, '2026-10-31', 101, 11, 0))
@@ -196,13 +200,27 @@ unit_tests:
         rows: |
           select toUInt8(b) as branch_key, toInt32(d) as action_date_key, toUInt8(v) as is_voluntary_leaver
           from values('b UInt8, d UInt32, v UInt8', (6, 20260920, 1), (6, 20260921, 0), (2, 20260920, 1))
+      - input: ref('stg_fusion__recruiting_requisitions')
+        format: sql
+        rows: |
+          select toInt64(i) as requisition_id, toNullable(toInt64(d)) as department_id, toUInt8(x) as is_deleted,
+                 toDateOrNull(a) as approved_date, toDateOrNull(f) as filled_date, toUInt32(n) as number_to_hire
+          from values('i UInt32, d UInt32, x UInt8, a String, f String, n UInt32',
+              (1, 900, 0, '2026-08-10', '', 2), (2, 900, 0, '2026-09-01', '2026-09-21', 1), (3, 900, 0, '2026-09-05', '2026-09-15', 1),
+              (4, 900, 1, '2026-08-01', '', 5), (5, 900, 0, '2026-09-10', '2026-09-08', 1), (6, 901, 0, '2026-10-02', '', 1),
+              (7, 999, 0, '2026-08-01', '', 1), (8, 900, 0, '', '', 3))
+      - input: ref('hnh_dim_hr_department')
+        format: sql
+        rows: |
+          select toNullable(toInt64(o)) as organization_id, toUInt8(b) as branch_key from values('o UInt32, b UInt8', (900, 6), (901, 1))
     expect:
       format: sql
       rows: |
         select toDate32(toDate(p)) as period, toUInt64(b) as branch_id, toUInt64(hc) as headcount, toUInt64(rs) as resignations,
                toUInt64(md) as medical_headcount, toUInt64(dc) as doctors_headcount, toUInt64(pt) as pt_doctors_headcount,
-               toFloat64(fte) as FTE
-        from values('p String, b UInt8, hc UInt32, rs UInt32, md UInt32, dc UInt32, pt UInt32, fte Float64',
-            ('2025-12-01', 1, 1, 0, 1, 1, 0, 1), ('2026-09-01', 1, 4, 0, 3, 2, 1, 3.5),
-            ('2025-12-01', 2, 0, 0, 0, 0, 0, 0), ('2026-09-01', 2, 0, 1, 0, 0, 0, 0),
-            ('2025-12-01', 6, 0, 1, 0, 0, 0, 0), ('2026-09-01', 6, 0, 1, 0, 0, 0, 0))
+               toFloat64(fte) as FTE, toUInt64(sa) as saudi_headcount, toUInt64(orq) as open_requisitions,
+               toUInt64(vac) as vacant_positions, toUInt64(fil) as filled_positions, CAST(ttf AS Nullable(Float64)) as avg_time_to_fill_days
+        from values('p String, b UInt8, hc UInt32, rs UInt32, md UInt32, dc UInt32, pt UInt32, fte Float64, sa UInt32, orq UInt32, vac UInt32, fil UInt32, ttf Nullable(Float64)',
+            ('2025-12-01', 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, null), ('2026-09-01', 1, 4, 0, 3, 2, 1, 3.5, 2, 0, 0, 0, null),
+            ('2025-12-01', 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null), ('2026-09-01', 2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, null),
+            ('2025-12-01', 6, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, null), ('2026-09-01', 6, 0, 1, 0, 0, 0, 0, 0, 1, 2, 3, 15))

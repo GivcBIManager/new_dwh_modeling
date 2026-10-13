@@ -62,6 +62,10 @@ models:
     columns:
       - name: period_of_service_id
         tests: [unique, not_null]
+  - name: stg_fusion__recruiting_requisitions
+    columns:
+      - name: requisition_id
+        tests: [unique, not_null]
   - name: stg_fusion__worker_movements
     tests:
       - hnh_unique_combination:

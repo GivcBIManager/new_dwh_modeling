@@ -80,8 +80,8 @@ With `hnh_fusion_as_ref: true`, `hnh_fusion_source('<table>')` calls `ref('<tabl
 
 The `bsc` database re-creates the old server's balanced-scorecard objects on gold (spec `2026-10-12-hnh-bsc-views-design.md`): 10 views and the 2 hand-loaded tables, with the old names, columns and types (enforced contracts generated from the old server by `scripts/gen_bsc_contracts.ps1`).
 
-- Copy `hnh_dwh/models/hnh/marts/bsc/`, `hnh_dwh/models/hnh/staging/oasis_gl/`, `marts/finance/fact_gl_fs_monthly.sql` (with its entry in `_finance_marts__models.yml`), the two new reference staging models and their YAML entries, the macro `hnh_oasis_gl_source` and the tests `assert_gl_fs_monthly_single_source`, `warn_oasis_gl_balance_sheet_continuity` and `assert_bsc_views_unique_keys`.
-- Add under `vars:` `hnh_oasis_gl_as_ref: true` (the Oasis GL models `fact_oasis_gl_line` and `dim_oasis_gl_account` are the receiving project's own models) and `hnh_bsc_as_of: ""`.
+- Copy `hnh_dwh/models/hnh/marts/bsc/`, `hnh_dwh/models/hnh/staging/oasis_gl/`, `marts/finance/fact_gl_fs_monthly.sql` (with its entry in `_finance_marts__models.yml`), the two new reference staging models and their YAML entries, the staging model `stg_fusion__recruiting_requisitions` (with its entries in `_fusion__models.yml` and `_fusion__sources.yml`), the macros `hnh_oasis_gl_source` and `hnh_fusion_source` (now with `hnh_fusion_source_only`), and the tests `assert_gl_fs_monthly_single_source`, `warn_oasis_gl_balance_sheet_continuity` and `assert_bsc_views_unique_keys`.
+- Add under `vars:` `hnh_oasis_gl_as_ref: true` (the Oasis GL models `fact_oasis_gl_line` and `dim_oasis_gl_account` are the receiving project's own models) and `hnh_bsc_as_of: ""`. `vw_work_force` reads `fusion.fact_recruiting_requisition` through `hnh_fusion_source`: if the receiving project has no model of that name in `models/fusion/`, add `hnh_fusion_source_only: ['fact_recruiting_requisition']` so it is read with `source()`.
 - Add under `models: oasis: hnh: marts:`, next to `ssas:`:
 
   ```yaml

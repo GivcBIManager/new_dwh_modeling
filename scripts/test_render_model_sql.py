@@ -77,3 +77,9 @@ def test_jinja_statements_stop(project):
     (project / "marts" / "bsc" / "bsc_vw_z.sql").write_text("{% if x %}select 1{% endif %}", encoding="utf-8")
     with pytest.raises(SystemExit, match="not supported"):
         r.render("bsc_vw_z")
+
+
+def test_fusion_source_renders_the_fusion_table(project):
+    (project / "staging" / "x" / "stg_f.sql").write_text(
+        "select 1 from {{ hnh_fusion_source('fact_recruiting_requisition') }} final", encoding="utf-8")
+    assert r.render("stg_f") == "select 1 from fusion.fact_recruiting_requisition final"

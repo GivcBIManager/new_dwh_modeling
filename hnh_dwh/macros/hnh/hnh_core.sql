@@ -84,7 +84,7 @@ lower(trimBoth(arrayElement(splitByChar(char(92), trimBoth({{ col }})), -1)))
 {# Read a Fusion table. In this project it is a source; in the receiving project the fusion database is built by
    dbt models of the same names, so set var hnh_fusion_as_ref: true there. #}
 {% macro hnh_fusion_source(table_name) -%}
-{%- if var('hnh_fusion_as_ref', false) -%}{{ ref(table_name) }}{%- else -%}{{ source('fusion', table_name) }}{%- endif -%}
+{%- if var('hnh_fusion_as_ref', false) and table_name not in var('hnh_fusion_source_only', []) -%}{{ ref(table_name) }}{%- else -%}{{ source('fusion', table_name) }}{%- endif -%}
 {%- endmacro %}
 
 {#- Oasis GL models (fact_oasis_gl_line, dim_oasis_gl_account) are built outside this repository (bsc spec O-B1):

@@ -373,6 +373,18 @@ Known data gaps show as they are:
 
 Fusion employees with no staff link (`staff_key = -1`, 0–22 per branch) count in `headcount` but in neither the medical nor the doctors column.
 
+**Columns added 2026-10-13** (after the old ones; the contract generator appends them):
+
+| Column | Expression |
+|---|---|
+| `saudi_headcount` | Saudi heads among the `headcount` people: Fusion `fact_headcount_monthly.is_saudi` (nationality SA) from 2026, Oasis `dim_staff.is_saudi` of the paid person before. Part-time revenue-only doctors are **not** counted (user decision). The Saudization rate is the simple one: `saudi_headcount / (headcount - pt_doctors_headcount)`. |
+| `open_requisitions` | Oracle Recruiting requisitions (`fusion.fact_recruiting_requisition`, branch from the requisition's department through `hnh_dim_hr_department`) that are not deleted, approved by the month-end and not filled by then |
+| `vacant_positions` | Σ `number_to_hire` of those requisitions (the openings) |
+| `filled_positions` | Σ `number_to_hire` of requisitions filled in the month |
+| `avg_time_to_fill_days` | Average days from approval to fill of the requisitions filled in the month, when the fill is not before the approval; NULL when none |
+
+Recruiting covers only branches that use Oracle Recruiting: 89 requisitions from 2026-04, mostly Abha and Head Office, against about 1,000 hires in 2026. Fusion positions are a title catalogue, not budgeted seats, so they are not used for vacancies (research 2026-10-13).
+
 ### 7.6 Shared notes
 
 - Joins use `join_use_nulls = 0`, so a branch-month with no activity gives 0, as in the old views.
