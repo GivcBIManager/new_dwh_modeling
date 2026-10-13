@@ -131,3 +131,21 @@ No unexplained difference remains.
 2. The first build of 2026-10-12 16:33 logged one failed node (`gold.etl_run_log`: 13 built, 1 failed). The rerun of `fact_gl_fs_monthly+` at 16:34 succeeded. Confirm which node failed. If it was a unit test or a data test, re-run `dbt build --select tag:hnh_bsc fact_gl_fs_monthly` and check that all tests pass.
 3. Create the scorecard's ClickHouse login and grant it `SELECT` on `bsc.*` (O-B2).
 4. Finance: O-B10 (Khamis opening batches; receivables at the cutovers), O-B5 (Jazan and Unaizah cutover months).
+
+## Re-run of 2026-10-13, after the redeploy
+
+Deployed: build `stg_fusion__recruiting_requisitions tag:hnh_bsc` at 12:39, 13 models, 0 failures. All 12 objects (204 columns) match their contracts.
+
+Now equal to the old server:
+- 2025 resignations for every branch (Abha 11).
+- 2025 consumables (96.63M; medical consumables only).
+- The 2025 GL (every branch × month × element) and 2025 net revenue (1,384.534M).
+
+Differing keys by `data_source` (August and September 2026, and all of 2025):
+
+| View | `oasis` | `fusion` / `both` | Causes |
+|---|---|---|---|
+| `vw_financial` | 76 keys | 12 `fusion` keys | **Oasis rows:** assets, receivables and their openings (the old view summed open GL periods only; F7); EBITDA and operating expenses (depreciation the old filter missed; F6); consumables budget (Consumables line only, 2026-10-13). **Fusion rows:** after the cutover the old view still took Oasis GL (revenue from the Oasis feed, no costs), while the new one takes Fusion (B5). Fusion holds almost nothing for September 2026 yet (O-B9). Khamis's balance sheet is doubled by its duplicate opening batch (O-B10). |
+| `vw_gl_transactions`, `vw_gl_openning_balance` | Openings and forwarded balances | Fusion periods and vocabulary | Open-period opening (F7); keys only in the old view are padded or double-spaced labels, zero rows and Oasis postings after a cutover. |
+| `vw_work_force` | 70 keys (2025 and 2026 months of branches without Fusion headcount data) | 16 `both` keys (2026) | **2025:** paid headcount from gold payroll against the old payroll-or-revenue rule (within about 2%). **2026:** Fusion headcount, and doctors in it no longer counted as part-time; Fusion leavers for branches 6–8 (items 16, 17). |
+| `vw_customer`, `vw_hospital_beds_utilization`, `vw_rcm` | All | — | Hospital system data; corrected SSAS definitions (B3, items 1–15) as described above. |
