@@ -64,7 +64,7 @@ No unexplained difference remains.
 |---|---|---|
 | `assets`, `account_receivable_actual` and their openings | Alrabwah, September 2026: assets 330.7M → 550.9M, receivables 161.2M. Abha, November 2025: receivables 10.0M → 80.9M. | Same open-period opening as above (F7). Recomputed from the old server's raw `tr_gl_distribution` (all posted lines of the year up to the month, brought-forward included): 550.863M, 161.151M and 80.948M, equal to the new view. The old values were understated. |
 | `operating_expenses`, `ebitda_actual` | 2025: Alrabwah 220.594M → 220.040M, Jazan 177.523M → 174.851M, Abha 96.747M → 96.148M; other branches equal | Depreciation the old filter missed (`'depreciation On Rou'` against lower-case text, `'deprecition'`; F6). |
-| `consumables_actual` | 2025: Alrabwah 20.127M → 55.618M (medical consumables 20.127M + cost of goods sold 35.491M) | Cost of goods sold counted as medicines, like Fusion's `cost of medicines` and the budget's line (Section 1 item 20, O-B6). |
+| `consumables_actual`, `consumables_budget` | 2025: equal to the old view (medical consumables only) | Changed 2026-10-13: cost of goods sold is not consumables (O-B6 closed). The budget now takes the Consumables line only; the old view also added Cost Of Medicines. Fusion months show 0 actuals until finance maps a consumables account (O-P3-8). The comparison of 2026-10-12 predates this change. |
 | `net_revenue_actual` | 2025: equal for every branch (Alrabwah 297.355M, Khamis 314.742M, Jazan 297.426M, Unaizah 184.769M, Madinah 179.102M, Abha 111.140M) | — |
 | Revenue after cutover | Unaizah, September 2026: old 2.91M, new 0 | From its cutover month a branch takes Fusion only. The old figure was Oasis-feed revenue (B5). Fusion holds almost nothing for September 2026 yet: its last load was 2026-09-30 (O-B9). |
 | Extra months | Budget-only months (October–December 2026) | The old view dropped them (`ANY LEFT JOIN`, spec 6.3). |
@@ -130,4 +130,4 @@ No unexplained difference remains.
 1. Rebuild `bsc_vw_work_force` on the receiving server (resignation fix).
 2. The first build of 2026-10-12 16:33 logged one failed node (`gold.etl_run_log`: 13 built, 1 failed). The rerun of `fact_gl_fs_monthly+` at 16:34 succeeded. Confirm which node failed. If it was a unit test or a data test, re-run `dbt build --select tag:hnh_bsc fact_gl_fs_monthly` and check that all tests pass.
 3. Create the scorecard's ClickHouse login and grant it `SELECT` on `bsc.*` (O-B2).
-4. Finance: O-B10 (Khamis opening batches; receivables at the cutovers), O-B5 (Jazan and Unaizah cutover months), O-B6 (cost of goods sold in consumables).
+4. Finance: O-B10 (Khamis opening batches; receivables at the cutovers), O-B5 (Jazan and Unaizah cutover months).

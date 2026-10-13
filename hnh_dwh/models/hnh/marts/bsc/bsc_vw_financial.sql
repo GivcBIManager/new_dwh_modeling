@@ -1,8 +1,9 @@
 {{ config(alias='vw_financial') }}
 
 -- Old bsc.vw_financial (bsc spec 6.3). Actuals from fact_gl_fs_monthly (Oasis or Fusion per branch-month) with FS
--- value lists that hold in both vocabularies: Oasis keeps depreciation under direct cost and books medicines as
--- cost of goods sold; Fusion has a depreciation category and cost of medicines. EBITDA = net revenue - operating
+-- value lists that hold in both vocabularies: Oasis keeps depreciation under direct cost; Fusion has a depreciation
+-- category. Consumables are medical consumables only, actual and budget (cost of goods sold is not, 2026-10-13); Fusion
+-- has no consumables caption yet (O-P3-8). EBITDA = net revenue - operating
 -- expenses, as before. Budget: fact_income_statement_monthly, most likely; NULL when the branch-month has none.
 -- Months from January two years back; budget-only months are kept.
 with
@@ -19,7 +20,8 @@ actual as (
                         and fs_caption not in ('depreciation', 'depreciation on rou', 'amortization of intangible assets',
                                                'depreciation expense', 'amortization expense'))      as opex,
         sumIf(movement, fs_category = 'general and administrative expenses')                         as ga,
-        sumIf(movement, fs_caption in ('medical consumables', 'cost of medicines', 'cost of goods sold')) as consumables,
+        -- medical consumables only: cost of goods sold (Oasis) and cost of medicines (Fusion) are not consumables
+        sumIf(movement, fs_caption = 'medical consumables')                                          as consumables,
         -sumIf(movement, fs_type = 'is')                                                             as income,
         sumIf(closing_balance, fs_caption = 'trade receivables, net')                                as ar_close,
         sumIf(opening_balance + opening_journal_amount, fs_caption = 'trade receivables, net')       as ar_open,
@@ -40,7 +42,7 @@ budget as (
         sumIf(budget_most_likely, budget_line_code = 'EBITDA')                                       as ebitda_b,
         sumIf(budget_most_likely, budget_line_code = 'TOTAL_GA')
             - sumIf(budget_most_likely, budget_line_code = 'GA_MARKETING')                           as ga_b,
-        sumIf(budget_most_likely, budget_line_code in ('DC_MEDICINES', 'DC_CONSUMABLES'))            as consumables_b
+        sumIf(budget_most_likely, budget_line_code = 'DC_CONSUMABLES')                               as consumables_b
     from {{ ref('fact_income_statement_monthly') }}
     where branch_key between 1 and 8 and month_start >= from_month_
     group by branch_key, month_start

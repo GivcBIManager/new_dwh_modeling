@@ -249,11 +249,11 @@ Grain: branch × `month_date`. Actuals come from `fact_gl_fs_monthly`, filtered 
 | `account_receivable_actual` | Σ `closing_balance` where `fs_caption = 'trade receivables, net'` |
 | `account_receivable_actual_opening_balance` | Σ (`opening_balance` + `opening_journal_amount`) for the same caption |
 | `ga_expenses_actual` | Σ `movement` where `fs_category = 'general and administrative expenses'` |
-| `consumables_actual` | Σ `movement` where `fs_caption IN ('medical consumables', 'cost of medicines', 'cost of goods sold')`. This matches the budget's `Cost Of Medicines` + `Consumables` lines across both vocabularies (O-B6). |
+| `consumables_actual` | Σ `movement` where `fs_caption = 'medical consumables'`. Cost of goods sold (Oasis) and cost of medicines (Fusion) are not consumables (user, 2026-10-13). Fusion has no consumables caption yet, so Fusion months show 0 until finance maps one (O-P3-8). |
 | `assets` | Σ `closing_balance` where `fs_element = 'assets'` |
 | `assets_opening_balance` | Σ (`opening_balance` + `opening_journal_amount`) where `fs_element = 'assets'` |
 | `income` | −Σ `movement` where `fs_type = 'is'` |
-| `net_revenue_budget` … `consumables_budget` | `gold.fact_income_statement_monthly.budget_most_likely`. Lines: `REV_NET`; `REV_SUB`; `TOTAL_DC + TOTAL_GA`; `EBITDA`; `TOTAL_GA − GA_MARKETING`; `DC_MEDICINES + DC_CONSUMABLES`. NULL when the branch-month has no budget. |
+| `net_revenue_budget` … `consumables_budget` | `gold.fact_income_statement_monthly.budget_most_likely`. Lines: `REV_NET`; `REV_SUB`; `TOTAL_DC + TOTAL_GA`; `EBITDA`; `TOTAL_GA − GA_MARKETING`; `DC_CONSUMABLES` (the old view also added `Cost Of Medicines`; dropped 2026-10-13 so budget and actual compare the same thing). NULL when the branch-month has no budget. |
 
 - Actuals and budget are joined with a `FULL OUTER JOIN` on (branch, month). Months that have only a budget (October–December 2026) appear; the old `ANY LEFT JOIN` dropped them.
 - Window: from January two years back, as old.
@@ -450,7 +450,7 @@ Every step that changes a server waits for the user's go-ahead (CLAUDE.md).
 | O-B3 | `agg_clinic_capacity_daily.slots_total` is inflated by 24-hour templates, which also affects SSAS `Clinic Utilisation %`. The fix belongs to Phase 1; until then `bsc` uses `legacy_capacity_slots`. | BI manager |
 | O-B4 | `icu_discharge` for Jazan shows 378 discharges from a critical last bed in August 2026 (Alrabwah 64, Abha 102). Check Jazan's bed classification before acceptance. | Plan task |
 | O-B5 | Finance to confirm `map_gl_cutover`, especially Jazan (July) and Unaizah (August), where costs are split across both systems. | Finance |
-| O-B6 | `consumables_actual` counts Oasis `cost of goods sold` as medicines, so it matches Fusion `cost of medicines` and the budget line. Confirm with finance. | Finance |
+| O-B6 | **Closed 2026-10-13:** cost of goods sold is not consumables. `consumables_actual` is medical consumables only, and `consumables_budget` the Consumables line only. | User |
 | O-B7 | Who reloads `bsc_targets` and `bsc_patient_satisfaction` on the new server, and when. | User |
 | O-B8 | Referral policies are not mapped for Ghirnata and Muhayil, so `referrals_*` is 0 there until `map_referral_policies` has rows for them. | BI manager |
 | O-B9 | Fusion income-statement data is about 0 for September 2026 for every branch (last Fusion load 2026-09-30). This is a freshness issue, not a design issue; check it before the comparison. | Ingestion |

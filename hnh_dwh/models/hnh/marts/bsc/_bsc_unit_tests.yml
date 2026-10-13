@@ -71,10 +71,11 @@ unit_tests:
   - name: bsc_vw_financial_uses_both_vocabularies
     description: >
       Branch 1 (Oasis vocabulary): depreciation sits under direct cost and is left out of operating expenses by its
-      caption; medical consumables and cost of goods sold are consumables; the settlement discount is out of sub
-      revenue; receivables carry an opening and a go-live amount. Branch 6 (Fusion vocabulary): depreciation has its
-      own category; cost of medicines is consumables; budget subtotals give operating expenses, G&A without
-      marketing and consumables. Branch 2 has a budget and no actuals yet: actuals are 0. Branch 1 has no budget: the
+      caption; medical consumables are consumables; the settlement discount is out of sub
+      revenue; receivables carry an opening and a go-live amount. Cost of goods sold is not consumables (2026-10-13).
+      Branch 6 (Fusion vocabulary): depreciation has its own category; cost of medicines (Fusion's cost of goods sold)
+      is not consumables; budget subtotals give operating expenses, G&A without marketing, and consumables from the
+      Consumables line only. Branch 2 has a budget and no actuals yet: actuals are 0. Branch 1 has no budget: the
       budget columns are NULL. A 2023 row is before the window (January two years back from 2026-10-12). Abha's
       November 2026 accrual and carried balance are after the current month and do not appear.
     model: bsc_vw_financial
@@ -129,8 +130,8 @@ unit_tests:
                CAST(oxb AS Nullable(Decimal(38, 2))) as operating_expenses_budget, CAST(ebb AS Nullable(Decimal(38, 2))) as ebitda_budget,
                CAST(gab AS Nullable(Decimal(38, 2))) as ga_expenses_budget, CAST(csb AS Nullable(Decimal(38, 2))) as consumables_budget
         from values('b UInt8, m String, nr Float64, sr Float64, ox Float64, eb Float64, ar Float64, aro Float64, ga Float64, cs Float64, asst Float64, asso Float64, inc Float64, nrb Nullable(Float64), srb Nullable(Float64), oxb Nullable(Float64), ebb Nullable(Float64), gab Nullable(Float64), csb Nullable(Float64)',
-            (1, '2026-08-01', 95, 100, 48, 47, 70, 50, 8, 10, 70, 50, 34, null, null, null, null, null, null),
-            (6, '2026-08-01', 200, 200, 20, 180, 0, 0, 5, 15, 0, 0, 160, 210, 220, 75, 100, 20, 15),
+            (1, '2026-08-01', 95, 100, 48, 47, 70, 50, 8, 4, 70, 50, 34, null, null, null, null, null, null),
+            (6, '2026-08-01', 200, 200, 20, 180, 0, 0, 5, 0, 0, 0, 160, 210, 220, 75, 100, 20, 3),
             (2, '2026-08-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, 0, 0))
 
   - name: bsc_vw_work_force_counts_fusion_paid_and_part_time
