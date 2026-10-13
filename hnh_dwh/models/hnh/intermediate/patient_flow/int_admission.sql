@@ -83,7 +83,15 @@ flagged as (
 ),
 
 countable as (
-    select *, toUInt8(is_short_stay = 0 and is_wrong_admission_outcome = 0) as is_countable
+    -- Admissions follow the old warehouse's vw_inpatients rules (user decision 2026-10-13): in scope = a last bed in a
+    -- ward that is not excluded and an outcome that is not wrong admission; countable = in scope and more than one hour
+    -- (to now for open stays). The rule of the gold spec is kept as is_countable_corrected.
+    select
+        *,
+        toUInt8(is_short_stay = 0 and is_wrong_admission_outcome = 0)                         as is_countable_corrected,
+        toUInt8(has_bed = 1 and legacy_last_bed_ok = 1 and is_wrong_admission_outcome = 0)     as in_legacy_scope,
+        toUInt8(has_bed = 1 and legacy_last_bed_ok = 1 and is_wrong_admission_outcome = 0
+                and dateDiff('hour', admitted_at, ifNull(physical_discharge_at, now('Asia/Riyadh'))) > 1) as is_countable
     from flagged
 ),
 
@@ -95,19 +103,24 @@ previous_stay as (
         lagInFrame(physical_discharge_at, 1) over w   as previous_discharge_at,
         lagInFrame(last_critical_left_at, 1) over w   as previous_critical_left_at
     from countable
-    where is_countable = 1 and patient_id is not null and admitted_at is not null
+    where is_countable_corrected = 1 and patient_id is not null and admitted_at is not null
     window w as (partition by branch_id, patient_id order by admitted_at asc, admission_no asc
                  rows between unbounded preceding and current row)
 ),
 
 previous_any as (
-    -- The old rule: previous admission date over every admission, countable or not.
+    -- The old rule: previous admission date over the admissions of the old vw_inpatients (in scope, short or not).
     select
         branch_id, admission_no,
         lagInFrame(admitted_at, 1) over (partition by branch_id, patient_id order by admitted_at asc, admission_no asc
                                          rows between unbounded preceding and current row) as previous_admitted_at
     from countable
-    where patient_id is not null and admitted_at is not null
+    where in_legacy_scope = 1 and patient_id is not null and admitted_at is not null
+),
+
+wards as (
+    select branch_id, work_entity, upper(ifNull(description, '')) as ward_upper
+    from {{ ref('stg_oasis__work_entities') }}
 )
 
 select
@@ -120,13 +133,22 @@ select
     c.bed_class as bed_class,
     c.los_hours as los_hours, c.los_days as los_days, c.los_days_to_date as los_days_to_date,
     c.is_open as is_open, c.is_short_stay as is_short_stay, c.is_wrong_admission_outcome as is_wrong_admission_outcome, c.is_countable as is_countable,
-    {{ hnh_is_ltc('c.los_days', 'c.referred_upper') }}          as is_ltc,
-    {{ hnh_is_ltc('c.los_days_to_date', 'c.referred_upper') }}  as is_ltc_to_date,
+    c.is_countable_corrected as is_countable_corrected,
+    -- old rule: more than 30 days to discharge or to now, or referred as LTC
+    toUInt8(dateDiff('hour', c.admitted_at, ifNull(c.physical_discharge_at, now('Asia/Riyadh'))) / 24 > 30
+            or ifNull(c.referred_upper, '') = 'LTC')             as is_ltc,
+    toUInt8(dateDiff('hour', c.admitted_at, ifNull(c.physical_discharge_at, now('Asia/Riyadh'))) / 24 > 30
+            or ifNull(c.referred_upper, '') = 'LTC')             as is_ltc_to_date,
+    {{ hnh_is_ltc('c.los_days', 'c.referred_upper') }}          as is_ltc_corrected,
     c.first_work_entity as first_work_entity, c.last_work_entity as last_work_entity, c.last_bed_location as last_bed_location, c.has_bed as has_bed,
     c.had_critical_bed as had_critical_bed, c.critical_bed_hours as critical_bed_hours, c.first_critical_at as first_critical_at, c.last_critical_left_at as last_critical_left_at,
     if(ps.previous_discharge_at is null, null, dateDiff('day', ps.previous_discharge_at, c.admitted_at)) as days_since_previous_discharge,
-    toUInt8(ifNull(dateDiff('day', ps.previous_discharge_at, c.admitted_at) between 0 and 30, 0))        as is_readmission_30d,
-    toUInt8(ifNull(dateDiff('minute', ps.previous_critical_left_at, c.first_critical_at) between 0 and 2880, 0)) as is_icu_readmission_48h,
+    -- old rules: days from the previous admission of the old scope; ICU = within 2 days, last ward named ICU or CCU
+    toUInt8(ifNull(dateDiff('day', pa.previous_admitted_at, c.admitted_at) <= 30, 0))                    as is_readmission_30d,
+    toUInt8(ifNull(dateDiff('day', pa.previous_admitted_at, c.admitted_at) <= 2, 0)
+            and (ifNull(wd.ward_upper, '') like '%ICU%' or ifNull(wd.ward_upper, '') like '%CCU%'))      as is_icu_readmission_48h,
+    toUInt8(ifNull(dateDiff('day', ps.previous_discharge_at, c.admitted_at) between 0 and 30, 0))        as is_readmission_30d_corrected,
+    toUInt8(ifNull(dateDiff('minute', ps.previous_critical_left_at, c.first_critical_at) between 0 and 2880, 0)) as is_icu_readmission_48h_corrected,
     toUInt8(c.discharge_outcome_group = 'Died')                  as is_died,
     toUInt8(c.discharge_outcome_group = 'Left against advice')   as is_dama,
     toUInt8(dateDiff('hour', c.admitted_at, ifNull(c.physical_discharge_at, now('Asia/Riyadh'))) <= 1) as legacy_is_wrong_admission,
@@ -137,4 +159,5 @@ select
 from countable as c
 left join previous_stay as ps on ps.branch_id = c.branch_id and ps.admission_no = c.admission_no
 left join previous_any as pa on pa.branch_id = c.branch_id and pa.admission_no = c.admission_no
+left join wards as wd on wd.branch_id = c.branch_id and wd.work_entity = c.last_work_entity
 {{ hnh_settings() }}

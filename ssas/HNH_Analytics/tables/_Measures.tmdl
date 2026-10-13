@@ -1,7 +1,7 @@
 /// Every measure of the model, in display folders by domain (<domain>\<topic>). Each perspective shows the measures of its domain (decision P26).
 table _Measures
 
-	/// Countable admissions by admit date (gold spec section 8).
+	/// Admissions by admit date, old warehouse rule (vw_inpatients, 2026-10-13): a last bed in a ward that is not excluded, an outcome that is not wrong admission, and more than one hour (to now for open stays).
 	measure Admissions =
 			VAR __Value = ( -- measure body
 				CALCULATE ( COUNTROWS ( Admissions ), Admissions[Is Countable] = "Yes" )
@@ -380,7 +380,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Episodes"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Patient Flow\Episodes
-	/// Countable admissions by physical discharge date (gold spec section 8).
+	/// Admissions counted by the old warehouse rule (see Admissions), by physical discharge date.
 	measure Discharges =
 			VAR __Value = ( -- measure body
 				CALCULATE (
@@ -393,7 +393,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Discharges"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Patient Flow\Admissions
-	/// Average length of stay in days of countable stays discharged in the period; slice by Is LTC for the LTC split (gold spec section 8).
+	/// Average length of stay in days of the period's discharges (old warehouse rule, see Admissions); slice by Is LTC for the LTC split (old rule: more than 30 days to discharge or to now, or referred as LTC).
 	measure 'ALOS (days)' =
 			VAR __Value = ( -- measure body
 				CALCULATE (
@@ -406,7 +406,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """ALOS (days)"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Patient Flow\Admissions
-	/// 30-day readmissions (previous discharge to this admit) ÷ countable admissions, by admit date (gold spec section 8).
+	/// 30-day readmissions ÷ admissions, by admit date, old warehouse rule: 30 days or less from the patient's previous admission (admit to admit).
 	measure 'Readmission Rate 30d %' =
 			VAR __Value = ( -- measure body
 				DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Readmission 30d] = "Yes" ), [Admissions] )
@@ -415,7 +415,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Readmission Rate 30d %"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Patient Flow\Admissions
-	/// Countable admissions readmitted to a critical bed within 48 hours (gold spec section 8).
+	/// Admissions within 2 calendar days of the patient's previous admission whose last ward is named ICU or CCU (old warehouse rule).
 	measure 'ICU Readmissions 48h' =
 			VAR __Value = ( -- measure body
 				CALCULATE ( [Admissions], Admissions[Is ICU Readmission 48h] = "Yes" )

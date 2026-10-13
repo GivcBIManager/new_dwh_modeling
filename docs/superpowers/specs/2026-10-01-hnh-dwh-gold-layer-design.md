@@ -327,12 +327,15 @@ Attributes and measures:
 | `is_open` | `physical_discharge_date` is null. |
 | `is_short_stay` | Closed and `los_hours < 1`. Excluded from admission counts. |
 | `is_wrong_admission_outcome` | Discharge outcome group `Wrong admission` (program code 9). Excluded from admission counts. |
-| `is_countable` | Not short stay, not wrong-admission outcome. The default filter for every admission KPI. |
+| `is_countable` | **Old warehouse rule since 2026-10-13 (user decision):** a last bed in a ward that is not excluded, an outcome that is not wrong admission, and more than one hour (`dateDiff('hour')`, to now for open stays), as the old `vw_inpatients`. The default filter for every admission KPI. The previous rule (not short stay, not wrong-admission outcome) is `int_admission.is_countable_corrected`. |
 | `is_ltc` | `los_days > 30` at discharge, or referred type `LTC`. For open stays, `is_ltc_to_date` holds the running value. |
 | `admission_source` | `OP` when the request's admission department decodes to `OUTPATIENT CLINICS` or `OPD`; `ER` for `ACCIDENT & EMERGENCY` or `ER`; otherwise the previous episode's care type when it is OP or ER; else `Direct`. Case-insensitive. |
 | `admission_request_*` | From the earliest `admission_request` for the admission (lowest `admission_request_id`): planned date, urgency, admission type, reason. |
 | `critical_bed_hours`, `had_critical_bed`, `first_critical_at`, `last_critical_left_at` | From `int_bed_segment` where classification is `Critical`. |
 | `days_since_previous_discharge` | Days from the patient's previous countable stay's physical discharge to this admit, same branch. Look-back uses all history. |
+
+**Decision 2026-10-13:** every inpatient measure follows the old `vw_inpatients` rules: `is_countable` as above; `is_ltc` = more than 30 days to discharge or to now (`dateDiff('hour')/24`), or referred as LTC; `is_readmission_30d` = previous admission of the old scope 30 days or less before; `is_icu_readmission_48h` = previous admission 2 calendar days or less before and a last ward named ICU or CCU. `int_admission` keeps the gold-spec rules in `is_countable_corrected`, `is_ltc_corrected`, `is_readmission_30d_corrected` and `is_icu_readmission_48h_corrected` (not passed to the facts or SSAS). Checked on August 2026 against the old `bsc.vw_customer`: admissions equal for 7 of 8 branches (Unaizah 604 vs 605), readmissions equal except Unaizah (33 vs 36), ICU readmissions equal, discharges within 1, ALOS non-LTC within 0.006 days.
+
 | `is_readmission_30d` | `days_since_previous_discharge` between 0 and 30. |
 | `is_icu_readmission_48h` | This stay's `first_critical_at` is within 48 hours after the previous stay's `last_critical_left_at`. |
 | `is_died`, `is_dama` | From the discharge outcome group. |
@@ -386,13 +389,13 @@ Defined once here; SSAS measures are thin aggregations over these fields.
 | Waiting time | Average and median of `wait_minutes`, arrived and not cancelled | `fact_encounter` |
 | No-show rate | `is_no_show` ÷ booked non-walk-in, non-cancelled appointments | `fact_encounter` |
 | Cancellation rate | `is_cancelled` ÷ booked appointments | `fact_encounter` |
-| Admissions | Distinct admissions, `is_countable`, by admit date | `fact_admission` |
+| Admissions | Distinct admissions, `is_countable` (old warehouse rule, 2026-10-13), by admit date | `fact_admission` |
 | Discharges | Distinct admissions, `is_countable`, by physical discharge date | `fact_admission` |
 | Conversion rate | Countable admissions with source OP or ER ÷ episodes of care type OP or ER whose consultant's specialty is admitting | `fact_admission`, `fact_episode` |
 | ALOS | Average `los_days` of countable stays discharged in the period; split by `is_ltc` | `fact_admission` |
 | Occupancy | `sum(is_occupied) ÷ sum(is_available)`, excluded wards removed | `fact_bed_occupancy_daily` |
 | Bed turnover | Discharges ÷ average available beds | both |
-| 30-day readmission rate | `is_readmission_30d` ÷ countable admissions | `fact_admission` |
+| 30-day readmission rate | `is_readmission_30d` ÷ countable admissions. Old rule since 2026-10-13: 30 days or less from the patient's previous admission (admit to admit) among the old scope; the previous-discharge rule is `is_readmission_30d_corrected` | `fact_admission` |
 | ICU readmission, 48 h | `is_icu_readmission_48h` | `fact_admission` |
 | Clinic utilisation | `slots_attended ÷ slots_total` | `agg_clinic_capacity_daily` |
 | Theatre volume | Distinct non-cancelled operations | `fact_surgery` |
