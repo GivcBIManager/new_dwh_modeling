@@ -177,3 +177,55 @@ unit_tests:
         - {line_natural_id: V7001-R1, response_id: 102, pull_count: 2, payer_license: '7001', preauth_reference: R1, created_at: '2026-06-01 09:00:00', preauth_valid_from: 2026-06-01, preauth_valid_to: 2026-06-30, care_type: OP, nphies_status: APPROVED, outcome: Approved, advance_reason: referral, referring_provider_name: CLINIC X, approved_amount: 150, submitted_amount: 200, patient_match_count: 1, patient_id: 500, episode_no: 1, episode_match_count: 1, episode_link_method: Validity period, purchaser_code: 300}
         - {line_natural_id: V7001-R2, response_id: 103, pull_count: 1, payer_license: '7001', preauth_reference: R2, created_at: '2026-06-01 09:00:00', preauth_valid_from: 2026-06-01, preauth_valid_to: 2026-06-30, care_type: OP, nphies_status: PARTIAL, outcome: Partially approved, advance_reason: authorization, referring_provider_name: null, approved_amount: 50, submitted_amount: 60, patient_match_count: 2, patient_id: null, episode_no: null, episode_match_count: 0, episode_link_method: null, purchaser_code: null}
         - {line_natural_id: V7002-R3, response_id: 104, pull_count: 1, payer_license: '7002', preauth_reference: R3, created_at: '2026-06-01 09:00:00', preauth_valid_from: 2026-06-01, preauth_valid_to: 2026-06-30, care_type: IP, nphies_status: APPROVED, outcome: Approved, advance_reason: refill, referring_provider_name: null, approved_amount: 0, submitted_amount: null, patient_match_count: 1, patient_id: 600, episode_no: 7, episode_match_count: 1, episode_link_method: Reference, purchaser_code: 301}
+
+  - name: int_invoice_claim_status_sets_status_and_channel
+    description: >
+      Claim status spec 4.1. Invoice 1: status Submitted, NPHIES. Invoice 2: no approval status on a manual
+      purchaser: New, Manual. Invoice 3: no approval status on a purchaser flagged N: New, Not submitted.
+      Invoice 4: Valid on a manual purchaser: Under Processing, Not submitted (the manual flag counts only for New).
+      Invoice 5: a code with no decode row: Unknown, not mapped. Invoice 6: no approval status and an account with
+      no purchaser: New, Not submitted. Invoice 7: Posted, matched case-insensitively ('posted'), on a manual
+      purchaser: New, Manual, detailed status Posted.
+    model: int_invoice_claim_status
+    given:
+      - input: ref('stg_oasis__episode_invoices')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(i) as invoice_no,
+                 if(acc = '', cast(null as Nullable(String)), toNullable(acc)) as account_code,
+                 if(code = '', cast(null as Nullable(String)), toNullable(code)) as approval_status_code
+          from values('i UInt32, acc String, code String',
+              (1, 'A-N', 'S'), (2, 'A-Y', ''), (3, 'A-N', ''), (4, 'A-Y', 'V'), (5, 'A-N', 'X'),
+              (6, 'A-NONE', ''), (7, 'A-Y', 'P'))
+      - input: ref('int_code_decode')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toNullable(toInt32(5116)) as code_type, toNullable(uc) as user_code,
+                 toNullable(d) as description
+          from values('uc String, d String', ('S', 'Submitted'), ('V', 'Valid'), ('P', 'posted'))
+      - input: ref('stg_ref__claim_status')
+        format: sql
+        rows: |
+          select d as detailed_status, s as submission_status, v as validation_status
+          from values('d String, s String, v String',
+              ('Submitted', 'Submitted', 'Valid'), ('Valid', 'Under Processing', 'Valid'),
+              ('Posted', 'New', 'New'), ('New', 'New', 'New'))
+      - input: ref('int_invoice_payer')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, acc as account_code, toInt64(p) as purchaser_code
+          from values('acc String, p UInt32', ('A-N', 300), ('A-Y', 301))
+      - input: ref('stg_ref__purchaser_mapping')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(p) as purchaser_code, toNullable(f) as manual_submission
+          from values('p UInt32, f String', (300, 'N'), (301, 'Y'))
+    expect:
+      rows:
+        - {invoice_no: 1, detailed_status: Submitted, submission_status: Submitted, validation_status: Valid, is_status_mapped: 1, submission_channel: NPHIES, claim_status_key: 2892288513816667301}
+        - {invoice_no: 2, detailed_status: New, submission_status: New, validation_status: New, is_status_mapped: 1, submission_channel: Manual, claim_status_key: 4221634614679168790}
+        - {invoice_no: 3, detailed_status: New, submission_status: New, validation_status: New, is_status_mapped: 1, submission_channel: Not submitted, claim_status_key: 9000259100679503054}
+        - {invoice_no: 4, detailed_status: Valid, submission_status: Under Processing, validation_status: Valid, is_status_mapped: 1, submission_channel: Not submitted, claim_status_key: 8318118211403771765}
+        - {invoice_no: 5, detailed_status: Unknown, submission_status: Unknown, validation_status: Unknown, is_status_mapped: 0, submission_channel: Unknown, claim_status_key: 1591316910076942424}
+        - {invoice_no: 6, detailed_status: New, submission_status: New, validation_status: New, is_status_mapped: 1, submission_channel: Not submitted, claim_status_key: 9000259100679503054}
+        - {invoice_no: 7, detailed_status: Posted, submission_status: New, validation_status: New, is_status_mapped: 1, submission_channel: Manual, claim_status_key: 5877239766880445822}
