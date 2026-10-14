@@ -62,5 +62,8 @@ specialty, `is_admin`, `can_see_pay`, `can_see_pii`.
    with the CSV, after copying the old rows to `*_backup_<timestamp>` tables.
 4. After the next dbt build and `process.ps1 -Mode Daily`, the measure `_Measures[Current User]` (folder Diagnostics) in a report shows `HNHANALYTICSSRV\<user>`.
 
+Model administrators (role `HNH Admins`, no row filters) are listed in `$admins` in `scripts\deploy.ps1`, which adds
+them to `HNH_Analytics` and `HNH_Analytics_Test` after every deploy.
+
 A row without `branch_key` sees every branch, Head Office included: `load_bi_users.ps1` loads it with `IsAdmin = 1`. Its
 specialty restriction and its pay and PII flags still apply.

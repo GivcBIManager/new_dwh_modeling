@@ -27,6 +27,8 @@ $modelDir = Join-Path $root 'HNH_Analytics'
 $rules = Join-Path $root 'bpa_rules.json'
 $te = Join-Path $TabularEditorDir 'TabularEditor.exe'
 $group = "$env:COMPUTERNAME\HNH_BI_Users"
+# Members of the role 'HNH Admins' (database administrators) on HNH_Analytics and HNH_Analytics_Test.
+$admins = @('HNHRIYADH\inmabideveloper', 'HNHRIYADH\inmabimanager')
 Import-Module (Join-Path $PSScriptRoot 'HnhSsas.psm1') -Force
 Import-HnhTom $TabularEditorDir
 $logDir = Join-Path $root 'logs'
@@ -43,6 +45,10 @@ function Invoke-Step([string]$Script, [hashtable]$Arguments) {
     Invoke-HnhStep -ScriptPath (Join-Path $PSScriptRoot $Script) -Arguments $Arguments
 }
 function Want([string]$Name) { return ($Stage -eq 'All' -or $Stage -eq $Name) }
+function Add-Admins($Model) {
+    # A deploy that recreates the database (-Full) drops role members, so they are added after every deploy.
+    foreach ($a in $admins) { if (Add-HnhRoleMember -Model $Model -Role 'HNH Admins' -Member $a) { Write-Host "role member $a added to HNH Admins" } }
+}
 
 $exitCode = 0
 try {
@@ -67,6 +73,7 @@ try {
         }
         $srv = Connect-HnhServer $Server
         [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
+        Add-Admins (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
         $srv.Disconnect()
         Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
         if ($mode -eq 'Full') {
@@ -106,6 +113,7 @@ try {
         $srv = Connect-HnhServer $Server
         $db = Get-HnhDatabase $srv 'HNH_Analytics'
         if (Add-HnhRoleMember -Model $db.Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group added" }
+        Add-Admins $db.Model
         $srv.Disconnect()
         Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics'; TabularEditorDir = $TabularEditorDir }
         $srv = Connect-HnhServer $Server
@@ -128,6 +136,7 @@ try {
         Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-R', '-E', '-V')
         $srv = Connect-HnhServer $Server
         [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
+        Add-Admins (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
         $srv.Disconnect()
         Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
         $srv = Connect-HnhServer $Server
