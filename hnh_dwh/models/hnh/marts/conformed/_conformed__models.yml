@@ -181,6 +181,17 @@ models:
     columns:
       - name: nphies_reason_key
         tests: [unique, not_null]
+  - name: dim_claim_status
+    description: >
+      Claim status of invoices and claim lines: validation, submission and detailed status from map_claim_status,
+      and the submission channel (claim status spec 4.1). One row per detailed status and channel.
+    columns:
+      - name: claim_status_key
+        tests: [unique, not_null]
+      - name: submission_channel
+        tests:
+          - accepted_values:
+              values: ['NPHIES', 'Manual', 'Not submitted', 'Unknown']
   - name: hnh_dim_gl_period
     columns:
       - name: period_key
