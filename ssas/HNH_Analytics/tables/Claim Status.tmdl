@@ -1,0 +1,55 @@
+/// Claim status (validation, submission, detailed) and submission channel of invoices and claim lines.
+table 'Claim Status'
+
+	hierarchy 'Claim Status'
+
+		level 'Validation Status'
+			column: 'Validation Status'
+
+		level 'Submission Status'
+			column: 'Submission Status'
+
+		level 'Detailed Status'
+			column: 'Detailed Status'
+
+	column 'Claim Status Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: claim_status_key
+
+	column 'Validation Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: validation_status
+
+	column 'Submission Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: submission_status
+
+	column 'Detailed Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: detailed_status
+
+	column 'Submission Channel'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: submission_channel
+
+	column 'Is Submitted'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_submitted
+
+	partition 'Claim Status' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_claim_status")
+				in
+				    Source
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_claim_status

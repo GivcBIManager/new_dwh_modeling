@@ -196,6 +196,22 @@ models:
         data_type: "String"
       - name: care_type_name
         data_type: "String"
+  - name: ssas_dim_claim_status
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: claim_status_key
+        data_type: "Int64"
+      - name: validation_status
+        data_type: "String"
+      - name: submission_status
+        data_type: "String"
+      - name: detailed_status
+        data_type: "String"
+      - name: submission_channel
+        data_type: "String"
+      - name: is_submitted
+        data_type: "String"
   - name: ssas_dim_date
     config:
       contract: {enforced: true}
@@ -1442,6 +1458,8 @@ models:
         data_type: "Int64"
       - name: nphies_reason_key
         data_type: "Int64"
+      - name: claim_status_key
+        data_type: "Int64"
       - name: submission_number
         data_type: "Int64"
       - name: is_latest_submission
@@ -1477,6 +1495,8 @@ models:
       - name: approved_qty
         data_type: "Nullable(Float64)"
       - name: rejected_amount
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: response_benefit_amount
         data_type: "Nullable(Decimal(18, 4))"
   - name: ssas_fact_claim_payment
     config:
@@ -1823,6 +1843,8 @@ models:
       - name: payer_key
         data_type: "Int64"
       - name: care_type_key
+        data_type: "Int64"
+      - name: claim_status_key
         data_type: "Int64"
       - name: invoice_no
         data_type: "Int64"
