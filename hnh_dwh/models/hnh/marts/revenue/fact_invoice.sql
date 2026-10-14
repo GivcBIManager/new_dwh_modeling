@@ -44,7 +44,9 @@ enriched as (
         cs.submission_status   as submission_status,
         cs.validation_status   as validation_status,
         py.purchaser_code      as purchaser_code,
-        ep.care_type           as episode_care_type
+        ep.care_type           as episode_care_type,
+        ics.submission_channel as submission_channel,
+        ics.claim_status_key   as claim_status_key
     from invoices as i
     left join {{ ref('stg_oasis__invoice_statements') }} as s
         on s.branch_id = i.branch_id and s.stat_invoice_no = i.stat_invoice_no
@@ -56,6 +58,8 @@ enriched as (
         on py.branch_id = i.branch_id and py.account_code = i.account_code
     left join (select branch_id, patient_id, episode_no, care_type from {{ ref('int_episode') }}) as ep
         on ep.branch_id = i.branch_id and ep.patient_id = i.patient_id and ep.episode_no = i.episode_no
+    left join (select branch_id, invoice_no, submission_channel, claim_status_key from {{ ref('int_invoice_claim_status') }}) as ics
+        on ics.branch_id = i.branch_id and ics.invoice_no = i.invoice_no
 )
 
 select
@@ -71,6 +75,7 @@ select
     ifNull(dp.patient_key, toInt64(-1))                                     as patient_key,
     ifNull(dpy.payer_key, toInt64(-1))                                      as payer_key,
     {{ hnh_care_type_key(hnh_charge_care_type('e.episode_care_type', 'e.attendance_type')) }} as care_type_key,
+    ifNull(e.claim_status_key, {{ hnh_claim_status_key("'Unknown'", "'Unknown'") }}) as claim_status_key,
     e.invoice_no                                                            as invoice_no,
     e.stat_invoice_no                                                       as stat_invoice_no,
     e.account_code                                                          as account_code,
@@ -84,6 +89,7 @@ select
     ifNull(e.approval_status, if(e.approval_status_code is null, 'Not set', 'Unknown')) as approval_status,
     ifNull(e.submission_status, 'New')                                      as submission_status,
     ifNull(e.validation_status, 'New')                                      as validation_status,
+    ifNull(e.submission_channel, 'Unknown')                                 as submission_channel,
     toUInt8(e.approval_status_code is null or e.submission_status is not null) as is_submission_status_mapped,
     toUInt8(e.approved_by is not null)                                      as is_verified,
     toUInt8(e.statement_sent_at is not null)                                as is_sent,

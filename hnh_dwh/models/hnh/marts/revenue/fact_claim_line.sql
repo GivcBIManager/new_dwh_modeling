@@ -107,6 +107,8 @@ select
     {{ hnh_care_type_key('k.care_type') }}                                  as care_type_key,
     k.invoice_key                                                           as invoice_key,
     if(k.primary_reason_code is null, toInt64(0), ifNull(dr.nphies_reason_key, toInt64(-1))) as nphies_reason_key,
+    -- status of the line's invoice (claim status spec 5.4); Unknown when the claim invoice is not in AR
+    ifNull(ics.claim_status_key, {{ hnh_claim_status_key("'Unknown'", "'Unknown'") }}) as claim_status_key,
     k.visit_id                                                              as visit_id,
     k.sequence_no                                                           as sequence_no,
     k.claim_invoice_no                                                      as claim_invoice_no,
@@ -127,21 +129,21 @@ select
     k.net_amount                                                            as claimed_amount,
     if(k.has_adjudication = 1, ifNull(k.response_submitted, k.net_amount), null) as submitted_amount,
     if(k.has_adjudication = 1, k.response_eligible, null)                   as eligible_amount,
-    if(k.has_adjudication = 1, ifNull(k.response_benefit, 0), null)         as approved_amount,
+    -- claim status spec 4.2: by the line's response outcome; 0 without an adjudicated response item
+    multiIf(k.has_adjudication = 0, 0,
+            k.response_outcome = 'Approved', k.net_amount,
+            k.response_outcome = 'Partially approved', ifNull(k.response_benefit, 0),
+            0)                                                              as approved_amount,
     if(k.has_adjudication = 1, k.response_copay, null)                      as copay_amount,
     if(k.has_adjudication = 1, k.response_deductible, null)                 as deductible_amount,
     if(k.has_adjudication = 1, k.response_patient_share, null)              as patient_share_amount,
     if(k.has_adjudication = 1, k.response_tax, null)                        as tax_amount,
     if(k.has_adjudication = 1, k.response_approved_qty, null)               as approved_qty,
-    -- payers omit eligible on approved items and send eligible = submitted on rejected ones, so go by outcome;
-    -- submitted includes VAT while eligible and benefit exclude it (the payer returns it as tax), so tax is not rejected
-    if(k.has_adjudication = 1,
-       multiIf(k.response_outcome = 'Rejected', ifNull(k.response_submitted, k.net_amount),
-               k.response_outcome = 'Approved', 0,
-               greatest(ifNull(k.response_submitted, k.net_amount) - ifNull(k.response_tax, 0)
-                        - coalesce(nullIf(k.response_eligible, 0),
-                                   ifNull(k.response_benefit, 0) + coalesce(k.response_patient_share, k.response_copay, 0)), 0)),
-       null)                                                                as rejected_amount,
+    multiIf(k.has_adjudication = 0, 0,
+            k.response_outcome = 'Rejected', k.net_amount,
+            k.response_outcome = 'Partially approved', greatest(k.net_amount - ifNull(k.response_benefit, 0), 0),
+            0)                                                              as rejected_amount,
+    if(k.has_adjudication = 1, k.response_benefit, null)                    as response_benefit_amount,
     -- old claims model and bsc.vw_rcm; their scope is legacy_in_scope = 1 (invoice and transaction on an AR statement)
     k.legacy_in_scope                                                       as legacy_in_scope,
     k.net_amount                                                            as legacy_submitted_amount,
@@ -156,4 +158,6 @@ left join (select payer_key from {{ ref('dim_payer') }}) as dpy on dpy.payer_key
 left join (select service_key from {{ ref('dim_service') }}) as dsv on dsv.service_key = k.service_key_raw
 left join (select nphies_reason_key from {{ ref('dim_nphies_reason') }}) as dr
     on dr.nphies_reason_key = {{ hnh_surrogate_key(['k.primary_reason_code']) }}
+left join (select branch_id, invoice_no, claim_status_key from {{ ref('int_invoice_claim_status') }}) as ics
+    on ics.branch_id = k.branch_id and ics.invoice_no = k.claim_invoice_no
 {{ hnh_settings() }}
