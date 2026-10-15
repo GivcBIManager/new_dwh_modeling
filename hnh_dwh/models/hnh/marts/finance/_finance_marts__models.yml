@@ -129,6 +129,8 @@ models:
       Fusion GL month (default.map_gl_cutover), Fusion GL from it (bsc spec section 5). Debit positive. FS levels are
       lower case in the old fs_mapping vocabulary (Oasis) or dim_fs_line's (Fusion).
     columns:
+      - name: account_code
+        description: Oasis main + sub account, or the Fusion natural account (segment 2) summed over its combinations.
       - name: branch_key
         tests:
           - not_null

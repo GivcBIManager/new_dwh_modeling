@@ -7,8 +7,9 @@ unit_tests:
       of 100 and a February posting; March has no posting but keeps the balance. Account 4101 (revenue) restarts each
       year (December 2025, then January 2026). An unposted line and a 2021 line are left out. Branch 6 moves to
       Fusion in February 2026: its Oasis January row stays, its Oasis February row and Fusion January row are
-      dropped, and the Fusion February row keeps the go-live journal apart from the movement. Head Office (100) and
-      the posted balance view are not used.
+      dropped, and the Fusion February row keeps the go-live journal apart from the movement. Fusion combinations 900
+      and 901 share natural account 41010101 and add up under it. Head Office (100) and the posted balance view are
+      not used.
     model: fact_gl_fs_monthly
     given:
       - input: ref('stg_bsc__oasis_gl_line')
@@ -41,6 +42,7 @@ unit_tests:
                  toFloat64(o) as opening_balance, toFloat64(m) as period_movement, toFloat64(x) as period_movement_excl_opening
           from values('v String, b UInt8, a UInt32, p UInt32, o Float64, m Float64, x Float64',
               ('including_unposted', 6, 900, 202601, 0, -7, -7), ('including_unposted', 6, 900, 202602, 0, -15, -12),
+              ('including_unposted', 6, 901, 202602, 0, -4, -4),
               ('posted', 6, 900, 202602, 0, -1, -1), ('including_unposted', 100, 900, 202602, 0, -3, -3))
       - input: ref('hnh_dim_gl_period')
         format: sql
@@ -50,7 +52,8 @@ unit_tests:
       - input: ref('hnh_dim_gl_account')
         format: sql
         rows: |
-          select toInt64(900) as gl_account_key, toInt64(77) as fs_line_key
+          select toInt64(k) as gl_account_key, toNullable(toUInt32(41010101)) as natural_account, toInt64(77) as fs_line_key
+          from values('k UInt32', (900), (901))
       - input: ref('dim_fs_line')
         format: sql
         rows: |
@@ -66,7 +69,7 @@ unit_tests:
         - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: 0, closing_balance: -50}
         - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: -30, closing_balance: -80}
         - {branch_key: 6, month_start: '2026-01-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -10, closing_balance: -10}
-        - {branch_key: 6, month_start: '2026-02-01', source_system: fusion, account_code: '900', opening_balance: 0, opening_journal_amount: -3, movement: -12, closing_balance: -15}
+        - {branch_key: 6, month_start: '2026-02-01', source_system: fusion, account_code: '41010101', opening_balance: 0, opening_journal_amount: -3, movement: -16, closing_balance: -19}
 
   - name: bsc_vw_financial_uses_both_vocabularies
     description: >

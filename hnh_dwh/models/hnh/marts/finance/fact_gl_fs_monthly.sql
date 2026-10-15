@@ -91,7 +91,9 @@ fusion as (
         f.branch_key                                                as branch_key,
         p.month_start                                               as month_start,
         'fusion'                                                    as source_system,
-        toString(f.gl_account_key)                                  as account_code,
+        -- the natural account (segment 2), so combinations of one account in a branch add up; a combination
+        -- without one (the unknown account) keeps its own key
+        ifNull(toString(a.natural_account), toString(f.gl_account_key)) as account_code,
         lower(d.fs_type)                                            as fs_type,
         lower(d.fs_element)                                         as fs_element,
         lower(d.fs_category)                                        as fs_category,

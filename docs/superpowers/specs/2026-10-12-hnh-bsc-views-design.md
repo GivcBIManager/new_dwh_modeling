@@ -156,7 +156,7 @@ gold.fact_budget_monthly + default.map_budget_line_item + default.income_stateme
 | `branch_key` | UInt8 | 1–8 |
 | `month_start` | Date | Month. A Fusion adjustment period folds into the last month of its quarter, as in `fact_income_statement_monthly`. |
 | `source_system` | LowCardinality(String) | `oasis` or `fusion` |
-| `account_code` | String | Oasis `oasis_account` (main + sub account) or the Fusion account combination |
+| `account_code` | String | Oasis `oasis_account` (main + sub account) or the Fusion natural account (segment 2); a Fusion combination's rows add up under its natural account |
 | `fs_type`, `fs_element`, `fs_category`, `fs_caption`, `fs_line` | LowCardinality(String) | Lower-cased, `''` when unmapped. Oasis values come from `dim_oasis_gl_account`, Fusion values from `dim_fs_line`. |
 | `opening_balance` | Float64 | Balance at the start of the month (debit positive) |
 | `movement` | Float64 | Month movement, excluding brought-forward rows (Oasis) and go-live opening-balance journals (Fusion) |
