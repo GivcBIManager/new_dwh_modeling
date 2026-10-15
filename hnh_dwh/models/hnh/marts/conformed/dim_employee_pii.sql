@@ -12,7 +12,7 @@ with names as (
 select
     e.employee_key   as employee_key,
     e.branch_key     as branch_key,
-    names.full_name  as full_name
+    {{ hnh_title('names.full_name') }} as full_name
 from {{ ref('hnh_dim_employee') }} as e
 left join names on names.person_id = e.person_id
 where e.employee_key != -1

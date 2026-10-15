@@ -14,13 +14,13 @@ select
     a.intercompany_branch_key                                           as intercompany_branch_key,
     j.ledger_id                                                         as ledger_id,
     j.je_batch_id                                                       as je_batch_id,
-    j.journal_name                                                      as journal_name,
+    {{ hnh_title('j.journal_name') }}                                   as journal_name,
     j.doc_sequence_value                                                as doc_sequence_value,
     j.je_source                                                         as je_source,
     if(ifNull(j.je_source, '') = {{ oasis_feed }}, 'Oasis feed', ifNull(j.je_source, 'Unknown')) as je_source_label,
     j.je_category                                                       as je_category,
     j.header_status                                                     as header_status,
-    j.line_description                                                  as line_description,
+    {{ hnh_title('j.line_description') }}                               as line_description,
     toUInt8(ifNull(j.header_status, '') = 'P')                          as is_posted,
     -- Opening balance: Fusion category, or a batch listed in map_opening_balance_batch (O-P3-12).
     toUInt8(ifNull(j.je_category, '') = 'MRC Open Balances'

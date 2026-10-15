@@ -31,6 +31,13 @@ select 'hnh_code does not trim and upper-case'
 where {{ hnh_code("' r4809 '") }} != 'R4809'
 
 union all
+select 'hnh_title does not title-case'
+where {{ hnh_title("'PANADOL 500MG TAB'") }} != 'Panadol 500mg Tab'
+   or {{ hnh_title("'modarate sedation'") }} != 'Modarate Sedation'
+   or {{ hnh_title("'CTAS Level 2 - Emergent'") }} != 'CTAS Level 2 - Emergent'
+   or {{ hnh_title("cast(null as Nullable(String))") }} is not null
+
+union all
 select 'hnh_flag wrong'
 where {{ hnh_flag("'Y'") }} != 1 or {{ hnh_flag("'N'") }} != 0 or {{ hnh_flag("cast(null as Nullable(String))") }} != 0
 

@@ -83,21 +83,23 @@ select
     {{ hnh_surrogate_key(['b.branch_id', 'b.staff_id']) }}   as staff_key,
     b.branch_id                                              as branch_key,
     toNullable(b.staff_id)                                   as staff_id,
-    nullIf(replaceRegexpAll(trimBoth(concat(
-        initcap(concat(ifNull(b.name_1, ''), ' ', ifNull(b.name_2, ''), ' ', ifNull(b.name_3, ''))), ' ', upper(ifNull(b.family_name, ''))
-    )), '\\s+', ' '), '')                                    as staff_name,
-    nullIf(replaceRegexpAll(trimBoth(concat(
+    {% set staff_name %}nullIf(replaceRegexpAll(trimBoth(concat(
+        ifNull(b.name_1, ''), ' ', ifNull(b.name_2, ''), ' ', ifNull(b.name_3, ''), ' ', ifNull(b.family_name, '')
+    )), '\\s+', ' '), ''){% endset -%}
+    {% set staff_name_ar %}nullIf(replaceRegexpAll(trimBoth(concat(
         ifNull(b.name_ar_1, ''), ' ', ifNull(b.name_ar_2, ''), ' ', ifNull(b.name_ar_3, ''), ' ', ifNull(b.family_name_ar, '')
-    )), '\\s+', ' '), '')                                    as staff_name_ar,
+    )), '\\s+', ' '), ''){% endset -%}
+    {{ hnh_title(staff_name) }}                              as staff_name,
+    {{ hnh_title(staff_name_ar) }}                           as staff_name_ar,
     multiIf(b.sex = 'M', 'Male', b.sex = 'F', 'Female', 'Unknown') as gender,
     ifNull(initcap(nat.description), 'Unknown')              as nationality,
     toUInt8(ifNull(nat.description_upper, '') = 'SAUDI ARABIA') as is_saudi,
-    st.description                                           as staff_grade,
+    {{ hnh_title('st.description') }}                        as staff_grade,
     cl.classification                                        as classification,
     cl.category                                              as category,
     cl.med_nonmed                                            as med_nonmed,
     toUInt8(ifNull(st.is_consultant, 0))                     as is_consultant,
-    pos.description                                          as position_name,
+    {{ hnh_title('pos.description') }}                       as position_name,
     if(b.has_home_department, {{ hnh_surrogate_key(['b.branch_id', 'b.home_work_entity']) }}, toInt64(-1)) as home_department_key,
     ifNull(initcap(b.specialty_upper), 'Unknown')            as specialty,
     ifNull(ud.unified_department, 'Not Mapped')              as unified_specialty,

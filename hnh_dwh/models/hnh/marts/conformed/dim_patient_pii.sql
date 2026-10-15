@@ -26,12 +26,14 @@ select
     p.branch_id                as branch_key,
     p.patient_id               as patient_id,
     mrn.mrn                    as mrn,
-    nullIf(replaceRegexpAll(trimBoth(concat(
+    {% set full_name %}nullIf(replaceRegexpAll(trimBoth(concat(
         ifNull(p.name_1, ''), ' ', ifNull(p.name_2, ''), ' ', ifNull(p.name_3, ''), ' ', ifNull(p.family_name, '')
-    )), '\\s+', ' '), '')      as full_name,
-    nullIf(replaceRegexpAll(trimBoth(concat(
+    )), '\\s+', ' '), ''){% endset -%}
+    {% set full_name_ar %}nullIf(replaceRegexpAll(trimBoth(concat(
         ifNull(p.name_ar_1, ''), ' ', ifNull(p.name_ar_2, ''), ' ', ifNull(p.name_ar_3, ''), ' ', ifNull(p.family_name_ar, '')
-    )), '\\s+', ' '), '')      as full_name_ar,
+    )), '\\s+', ' '), ''){% endset -%}
+    {{ hnh_title(full_name) }}    as full_name,
+    {{ hnh_title(full_name_ar) }} as full_name_ar,
     ids.national_id            as national_id,
     ids.passport_no            as passport_no,
     ids.border_no              as border_no,

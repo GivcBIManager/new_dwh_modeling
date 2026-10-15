@@ -22,7 +22,7 @@ select
     s.branch_id                                       as branch_key,
     toNullable(s.ios)                                 as ios,
     s.ios_user                                        as ios_user,
-    ifNull(s.service_name, 'Unknown')                 as service_name,
+    ifNull({{ hnh_title('s.service_name') }}, 'Unknown') as service_name,
     s.ios_type                                        as ios_type,
     s.ios_category                                    as ios_category,
     s.service_dept                                    as service_dept,

@@ -25,12 +25,12 @@ select
     l.branch_id                                                as branch_key,
     toNullable(l.bed_location)                                 as bed_location,
     ifNull(dep.department_key_value, toInt64(-1))              as current_department_key,
-    dep.department_name                                        as current_ward,
-    bc.description                                             as bed_class,
+    {{ hnh_title('dep.department_name') }}                     as current_ward,
+    {{ hnh_title('bc.description') }}                          as bed_class,
     multiIf(fd.bed_sex = 'M', 'Male', fd.bed_sex = 'F', 'Female', 'Any') as bed_gender,
     ifNull(cls.classification, 'Not Mapped')                   as classification,
     toUInt8(ifNull(cls.classification, '') = 'Critical')       as is_critical,
-    st.description_upper                                       as current_slot_status,
+    {{ hnh_title('st.description_upper') }}                    as current_slot_status,
     toUInt8(s.bed_location is not null
             and ifNull(st.description_upper, '') not in ('NO BED IN SLOT', 'NOT AVAILABLE')) as is_currently_available
 from locations as l

@@ -2,6 +2,18 @@
 
 dbt models for the `hnh` gold layer (`hnh_dwh/`, deployed into the receiving project described in `docs/receiving_project_config.md`) and the SSAS Tabular model `HNH_Analytics` (`ssas/`, see `ssas/README.md`). Designs and plans are in `docs/superpowers/specs/` and `docs/superpowers/plans/`.
 
+## Modelling rules
+
+- **Source names and text are title-cased in the marts.** A mart column (`hnh_dwh/models/hnh/marts/`) that carries a name or wording from a source system wraps it in `{{ hnh_title(...) }}` (`hnh_dwh/macros/hnh/hnh_core.sql`). This covers descriptions, person / department / store / supplier / service / item names, and statuses or types as entered in Oasis or Fusion. Text written in one case is title-cased (`PANADOL 500MG TAB` → `Panadol 500mg Tab`); text that already mixes cases (`CTAS Level 2`, `JAZ Nuclear Medicine Specialist`) is kept. Apply it at the mart's output, to a qualified column (`{{ hnh_title('s.service_name') }}`), with any placeholder outside: `ifNull({{ hnh_title('description') }}, 'Not named')`. Column names stay snake_case.
+  - **Not title-cased:**
+    - labels this repo defines (CASE expressions, `hnh_rules*.sql` macros, mapping CSVs). Tests, `rec_*`/`bsc` SQL, measure-test SQL and key hashes match their exact values, and ClickHouse comparisons are case-sensitive.
+    - codes, ids and logins.
+    - long free-text sentences (payer comments, survey questions).
+    - staging and intermediate models, whose joins compare raw values.
+    - the `bsc` models, which keep the old server's values.
+  - **Check:** `tests/hnh/assert_mart_text_title_case.sql` checks every built mart's `*description*`, `*_desc`, `*_name`, `*_name_en/_ar` and `full_name*` text column automatically, plus its `extra` list. When adding a model, wrap such columns or, for a repo label or code, add the column to the test's `excluded` list. Add other source-text columns to `extra`.
+  - **Pitfall:** `{{ hnh_title('x') }} as x` changes every other unqualified `x` in the same select, because the alias wins over the column. Qualify the references or title-case in the final select.
+
 ## This machine is the production server
 
 This checkout (`D:\new_dwh_modeling`) is on **HNHANALYTICSSRV, the production server**. It hosts the production SSAS instance `HNHANALYTICSSRV\REPORTSERVERDB` and Power BI Report Server, which real users depend on. It reaches the production ClickHouse (`172.22.25.214:8123`) through the system ODBC DSNs.

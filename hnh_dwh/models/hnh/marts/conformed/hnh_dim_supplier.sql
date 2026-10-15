@@ -6,7 +6,7 @@ select
     toNullable(vendor_id)       as vendor_id,
     toNullable(vendor_site_id)  as vendor_site_id,
     supplier_number,
-    supplier_name,
+    {{ hnh_title('supplier_name') }} as supplier_name,
     supplier_type,
     supplier_status,
     site_code,
@@ -21,7 +21,7 @@ union all
 
 select
     {{ hnh_surrogate_key(["'oasis'", 'branch_id', 'account_code']) }},
-    null, null, null, account_name, 'Oasis supplier', null, null, null, null,
+    null, null, null, {{ hnh_title('account_name') }}, 'Oasis supplier', null, null, null, null,
     'oasis', account_code, toNullable(branch_id)
 from {{ ref('stg_oasis__external_accounts') }}
 where account_type = 'S' and account_code is not null

@@ -40,7 +40,7 @@ select
     {{ hnh_surrogate_key(['branch_id', 'purchaser_code']) }} as payer_key,
     branch_id                              as branch_key,
     toNullable(purchaser_code)             as purchaser_code,
-    purchaser_name                         as purchaser_name,
+    {{ hnh_title('purchaser_name') }}      as purchaser_name,
     account_code                           as account_code,
     company                                as company,
     creditor                               as creditor,

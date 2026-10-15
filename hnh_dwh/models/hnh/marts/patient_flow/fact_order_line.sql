@@ -36,7 +36,7 @@ select
     k.line_status                                           as line_status,
     k.fulfilment_status                                     as fulfilment_status,
     k.status_reason                                         as status_reason,
-    k.generic_name                                          as generic_name,
+    {{ hnh_title('k.generic_name') }}                       as generic_name,
     k.urgency_code                                          as urgency_code,
     k.is_alternative                                        as is_alternative,
     k.is_excluded_package                                   as is_excluded_package,

@@ -25,6 +25,15 @@ nullIf(trimBoth(ifNull(toString({{ col }}), '')), '')
 nullIf(upper(trimBoth(ifNull(toString({{ col }}), ''))), '')
 {%- endmacro %}
 
+{# Source names and text in the marts, title-cased when the source wrote it in one case:
+   "PANADOL 500MG TAB" -> "Panadol 500mg Tab", "modarate sedation" -> "Modarate Sedation".
+   Text that already mixes cases ("CTAS Level 2 - Emergent", "JAZ Nuclear Medicine Specialist") is kept,
+   so curated acronyms survive. Non-ASCII (Arabic) text is left as it is.
+   Rule in CLAUDE.md; checked by tests/hnh/assert_mart_text_title_case.sql. #}
+{% macro hnh_title(col) -%}
+if(match({{ col }}, '[a-z]') and match({{ col }}, '[A-Z]'), {{ col }}, initcap({{ col }}))
+{%- endmacro %}
+
 {% macro hnh_flag(col) -%}
 toUInt8(ifNull(toString({{ col }}), '') = 'Y')
 {%- endmacro %}
