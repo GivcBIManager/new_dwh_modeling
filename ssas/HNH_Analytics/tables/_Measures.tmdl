@@ -681,6 +681,42 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Verified Billed Amount"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Revenue Cycle\Billing
+	/// Billed statements in SAR: Σ invoice net amount (INVOICE_NET_AMOUNT); slice by the Claim Status hierarchy (claim status spec R1, 6.2).
+	measure 'Billed Statements' =
+			VAR __Value = ( -- measure body
+				SUM ( Invoices[Net Amount] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Invoices]
+			RETURN IF ( __Wrong = "", __Value, """Billed Statements"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
+	/// Billed statements in SAR submitted through NPHIES: every claim status except New, Valid and Invalid (claim status spec R3, 6.2).
+	measure 'Billed Submitted to NPHIES' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Billed Statements], KEEPFILTERS ( 'Claim Status'[Submission Channel] = "NPHIES" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Invoices]
+			RETURN IF ( __Wrong = "", __Value, """Billed Submitted to NPHIES"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
+	/// Billed statements in SAR submitted manually: status New on a purchaser flagged manual submission (claim status spec R4, 6.2).
+	measure 'Billed Manual' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Billed Statements], KEEPFILTERS ( 'Claim Status'[Submission Channel] = "Manual" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Invoices]
+			RETURN IF ( __Wrong = "", __Value, """Billed Manual"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
+	/// Billed statements in SAR not submitted: New on a purchaser not flagged manual, Valid (Under Processing) or Invalid (claim status spec 4.1, 6.2).
+	measure 'Billed Not Submitted' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Billed Statements], KEEPFILTERS ( 'Claim Status'[Submission Channel] = "Not submitted" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Invoices]
+			RETURN IF ( __Wrong = "", __Value, """Billed Not Submitted"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Revenue Cycle\Billing
 	/// Unbilled amount in SAR of episodes, by the episode's last delivery date (Phase 2 spec section 9).
 	measure 'Unbilled Amount' =
 			VAR __Value = ( -- measure body
@@ -857,7 +893,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Claims Submitted"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Claims & Pre-auth\Claims
-	/// Approved amount in SAR of the latest, not cancelled submission (Phase 2B spec section 8).
+	/// Approved amount in SAR of the latest, not cancelled submission: net amount of approved lines, the NPHIES benefit of partially approved lines, by the line's response outcome (claim status spec 4.2).
 	measure 'Claims Approved' =
 			VAR __Value = ( -- measure body
 				CALCULATE (
@@ -870,7 +906,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Claims Approved"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Claims & Pre-auth\Claims
-	/// Outcome-aware rejected amount in SAR of the latest, not cancelled submission; slice by NPHIES Reason for rejections by reason (Phase 2B spec section 8).
+	/// Rejected amount in SAR of the latest, not cancelled submission: net amount of rejected lines, net minus benefit (not below 0) of partially approved lines (claim status spec 4.2); slice by NPHIES Reason for rejections by reason.
 	measure 'Claims Rejected' =
 			VAR __Value = ( -- measure body
 				CALCULATE (
@@ -883,24 +919,18 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Claims Rejected"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Claims & Pre-auth\Claims
-	/// Rejected ÷ submitted amount of adjudicated lines of the latest, not cancelled submission (Phase 2B spec section 8; receiving notes).
+	/// Rejected ÷ (approved + rejected) amount of adjudicated lines of the latest, not cancelled submission (claim status spec 6.2).
 	measure 'Claim Rejection Rate %' =
 			VAR __Value = ( -- measure body
 				VAR Rejected = CALCULATE ( [Claims Rejected], 'Claim Lines'[Adjudication Status] = "Adjudicated" )
-				VAR Submitted =
-					CALCULATE (
-						SUM ( 'Claim Lines'[Submitted Amount] ),
-						'Claim Lines'[Is Latest Submission] = "Yes",
-						'Claim Lines'[Is Cancelled Claim] = "No",
-						'Claim Lines'[Adjudication Status] = "Adjudicated"
-					)
-				RETURN DIVIDE ( Rejected, Submitted )
+				VAR Approved = CALCULATE ( [Claims Approved], 'Claim Lines'[Adjudication Status] = "Adjudicated" )
+				RETURN DIVIDE ( Rejected, Approved + Rejected )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Claim Lines]
 			RETURN IF ( __Wrong = "", __Value, """Claim Rejection Rate %"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Claims & Pre-auth\Claims
-	/// Rejection rate of first submissions (submission 1 as sent, cancelled claims included: the one exception to the cancelled rule) (Phase 2B spec section 8; receiving notes).
+	/// Rejected ÷ (approved + rejected) of first submissions (submission 1 as sent, cancelled claims included: the one exception to the cancelled rule) (claim status spec 6.2).
 	measure 'First-pass Rejection Rate %' =
 			VAR __Value = ( -- measure body
 				VAR Rejected =
@@ -909,13 +939,13 @@ table _Measures
 						'Claim Lines'[Submission Number] = 1,
 						'Claim Lines'[Adjudication Status] = "Adjudicated"
 					)
-				VAR Submitted =
+				VAR Approved =
 					CALCULATE (
-						SUM ( 'Claim Lines'[Submitted Amount] ),
+						SUM ( 'Claim Lines'[Approved Amount] ),
 						'Claim Lines'[Submission Number] = 1,
 						'Claim Lines'[Adjudication Status] = "Adjudicated"
 					)
-				RETURN DIVIDE ( Rejected, Submitted )
+				RETURN DIVIDE ( Rejected, Approved + Rejected )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Claim Lines]
 			RETURN IF ( __Wrong = "", __Value, """First-pass Rejection Rate %"" can't be analysed by " & __Wrong )
@@ -2383,6 +2413,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -2464,6 +2495,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -2548,6 +2580,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -2631,6 +2664,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -2714,6 +2748,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -2792,6 +2827,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
 				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
@@ -2870,6 +2906,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -2953,6 +2990,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -3032,6 +3070,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -3116,6 +3155,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -3197,6 +3237,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -3274,6 +3315,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -3435,6 +3477,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -3518,6 +3561,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
 				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
@@ -3598,6 +3642,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
@@ -3674,6 +3719,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -3756,6 +3802,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -3835,6 +3882,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -3917,6 +3965,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -3994,6 +4043,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4076,6 +4126,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4153,6 +4204,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4319,6 +4371,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4401,6 +4454,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -4477,6 +4531,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -4553,6 +4608,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4632,6 +4688,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4710,6 +4767,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4791,6 +4849,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4873,6 +4932,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -4957,6 +5017,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -5040,6 +5101,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -5124,6 +5186,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -5204,6 +5267,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -5281,6 +5345,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -5358,6 +5423,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
@@ -5436,6 +5502,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
@@ -5521,6 +5588,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
 				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
 				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )

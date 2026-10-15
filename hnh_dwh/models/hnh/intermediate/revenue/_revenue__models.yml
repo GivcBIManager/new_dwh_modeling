@@ -7,6 +7,21 @@ models:
       - hnh_unique_combination:
           columns: [branch_id, account_code]
 
+  - name: int_invoice_claim_status
+    description: >
+      Claim status (validation, submission, detailed) and submission channel of every invoice, all history
+      (claim status spec 4.1). claim_status_key joins dim_claim_status.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, invoice_no]
+    columns:
+      - name: claim_status_key
+        tests: [not_null]
+      - name: submission_channel
+        tests:
+          - accepted_values:
+              values: ['NPHIES', 'Manual', 'Not submitted', 'Unknown']
+
   - name: int_preauth_line
     description: >
       One Oasis authorisation line, or one NPHIES item without an Oasis line, with its final NPHIES answer; or one

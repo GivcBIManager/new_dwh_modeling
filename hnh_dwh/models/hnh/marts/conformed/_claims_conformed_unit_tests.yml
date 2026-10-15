@@ -1,0 +1,27 @@
+version: 2
+
+unit_tests:
+  - name: dim_claim_status_lists_each_status_with_its_channels
+    description: >
+      Claim status spec 4.1, 5.2. The mapping has no New row, but New is still added (invoices with no approval
+      status use it). Statuses under submission status New (Posted, New) get Manual and Not submitted; Under
+      Processing and Invalid get Not submitted; Submitted gets NPHIES; Unknown is added once.
+    model: dim_claim_status
+    given:
+      - input: ref('stg_ref__claim_status')
+        format: sql
+        rows: |
+          select d as detailed_status, s as submission_status, v as validation_status
+          from values('d String, s String, v String',
+              ('Submitted', 'Submitted', 'Valid'), ('Valid', 'Under Processing', 'Valid'),
+              ('Invalid', 'Invalid', 'Invalid'), ('Posted', 'New', 'New'))
+    expect:
+      rows:
+        - {claim_status_key: 2892288513816667301, detailed_status: Submitted, submission_status: Submitted, validation_status: Valid, submission_channel: NPHIES, is_submitted: 1}
+        - {claim_status_key: 8318118211403771765, detailed_status: Valid, submission_status: Under Processing, validation_status: Valid, submission_channel: Not submitted, is_submitted: 0}
+        - {claim_status_key: 6074471015946240322, detailed_status: Invalid, submission_status: Invalid, validation_status: Invalid, submission_channel: Not submitted, is_submitted: 0}
+        - {claim_status_key: 5877239766880445822, detailed_status: Posted, submission_status: New, validation_status: New, submission_channel: Manual, is_submitted: 1}
+        - {claim_status_key: 4531730290053478704, detailed_status: Posted, submission_status: New, validation_status: New, submission_channel: Not submitted, is_submitted: 0}
+        - {claim_status_key: 4221634614679168790, detailed_status: New, submission_status: New, validation_status: New, submission_channel: Manual, is_submitted: 1}
+        - {claim_status_key: 9000259100679503054, detailed_status: New, submission_status: New, validation_status: New, submission_channel: Not submitted, is_submitted: 0}
+        - {claim_status_key: 1591316910076942424, detailed_status: Unknown, submission_status: Unknown, validation_status: Unknown, submission_channel: Unknown, is_submitted: 0}

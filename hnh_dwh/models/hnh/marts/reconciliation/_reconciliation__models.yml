@@ -23,6 +23,11 @@ models:
       - hnh_unique_combination:
           columns: [branch_key, month_start]
   - name: rec_claims_monthly
+    description: >
+      Claims per branch and statement month, new rules against the old models' scope (legacy_*). approved and
+      rejected follow claim status spec 4.2 (net-based, no VAT); adjudicated_submitted and
+      first_pass_adjudicated_submitted are the payer's VAT-inclusive submitted amounts, kept for reconciliation:
+      a rejection rate is rejected / (approved + rejected), as in SSAS and bsc.vw_rcm, not rejected / submitted.
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start]

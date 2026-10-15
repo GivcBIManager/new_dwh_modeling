@@ -32,3 +32,19 @@ if(has({{ categories }}, {{ code }}),
    JSONExtractFloat(arrayElement({{ adjudications }}, indexOf({{ categories }}, {{ code }})), 'amount', 'value'),
    cast(null as Nullable(Float64)))
 {%- endmacro %}
+
+{# Submission channel of an invoice (claim status spec 4.1): NPHIES for every submission status except New, Under
+   Processing (detailed status Valid) and Invalid; Manual for New on a purchaser flagged manual_submission = 'Y';
+   otherwise Not submitted; Unknown for an approval status the mapping does not know. #}
+{% macro hnh_claim_submission_channel(submission_status, manual_submission) -%}
+multiIf({{ submission_status }} = 'Unknown', 'Unknown',
+        {{ submission_status }} in ('Under Processing', 'Invalid'), 'Not submitted',
+        {{ submission_status }} = 'New',
+            if(upper(trimBoth(ifNull({{ manual_submission }}, ''))) = 'Y', 'Manual', 'Not submitted'),
+        'NPHIES')
+{%- endmacro %}
+
+{# Key of dim_claim_status: one row per detailed status and submission channel. #}
+{% macro hnh_claim_status_key(detailed_status, submission_channel) -%}
+{{ hnh_surrogate_key([detailed_status, submission_channel]) }}
+{%- endmacro %}

@@ -24,6 +24,9 @@ perspective 'Patient Details'
 	perspectiveTable 'Care Type'
 		includeAll
 
+	perspectiveTable 'Claim Status'
+		includeAll
+
 	perspectiveTable Date
 		includeAll
 
@@ -74,6 +77,10 @@ perspective 'Patient Details'
 		perspectiveMeasure 'Bed Occupancy %'
 		perspectiveMeasure 'Bed Turnover'
 		perspectiveMeasure 'Billed Amount'
+		perspectiveMeasure 'Billed Manual'
+		perspectiveMeasure 'Billed Not Submitted'
+		perspectiveMeasure 'Billed Statements'
+		perspectiveMeasure 'Billed Submitted to NPHIES'
 		perspectiveMeasure 'Cancellation Rate %'
 		perspectiveMeasure 'Cancelled Charges'
 		perspectiveMeasure 'Cash Revenue'

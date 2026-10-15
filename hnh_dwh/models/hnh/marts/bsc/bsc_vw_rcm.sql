@@ -2,7 +2,7 @@
 
 -- Old bsc.vw_rcm (bsc spec 7.4) with the SSAS claim and pre-authorisation measures. Claims by statement month,
 -- latest not cancelled submission; not_submitted_claims is the amount pending adjudication (every gold line is sent,
--- F9); rates are over adjudicated submitted. Pre-authorisation by request month, payer advances left out.
+-- F9); rates are over approved + rejected (claim status spec 4.2). Pre-authorisation by request month, payer advances left out.
 with
     ifNull(toDateOrNull('{{ var('hnh_bsc_as_of') }}'), today()) as today_,
     today_ - 1 as yesterday_,
@@ -15,9 +15,7 @@ claims as (
         sumIf(claimed_amount, is_sent = 1 and is_latest_submission = 1 and is_cancelled_claim = 0
                               and adjudication_status in ('No response', 'Pended'))                as pending,
         sumIf(ifNull(approved_amount, 0), is_latest_submission = 1 and is_cancelled_claim = 0)   as approved,
-        sumIf(ifNull(rejected_amount, 0), is_latest_submission = 1 and is_cancelled_claim = 0)   as rejected,
-        sumIf(ifNull(submitted_amount, 0), is_latest_submission = 1 and is_cancelled_claim = 0
-                                           and adjudication_status = 'Adjudicated')              as adjudicated_submitted
+        sumIf(ifNull(rejected_amount, 0), is_latest_submission = 1 and is_cancelled_claim = 0)   as rejected
     from {{ ref('fact_claim_line') }}
     where branch_key between 1 and 8 and statement_end_date_key >= from_key_
     group by branch_key, period
@@ -46,8 +44,8 @@ select
     toFloat64(c.pending)                                                        as not_submitted_claims,
     CAST(c.approved AS Nullable(Float64))                                       as approved_amount,
     CAST(c.rejected AS Nullable(Float64))                                       as rejections,
-    round(100 * c.rejected / nullIf(c.adjudicated_submitted, 0), 2)             as rejection_rate_pct,
-    round(100 * c.approved / nullIf(c.adjudicated_submitted, 0), 2)             as approval_rate_pct,
+    round(100 * c.rejected / nullIf(c.approved + c.rejected, 0), 2)             as rejection_rate_pct,
+    round(100 * c.approved / nullIf(c.approved + c.rejected, 0), 2)             as approval_rate_pct,
     toUInt64(p.services)                                                        as total_orders,
     toUInt64(p.approved_final)                                                  as approved_orders,
     toUInt64(p.unutilised)                                                      as approved_not_done,

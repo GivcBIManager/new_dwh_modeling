@@ -73,6 +73,14 @@ table 'Claim Lines'
 		summarizeBy: none
 		sourceColumn: nphies_reason_key
 
+	column 'Claim Status Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: claim_status_key
+
 	column 'Submission Number'
 		dataType: int64
 		isHidden
@@ -194,6 +202,14 @@ table 'Claim Lines'
 		formatString: #,0.00
 		summarizeBy: none
 		sourceColumn: rejected_amount
+
+	column 'Response Benefit Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: response_benefit_amount
 
 	partition 'Claim Lines template' = m
 		source =

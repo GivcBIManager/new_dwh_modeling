@@ -12,6 +12,9 @@ perspective 'Revenue Cycle'
 	perspectiveTable 'Charge Lines'
 		includeAll
 
+	perspectiveTable 'Claim Status'
+		includeAll
+
 	perspectiveTable Date
 		includeAll
 
@@ -53,6 +56,10 @@ perspective 'Revenue Cycle'
 
 	perspectiveTable _Measures
 		perspectiveMeasure 'Billed Amount'
+		perspectiveMeasure 'Billed Manual'
+		perspectiveMeasure 'Billed Not Submitted'
+		perspectiveMeasure 'Billed Statements'
+		perspectiveMeasure 'Billed Submitted to NPHIES'
 		perspectiveMeasure 'Cancelled Charges'
 		perspectiveMeasure 'Cash Revenue'
 		perspectiveMeasure 'Claimable Revenue'

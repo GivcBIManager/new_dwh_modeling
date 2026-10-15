@@ -112,6 +112,14 @@ models:
       - name: care_type_key
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: claim_status_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_claim_status'), field: claim_status_key}
+      - name: submission_channel
+        tests:
+          - accepted_values:
+              values: ['NPHIES', 'Manual', 'Not submitted', 'Unknown']
       - name: submission_status
         tests:
           - accepted_values:
@@ -190,6 +198,14 @@ models:
       - name: nphies_reason_key
         tests:
           - relationships: {to: ref('dim_nphies_reason'), field: nphies_reason_key}
+      - name: claim_status_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_claim_status'), field: claim_status_key}
+      - name: approved_amount
+        tests: [not_null]
+      - name: rejected_amount
+        tests: [not_null]
       - name: invoice_key
         description: >
           Key of the fact_invoice row with the same branch and invoice number as claim_invoice_no, -1 when none.

@@ -81,6 +81,14 @@ table Invoices
 		summarizeBy: none
 		sourceColumn: care_type_key
 
+	column 'Claim Status Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: claim_status_key
+
 	column 'Invoice No'
 		dataType: int64
 		isHidden

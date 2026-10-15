@@ -262,6 +262,10 @@ relationship claim_lines_care_type_key
 	fromColumn: 'Claim Lines'.'Care Type Key'
 	toColumn: 'Care Type'.'Care Type Key'
 
+relationship claim_lines_claim_status_key
+	fromColumn: 'Claim Lines'.'Claim Status Key'
+	toColumn: 'Claim Status'.'Claim Status Key'
+
 relationship claim_lines_nphies_reason_key
 	fromColumn: 'Claim Lines'.'NPHIES Reason Key'
 	toColumn: 'NPHIES Reason'.'NPHIES Reason Key'
@@ -577,6 +581,10 @@ relationship invoices_branch_key
 relationship invoices_care_type_key
 	fromColumn: Invoices.'Care Type Key'
 	toColumn: 'Care Type'.'Care Type Key'
+
+relationship invoices_claim_status_key
+	fromColumn: Invoices.'Claim Status Key'
+	toColumn: 'Claim Status'.'Claim Status Key'
 
 relationship invoices_invoice_date_key
 	fromColumn: Invoices.'Invoice Date Key'
