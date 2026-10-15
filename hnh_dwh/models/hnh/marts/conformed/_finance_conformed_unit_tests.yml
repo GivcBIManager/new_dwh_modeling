@@ -7,7 +7,9 @@ unit_tests:
       by caption. 3: government rejection, the account rule beats a caption rule for the same account. 4: Head Office
       loan with no FS line: balance sheet, Not mapped, no budget code, branch 100. 5: unmapped expense: income
       statement, UNBUDGETED. 6: inferred revenue account without location: REV_UNALLOCATED. 7: Ghirnata bank account
-      with an intercompany segment. Plus one prior-year roll row per branch and the Unknown member.
+      with an intercompany segment. 8: salaries at Head Office take its own row (G&A, GA_EMPLOYEE); 9: the same account
+      at Abha takes the all-branches row (Direct Cost, DC_EMPLOYEE). Plus one prior-year roll row per branch and the
+      Unknown member.
     model: hnh_dim_gl_account
     given:
       - input: ref('stg_fusion__gl_accounts')
@@ -19,7 +21,7 @@ unit_tests:
           from values('c UInt32, b UInt32, n UInt32, loc String, ic String, t String',
               (1, 104, 41110101, '01', '000', 'R'), (2, 104, 41310101, '02', '000', 'R'), (3, 104, 41504102, '00', '000', 'R'),
               (4, 101, 22101101, '00', '000', 'L'), (5, 105, 53101203, '01', '000', 'E'), (6, 105, 41110102, '00', '000', 'R'),
-              (7, 103, 11103107, '00', '105', 'A'))
+              (7, 103, 11103107, '00', '105', 'A'), (8, 101, 52101101, '00', '000', 'E'), (9, 104, 52101101, '00', '000', 'E'))
       - input: ref('stg_fusion__coa_segment_values')
         format: sql
         rows: |
@@ -27,13 +29,16 @@ unit_tests:
       - input: ref('stg_ref__fs_account')
         format: sql
         rows: |
-          select toUInt32(n) as natural_account, t as fs_type, e as fs_element, cat as fs_category, cap as fs_caption, l as fs_line, m as mapped_in
-          from values('n UInt32, t String, e String, cat String, cap String, l String, m String',
-              (41110101, 'IS', 'Revenue', 'Revenue', 'Revenue Cash', 'Revenue Cash', 'abha'),
-              (41310101, 'IS', 'Revenue', 'Revenue - Discounts', 'Revenue - Contractual Discounts', 'Cash Discount', 'abha'),
-              (41504102, 'IS', 'Revenue', 'Revenue - Discounts', 'Revenue - Settlement Discount', 'Rejection', 'abha'),
-              (41110102, 'IS', 'Revenue', 'Revenue', 'Revenue Insurance Companies', 'Revenue Insurance Companies', 'inferred'),
-              (11103107, 'BS', 'Assets', 'Current Assets', 'Cash and bank balances', 'Bank', 'ghirnata'))
+          select toUInt32(n) as natural_account, if(b = 0, cast(null as Nullable(Int64)), toNullable(toInt64(b))) as branch_segment,
+                 t as fs_type, e as fs_element, cat as fs_category, cap as fs_caption, l as fs_line, m as mapped_in
+          from values('n UInt32, b UInt32, t String, e String, cat String, cap String, l String, m String',
+              (41110101, 0, 'IS', 'Revenue', 'Revenue', 'Revenue Cash', 'Revenue Cash', 'abha'),
+              (41310101, 0, 'IS', 'Revenue', 'Revenue - Discounts', 'Revenue - Contractual Discounts', 'Cash Discount', 'abha'),
+              (41504102, 0, 'IS', 'Revenue', 'Revenue - Discounts', 'Revenue - Settlement Discount', 'Rejection', 'abha'),
+              (41110102, 0, 'IS', 'Revenue', 'Revenue', 'Revenue Insurance Companies', 'Revenue Insurance Companies', 'inferred'),
+              (11103107, 0, 'BS', 'Assets', 'Current Assets', 'Cash and bank balances', 'Bank', 'ghirnata'),
+              (52101101, 0, 'IS', 'Expenses', 'Direct Cost', 'Employee Costs', 'Employee Costs', 'tb2026:abha'),
+              (52101101, 101, 'IS', 'Expenses', 'General and administrative expenses', 'Employee Cost', 'Employee Cost', 'tb2026:head office'))
       - input: ref('stg_ref__budget_fs_line')
         format: sql
         rows: |
@@ -41,7 +46,8 @@ unit_tests:
           from values('code String, lvl String, v String, ct String',
               ('REV_OP', 'category', 'revenue', 'OP'), ('REV_IP', 'caption', 'revenue - contractual discounts', 'IP'),
               ('REV_UNALLOCATED', 'category', 'revenue', 'Unallocated'), ('DIS_REJECTION_MOH', 'account', '41504102', ''),
-              ('DIS_EARLY_PAY', 'caption', 'revenue - settlement discount', ''))
+              ('DIS_EARLY_PAY', 'caption', 'revenue - settlement discount', ''), ('DC_EMPLOYEE', 'caption', 'employee costs', ''),
+              ('GA_EMPLOYEE', 'caption', 'employee cost', ''))
       - input: ref('stg_ref__fusion_specialty_unified')
         format: sql
         rows: |
@@ -60,6 +66,8 @@ unit_tests:
         - {code_combination_id: 5, branch_key: 3, balance_side: IS, fs_mapping_source: not mapped, revenue_care_type: OP, budget_line_code: UNBUDGETED, intercompany_branch_key: null}
         - {code_combination_id: 6, branch_key: 3, balance_side: IS, fs_mapping_source: inferred, revenue_care_type: Unallocated, budget_line_code: REV_UNALLOCATED, intercompany_branch_key: null}
         - {code_combination_id: 7, branch_key: 7, balance_side: BS, fs_mapping_source: supplied, revenue_care_type: Unallocated, budget_line_code: null, intercompany_branch_key: 3}
+        - {code_combination_id: 8, branch_key: 100, balance_side: IS, fs_mapping_source: supplied, revenue_care_type: Unallocated, budget_line_code: GA_EMPLOYEE, intercompany_branch_key: null}
+        - {code_combination_id: 9, branch_key: 6, balance_side: IS, fs_mapping_source: supplied, revenue_care_type: Unallocated, budget_line_code: DC_EMPLOYEE, intercompany_branch_key: null}
         - {code_combination_id: null, branch_key: 6, balance_side: BS, fs_mapping_source: prior-year roll, revenue_care_type: Unallocated, budget_line_code: null, intercompany_branch_key: null}
         - {code_combination_id: null, branch_key: 7, balance_side: BS, fs_mapping_source: prior-year roll, revenue_care_type: Unallocated, budget_line_code: null, intercompany_branch_key: null}
         - {code_combination_id: null, branch_key: 3, balance_side: BS, fs_mapping_source: prior-year roll, revenue_care_type: Unallocated, budget_line_code: null, intercompany_branch_key: null}

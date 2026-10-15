@@ -226,6 +226,8 @@ Patient experience (Phase 6, spec `2026-10-07-hnh-dwh-phase6-patient-experience-
 
 The Python scripts in `scripts/` (`run_dbt.py`, `ch_env.py`, the loaders) belong to the development repository and are not needed on the server.
 
+**Changing the FS mapping** (`map_fs_account`, `map_fs_line_order`, `map_budget_fs_line`; from HNHANALYTICSSRV with `scripts/load_fs_mapping.ps1`). From 2026-10-14 `stg_ref__fs_account` reads the `BRANCH_CODE` column, and the models before that date would duplicate accounts that have branch rows. So: (1) run the loader without `-Replace` (adds the column, loads nothing); (2) deploy the models; (3) run it with `-Replace map_fs_account,map_fs_line_order,map_budget_fs_line`; (4) at once `dbt build --select stg_ref__fs_account+ stg_ref__fs_line_order+ stg_ref__budget_fs_line+`, before the next scheduled flow. Later mapping updates need only (3) and (4).
+
 ## Running
 
 ```bash

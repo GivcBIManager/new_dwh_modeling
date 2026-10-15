@@ -126,5 +126,29 @@ function Test-HnhGlCutover {
     return ,$problems
 }
 
+function Test-HnhFsAccountMapping {
+    # static_mappings/fs_account_mapping.csv: one row per account for all branches (BRANCH_CODE blank) and at most one
+    # row per Fusion branch code (101-109) where that branch maps the account differently.
+    param([object[]]$Rows)
+    $problems = @()
+    $all = @{}
+    foreach ($r in $Rows) { if ([string]::IsNullOrEmpty($r.BRANCH_CODE)) { $all[[string]$r.ORACLE_CODE] = $true } }
+    foreach ($r in $Rows) {
+        $code = [string]$r.ORACLE_CODE
+        if ($code -notmatch '^\d{8}$') { $problems += "ORACLE_CODE '$code' is not an 8-digit account"; continue }
+        if (-not [string]::IsNullOrEmpty($r.BRANCH_CODE)) {
+            if ($r.BRANCH_CODE -notmatch '^10[1-9]$') { $problems += "$($code): BRANCH_CODE '$($r.BRANCH_CODE)' is not a Fusion branch code 101-109" }
+            elseif (-not $all.ContainsKey($code)) { $problems += "$code has a branch row but no row for all branches" }
+        }
+        if ($r.FS_TYPE -notin @('BS', 'IS')) { $problems += "$($code): FS_TYPE '$($r.FS_TYPE)' is not BS or IS" }
+        foreach ($level in 'FS_ELEMENT', 'FS_CATEGORY', 'FS_CAPTION', 'FS_LINE') {
+            if ([string]::IsNullOrWhiteSpace($r.$level)) { $problems += "$($code): $level is blank" }
+        }
+    }
+    $dupes = @($Rows | Group-Object { "$($_.ORACLE_CODE)/$($_.BRANCH_CODE)" } | Where-Object Count -gt 1 | ForEach-Object Name)
+    foreach ($d in $dupes) { $problems += "duplicate $($d.TrimEnd('/'))" }
+    return ,$problems
+}
+
 Export-ModuleMember -Function Test-HnhReadOnlySql, Invoke-HnhSelect, ConvertTo-HnhTsvField, Get-HnhContractColumns,
-    Compare-HnhColumns, Compare-HnhBscRows, New-HnhTableDdl, Test-HnhGlCutover
+    Compare-HnhColumns, Compare-HnhBscRows, New-HnhTableDdl, Test-HnhGlCutover, Test-HnhFsAccountMapping

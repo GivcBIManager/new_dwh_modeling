@@ -85,9 +85,12 @@ models:
       - name: package_description
         tests: [unique, not_null]
   - name: stg_ref__fs_account
+    tests:
+      - hnh_unique_combination:
+          columns: [natural_account, branch_segment]
     columns:
       - name: natural_account
-        tests: [unique, not_null]
+        tests: [not_null]
       - name: fs_type
         tests:
           - accepted_values:

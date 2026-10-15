@@ -6,6 +6,27 @@ with branches as (
 
 seg as (select segment_column_name, segment_value, segment_value_name from {{ ref('stg_fusion__coa_segment_values') }}),
 
+fs as (select * from {{ ref('stg_ref__fs_account') }}),
+
+accounts as (
+    -- FS position of each combination: the branch's own row where finance maps the account differently there (Head
+    -- Office runs staff, utilities and maintenance through G&A), otherwise the row for all branches
+    select
+        a.*,
+        ifNull(fb.natural_account, fd.natural_account) as fs_natural_account,
+        ifNull(fb.fs_type, fd.fs_type)                 as fs_type,
+        ifNull(fb.fs_element, fd.fs_element)           as fs_element,
+        ifNull(fb.fs_category, fd.fs_category)         as fs_category,
+        ifNull(fb.fs_caption, fd.fs_caption)           as fs_caption,
+        ifNull(fb.fs_line, fd.fs_line)                 as fs_line,
+        ifNull(fb.mapped_in, fd.mapped_in)             as mapped_in
+    from {{ ref('stg_fusion__gl_accounts') }} as a
+    left join (select * from fs where branch_segment is null) as fd on fd.natural_account = a.natural_account
+    left join (select * from fs where branch_segment is not null) as fb
+        on fb.natural_account = a.natural_account and fb.branch_segment = a.branch_segment
+    {{ hnh_settings() }}
+),
+
 base as (
     select
         a.code_combination_id                                               as code_combination_id,
@@ -19,15 +40,13 @@ base as (
         a.is_enabled                                                        as is_enabled,
         a.is_summary                                                        as is_summary,
         {{ hnh_gl_care_type('a.service_location_code') }}                   as revenue_care_type,
-        {{ hnh_gl_balance_side('f.fs_type', 'a.account_type') }}            as balance_side,
-        multiIf(f.natural_account is null, 'not mapped', f.mapped_in = 'inferred', 'inferred', 'supplied') as fs_mapping_source,
-        ifNull(f.fs_element, {{ hnh_not_mapped_element('a.account_type') }}) as fs_element_r,
-        ifNull(f.fs_category, 'Not mapped')                                 as fs_category_r,
-        ifNull(f.fs_caption, 'Not mapped')                                  as fs_caption_r,
-        ifNull(f.fs_line, 'Not mapped')                                     as fs_line_r
-    from {{ ref('stg_fusion__gl_accounts') }} as a
-    left join {{ ref('stg_ref__fs_account') }} as f on f.natural_account = a.natural_account
-    {{ hnh_settings() }}
+        {{ hnh_gl_balance_side('a.fs_type', 'a.account_type') }}            as balance_side,
+        multiIf(a.fs_natural_account is null, 'not mapped', a.mapped_in = 'inferred', 'inferred', 'supplied') as fs_mapping_source,
+        ifNull(a.fs_element, {{ hnh_not_mapped_element('a.account_type') }}) as fs_element_r,
+        ifNull(a.fs_category, 'Not mapped')                                 as fs_category_r,
+        ifNull(a.fs_caption, 'Not mapped')                                  as fs_caption_r,
+        ifNull(a.fs_line, 'Not mapped')                                     as fs_line_r
+    from accounts as a
 ),
 
 candidates as (

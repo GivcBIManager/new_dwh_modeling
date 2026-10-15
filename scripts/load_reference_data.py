@@ -111,13 +111,14 @@ SMALL_TABLES = {
         [("DESCRIPTION", "String", s)],
         "DESCRIPTION",
     ),
-    # Financial-statement line per Oracle natural account (COA segment 2). Supplied as
-    # abha_fs_mapping_oracle.xlsx, one sheet per branch (abha, ghirnata) merged into one list:
-    # the sheets agree on every shared account and all ledgers share chart 2001, so it applies
-    # group-wide. MAPPED_IN names the sheets that list the account.
+    # Financial-statement line per Oracle natural account (COA segment 2), built by scripts/build_fs_account_mapping.py
+    # from finance's TB 2026 mapping workbook. BRANCH_CODE blank = all branches; a Fusion branch code (101-109) marks
+    # the row of a branch that maps the account differently (Head Office G&A). MAPPED_IN: tb2026:<branches>, the first
+    # mapping's sheets (abha, ghirnata) or inferred. On the production server load it with scripts/load_fs_mapping.ps1.
     "map_fs_account": (
         "fs_account_mapping.csv",
-        [("ORACLE_CODE", "UInt32", i), ("FS_TYPE", "LowCardinality(String)", s), ("FS_ELEMENT", "LowCardinality(String)", s),
+        [("ORACLE_CODE", "UInt32", i), ("BRANCH_CODE", "Nullable(UInt16)", i_null),
+         ("FS_TYPE", "LowCardinality(String)", s), ("FS_ELEMENT", "LowCardinality(String)", s),
          ("FS_CATEGORY", "LowCardinality(String)", s), ("FS_CAPTION", "String", s), ("FS_LINE", "String", s),
          ("MAPPED_IN", "LowCardinality(String)", s)],
         "ORACLE_CODE",

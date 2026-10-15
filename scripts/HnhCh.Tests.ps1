@@ -76,3 +76,23 @@ Describe 'New-HnhTableDdl and Test-HnhGlCutover' {
         (Test-HnhGlCutover -Rows $bad).Count | Should Be 5
     }
 }
+
+Describe 'Test-HnhFsAccountMapping' {
+    function Row($code, $branch, $type = 'IS', $line = 'Employee Costs') {
+        [pscustomobject]@{ ORACLE_CODE = $code; BRANCH_CODE = $branch; FS_TYPE = $type; FS_ELEMENT = 'Expenses';
+                           FS_CATEGORY = 'Direct Cost'; FS_CAPTION = 'Employee Costs'; FS_LINE = $line; MAPPED_IN = 'tb2026:abha' }
+    }
+    It 'accepts all-branches rows and a branch row next to its account''s all-branches row' {
+        (Test-HnhFsAccountMapping -Rows @((Row '52101101' ''), (Row '52101101' '101' 'IS' 'Employee Cost'), (Row '11103107' '' 'BS'))).Count |
+            Should Be 0
+    }
+    It 'flags duplicates, unknown branches, branch rows without an all-branches row, bad types and blank levels' {
+        $bad = @((Row '52101101' ''), (Row '52101101' ''), (Row '52101102' '101'), (Row '52101101' '110'),
+                 (Row 'x' ''), (Row '52101103' '' 'PL'), (Row '52101104' '' 'IS' ' '))
+        $p = Test-HnhFsAccountMapping -Rows $bad
+        $p.Count | Should Be 6
+        ($p -join "`n") | Should Match 'duplicate 52101101'
+        ($p -join "`n") | Should Match '52101102 has a branch row but no row for all branches'
+        ($p -join "`n") | Should Match 'BRANCH_CODE ''110'''
+    }
+}
