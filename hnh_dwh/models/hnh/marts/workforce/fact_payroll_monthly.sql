@@ -17,14 +17,34 @@ oasis_lines as (
     {{ hnh_settings() }}  -- left joins in a CTE feeding a union
 ),
 
-fusion_recovered as (
+fusion_sibling as (
     -- GOSI and reference results carry no legal employer; take it from a sibling result of the same person and payroll action.
     select * from (
         select run_result_id, input_value_id, element_type_id, person_id, effective_date, result_value, action_type, payroll_action_id, payroll_action_status,
-               max(legal_employer_id) over (partition by person_id, payroll_action_id) as legal_employer_id
+               max(legal_employer_id) over (partition by person_id, payroll_action_id) as sibling_legal_employer_id
         from {{ ref('stg_fusion__payroll_run_results') }}
     )
     where payroll_action_status = 'C' and result_value is not null
+),
+
+assignment_employer as (
+    -- an action with no employer on any result (a GOSI-only run) takes the primary employment assignment's employer at its effective date
+    select u.person_id as person_id, u.effective_date as effective_date, argMax(a.legal_employer_id, a.valid_from) as legal_employer_id
+    from (select distinct person_id, effective_date from fusion_sibling where sibling_legal_employer_id is null) as u
+    inner join (select person_id, valid_from, valid_to, legal_employer_id from {{ ref('stg_fusion__assignments') }}
+                where assignment_type = 'E' and is_primary = 1 and legal_employer_id is not null) as a
+        on a.person_id = u.person_id
+    where u.effective_date between a.valid_from and a.valid_to
+    group by u.person_id, u.effective_date
+),
+
+fusion_recovered as (
+    select s.run_result_id as run_result_id, s.input_value_id as input_value_id, s.element_type_id as element_type_id, s.person_id as person_id,
+           s.effective_date as effective_date, s.result_value as result_value, s.action_type as action_type, s.payroll_action_id as payroll_action_id,
+           coalesce(s.sibling_legal_employer_id, ae.legal_employer_id) as legal_employer_id
+    from fusion_sibling as s
+    left join assignment_employer as ae on ae.person_id = s.person_id and ae.effective_date = s.effective_date
+    {{ hnh_settings() }}
 ),
 
 fusion_results as (
@@ -49,7 +69,7 @@ fusion_lines as (
     left join (select source_code, pay_category from {{ ref('stg_ref__pay_category') }} where source = 'fusion') as m
         on m.source_code = e.element_name
     where (r.action_type = 'Q' or r.payroll_action_id = r.latest_regular_action_id)
-      -- an unresolved employer (or one resolved to branch 0) stays visible as branch 0; a resolved one must be in a cutover branch and month
+      -- an employer unresolved by siblings and assignment (or one resolved to branch 0) stays visible as branch 0; a resolved one must be in a cutover branch and month
       and (b.branch_key is null or b.branch_key = 0 or toInt32(toYYYYMM(r.effective_date)) >= k.first_fusion_month)
     {{ hnh_settings() }}  -- left joins in a CTE feeding a union
 ),

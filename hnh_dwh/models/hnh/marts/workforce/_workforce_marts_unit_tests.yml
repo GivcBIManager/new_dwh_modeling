@@ -102,7 +102,7 @@ unit_tests:
       Branch 3 cuts over in 202607. Oasis June (202606): basic 1,000 and staff GOSI −90 (an employee deduction, not cost).
       Oasis July is a parallel-run month: kept with is_parallel_run = 1 and zero cost. Fusion July: basic 1,100 and
       a delay deduction of 50 stored positive (amount −50, an earnings adjustment that lowers cost) and a GOSI
-      reference earnings result (Not pay). The June GOSI line is still open (status P), so June is Partly closed. A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling. Oasis staff 500 and Fusion person 7 are the same person (bridge): one paid_person_key across the cutover.
+      reference earnings result (Not pay). The June GOSI line is still open (status P), so June is Partly closed. A Fusion June result is before the cutover and dropped. A later regular action carries only an end-of-service provision (own row; Basic unchanged), and an employer GOSI charge with a null employer recovers branch 3 from its action sibling. A GOSI-only action (no employer on any result) takes branch 3 from the primary assignment current at its effective date, not the earlier one at employer 2. Oasis staff 500 and Fusion person 7 are the same person (bridge): one paid_person_key across the cutover.
     model: fact_payroll_monthly
     given:
       - input: ref('int_oasis_payroll_line')
@@ -122,16 +122,16 @@ unit_tests:
           from values('r UInt32, iv UInt32, el UInt32, pa UInt32, at String, le UInt32, d String, v Float64',
               (1, 101, 11, 2, 'R', 1, '2026-07-31', 1100), (2, 102, 12, 2, 'R', 1, '2026-07-31', 50), (3, 103, 13, 2, 'R', 1, '2026-07-31', 9000),
               (4, 101, 11, 1, 'R', 1, '2026-06-30', 999), (5, 101, 11, 1, 'R', 1, '2026-07-31', 1100), (6, 101, 11, 3, 'Q', 1, '2026-07-31', 50),
-              (7, 105, 14, 4, 'R', 1, '2026-07-31', 700), (8, 104, 15, 2, 'R', 0, '2026-07-31', 200))
+              (7, 105, 14, 4, 'R', 1, '2026-07-31', 700), (8, 104, 15, 2, 'R', 0, '2026-07-31', 200), (9, 106, 16, 5, 'R', 0, '2026-07-31', 30))
       - input: ref('stg_fusion__payroll_elements')
         format: sql
         rows: |
           select toInt64(e) as element_type_id, toNullable(n) as element_name
-          from values('e UInt32, n String', (11, 'Basic Salary'), (12, 'Delay Deduction Results'), (13, 'Saudi GOSI Reference Earnings'), (14, 'End of Service Provision'), (15, 'Saudi GOSI Employer Charge'))
+          from values('e UInt32, n String', (11, 'Basic Salary'), (12, 'Delay Deduction Results'), (13, 'Saudi GOSI Reference Earnings'), (14, 'End of Service Provision'), (15, 'Saudi GOSI Employer Charge'), (16, 'Employer GOSI Hazards'))
       - input: ref('stg_fusion__payroll_input_values')
         format: sql
         rows: |
-          select toInt64(i) as input_value_id, toNullable('Pay Value') as input_value_base_name from values('i UInt32', (101), (102), (103), (104), (105))
+          select toInt64(i) as input_value_id, toNullable('Pay Value') as input_value_base_name from values('i UInt32', (101), (102), (103), (104), (105), (106))
       - input: ref('stg_ref__pay_category')
         format: sql
         rows: |
@@ -140,7 +140,8 @@ unit_tests:
               ('oasis', 'BASIC', 'P', 'Basic'), ('oasis', 'STAFF GOSI', 'P', 'GOSI employee deduction'),
               ('fusion', 'Basic Salary', '', 'Basic'), ('fusion', 'Delay Deduction Results', '', 'Absence and lateness deduction'),
               ('fusion', 'Saudi GOSI Reference Earnings', '', 'Not pay'),
-              ('fusion', 'End of Service Provision', '', 'Provisions'), ('fusion', 'Saudi GOSI Employer Charge', '', 'GOSI employer charge'))
+              ('fusion', 'End of Service Provision', '', 'Provisions'), ('fusion', 'Saudi GOSI Employer Charge', '', 'GOSI employer charge'),
+              ('fusion', 'Employer GOSI Hazards', '', 'GOSI employer charge'))
       - input: ref('stg_ref__payroll_cutover')
         format: sql
         rows: |
@@ -155,6 +156,12 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(1) as legal_employer_id, toUInt8(3) as branch_key
+      - input: ref('stg_fusion__assignments')
+        format: sql
+        rows: |
+          select toNullable(toInt64(7)) as person_id, 'E' as assignment_type, toUInt8(1) as is_primary, toNullable(toInt64(le)) as legal_employer_id,
+                 toDate32(f) as valid_from, toDate32(t) as valid_to
+          from values('le UInt32, f String, t String', (2, '2020-01-01', '2026-06-30'), (1, '2026-07-01', '2299-12-31'))
       - input: ref('bridge_employee_staff')
         format: sql
         rows: |
@@ -177,7 +184,7 @@ unit_tests:
         - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
         - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
         - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
-        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 200, cost_amount: 200, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: GOSI employer charge, is_parallel_run: 0, amount: 230, cost_amount: 230, gross_pay: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
 
   - name: fact_absence_daily_splits_across_months
     description: >

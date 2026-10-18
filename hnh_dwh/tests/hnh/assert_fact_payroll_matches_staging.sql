@@ -1,19 +1,36 @@
 -- Conservation, per source: Oasis status-C amounts in the window reach the fact as closed rows, the open lines kept by
 -- int_oasis_payroll_line (spec 12.2) as open rows, and Fusion pay-value results of completed actions (employer
--- recovered from the sibling results of the action, latest regular action per person/element/employer/month plus QuickPay)
+-- recovered from the sibling results of the action, else the primary assignment, latest regular action per person/element/employer/month plus QuickPay)
 -- in cutover months, reach the fact once (signed). Unresolved employers must reach the fact as branch 0.
 with oasis_staged as (
     select round(sum(amount), 2) as amt
     from {{ ref('stg_oasis__payroll_transactions') }}
     where status = 'C' and payroll_month >= toInt32(toYYYYMM(toDate('{{ var("hnh_history_start_date") }}'))) and payroll_month % 100 between 1 and 12
 ),
-recovered as (
+sibling as (
     select * from (
         select input_value_id, element_type_id, person_id, effective_date, result_value, action_type, payroll_action_id, payroll_action_status,
-               max(legal_employer_id) over (partition by person_id, payroll_action_id) as legal_employer_id
+               max(legal_employer_id) over (partition by person_id, payroll_action_id) as sibling_legal_employer_id
         from {{ ref('stg_fusion__payroll_run_results') }}
     )
     where payroll_action_status = 'C' and result_value is not null
+),
+assignment_employer as (
+    select u.person_id as person_id, u.effective_date as effective_date, argMax(a.legal_employer_id, a.valid_from) as legal_employer_id
+    from (select distinct person_id, effective_date from sibling where sibling_legal_employer_id is null) as u
+    inner join (select person_id, valid_from, valid_to, legal_employer_id from {{ ref('stg_fusion__assignments') }}
+                where assignment_type = 'E' and is_primary = 1 and legal_employer_id is not null) as a
+        on a.person_id = u.person_id
+    where u.effective_date between a.valid_from and a.valid_to
+    group by u.person_id, u.effective_date
+),
+recovered as (
+    select s.input_value_id as input_value_id, s.element_type_id as element_type_id, s.person_id as person_id, s.effective_date as effective_date,
+           s.result_value as result_value, s.action_type as action_type, s.payroll_action_id as payroll_action_id,
+           coalesce(s.sibling_legal_employer_id, ae.legal_employer_id) as legal_employer_id
+    from sibling as s
+    left join assignment_employer as ae on ae.person_id = s.person_id and ae.effective_date = s.effective_date
+    {{ hnh_settings() }}
 ),
 latest as (
     select *, max(if(action_type = 'R', payroll_action_id, null)) over (partition by person_id, element_type_id, legal_employer_id, toYYYYMM(effective_date)) as latest_regular_action_id
