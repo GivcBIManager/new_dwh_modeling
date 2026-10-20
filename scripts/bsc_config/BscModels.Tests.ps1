@@ -201,3 +201,20 @@ Describe 'fact_bsc_workforce_monthly unit fixture' {
         [int]$r.missing | Should Be 0
     }
 }
+
+Describe 'fact_recruiting_requisition' {
+    # Same rows as the requisitions CTE of bsc_vw_work_force: approved, not deleted, branch 1-8.
+    $wrap = "select count() as n, uniqExact(requisition_id) as u, countIf(filled_date_key is not null) as filled, " +
+            "countIf(days_to_fill < 0) as negative, (select count() from stg.stg_fusion__recruiting_requisitions as q " +
+            "inner join gold.hnh_dim_hr_department as d on d.organization_id = q.department_id " +
+            "where q.is_deleted = 0 and q.approved_date is not null and d.branch_key between 1 and 8) as expected from ({model})"
+    $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') fact_recruiting_requisition --wrap $wrap) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw 'render failed: fact_recruiting_requisition' }
+    $r = (Invoke-HnhSelect -Dsn HNH_Gold -Sql ($sql -replace '(?m)^\s*--.*$', ''))[0]
+    It 'has the bsc requisitions, one row each, no negative time to fill' {
+        Write-Host "requisitions: $($r.n), filled: $($r.filled)"
+        [int]$r.n | Should Be ([int]$r.expected)
+        [int]$r.u | Should Be ([int]$r.n)
+        [int]$r.negative | Should Be 0
+    }
+}
