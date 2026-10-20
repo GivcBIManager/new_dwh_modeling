@@ -96,6 +96,22 @@ The `bsc` database re-creates the old server's balanced-scorecard objects on gol
 - Before the first build, load the reference tables (`powershell -ExecutionPolicy Bypass -File scripts\load_bsc_reference.ps1` on HNHANALYTICSSRV): `map_gl_cutover`, `map_budget_line_item`, `bsc_targets`, `bsc_patient_satisfaction`. When finance changes a GL go-live month, edit `static_mappings\gl_cutover.csv`, reload with `-Replace map_gl_cutover` and rebuild `fact_gl_fs_monthly+`. When the scorecard's targets or satisfaction sheets change, reload them on the old server as before, then `-Replace bsc_targets,bsc_patient_satisfaction` here (until the old server is retired, O-B7).
 - The scorecard's ClickHouse login needs only `SELECT` on `bsc.*` (the views run with the definer's rights).
 
+## Balanced scorecard on SSAS (2026-10-20)
+
+Spec `2026-10-20-hnh-bsc-ssas-perspective-analysis.md`, plan `2026-10-20-bsc-dwh-config-and-facts.md`.
+
+- **Copy:**
+  - the new folder `hnh_dwh/models/hnh/marts/scorecard/` (no config block needed: the `marts:` defaults apply, schema `gold`, tables);
+  - `marts/workforce/fact_recruiting_requisition.sql`;
+  - the new `stg_ref__bsc_*` staging models with their YAML (`_reference__sources.yml`, `_reference__models.yml`, `_bsc_ref_unit_tests.yml`);
+  - the changed `hnh_dim_branch.sql` and `dim_product_category.sql` (with `_bsc_conformed_unit_tests.yml`);
+  - the new and changed `marts/ssas/ssas_*` views;
+  - the tests `assert_bsc_workforce_matches_vw_work_force` and `warn_bsc_fixed_target_missing`.
+- **Create the config tables before the first build:**
+  - the 10 `default.map_bsc_*` tables, with `scriptssc_configpply_bsc_config.ps1` on HNHANALYTICSSRV (`-DryRun` first);
+  - their content is edited by the BI manager with SQL inserts afterwards (`docs/bsc_config.md`).
+- **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`).
+
 ## Reference tables that must exist in `default`
 
 Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_bi_user_permission` (SSAS pay and PII permissions, see below), `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`, `map_pay_category`, `map_payroll_cutover`, `map_fs_account`, `map_oasis_fs_account`, `map_fs_line_order`, `map_budget_fs_line`, `map_fusion_specialty_unified`, `income_statement_budget`, `map_opening_balance_batch` (Fusion journal batches that are opening balances although not categorised MRC Open Balances, O-P3-12; add a row with `branch_id`, `je_batch_id`, `reason` when finance loads a go-live batch under another category). Phase 5 adds `map_scm_cutover` (one row per branch: inventory go-live date and first Fusion purchasing month; set Alrabwah's and Head Office's go-live dates when they move, O-P5-6), `map_store_department` (drafted by `scripts/draft_store_department_map.py`) and `map_item_group` (drafted by `scripts/draft_item_group_map.py`); both drafts await BI-manager review (O-P5-4). `bal_product_base` (table `default.old_bal_product_base`, the source's `identifier`) is optional: until the user loads the old warehouse's daily snapshots (columns `BRANCH_ID`, `C_ID`, `PRODUCT_CODE`, `Snapshot_timestamp`, `QTY_ON_HAND`, `AVERAGE_COST`; other names are set in the `cols` dict at the top of `stg_ref__stock_snapshot.sql`), `stg_ref__stock_snapshot` is empty and Oasis month-end stock starts at 2026-08-31 (Fusion-valuation months start at each live branch's go-live month: Ghirnata 2026-04, Abha 2026-05, Jazan and Muhayil 2026-07, Unaizah 2026-08, Khamis and Madinah 2026-09); the next `dbt build` after the load adds the snapshot and derived months. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
