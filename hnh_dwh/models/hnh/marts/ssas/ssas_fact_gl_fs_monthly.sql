@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_gl_fs_monthly', drop=['month_start'], decimals=['opening_balance', 'movement', 'opening_journal_amount', 'closing_balance'], extra=['toInt32(toYYYYMMDD(t.month_start)) as month_date_key']) }}
