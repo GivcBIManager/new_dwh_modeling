@@ -99,7 +99,7 @@ Describe 'dim_bsc_kpi' {
 }
 
 Describe 'fact_bsc_target_monthly' {
-    $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_bsc_target_monthly' @{ stg_ref__bsc_target = $stgTarget }) @{}
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_bsc_target_monthly' @{ stg_ref__bsc_target = $stgTarget; stg_ref__bsc_kpi = $stgKpi }) @{}
     $key = (Invoke-HnhSelect -Dsn HNH_Gold -Sql "select toInt64(bitShiftRight(cityHash64(concat('INT_ALOS', '|')), 1)) as k")[0].k
     $np = (Invoke-HnhSelect -Dsn HNH_Gold -Sql "select toInt64(bitShiftRight(cityHash64(concat('CUS_NEW_PATIENTS', '|')), 1)) as k")[0].k
     function T($k, $b, $d) { @($rows | Where-Object { [int64]$_.bsc_kpi_key -eq [int64]$k -and [int]$_.branch_key -eq $b -and [int]$_.month_date_key -eq $d }) }
@@ -208,13 +208,66 @@ Describe 'fact_recruiting_requisition' {
             "countIf(days_to_fill < 0) as negative, (select count() from stg.stg_fusion__recruiting_requisitions as q " +
             "inner join gold.hnh_dim_hr_department as d on d.organization_id = q.department_id " +
             "where q.is_deleted = 0 and q.approved_date is not null and d.branch_key between 1 and 8) as expected from ({model})"
-    $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') fact_recruiting_requisition --wrap $wrap) -join "`n"
-    if ($LASTEXITCODE -ne 0) { throw 'render failed: fact_recruiting_requisition' }
+    $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') hnh_fact_recruiting_requisition --wrap $wrap) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw 'render failed: hnh_fact_recruiting_requisition' }
     $r = (Invoke-HnhSelect -Dsn HNH_Gold -Sql ($sql -replace '(?m)^\s*--.*$', ''))[0]
     It 'has the bsc requisitions, one row each, no negative time to fill' {
         Write-Host "requisitions: $($r.n), filled: $($r.filled)"
         [int]$r.n | Should Be ([int]$r.expected)
         [int]$r.u | Should Be ([int]$r.n)
         [int]$r.negative | Should Be 0
+    }
+}
+
+Describe 'final review fixes' {
+    It 'C1: no hnh model is named like a receiving-project Fusion model' {
+        $fusion = @(Invoke-HnhSelect -Dsn HNH_Gold -Sql "select name from system.tables where database = 'fusion'" | ForEach-Object { $_.name })
+        $models = @(Get-ChildItem (Join-Path $root 'hnh_dwh\models\hnh') -Recurse -Filter *.sql | ForEach-Object { $_.BaseName })
+        @($models | Where-Object { $fusion -contains $_ }) -join ', ' | Should Be ''
+    }
+    It 'I1: an unknown hospital category becomes None on dim_branch' {
+        $cat = "select toUInt8(b) as branch_id, c as category, now64(3) as last_changed_at " +
+               "from values('b UInt8, c String', (6, 'Ramp-up & Prove'), (1, 'Scale & Optimize'))"
+        $rows = Invoke-ModelWithSources (Get-RenderedModel 'hnh_dim_branch' @{ stg_ref__bsc_hospital_category = $cat }) @{}
+        $b = @{}; foreach ($r in $rows) { $b[[int]$r.branch_key] = $r }
+        $b[6].bsc_category | Should Be 'None'
+        $b[1].bsc_category | Should Be 'Scale & Optimize'
+    }
+    It 'I1: every test on the BSC config and scorecard models only warns' {
+        foreach ($f in @('hnh_dwh\models\hnh\staging\reference\_reference__models.yml', 'hnh_dwh\models\hnh\marts\scorecard\_scorecard__models.yml')) {
+            $text = [IO.File]::ReadAllText((Join-Path $root $f))
+            foreach ($m in [regex]::Matches($text, '(?ms)^  - name: (stg_ref__bsc_\w+|dim_bsc_kpi|fact_bsc_\w+)\r?\n(.*?)(?=^  - name: |\z)')) {
+                $block = $m.Groups[2].Value
+                $tests = [regex]::Matches($block, '(?m)^\s+- (unique|not_null|relationships|accepted_values|hnh_unique_combination)\b').Count +
+                         [regex]::Matches($block, 'tests: \[').Count
+                $warns = [regex]::Matches($block, 'severity: warn').Count
+                "$($m.Groups[1].Value): $warns of $tests" | Should Be "$($m.Groups[1].Value): $tests of $tests"
+            }
+        }
+    }
+    It 'I2: an annual target carries into later years until a newer one exists' {
+        $t = "select k as kpi_code, toUInt8(b) as branch_id, toUInt16(y) as year, toUInt8(m) as month, toFloat64(v) as target_value, " +
+             "toUInt8(0) as scale_with_months, 'x' as source_basis, now64(3) as last_changed_at " +
+             "from values('k String, b UInt8, y UInt16, m UInt8, v Float64', ('INT_ALOS', 0, 2026, 0, 4), ('INT_ALOS', 6, 2027, 0, 3.5), ('INT_ALOS', 0, 2026, 3, 9))"
+        $sql = (Get-RenderedModel 'fact_bsc_target_monthly' @{ stg_ref__bsc_target = $t; stg_ref__bsc_kpi = $stgKpi }).Replace("toDateOrNull('')", "toDateOrNull('2028-06-30')")
+        $rows = Invoke-ModelWithSources $sql @{}
+        function T($b, $d) { @($rows | Where-Object { [int]$_.branch_key -eq $b -and [int]$_.month_date_key -eq $d }) }
+        [double](T 6 20280301)[0].target_value | Should Be 3.5
+        [double](T 1 20280301)[0].target_value | Should Be 4
+        [double](T 1 20270301)[0].target_value | Should Be 4
+        [double](T 1 20260301)[0].target_value | Should Be 9
+        @($rows | Where-Object { [int]$_.month_date_key -gt 20281231 }).Count | Should Be 0
+    }
+    It 'M7: the KPI list survives a missing default threshold' {
+        $thr = "select k as kpi_code, toFloat64(80) as score_base, toFloat64(0.6) as score_slope, toFloat64(85) as good_from, " +
+               "toFloat64(70) as watch_from, now64(3) as last_changed_at from values('k String', ('INT_ALOS'))"
+        $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_bsc_kpi' @{ stg_ref__bsc_kpi = $stgKpi; stg_ref__bsc_objective = $stgObjective;
+            stg_ref__bsc_threshold = $thr; stg_ref__bsc_owner = $stgOwner; stg_ref__bsc_weight = $stgWeight }) @{}
+        $rows.Count | Should Be 5
+        [double](@($rows | Where-Object { $_.kpi_code -eq 'FIN_NET_REVENUE' })[0].score_base) | Should Be 85
+    }
+    It 'M1: the receiving-project doc has no control characters' {
+        $text = [IO.File]::ReadAllText((Join-Path $root 'docs\receiving_project_config.md'))
+        ([regex]::Matches($text, '[\x00-\x08\x0B\x0C\x0E-\x1F]')).Count | Should Be 0
     }
 }

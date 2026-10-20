@@ -1,7 +1,8 @@
 {{ config(order_by='(bsc_kpi_key, branch_key, month_date_key)') }}
 
 -- Monthly KPI values entered by the BI manager (bsc ssas spec 6.2): numerator and denominator per hospital and month.
--- A denominator of 0 means the KPI measure supplies its own denominator (complaints over visits).
+-- A denominator of 0 means the KPI measure supplies its own denominator (complaints over visits). Values of a KPI
+-- code missing from the catalogue are ignored.
 select
     toInt64(bitShiftRight(cityHash64(concat(kpi_code, '|')), 1))  as bsc_kpi_key,
     toUInt8(branch_id)                                            as branch_key,
@@ -11,3 +12,4 @@ select
     note                                                          as note
 from {{ ref('stg_ref__bsc_manual_value') }}
 where branch_id between 1 and 8 and month between 1 and 12
+  and kpi_code in (select kpi_code from {{ ref('stg_ref__bsc_kpi') }})

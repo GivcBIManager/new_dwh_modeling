@@ -1,4 +1,4 @@
-{{ config(order_by='requisition_id') }}
+{{ config(alias='fact_recruiting_requisition', order_by='requisition_id') }}
 
 -- Oracle Recruiting requisitions for the scorecard (bsc ssas spec 6.2, KPIs 47 and 48): approved, not deleted, with a
 -- branch 1-8 department, as in bsc.vw_work_force. days_to_fill is approval to fill, NULL when not filled or when the

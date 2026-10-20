@@ -209,7 +209,7 @@ models:
       - name: month_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
-  - name: fact_recruiting_requisition
+  - name: hnh_fact_recruiting_requisition
     description: >
       Approved, not deleted Oracle Recruiting requisitions of branches 1-8 (bsc ssas spec 6.2, KPIs 47 and 48).
       days_to_fill is NULL when not filled or filled before approval.

@@ -12,7 +12,9 @@ select
     toNullable(b.fusion_ledger_id)       as fusion_ledger_id,
     b.pg_branch_code                     as pg_branch_code,
     toUInt64(ifNull(lb.beds, 0))         as legacy_current_available_beds,
-    ifNull(sc.category, 'None')          as bsc_category,       -- balanced-scorecard category (bsc ssas spec 6.2)
+    -- balanced-scorecard category (bsc ssas spec 6.2): a value outside the three categories is ignored, so a typo
+    -- in the BI manager's table cannot hold up the dimension
+    if(sc.category in ('Scale & Optimize', 'Anchor & Protect', 'Ramp-Up & Prove'), sc.category, 'None') as bsc_category,
     toUInt8(1)                           as is_hospital         -- branches 1-8 (Group and Head Office rows are 0)
 from {{ ref('stg_ref__branch') }} as b
 left join {{ ref('stg_ref__bsc_hospital_category') }} as sc on sc.branch_id = b.branch_id

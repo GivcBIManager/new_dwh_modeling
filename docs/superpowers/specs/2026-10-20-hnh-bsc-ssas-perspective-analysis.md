@@ -274,7 +274,9 @@ The SSAS role copy `Booked Doctor` also gains `Is High Value Specialty`, for KPI
 - Thresholds are ordered. Manual values exist only for KPIs marked manual.
 - `fact_bsc_workforce_monthly` reproduces `bsc.vw_work_force` (headcount, FTE, resignations, Saudi heads) for every branch-month.
 
-**A bad edit can't reach the report.** If an edit fails a test, the nightly `tag:hnh` build fails. The SSAS gate stays closed, and the report keeps yesterday's figures. The BI manager can also run `dbt test --select stg_ref__bsc_*` straight after an edit.
+**A bad edit can't hold up the warehouse** (changed 2026-10-20 after review). The config tests only warn, because a failing test would make the nightly `tag:hnh` run unsuccessful and keep the SSAS gate closed for the whole model. The models ignore rows they cannot use (an unknown KPI code, category or list). The BI manager can run `dbt test --select stg_ref__bsc_*` straight after an edit to see the warnings.
+
+**Targets carry forward.** An annual target applies to later years until a newer one is entered.
 
 #### 6.2.1 Editing routine for the BI manager
 

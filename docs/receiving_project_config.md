@@ -102,13 +102,13 @@ Spec `2026-10-20-hnh-bsc-ssas-perspective-analysis.md`, plan `2026-10-20-bsc-dwh
 
 - **Copy:**
   - the new folder `hnh_dwh/models/hnh/marts/scorecard/` (no config block needed: the `marts:` defaults apply, schema `gold`, tables);
-  - `marts/workforce/fact_recruiting_requisition.sql`;
+  - `marts/workforce/hnh_fact_recruiting_requisition.sql` (alias `fact_recruiting_requisition` in `gold`; the hnh_ name avoids the receiving project's Fusion model of that name);
   - the new `stg_ref__bsc_*` staging models with their YAML (`_reference__sources.yml`, `_reference__models.yml`, `_bsc_ref_unit_tests.yml`);
   - the changed `hnh_dim_branch.sql` and `dim_product_category.sql` (with `_bsc_conformed_unit_tests.yml`);
   - the new and changed `marts/ssas/ssas_*` views;
   - the tests `assert_bsc_workforce_matches_vw_work_force` and `warn_bsc_fixed_target_missing`.
 - **Create the config tables before the first build:**
-  - the 10 `default.map_bsc_*` tables, with `scriptssc_configpply_bsc_config.ps1` on HNHANALYTICSSRV (`-DryRun` first);
+  - the 10 `default.map_bsc_*` tables, with `scripts\bsc_config\apply_bsc_config.ps1` on HNHANALYTICSSRV (`-DryRun` first);
   - their content is edited by the BI manager with SQL inserts afterwards (`docs/bsc_config.md`).
 - **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`).
 

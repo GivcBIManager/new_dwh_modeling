@@ -5,6 +5,8 @@ unit_tests:
     description: >
       INT_ALOS March 2026 is 0.5 for every hospital and 0.7 for Abha (6): Abha gets 0.7, the other seven 0.5.
     model: fact_bsc_target_monthly
+    overrides:
+      vars: {hnh_bsc_as_of: '2026-10-12'}
     given:
       - input: ref('stg_ref__bsc_target')
         format: sql
@@ -13,6 +15,13 @@ unit_tests:
                  toFloat64(v) as target_value, toUInt8(0) as scale_with_months, s as source_basis,
                  toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
           from values('b UInt8, v Float64, s String', (0, 0.5, 'all'), (6, 0.7, 'abha'))
+      - input: ref('stg_ref__bsc_kpi')
+        format: sql
+        rows: |
+          select 'INT_ALOS' as kpi_code, toUInt16(23) as kpi_num, 'ALOS' as kpi_name, 'ALOS' as short_label, 'P1' as objective_code,
+                 'Supporting' as kpi_type, 'lower' as direction, 'days' as value_format, 'line' as chart_hint,
+                 toUInt16(23) as display_order, '' as definition, 'active' as status, 'fixed' as target_source,
+                 'measure' as value_source, 'beds' as detail_page, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
     expect:
       format: sql
       rows: |
@@ -20,6 +29,7 @@ unit_tests:
                toInt32(20260301) as month_date_key, toFloat64(if(number + 1 = 6, 0.7, 0.5)) as target_value,
                toUInt8(0) as scale_with_months, if(number + 1 = 6, 'abha', 'all') as source_basis
         from numbers(8)
+        -- only March has a row: the other months of 2026 get no target (no annual row to carry)
 
   - name: fact_bsc_weight_branch_profile_else_corporate
     description: >

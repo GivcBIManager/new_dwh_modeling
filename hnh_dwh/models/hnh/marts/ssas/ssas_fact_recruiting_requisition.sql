@@ -1,1 +1,1 @@
-{{ hnh_ssas_view('fact_recruiting_requisition') }}
+{{ hnh_ssas_view('hnh_fact_recruiting_requisition') }}

@@ -216,108 +216,120 @@ models:
   - name: stg_ref__bsc_kpi
     columns:
       - name: kpi_code
-        tests: [unique, not_null]
+        tests:
+          - unique: {config: {severity: warn}}
+          - not_null: {config: {severity: warn}}
       - name: objective_code
         tests:
-          - relationships: {to: ref('stg_ref__bsc_objective'), field: objective_code}
+          - relationships: {to: ref('stg_ref__bsc_objective'), field: objective_code, config: {severity: warn}}
       - name: kpi_type
         tests:
-          - accepted_values: {values: ['Primary', 'Supporting']}
+          - accepted_values: {values: ['Primary', 'Supporting'], config: {severity: warn}}
       - name: direction
         tests:
-          - accepted_values: {values: ['higher', 'lower', 'ceiling', 'on_target']}
+          - accepted_values: {values: ['higher', 'lower', 'ceiling', 'on_target'], config: {severity: warn}}
       - name: value_format
         tests:
-          - accepted_values: {values: ['sar', 'pct', 'days', 'mins', 'num']}
+          - accepted_values: {values: ['sar', 'pct', 'days', 'mins', 'num'], config: {severity: warn}}
       - name: status
         tests:
-          - accepted_values: {values: ['active', 'parked']}
+          - accepted_values: {values: ['active', 'parked'], config: {severity: warn}}
       - name: target_source
         tests:
-          - accepted_values: {values: ['fixed', 'budget', 'prior_year', 'none']}
+          - accepted_values: {values: ['fixed', 'budget', 'prior_year', 'none'], config: {severity: warn}}
       - name: value_source
         tests:
-          - accepted_values: {values: ['measure', 'manual']}
+          - accepted_values: {values: ['measure', 'manual'], config: {severity: warn}}
   - name: stg_ref__bsc_objective
     columns:
       - name: objective_code
-        tests: [unique, not_null]
+        tests:
+          - unique: {config: {severity: warn}}
+          - not_null: {config: {severity: warn}}
       - name: pillar
         tests:
-          - accepted_values: {values: ['Financial', 'Customer', 'Internal Process', 'Learning & Growth']}
+          - accepted_values: {values: ['Financial', 'Customer', 'Internal Process', 'Learning & Growth'], config: {severity: warn}}
   - name: stg_ref__bsc_target
     tests:
       - hnh_unique_combination:
           columns: [kpi_code, branch_id, year, month]
+          config: {severity: warn}
     columns:
       - name: kpi_code
         tests:
-          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code, config: {severity: warn}}
       - name: branch_id
         tests:
-          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
       - name: month
         tests:
-          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false}
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false, config: {severity: warn}}
   - name: stg_ref__bsc_weight
     tests:
       - hnh_unique_combination:
           columns: [profile, kpi_code]
+          config: {severity: warn}
     columns:
       - name: kpi_code
         tests:
-          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code, config: {severity: warn}}
   - name: stg_ref__bsc_threshold
     columns:
       - name: kpi_code
-        tests: [unique, not_null]
+        tests:
+          - unique: {config: {severity: warn}}
+          - not_null: {config: {severity: warn}}
   - name: stg_ref__bsc_owner
     tests:
       - hnh_unique_combination:
           columns: [kpi_code, branch_id]
+          config: {severity: warn}
     columns:
       - name: kpi_code
         tests:
-          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code, config: {severity: warn}}
       - name: branch_id
         tests:
-          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
   - name: stg_ref__bsc_hospital_category
     columns:
       - name: branch_id
         tests:
-          - unique
-          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+          - unique: {config: {severity: warn}}
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
       - name: category
         tests:
-          - accepted_values: {values: ['Scale & Optimize', 'Anchor & Protect', 'Ramp-Up & Prove']}
+          - accepted_values: {values: ['Scale & Optimize', 'Anchor & Protect', 'Ramp-Up & Prove'], config: {severity: warn}}
   - name: stg_ref__bsc_manual_value
     tests:
       - hnh_unique_combination:
           columns: [kpi_code, branch_id, year, month]
+          config: {severity: warn}
     columns:
       - name: kpi_code
         tests:
-          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code, config: {severity: warn}}
       - name: branch_id
         tests:
-          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
       - name: month
         tests:
-          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false}
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false, config: {severity: warn}}
   - name: stg_ref__bsc_code_list
     tests:
       - hnh_unique_combination:
           columns: [list_name, code]
+          config: {severity: warn}
     columns:
       - name: list_name
         tests:
-          - accepted_values: {values: ['ancillary_category', 'satisfaction_nps_role']}
+          - accepted_values: {values: ['ancillary_category', 'satisfaction_nps_role'], config: {severity: warn}}
   - name: stg_ref__bsc_budgeted_fte
     tests:
       - hnh_unique_combination:
           columns: [branch_id, year]
+          config: {severity: warn}
     columns:
       - name: branch_id
         tests:
-          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}

@@ -22,7 +22,7 @@ Every row ends with the same four columns:
 
 **When it shows in the report.** The next morning, after the nightly build and SSAS refresh. To see it sooner, run `dbt build --select stg_ref__bsc_*+` in the receiving project and then `ssas\scripts\process.ps1 -Mode Daily -Force`. The `-Force` run changes the production SSAS database.
 
-**Check an edit straight away.** Run `dbt test --select stg_ref__bsc_*`. A row that breaks a rule fails the test. The nightly build also fails on it, so the report keeps yesterday's figures until the row is fixed.
+**Check an edit straight away.** Run `dbt test --select stg_ref__bsc_*`. A row that breaks a rule shows as a warning. The nightly build still runs: the scorecard ignores that row (an unknown KPI code, category or list), or shows its value as entered, until you insert a corrected row. No other report is held up by a scorecard edit.
 
 **See the history of a key:**
 
@@ -78,6 +78,8 @@ VALUES ('FIN_DAYS_IN_AR', 0, 2027, 0, 170, 0, 'Board 2027', now64(3), 'bi_manage
 ```
 
 Rates are fractions: 0.70 for 70%.
+
+An annual target stays in force in the following years until you enter a newer one. For a new year, insert a row for that year only where the target changes.
 
 ### `map_bsc_weight`: KPI weights
 

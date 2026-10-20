@@ -2,16 +2,11 @@
 
 -- Balanced-scorecard KPI catalogue for SSAS (bsc ssas spec 6.2): the latest config rows of map_bsc_kpi with the
 -- objective and pillar, the Corporate owner (branch_id 0), the KPI's score thresholds (its own row, else '*') and
--- the corporate weight (used when several hospitals are selected). The key equals hnh_surrogate_key(['kpi_code']).
+-- the corporate weight (used when several hospitals are selected). Without a '*' row the defaults are 85, 0.6, 85
+-- and 70, so a deleted default never empties the list. The key equals hnh_surrogate_key(['kpi_code']).
 with thresholds as (
     select kpi_code, score_base, score_slope, good_from, watch_from
     from {{ ref('stg_ref__bsc_threshold') }}
-),
-
-default_threshold as (
-    select score_base, score_slope, good_from, watch_from
-    from thresholds
-    where kpi_code = '*'
 )
 
 select
@@ -40,14 +35,13 @@ select
     k.detail_page                                                   as detail_page,
     ifNull(ow.owner, '')                                            as owner,
     ifNull(ow.co_owners, '')                                        as co_owners,
-    toFloat64(coalesce(t.score_base, d.score_base))                 as score_base,
-    toFloat64(coalesce(t.score_slope, d.score_slope))               as score_slope,
-    toFloat64(coalesce(t.good_from, d.good_from))                   as good_from,
-    toFloat64(coalesce(t.watch_from, d.watch_from))                 as watch_from,
+    toFloat64(coalesce(t.score_base, (select anyOrNull(score_base) from thresholds where kpi_code = '*'), 85))   as score_base,
+    toFloat64(coalesce(t.score_slope, (select anyOrNull(score_slope) from thresholds where kpi_code = '*'), 0.6)) as score_slope,
+    toFloat64(coalesce(t.good_from, (select anyOrNull(good_from) from thresholds where kpi_code = '*'), 85))     as good_from,
+    toFloat64(coalesce(t.watch_from, (select anyOrNull(watch_from) from thresholds where kpi_code = '*'), 70))   as watch_from,
     toFloat64(ifNull(w.weight, 0))                                  as corporate_weight,
     toUInt8(k.status = 'active')                                    as is_active
 from {{ ref('stg_ref__bsc_kpi') }} as k
-cross join default_threshold as d
 left join {{ ref('stg_ref__bsc_objective') }} as o on o.objective_code = k.objective_code
 left join (
     select kpi_code, owner, co_owners from {{ ref('stg_ref__bsc_owner') }} where branch_id = 0
