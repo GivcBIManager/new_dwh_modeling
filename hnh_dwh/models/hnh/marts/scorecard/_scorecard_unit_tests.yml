@@ -1,0 +1,49 @@
+version: 2
+
+unit_tests:
+  - name: fact_bsc_target_monthly_branch_row_beats_all_hospitals_row
+    description: >
+      INT_ALOS March 2026 is 0.5 for every hospital and 0.7 for Abha (6): Abha gets 0.7, the other seven 0.5.
+    model: fact_bsc_target_monthly
+    given:
+      - input: ref('stg_ref__bsc_target')
+        format: sql
+        rows: |
+          select 'INT_ALOS' as kpi_code, toUInt8(b) as branch_id, toUInt16(2026) as year, toUInt8(3) as month,
+                 toFloat64(v) as target_value, toUInt8(0) as scale_with_months, s as source_basis,
+                 toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
+          from values('b UInt8, v Float64, s String', (0, 0.5, 'all'), (6, 0.7, 'abha'))
+    expect:
+      format: sql
+      rows: |
+        select toInt64(bitShiftRight(cityHash64(concat('INT_ALOS', '|')), 1)) as bsc_kpi_key, toUInt8(number + 1) as branch_key,
+               toInt32(20260301) as month_date_key, toFloat64(if(number + 1 = 6, 0.7, 0.5)) as target_value,
+               toUInt8(0) as scale_with_months, if(number + 1 = 6, 'abha', 'all') as source_basis
+        from numbers(8)
+
+  - name: fact_bsc_weight_branch_profile_else_corporate
+    description: >
+      Abha (6) has a profile that weights FIN_NET_REVENUE 0.05 and leaves INT_ALOS out (0); the other hospitals have
+      no profile and take the corporate weights 0.042 and 0.02. The parked KPI gets no rows.
+    model: fact_bsc_weight
+    given:
+      - input: ref('stg_ref__bsc_kpi')
+        format: sql
+        rows: |
+          select k as kpi_code, toUInt16(1) as kpi_num, k as kpi_name, k as short_label, 'F1' as objective_code,
+                 'Primary' as kpi_type, 'higher' as direction, 'pct' as value_format, 'line' as chart_hint,
+                 toUInt16(1) as display_order, '' as definition, st as status, 'fixed' as target_source,
+                 'measure' as value_source, 'revenue' as detail_page, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
+          from values('k String, st String', ('FIN_NET_REVENUE', 'active'), ('INT_ALOS', 'active'), ('FIN_NET_COLLECTION', 'parked'))
+      - input: ref('stg_ref__bsc_weight')
+        format: sql
+        rows: |
+          select p as profile, k as kpi_code, toFloat64(w) as weight, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
+          from values('p String, k String, w Float64', ('corporate', 'FIN_NET_REVENUE', 0.042), ('corporate', 'INT_ALOS', 0.02),
+                      ('branch:6', 'FIN_NET_REVENUE', 0.05))
+    expect:
+      format: sql
+      rows: |
+        select toInt64(bitShiftRight(cityHash64(concat(k, '|')), 1)) as bsc_kpi_key, toUInt8(b) as branch_key,
+               toFloat64(multiIf(b = 6 and k = 'FIN_NET_REVENUE', 0.05, b = 6, 0, k = 'FIN_NET_REVENUE', 0.042, 0.02)) as weight
+        from (select arrayJoin(['FIN_NET_REVENUE', 'INT_ALOS']) as k) cross join (select toUInt8(number + 1) as b from numbers(8))

@@ -16,6 +16,7 @@
     'hnh_dim_job.job_name', 'hnh_dim_position.position_name',
     'hnh_dim_hr_department.department_name', 'hnh_dim_hr_department.department_base_name',
     'sec_user_access.user_name', 'sec_user_access.source_user_name', 'sec_user_access.login_name',
+    'dim_bsc_kpi.kpi_name',
 ] -%}
 {%- set checks = [] -%}
 {%- if execute -%}
