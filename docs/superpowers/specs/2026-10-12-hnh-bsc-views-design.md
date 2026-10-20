@@ -62,7 +62,7 @@ Decisions made in review (2026-10-12):
 | F1 | Gold `branch_key` 1–8 equals the old `default.branch.id`, and branch names are identical. Gold also has 0 (Group) and 100 (Head Office). | Output `toUInt64(branch_key)` and filter `branch_key BETWEEN 1 AND 8`. |
 | F2 | Phase 3 finance is Fusion-only (Phase 3 spec, F1). Alrabwah has no Fusion journals. Khamis and Madinah have only their August go-live batch. | Finance needs the Oasis GL (B4). |
 | F3 | After go-live, Oasis keeps posting **revenue** through the Oasis-to-Fusion feed, so the same revenue shows in both systems. **Costs stop** in Oasis. | Adding the two sources together double counts revenue. Each branch-month takes exactly one source (B5). |
-| F4 | Measured 2026 transitions. Ghirnata: Fusion from January (Oasis revenue duplicates it). Abha: May. Muhayil: June. Jazan: July, with costs split across both systems in July. Unaizah: August, with costs split in August. Khamis and Madinah: September (go-live batch in August). Alrabwah: none. | Initial `map_gl_cutover` values (section 5.1). The costs that stayed in Oasis in the split months are lost until finance confirms the dates (O-B5). |
+| F4 | Measured 2026 transitions. Ghirnata: Fusion from January (Oasis revenue duplicates it). Abha: May. Muhayil: June. Jazan: July, with costs split across both systems in July. Unaizah: August, with costs split in August. Khamis and Madinah: September (go-live batch in August). Alrabwah: none. | Initial `map_gl_cutover` values (section 5.1). Finance confirmed the dates on 2026-10-19 (O-B5), with Muhayil from January; the costs that stayed in Oasis in the split months are left out. |
 | F5 | The Fusion FS hierarchy (`gold.dim_fs_line`, lower-cased) uses the same vocabulary as the old `fs_mapping`, which `gold.dim_oasis_gl_account` carries for Oasis accounts. There are four differences. (a) Fusion has a category `depreciation and amortization`; Oasis keeps depreciation captions under `direct cost`. (b) Oasis medicines are caption `cost of goods sold`; Fusion's are `cost of medicines`. (c) Fusion revenue captions are by payer (`revenue cash`, `revenue insurance companies`, …); Oasis's are `revenue inpatient` and `revenue out patient`. (d) Fusion has `charges from head office` and `not mapped`; Oasis has elements `expected credit loss` and `oci`. | The `vw_financial` filters are written at element, category and caption level, with value lists that cover both vocabularies (section 6.3). |
 | F6 | Two old `vw_financial` filters never matched. `'depreciation On Rou'` was compared with lower-cased text, and `'deprecition'` is misspelt. Old `operating_expenses` therefore included most depreciation. | Corrected (section 6.3). |
 | F7 | The old opening balances summed over every *open* period, so they double counted when two fiscal years were open (Phase 3, G13). `vw_financial` took opening balances with `lagInFrame`, which gives 0 on a branch's first row and is wrong across missing months. | Opening balances are rolled per fiscal year (section 5.2). |
@@ -132,7 +132,7 @@ gold.fact_budget_monthly + default.map_budget_line_item + default.income_stateme
 
 | Table | Rows | Source | Columns |
 |---|---|---|---|
-| `map_gl_cutover` | 7 | Section 5.1, reviewed by finance | `branch_id UInt8`, `first_fusion_gl_month Date`, `note String` |
+| `map_gl_cutover` | 7 | Section 5.1, confirmed by finance 2026-10-19 | `branch_id UInt8`, `first_fusion_gl_month Date`, `note String` |
 | `map_budget_line_item` | 48 | Export of `budget.income_statement_line_items` from the old server | As the old table (`code`, `name`, `category`, …) |
 | `bsc_targets` | 3,024 | Export of `bsc.targets` from the old server | As the old table |
 | `bsc_patient_satisfaction` | 56 | Export of `bsc.patient_satisfaction` from the old server | As the old table |
@@ -169,19 +169,21 @@ A row from source S for branch b and month m is kept when:
 - `S = 'fusion'` and `map_gl_cutover` has a row for b with `first_fusion_gl_month ≤ m`; or
 - `S = 'oasis'` and there is no such row (no row for b, or `m < first_fusion_gl_month`).
 
-Initial `map_gl_cutover`:
+`map_gl_cutover`, as confirmed by finance on 2026-10-19 (Oracle transition date and last Oasis trial balance per branch):
 
-| branch_id | Branch | first_fusion_gl_month | Note |
-|---|---|---|---|
-| 2 | Khamis | 2026-09-01 | Go-live batch August |
-| 3 | Jazan | 2026-07-01 | Costs split across both systems in July (O-B5) |
-| 4 | Unaizah | 2026-08-01 | Costs split across both systems in August (O-B5) |
-| 5 | Madinah | 2026-09-01 | Go-live batch August |
-| 6 | Abha | 2026-05-01 | |
-| 7 | Ghirnata | 2026-01-01 | Oasis revenue before this date duplicates Fusion |
-| 8 | Muhayil | 2026-06-01 | |
+| branch_id | Branch | first_fusion_gl_month | Last Oasis TB | Note |
+|---|---|---|---|---|
+| 2 | Khamis | 2026-09-01 | 2026-08-31 | |
+| 3 | Jazan | 2026-07-01 | 2026-06-30 | |
+| 4 | Unaizah (Qassim) | 2026-08-01 | 2026-07-31 | |
+| 5 | Madinah | 2026-09-01 | 2026-08-31 | |
+| 6 | Abha | 2026-05-01 | 2026-04-30 | |
+| 7 | Ghirnata | 2026-01-01 | none | Oasis revenue before this date duplicates Fusion |
+| 8 | Muhayil | 2026-01-01 | none | Was 2026-06-01 (first Fusion month measured); neither GL has Muhayil rows before June |
 
-Alrabwah (1) has no row, so it stays on Oasis.
+Head Office (100) moved to Fusion on 2026-05-01 (last Oasis TB 2026-04-30); it is outside `fact_gl_fs_monthly`, which covers branches 1-8.
+
+Alrabwah (1) has no row, so it stays on Oasis. Its go-live is planned for 2026-11-01 (last Oasis TB 2026-09-30); add its row when it actually goes live, reload `map_gl_cutover` and rebuild `fact_gl_fs_monthly+`.
 
 ### 5.2 Amounts
 
@@ -473,7 +475,7 @@ Every step that changes a server waits for the user's go-ahead (CLAUDE.md).
 | O-B2 | Name of the scorecard's ClickHouse login on `.214`, and who creates it (a ClickHouse write). On the old server the report connects as `default` and `pwc`. | User |
 | O-B3 | `agg_clinic_capacity_daily.slots_total` is inflated by 24-hour templates, which also affects SSAS `Clinic Utilisation %`. The fix belongs to Phase 1; until then `bsc` uses `legacy_capacity_slots`. | BI manager |
 | O-B4 | `icu_discharge` for Jazan shows 378 discharges from a critical last bed in August 2026 (Alrabwah 64, Abha 102). Check Jazan's bed classification before acceptance. | Plan task |
-| O-B5 | Finance to confirm `map_gl_cutover`, especially Jazan (July) and Unaizah (August), where costs are split across both systems. | Finance |
+| O-B5 | **Closed 2026-10-19:** finance confirmed the transition months (section 5.1): Jazan July and Unaizah August stand, so the costs Oasis still holds for those months are left out. Muhayil moves to January. Alrabwah (planned November) gets its row when it goes live. | Finance |
 | O-B6 | **Closed 2026-10-13:** cost of goods sold is not consumables. `consumables_actual` is medical consumables only, and `consumables_budget` the Consumables line only. | User |
 | O-B7 | Who reloads `bsc_targets` and `bsc_patient_satisfaction` on the new server, and when. | User |
 | O-B8 | Referral policies are not mapped for Ghirnata and Muhayil, so `referrals_*` is 0 there until `map_referral_policies` has rows for them. | BI manager |
