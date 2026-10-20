@@ -44,3 +44,14 @@ sources:
       - name: bsc_patient_satisfaction    # copy of the old server's bsc.patient_satisfaction
       - name: map_opening_balance_batch
       - name: map_bi_user_permission
+      # BSC config change logs (bsc ssas spec 6.2): insert-only, edited by the BI manager, read by stg_ref__bsc_*
+      - name: map_bsc_kpi
+      - name: map_bsc_objective
+      - name: map_bsc_target
+      - name: map_bsc_weight
+      - name: map_bsc_threshold
+      - name: map_bsc_owner
+      - name: map_bsc_hospital_category
+      - name: map_bsc_manual_value
+      - name: map_bsc_code_list
+      - name: map_bsc_budgeted_fte

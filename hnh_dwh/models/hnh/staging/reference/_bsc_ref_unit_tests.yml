@@ -1,0 +1,48 @@
+version: 2
+
+unit_tests:
+  - name: stg_ref__bsc_target_keeps_latest_row_and_drops_deleted_keys
+    description: >
+      FIN_DAYS_IN_AR 2027 is set to 180, changed to 170, then deleted: no row. INT_ALOS 2026 is 4, then 3.8: 3.8.
+    model: stg_ref__bsc_target
+    given:
+      - input: source('reference', 'map_bsc_target')
+        format: sql
+        rows: |
+          select k as kpi_code, toUInt8(0) as branch_id, toUInt16(y) as year, toUInt8(0) as month, v as target_value,
+                 toUInt8(0) as scale_with_months, '' as source_basis, toDateTime64(t, 3) as changed_at,
+                 'test' as changed_by, '' as change_note, toUInt8(d) as is_deleted
+          from values('k String, y UInt16, v Float64, t String, d UInt8',
+              ('FIN_DAYS_IN_AR', 2027, 180, '2026-10-01 10:00:00', 0),
+              ('FIN_DAYS_IN_AR', 2027, 170, '2026-10-02 10:00:00', 0),
+              ('FIN_DAYS_IN_AR', 2027, 160, '2026-10-03 10:00:00', 1),
+              ('INT_ALOS', 2026, 4, '2026-10-01 10:00:00', 0),
+              ('INT_ALOS', 2026, 3.8, '2026-10-02 10:00:00', 0))
+    expect:
+      format: sql
+      rows: |
+        select 'INT_ALOS' as kpi_code, toUInt8(0) as branch_id, toUInt16(2026) as year, toUInt8(0) as month,
+               toFloat64(3.8) as target_value, toUInt8(0) as scale_with_months, '' as source_basis,
+               toDateTime64('2026-10-02 10:00:00', 3) as last_changed_at
+
+  - name: stg_ref__bsc_kpi_takes_the_latest_status
+    description: FIN_NET_REVENUE is seeded active, then parked by a later row; text is trimmed.
+    model: stg_ref__bsc_kpi
+    given:
+      - input: source('reference', 'map_bsc_kpi')
+        format: sql
+        rows: |
+          select 'FIN_NET_REVENUE' as kpi_code, toUInt16(1) as kpi_num, ' Net Revenue Achievement ' as kpi_name,
+                 'Net Revenue' as short_label, 'F1' as objective_code, 'Primary' as kpi_type, 'higher' as direction,
+                 'sar' as value_format, 'line' as chart_hint, toUInt16(1) as display_order, '' as definition, st as status,
+                 'budget' as target_source, 'measure' as value_source, 'revenue' as detail_page,
+                 toDateTime64(t, 3) as changed_at, 'test' as changed_by, '' as change_note, toUInt8(0) as is_deleted
+          from values('st String, t String', ('active', '2026-10-01 10:00:00'), ('parked', '2026-10-05 10:00:00'))
+    expect:
+      format: sql
+      rows: |
+        select 'FIN_NET_REVENUE' as kpi_code, toUInt16(1) as kpi_num, 'Net Revenue Achievement' as kpi_name,
+               'Net Revenue' as short_label, 'F1' as objective_code, 'Primary' as kpi_type, 'higher' as direction,
+               'sar' as value_format, 'line' as chart_hint, toUInt16(1) as display_order, '' as definition,
+               'parked' as status, 'budget' as target_source, 'measure' as value_source, 'revenue' as detail_page,
+               toDateTime64('2026-10-05 10:00:00', 3) as last_changed_at

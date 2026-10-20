@@ -212,3 +212,112 @@ models:
     columns:
       - name: je_batch_id
         tests: [unique, not_null]
+  # Balanced-scorecard config (bsc ssas spec 6.2). The relationships keep every edit pointing at a catalogue KPI.
+  - name: stg_ref__bsc_kpi
+    columns:
+      - name: kpi_code
+        tests: [unique, not_null]
+      - name: objective_code
+        tests:
+          - relationships: {to: ref('stg_ref__bsc_objective'), field: objective_code}
+      - name: kpi_type
+        tests:
+          - accepted_values: {values: ['Primary', 'Supporting']}
+      - name: direction
+        tests:
+          - accepted_values: {values: ['higher', 'lower', 'ceiling', 'on_target']}
+      - name: value_format
+        tests:
+          - accepted_values: {values: ['sar', 'pct', 'days', 'mins', 'num']}
+      - name: status
+        tests:
+          - accepted_values: {values: ['active', 'parked']}
+      - name: target_source
+        tests:
+          - accepted_values: {values: ['fixed', 'budget', 'prior_year', 'none']}
+      - name: value_source
+        tests:
+          - accepted_values: {values: ['measure', 'manual']}
+  - name: stg_ref__bsc_objective
+    columns:
+      - name: objective_code
+        tests: [unique, not_null]
+      - name: pillar
+        tests:
+          - accepted_values: {values: ['Financial', 'Customer', 'Internal Process', 'Learning & Growth']}
+  - name: stg_ref__bsc_target
+    tests:
+      - hnh_unique_combination:
+          columns: [kpi_code, branch_id, year, month]
+    columns:
+      - name: kpi_code
+        tests:
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+      - name: branch_id
+        tests:
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+      - name: month
+        tests:
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false}
+  - name: stg_ref__bsc_weight
+    tests:
+      - hnh_unique_combination:
+          columns: [profile, kpi_code]
+    columns:
+      - name: kpi_code
+        tests:
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+  - name: stg_ref__bsc_threshold
+    columns:
+      - name: kpi_code
+        tests: [unique, not_null]
+  - name: stg_ref__bsc_owner
+    tests:
+      - hnh_unique_combination:
+          columns: [kpi_code, branch_id]
+    columns:
+      - name: kpi_code
+        tests:
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+      - name: branch_id
+        tests:
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+  - name: stg_ref__bsc_hospital_category
+    columns:
+      - name: branch_id
+        tests:
+          - unique
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+      - name: category
+        tests:
+          - accepted_values: {values: ['Scale & Optimize', 'Anchor & Protect', 'Ramp-Up & Prove']}
+  - name: stg_ref__bsc_manual_value
+    tests:
+      - hnh_unique_combination:
+          columns: [kpi_code, branch_id, year, month]
+    columns:
+      - name: kpi_code
+        tests:
+          - relationships: {to: ref('stg_ref__bsc_kpi'), field: kpi_code}
+      - name: branch_id
+        tests:
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
+      - name: month
+        tests:
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false}
+  - name: stg_ref__bsc_code_list
+    tests:
+      - hnh_unique_combination:
+          columns: [list_name, code]
+    columns:
+      - name: list_name
+        tests:
+          - accepted_values: {values: ['ancillary_category', 'satisfaction_nps_role']}
+  - name: stg_ref__bsc_budgeted_fte
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, year]
+    columns:
+      - name: branch_id
+        tests:
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false}
