@@ -1,0 +1,38 @@
+version: 2
+
+unit_tests:
+  - name: dim_product_category_flags_scorecard_ancillary_codes
+    description: >
+      LAB and lab (trimmed, any case) are on the ancillary_category list and get is_bsc_ancillary 1; XRY does not.
+      The Unknown member is 0.
+    model: dim_product_category
+    given:
+      - input: ref('stg_ref__product_category')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, c as category_code, 'g' as group_name, 'u' as unified_category,
+                 'd' as department, 'h' as high_level_department
+          from values('c String', ('LAB'), ('XRY'))
+      - input: ref('stg_oasis__ios_master')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toNullable(' lab ') as product_category_code
+      - input: ref('stg_oasis__service_items')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, cast(null as Nullable(String)) as product_category_code limit 0
+      - input: ref('stg_oasis__charges')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, cast(null as Nullable(String)) as product_category_code limit 0
+      - input: ref('stg_ref__bsc_code_list')
+        format: sql
+        rows: |
+          select 'ancillary_category' as list_name, 'LAB' as code, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
+    expect:
+      format: sql
+      rows: |
+        select toUInt8(b) as branch_key, toNullable(c) as category_code, toUInt8(f) as is_bsc_ancillary
+        from values('b UInt8, c String, f UInt8', (1, 'LAB', 1), (1, 'XRY', 0), (2, ' lab ', 1))
+        union all
+        select toUInt8(0), cast(null as Nullable(String)), toUInt8(0)

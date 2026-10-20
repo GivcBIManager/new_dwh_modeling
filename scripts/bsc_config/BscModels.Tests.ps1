@@ -133,3 +133,18 @@ Describe 'fact_bsc_weight' {
         W $alos 1 | Should Be 0.02
     }
 }
+
+Describe 'dim_branch (scorecard columns)' {
+    $cat = "select toUInt8(b) as branch_id, c as category, now64(3) as last_changed_at " +
+           "from values('b UInt8, c String', (6, 'Ramp-Up & Prove'), (1, 'Scale & Optimize'))"
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'hnh_dim_branch' @{ stg_ref__bsc_hospital_category = $cat }) @{}
+    $b = @{}; foreach ($r in $rows) { $b[[int]$r.branch_key] = $r }
+    It 'carries the scorecard category and the hospital flag' {
+        $b[6].bsc_category | Should Be 'Ramp-Up & Prove'
+        [int]$b[6].is_hospital | Should Be 1
+        $b[2].bsc_category | Should Be 'None'
+        $b[100].bsc_category | Should Be 'None'
+        [int]$b[100].is_hospital | Should Be 0
+        [int]$b[0].is_hospital | Should Be 0
+    }
+}

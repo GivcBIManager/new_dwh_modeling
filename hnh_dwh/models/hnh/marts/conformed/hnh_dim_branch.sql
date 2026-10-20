@@ -11,8 +11,11 @@ select
     toNullable(b.fusion_branch_code)     as fusion_branch_code,
     toNullable(b.fusion_ledger_id)       as fusion_ledger_id,
     b.pg_branch_code                     as pg_branch_code,
-    toUInt64(ifNull(lb.beds, 0))         as legacy_current_available_beds
+    toUInt64(ifNull(lb.beds, 0))         as legacy_current_available_beds,
+    ifNull(sc.category, 'None')          as bsc_category,       -- balanced-scorecard category (bsc ssas spec 6.2)
+    toUInt8(1)                           as is_hospital         -- branches 1-8 (Group and Head Office rows are 0)
 from {{ ref('stg_ref__branch') }} as b
+left join {{ ref('stg_ref__bsc_hospital_category') }} as sc on sc.branch_id = b.branch_id
 left join {{ ref('stg_ref__clinic_count') }} as c on c.branch_id = b.branch_id
 left join (
     select branch_key, count() as beds
@@ -28,7 +31,9 @@ select
     toInt32((select sum(licensed_beds) from {{ ref('stg_ref__branch') }})),
     toInt32((select sum(clinics_count) from {{ ref('stg_ref__clinic_count') }})),
     null, null, null,
-    toUInt64((select count() from {{ ref('dim_bed') }} where is_currently_available = 1 and bed_key != -1))
+    toUInt64((select count() from {{ ref('dim_bed') }} where is_currently_available = 1 and bed_key != -1)),
+    'None',
+    toUInt8(0)
 
 union all
 
@@ -37,7 +42,9 @@ select
     toNullable(toInt64({{ var('hnh_head_office_fusion_branch_code') }})),
     toNullable(toInt64({{ var('hnh_head_office_ledger_id') }})),
     null,
-    toUInt64(0)
+    toUInt64(0),
+    'None',
+    toUInt8(0)
 
 )
 {{ hnh_settings() }}

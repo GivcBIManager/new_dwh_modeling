@@ -24,13 +24,17 @@ select
     ifNull(pc.unified_category, 'Not Mapped')        as unified_category,
     ifNull(pc.department, 'Not Mapped')              as product_department,
     ifNull(pc.high_level_department, 'Not Mapped')   as high_level_department,
-    {{ hnh_is_medication('c.category_code', "cast(null as Nullable(String))") }} as is_medication_category
+    {{ hnh_is_medication('c.category_code', "cast(null as Nullable(String))") }} as is_medication_category,
+    -- ancillary services of the scorecard (KPI 28), from the BI manager's code list (bsc ssas spec 6.2)
+    toUInt8(upper(trimBoth(c.category_code)) in (
+        select upper(code) from {{ ref('stg_ref__bsc_code_list') }} where list_name = 'ancillary_category'
+    ))                                               as is_bsc_ancillary
 from codes as c
 left join {{ ref('stg_ref__product_category') }} as pc
     on pc.branch_id = c.branch_id and pc.category_code = c.category_code
 
 union all
 
-select toInt64(-1), toUInt8(0), null, 'Unknown', 'Unknown', 'Unknown', 'Unknown', toUInt8(0)
+select toInt64(-1), toUInt8(0), null, 'Unknown', 'Unknown', 'Unknown', 'Unknown', toUInt8(0), toUInt8(0)
 )
 {{ hnh_settings() }}
