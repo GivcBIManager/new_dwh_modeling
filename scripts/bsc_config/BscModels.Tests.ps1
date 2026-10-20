@@ -148,3 +148,56 @@ Describe 'dim_branch (scorecard columns)' {
         [int]$b[0].is_hospital | Should Be 0
     }
 }
+
+Describe 'fact_bsc_workforce_monthly against bsc.vw_work_force' {
+    # Sum the person-month fact per branch-month and compare with the reconciled view for its window
+    # (January of last year to the last closed month). Any returned row is a difference.
+    $wrap = "with f as (select branch_key, toStartOfMonth(toDate(toString(month_date_key))) as period, " +
+            "sum(headcount) as hc, sumIf(headcount, row_type = 'pt_doctor') as pt, sum(fte) as fte, sum(resignations) as rs, " +
+            "sum(is_saudi * headcount) as sa, sumIf(headcount, is_doctor = 1) as dc, sumIf(headcount, is_medical = 1) as md " +
+            "from ({model}) group by branch_key, period) " +
+            "select v.branch_id, v.period, v.headcount, f.hc, v.pt_doctors_headcount, f.pt, v.FTE, f.fte, v.resignations, f.rs, " +
+            "v.saudi_headcount, f.sa, v.doctors_headcount, f.dc, v.medical_headcount, f.md " +
+            "from bsc.vw_work_force as v left join f on f.branch_key = v.branch_id and f.period = v.period " +
+            "where v.headcount != f.hc or v.pt_doctors_headcount != f.pt or abs(v.FTE - f.fte) > 0.001 or v.resignations != f.rs " +
+            "or v.saudi_headcount != f.sa or v.doctors_headcount != f.dc or v.medical_headcount != f.md " +
+            "order by 1, 2 settings join_use_nulls = 0"
+    $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') fact_bsc_workforce_monthly --wrap $wrap) -join "`n"
+    if ($LASTEXITCODE -ne 0) { throw 'render failed: fact_bsc_workforce_monthly' }
+    $diff = @(Invoke-HnhSelect -Dsn HNH_Gold -Sql ($sql -replace '(?m)^\s*--.*$', '') -TimeoutSeconds 1800 |
+              Where-Object { $_ -and $_.branch_id -ne $null })
+    It 'adds up to vw_work_force in every branch-month' {
+        if ($diff.Count) { $diff | Select-Object -First 10 | Format-Table | Out-String | Write-Host }
+        $diff.Count | Should Be 0
+    }
+}
+
+# Run a dbt unit test of _scorecard_unit_tests.yml locally: its given rows replace the refs, the expected rows are
+# compared both ways with EXCEPT. $AsOf replaces the empty hnh_bsc_as_of var.
+function Invoke-DbtUnitFixture([string]$YamlPath, [string]$TestName, [string]$AsOf = '') {
+    $yaml = [IO.File]::ReadAllText($YamlPath)
+    $start = $yaml.IndexOf("  - name: $TestName")
+    $next = $yaml.IndexOf("`n  - name: ", $start + 10)
+    $block = if ($next -gt 0) { $yaml.Substring($start, $next - $start) } else { $yaml.Substring($start) }
+    $model = ([regex]::Match($block, '(?m)^\s+model:\s+(\S+)')).Groups[1].Value
+    $replace = @{}
+    foreach ($m in [regex]::Matches($block, "(?ms)- input: ref\('([^']+)'\)\s+format: sql\s+rows: \|\r?\n(.*?)(?=\r?\n\s+- input:|\r?\n\s+expect:)")) {
+        $replace[$m.Groups[1].Value] = $m.Groups[2].Value
+    }
+    $expected = ([regex]::Match($block, "(?ms)expect:\s+format: sql\s+rows: \|\r?\n(.*)$")).Groups[1].Value.Trim()
+    $sql = Get-RenderedModel $model $replace
+    $sql = ($sql -replace '(?m)^\s*--.*$', '') -replace "order by 1, 2\s*$", ''
+    if ($AsOf) { $sql = $sql.Replace("toDateOrNull('')", "toDateOrNull('$AsOf')") }
+    $settings = ''
+    if ($sql -match '(?ms)\)\s*(settings [^\)]*)$') { $settings = $Matches[1]; $sql = $sql.Substring(0, $sql.Length - $settings.Length) }
+    $q = "select (select count() from ($sql except $expected)) as extra, (select count() from ($expected except $sql)) as missing $settings"
+    return (Invoke-HnhSelect -Dsn HNH_Gold -Sql $q)[0]
+}
+
+Describe 'fact_bsc_workforce_monthly unit fixture' {
+    $r = Invoke-DbtUnitFixture (Join-Path $root 'hnh_dwh\models\hnh\marts\scorecard\_scorecard_unit_tests.yml') 'fact_bsc_workforce_monthly_keeps_vw_work_force_people' '2026-10-12'
+    It 'returns exactly the expected people' {
+        [int]$r.extra | Should Be 0
+        [int]$r.missing | Should Be 0
+    }
+}
