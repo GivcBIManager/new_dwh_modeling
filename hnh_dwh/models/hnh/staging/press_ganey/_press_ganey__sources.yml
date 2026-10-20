@@ -10,6 +10,46 @@ sources:
         freshness:
           warn_after: {count: 30, period: hour}
           error_after: {count: 54, period: hour}
+        description: >
+          One row per survey. Loaded by press_ganey_pipeline; the DDL is recorded in
+          press_ganey_pipeline/sql/pg_survey_responses.sql. ReplacingMergeTree on _fetched_at,
+          ordered by (service, surveycode), so read it with FINAL or deduplicate.
+        columns:
+          - name: surveycode
+            description: Press Ganey survey code. With service, the table's sorting key.
+            tests:
+              - not_null:
+                  config: {severity: warn}
+          - name: hosp
+            description: Hospital value as returned by the Press Ganey API.
+          - name: service
+            description: Press Ganey service line code. Sorting key together with surveycode.
+            tests:
+              - accepted_values:
+                  values: ['IP', 'OP', 'ER', 'PIP', 'DEN', 'TM', 'AS', 'OR', 'OU', 'DIA', 'HHC', 'LTC']
+                  config: {severity: warn}
+          - name: visit_date
+            description: Visit date. Nullable; the table is partitioned by its month (NULL goes to 1970-01).
+          - name: receive_date
+            description: Date the survey was received. Nullable.
+          - name: sms_send_date
+            description: Date and time the survey SMS was sent. Nullable.
+          - name: survey_date
+            description: Date of the survey. Nullable.
+          - name: encounter_id
+            description: Encounter identifier as returned by the API (string).
+          - name: status
+            description: Survey status as returned by the API.
+            tests:
+              - accepted_values:
+                  values: ['submitted', 'NOTSTARTED', 'incomplete']
+                  config: {severity: warn}
+          - name: responses
+            description: Survey answers as a JSON string.
+          - name: survey_link
+            description: Link to the survey.
+          - name: _fetched_at
+            description: When the row was loaded (default now()). ReplacingMergeTree version column and the freshness field.
       - name: pg_survey_questions
       - name: pg_survey_answer_options
       - name: dim_pg_service
