@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Hayat Balanced Scorecard on &DiacriticalGrave;HNH&lowbar;Analytics&DiacriticalGrave;&colon; analysis and plan</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="hayat-balanced-scorecard-on-hnh_analytics-analysis-and-plan">Hayat Balanced Scorecard on <code>HNH_Analytics</code>: analysis and plan</h1>
+<ul>
+<li><strong>Date:</strong> 2026-10-20</li>
+<li><strong>Status:</strong> Analysis and proposal. Nothing is built. Decisions taken on 2026-10-20 are recorded in section 9. The per-KPI definition choices (Appendix B) are still open.</li>
+<li><strong>Inputs:</strong>
+<ul>
+<li>The handover project <code>powerbi_tmdl/Hayat BSC Deliverable/</code>: the PBIP semantic model and report, and the <code>Notes/</code> folder.</li>
+<li>The SSAS model <code>ssas/HNH_Analytics/</code>.</li>
+<li>The <code>bsc</code> views spec <code>2026-10-12-hnh-bsc-views-design.md</code>.</li>
+<li>The reference-data loaders in <code>scripts/</code>.</li>
+</ul>
+</li>
+<li><strong>Requirements from the request:</strong>
+<ol>
+<li>Produce the same scorecard from the SSAS model, through a new BSC perspective.</li>
+<li>Apply the SSAS model's own security (<code>HNH Readers</code>), not the report's KPI-owner security.</li>
+<li>Keep every configuration item and future change in static tables in the DWH layer, not in the SSAS model.</li>
+<li>Add drill-through to detail for each KPI.</li>
+</ol>
+</li>
+</ul>
+<hr>
+<h2 id="1-summary">1. Summary</h2>
+<p><strong>Can we produce the same report from SSAS?</strong> Yes for its content, though not by repointing the existing file.</p>
+<table>
+<thead>
+<tr>
+<th>Content</th>
+<th>Carried over</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The 71-KPI catalogue and its four pillars</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Hospital, category and period selection</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Overview score, pillar scores, section boards, hospital comparison and the owner view</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>Repointing the handover pbix at SSAS as it stands would break requirements 3 and 4:</p>
+<ul>
+<li><strong>Configuration lives in the model and the visuals.</strong> The handover model is about 258 measures over calculated tables. Its configuration is typed into the model (DATATABLEs) and into roughly 2.5 MB of JavaScript duplicated across 9 custom visuals: KPI list, owners, weights, thresholds, hospital ids and categories.</li>
+<li><strong>The model breaks SSAS conventions.</strong> Our model bans calculated tables (BPA rule <code>HNH_NO_CALCULATED_TABLES</code>).</li>
+<li><strong>The boards cannot drill through.</strong> They use the 2018 &quot;D3JSVisual&quot; (plugin API 1.9), which cannot start a drill-through, a tooltip or a cross-filter.</li>
+</ul>
+<p><strong>Recommended approach.</strong> It is detailed in section 5.</p>
+<ul>
+<li>KPIs are computed once a month per branch in dbt, as numerator and denominator. They reuse the corrected <code>bsc</code> view logic already built on gold.</li>
+<li>All configuration comes from static tables:
+<ul>
+<li>KPI catalogue, targets, weights, thresholds and owners;</li>
+<li>hospital categories;</li>
+<li>manual KPI values.</li>
+</ul>
+</li>
+<li>SSAS gets a few small tables, about 12 generic measures, and a perspective <code>Balanced Scorecard</code>.</li>
+<li>The report is rebuilt over a live connection: a new branded custom visual for the scorecard pages, native visuals for the drill-through pages.</li>
+<li>Drill-through goes from KPI to a KPI detail page, then to the transaction-level facts already in the model.</li>
+</ul>
+<p><strong>What the scorecard actually shows today.</strong> Only 45 of the 71 KPIs return a value (section 3.2). The other 26 have no measure, no data, or columns that do not exist on the warehouse the report reads. The rebuild should start with those 45, then add the rest in the groups set out in section 7.</p>
+<hr>
+<h2 id="2-what-the-handover-project-is">2. What the handover project is</h2>
+<h3 id="21-model-hayat_bsc_full_rssemanticmodel">2.1 Model (<code>Hayat_BSC_Full_RS.SemanticModel</code>)</h3>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vw_*</code> tables (10)</td>
+<td>Import queries from ClickHouse <code>bsc.*</code> through DSN <code>chDWH</code> (the <strong>old</strong> server, <code>.165</code>), cut at the current month</td>
+</tr>
+<tr>
+<td><code>01_Financial</code>, <code>02_Customer</code>, <code>03_Internal Process</code>, <code>04_Learning &amp; Growth</code></td>
+<td>Calculated tables keyed on hospital × month. Every input is a <code>LOOKUPVALUE</code> calculated column. 245 measures (<code>FIN_</code>, <code>CSR_</code>, <code>INT_</code>, <code>LRN_</code>), each KPI as <code>_actual</code> / <code>_target</code></td>
+</tr>
+<tr>
+<td><code>00_Overview</code></td>
+<td>Calculated table that unions 71 <code>SELECTCOLUMNS</code> blocks (hospital × month × KPI). <code>OV_actual</code> / <code>OV_target</code> are a 71-branch <code>SWITCH</code> on the KPI name</td>
+</tr>
+<tr>
+<td><code>KPI Catalog</code>, <code>KPI Ownership</code> (1,214 rows, 21 hospital-name aliases), <code>TARGETS_INDUSTRY</code> (17 rows)</td>
+<td>Typed DATATABLEs</td>
+</tr>
+<tr>
+<td><code>Hospital View</code> + bridge</td>
+<td>&quot;Corporate&quot; equals all 8 hospitals</td>
+</tr>
+<tr>
+<td><code>Period From</code> / <code>Period To</code> + range bridge</td>
+<td>From–to month range. No DAX time intelligence; YTD and prior year are precomputed in Power Query or done by hand-written shifts of <code>period_id − 100</code></td>
+</tr>
+<tr>
+<td><code>vw_hospital.category</code></td>
+<td>Hard-coded in M: {1,4,5} Scale &amp; Optimize, {2,3} Anchor &amp; Protect, {6,7,8} Ramp-Up &amp; Prove</td>
+</tr>
+<tr>
+<td>Role <code>Viewer Access</code></td>
+<td>Email to role (CEO/COO/…). Filters <code>00_Overview</code> by KPI owner. A <code>{&quot;*&quot;,&quot;Full&quot;}</code> fallback gives every unknown login everything</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-report-hayat_bsc_full_rsreport-10-pages">2.2 Report (<code>Hayat_BSC_Full_RS.Report</code>, 10 pages)</h3>
+<p><strong>Pages:</strong></p>
+<ul>
+<li>BSC (landing gauge)</li>
+<li>BSC Overview, plus its Expanded and Ownership variants</li>
+<li>Financial, Customer, Internal Process, Learning &amp; Growth (section boards)</li>
+<li>Hospital Comparison</li>
+<li>Instruction Manual (hidden)</li>
+</ul>
+<p><strong>What every page has:</strong></p>
+<ul>
+<li><strong>Slicers:</strong> four synced ones (Hospital View, Category, From month, To month).</li>
+<li><strong>Navigation:</strong> native transparent buttons laid over pills drawn by a D3 header.</li>
+</ul>
+<p><strong>How the boards work:</strong></p>
+<ul>
+<li><strong>Data:</strong> every KPI board is a D3JSVisual running 130–385 KB of JavaScript, fed by one table-shaped field well.</li>
+<li><strong>Scoring is computed in JavaScript, not DAX:</strong>
+<ul>
+<li>variance % = (a − t) / |t|, reversed for lower-is-better KPIs;</li>
+<li>score = clamp(85 + 0.6 × variance);</li>
+<li>status: good ≥ 85, warn ≥ 70, bad below that.</li>
+</ul>
+</li>
+<li><strong>Pillar and overall scores</strong> are weighted means of the unit score:
+<ul>
+<li>unit score = a/t, t/a, a ceiling rule, or an on-target band;</li>
+<li>weights come from <code>_V9_WEIGHT_PROFILES</code> (14 profiles × 21 name aliases);</li>
+<li>pillar weights are Financial 0.30, Customer 0.20, Internal Process 0.35, Learning &amp; Growth 0.15.</li>
+</ul>
+</li>
+</ul>
+<p><strong>What the boards cannot do:</strong></p>
+<ul>
+<li><strong>Interact with the rest of the report.</strong> They create no selection ids and have no context menu, tooltips or URL launch. A click changes state inside the visual only. The overview's &quot;↗ Dashboard&quot; link is a stub (<code>/* drill-through not configured */</code>).</li>
+<li><strong>Hide KPIs securely on the section pages.</strong> The hiding happens in the browser only. The <code>Access Keys</code> tables relate one-way to the pillar tables, so every figure still reaches the browser and is visible through Export data.</li>
+</ul>
+<h3 id="23-configuration-and-where-it-lives-today">2.3 Configuration and where it lives today</h3>
+<p>To change one KPI, the notes (<code>Notes/06 Changing a KPI.md</code>) list up to 15 places to edit, across TMDL files and <code>visual.json</code> script strings. The notes also warn that reformatting a <code>visual.json</code> &quot;has broken a board before&quot;.</p>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>Written in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KPI list, labels, pillar, objective, type</td>
+<td><code>KPI Catalog</code>; <code>_rows</code> ×4; <code>_kpis</code> ×4; <code>_HC.kpis</code></td>
+</tr>
+<tr>
+<td>Lower-is-better / direction</td>
+<td><code>KPI Catalog</code>; <code>lowerBetter</code> ×6; <code>dir</code> in weight profiles</td>
+</tr>
+<tr>
+<td>Chart type, number format</td>
+<td><code>kpiCharts</code>; <code>kpiColumns.fmt</code>; <code>_kpiFmt</code>; <code>00_Overview</code> <code>fmt</code></td>
+</tr>
+<tr>
+<td>Owners</td>
+<td><code>KPI Catalog</code>; <code>KPI Ownership</code>; <code>_KPI_OWNERS</code> ×4; <code>_V9_OWNERS</code> ×6</td>
+</tr>
+<tr>
+<td>KPI weights, pillar weights</td>
+<td><code>_V9_WEIGHT_PROFILES</code> (95 KB × 9 copies); <code>_V9_PERSPECTIVE_W</code></td>
+</tr>
+<tr>
+<td>Fixed targets</td>
+<td><code>TARGETS_INDUSTRY</code>, plus fallback constants repeated in DAX. Also constants in measures: Patient Retention 0.65; New Patient Acquisition 0.7 or 0.3 by hospital; Budget Variance 0</td>
+</tr>
+<tr>
+<td>Thresholds</td>
+<td>JavaScript constants: 85, 70, 0.6, −10</td>
+</tr>
+<tr>
+<td>Hospital ids, aliases, category</td>
+<td><code>vw_hospital</code> M seed; <code>_HC.hospitals</code>; <code>_V9_HOSP_*</code>; <code>_CANON_HOSPS</code></td>
+</tr>
+<tr>
+<td>Formula constants</td>
+<td>Leakage × 10; ancillary target = OP target × 0.6 (in dbt); GL caption strings; the &quot;active hospital&quot; rule for BOR and OP utilisation</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="3-kpi-status">3. KPI status</h2>
+<h3 id="31-coverage-groups">3.1 Coverage groups</h3>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>KPIs</th>
+<th>Count</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A: live today</strong></td>
+<td>1–6, 8–16, 18, 20–32, 34–37, 42–45, 55–57, 63, 64, 66, 67, 68</td>
+<td>45</td>
+<td>Value returned today. 13, 16 and 66 come from the hand-loaded <code>patient_satisfaction</code> sheet. 68 has no target</td>
+</tr>
+<tr>
+<td><strong>B: derivable from gold</strong></td>
+<td>7, 33, 41, 46, 47, 48, 58, 60, 62</td>
+<td>9</td>
+<td>Blank today, but the data is in gold or in the new <code>bsc</code> views on <code>.214</code>, so a definition and a metric are enough</td>
+</tr>
+<tr>
+<td><strong>C: no source system</strong></td>
+<td>17, 38, 39, 49, 50, 51, 52, 53, 54, 69</td>
+<td>10</td>
+<td>PROMs, HAI, falls, digital initiatives, training (×3), DOA, audit closure, staff satisfaction. Needs monthly manual entry, or a future source (Fusion Learning for training)</td>
+</tr>
+<tr>
+<td><strong>D: needs a definition first</strong></td>
+<td>19, 40, 59, 61, 65, 70, 71</td>
+<td>7</td>
+<td>Non-eligible referral, payer contract activation, referral to hub, referral conversion, breakeven gap, cost per hire / fire. No agreed formula and no data</td>
+</tr>
+</tbody>
+</table>
+<p>The full per-KPI list, with source and drill-through target, is in Appendix A.</p>
+<h3 id="32-why-26-are-blank-today">3.2 Why 26 are blank today</h3>
+<ul>
+<li><strong>Learning &amp; Growth asks for columns the old warehouse does not have.</strong>
+<ul>
+<li>The report reads <code>bsc.vw_work_force</code> on the old server, which has 8 columns.</li>
+<li>The measures ask for <code>saudi_headcount</code>, <code>approved_positions</code>, <code>vacancies_filled</code>, <code>training_cost</code>, …, which Power Query creates as null.</li>
+<li>The new <code>bsc.vw_work_force</code> on <code>.214</code> adds <code>saudi_headcount</code>, <code>vacant_positions</code>, <code>filled_positions</code> and <code>avg_time_to_fill_days</code>. That brings back 46 and part of 47–48 (Oracle Recruiting covers mostly Abha and Head Office).</li>
+</ul>
+</li>
+<li><strong>KPIs 7 and 65 have no measure at all.</strong> The Financial board references <code>FIN_net_collection_rate_*</code> and <code>FIN_breakeven_revenue_gap_*</code>, which do not exist.</li>
+<li><strong>The rest are <code>BLANK()</code> placeholders</strong> (17, 19, 33, 38–41, 58–62).</li>
+</ul>
+<h3 id="33-defects-in-the-handover-model-to-fix-not-copy">3.3 Defects in the handover model to fix, not copy</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Defect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>KPI 39 is &quot;Fall Rate with Harm&quot; in the catalogue and &quot;Patient Falls Rate&quot; in the overview, so the catalogue join misses it</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Return on Asset compares a period ratio with an annual 12% target (Q1 9.2% against 12%)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Insurance TAT and Patient Satisfaction are unweighted averages of monthly figures</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Revenue Leakage multiplies by 10 (user-approved, but hidden in a measure)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>02_Customer</code> and <code>03_Internal Process</code> are keyed on <code>vw_customer</code>, so finance, bed and RCM months missing from it are dropped. A duplicate <code>LOOKUPVALUE</code> key also fails silently to BLANK</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Duplicate measures: Budget Variance, G&amp;A, Ancillary, Total Patient Volume and Census-HV each exist twice</td>
+</tr>
+<tr>
+<td>7</td>
+<td>KPI Ownership uses hospital-name aliases that mostly don't match <code>Hospital View</code>. It also includes two hospitals not in the warehouse (Jazan - Sabya, Riyadh - Al Kharj)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Sparklines have no data (<code>*_ytd_trend</code> measures are BLANK)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>It reads the old server, so finance after each branch's Fusion go-live is missing or wrong (the reason for the <code>bsc</code> views spec)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="4-what-the-ssas-model-offers-today">4. What the SSAS model offers today</h2>
+<h3 id="41-existing-measures">4.1 Existing measures</h3>
+<p>Matched against <code>HNH_Analytics</code> measures: 16 KPIs have a matching measure, 38 have base measures but no ratio, and 17 have no data. The main differences from the scorecard definitions:</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Scorecard (<code>bsc</code> views on <code>.214</code>)</th>
+<th><code>HNH_Analytics</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Finance (KPIs 1–6, 9, 10, 34, 35, 56, 62–64)</td>
+<td><code>gold.fact_gl_fs_monthly</code>: Oasis before each branch's Fusion cutover, Fusion after, unposted included, from 2024</td>
+<td>Fusion GL only, from 2026. <code>Income Statement</code> uses posted journals, where Oasis-feed revenue is almost zero (Jazan Jul-26: −2.8M posted against 21.0M including unposted)</td>
+</tr>
+<tr>
+<td>Claim final rejection</td>
+<td>÷ adjudicated submitted amount</td>
+<td>÷ approved + rejected</td>
+</tr>
+<tr>
+<td>Turnover</td>
+<td>Resignations from Oasis for branches 1–5, Fusion for 6–8</td>
+<td>Fusion leavers only</td>
+</tr>
+<tr>
+<td>OP / doctor utilisation</td>
+<td><code>legacy_capacity_slots</code></td>
+<td>Inflated <code>Slots Total</code> (O-B3)</td>
+</tr>
+<tr>
+<td>Revenue per doctor, FTE</td>
+<td>Includes part-time doctors seen only through revenue</td>
+<td>Not derivable</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-what-it-already-provides">4.2 What it already provides</h3>
+<table>
+<thead>
+<tr>
+<th>Asset</th>
+<th>Use for the scorecard</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Branch</code>, <code>Date</code>, <code>Time Calculation</code> (YTD, PY, YoY, MoM, Rolling 12M)</td>
+<td>Hospital and period slicing, YTD and prior-year KPIs</td>
+</tr>
+<tr>
+<td><code>HNH Readers</code></td>
+<td>Branch security, the rule the request asks for</td>
+</tr>
+<tr>
+<td>Detail facts</td>
+<td>Drill-through targets (section 6.3): Charge Lines, Encounters, Admissions, Episodes, Bed Occupancy, Claim Lines, Pre-auth Lines, Order Lines, GL Journal Lines, Headcount, Worker Movements, Survey Answers</td>
+</tr>
+<tr>
+<td>Conventions and tooling</td>
+<td>Perspective generation, measure guards, measure-vs-SQL tests, BPA rules</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="5-options">5. Options</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>A. Port the handover model into SSAS</strong></th>
+<th><strong>B. KPI fact in the DWH, generic measures (recommended)</strong></th>
+<th><strong>C. One SSAS measure per KPI on existing facts</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>How</strong></td>
+<td>Copy the four pillar tables, <code>00_Overview</code>, the bridges and 258 measures; keep the D3 visuals</td>
+<td>dbt computes <code>numerator</code>, <code>denominator</code>, <code>target</code> per KPI × branch × month from config tables. SSAS gets a few small tables and about 12 generic measures. The report is rebuilt on a new data-driven custom visual</td>
+<td>Write about 71 actual and 71 target measures over <code>Charge Lines</code>, <code>Admissions</code>, GL and other facts; targets from a config table</td>
+</tr>
+<tr>
+<td><strong>Configuration in DWH tables</strong></td>
+<td>No: DATATABLEs and JavaScript stay</td>
+<td><strong>Yes</strong>: catalogue, targets, weights, thresholds, owners, categories, manual values, KPI composition</td>
+<td>Partly: targets and weights yes, formulas no (each change is an SSAS deploy)</td>
+</tr>
+<tr>
+<td><strong>Drill-through</strong></td>
+<td>No (D3 boards)</td>
+<td><strong>Yes</strong>: KPI to detail page to transaction facts</td>
+<td>Yes, and the KPI itself can be sliced by department, payer or doctor</td>
+</tr>
+<tr>
+<td><strong>SSAS conventions</strong></td>
+<td>Breaks them (calculated tables, <code>LOOKUPVALUE</code> columns)</td>
+<td>Fits them (<code>gold.ssas_*</code> views, <code>model_config.py</code>, tests)</td>
+<td>Fits them</td>
+</tr>
+<tr>
+<td><strong>Matches the scorecard's definitions</strong></td>
+<td>Yes</td>
+<td>Yes: reuses the reconciled <code>bsc</code> logic</td>
+<td>No, until the finance gap (4.1) is closed: needs <code>fact_gl_fs_monthly</code> in SSAS and many definition changes</td>
+</tr>
+<tr>
+<td><strong>Effort</strong></td>
+<td>Medium, and the result is fragile</td>
+<td>Medium–large</td>
+<td>Large</td>
+</tr>
+<tr>
+<td><strong>Verdict</strong></td>
+<td>Rejected: fails requirements 3 and 4</td>
+<td><strong>Recommended</strong></td>
+<td>Long-term direction for the KPIs that matter most for slicing; can grow from B (section 8)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="6-recommended-design-option-b">6. Recommended design (option B)</h2>
+<h3 id="61-architecture">6.1 Architecture</h3>
+<pre><code>BI manager: INSERT a new version row (SQL)                              ← ClickHouse write
+        ▼
+default.map_bsc_*  (insert-only change logs: key, values, changed_at, changed_by, change_note, is_deleted)
+        ▼  latest row per key
+stg_ref__bsc_*  ──►  gold.dim_bsc_kpi, dim_bsc_objective, fact_bsc_weight, …
+                                                     │
+gold facts ─► bsc.vw_customer / vw_financial / … ────┤ (existing, reconciled)
+gold.fact_gl_fs_monthly, recruiting, manual values ──┤
+                                                     ▼
+                         gold.fact_bsc_metric_monthly   (metric_code × branch × month: value)
+                                                     ▼  composed by map_bsc_kpi
+                         gold.fact_bsc_kpi_monthly      (kpi × branch × month: num, den, target_num, target_den, …)
+                                                     ▼
+                         gold.ssas_* views ─► HNH_Analytics: tables BSC KPI, BSC Objective, BSC KPI Values, BSC Weights
+                                                     ▼  perspective &quot;Balanced Scorecard&quot;, role HNH Readers
+                         Power BI Report Server report (live connection, HNH Balanced Scorecard visual, drill-through pages)
+</code></pre>
+<h3 id="62-dwh-layer-all-configuration-lives-here">6.2 DWH layer: all configuration lives here</h3>
+<p><strong>Config tables</strong></p>
+<p>These are reference tables in ClickHouse <code>default</code> (<code>default.map_bsc_*</code>), and the tables themselves are the source of truth. There is no workbook, no CSV and no loader script (decision D6). The BI manager edits them directly with SQL (decision D7).</p>
+<p>Each table is an <strong>insert-only change log</strong>:</p>
+<ul>
+<li><strong>Columns:</strong> the key, the values, then <code>changed_at DateTime64(3)</code>, <code>changed_by String</code>, <code>change_note String</code> and <code>is_deleted UInt8</code>.</li>
+<li><strong>How a change is made:</strong> insert a new row for the key. Nothing is ever updated in place: there are no <code>ALTER … UPDATE</code> mutations.</li>
+<li><strong>Delete:</strong> a row with <code>is_deleted = 1</code>.</li>
+<li><strong>Current value:</strong> the <code>stg_ref__bsc_*</code> view takes the latest row per key (<code>argMax(…, changed_at)</code>) and drops deleted keys.</li>
+<li><strong>History:</strong> every value ever set, who set it and why stays queryable.</li>
+<li><strong>Undo:</strong> insert the previous values again.</li>
+</ul>
+<p>The tables are created once, and their first content is generated from the handover project. Both steps are ClickHouse writes and need approval. Section 6.2.1 shows the editing routine.</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>map_bsc_kpi</code></td>
+<td><code>kpi_code</code></td>
+<td><code>kpi_num</code>, name, short label, pillar, objective code, type (Primary / Supporting / Additional), direction (higher / lower / ceiling / on_target / variance), format, chart hint, display order, definition text, <code>is_active</code>, and the <strong>composition</strong>: numerator metric, denominator metric, multiplier, rollup rule, period rule, target source. Where a KPI has two candidate definitions (Appendix B), both are built as metrics, and switching between them is a change to the composition</td>
+</tr>
+<tr>
+<td><code>map_bsc_objective</code></td>
+<td><code>objective_code</code></td>
+<td>Pillar, title, question, order. Pillar weights 0.30 / 0.20 / 0.35 / 0.15</td>
+</tr>
+<tr>
+<td><code>map_bsc_target</code></td>
+<td><code>kpi_code</code>, <code>branch_id</code> (0 = all), year, month (0 = annual)</td>
+<td>Target value, <code>scale_with_months</code>, basis, note. Replaces <code>TARGETS_INDUSTRY</code> and the DAX constants; seeded from it and from <code>default.bsc_targets</code></td>
+</tr>
+<tr>
+<td><code>map_bsc_weight</code></td>
+<td>Profile (category or branch), <code>kpi_code</code></td>
+<td>KPI weight inside the pillar. Replaces <code>_V9_WEIGHT_PROFILES</code>, keyed on category or branch id instead of 21 name aliases</td>
+</tr>
+<tr>
+<td><code>map_bsc_threshold</code></td>
+<td><code>kpi_code</code> (null = default)</td>
+<td>Score base 85, slope 0.6, good ≥ 85, warn ≥ 70</td>
+</tr>
+<tr>
+<td><code>map_bsc_owner</code></td>
+<td><code>kpi_code</code>, <code>branch_id</code> (null = Corporate)</td>
+<td>Owner, co-owners. Kept as information for the owner view only, with no security (requirement 2)</td>
+</tr>
+<tr>
+<td><code>map_bsc_hospital_category</code></td>
+<td><code>branch_id</code></td>
+<td>Category. Surfaced as a new column <code>BSC Category</code> on <code>gold.dim_branch</code>, so it appears on the SSAS <code>Branch</code> table</td>
+</tr>
+<tr>
+<td><code>map_bsc_manual_value</code></td>
+<td><code>kpi_code</code>, <code>branch_id</code>, year, month</td>
+<td>Numerator, denominator, value, note, entered by, entered at. Holds group C KPIs and replaces the hand-loaded <code>patient_satisfaction</code> sheet</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Metrics.</strong> <code>gold.fact_bsc_metric_monthly</code> (metric_code × branch × month × value):</p>
+<ul>
+<li>It unpivots the existing <code>bsc_vw_*</code> dbt models, so the corrected definitions reconciled in <code>docs/reconciliation_bsc.md</code> are reused, not rewritten.</li>
+<li>It adds the new group B metrics:
+<ul>
+<li>final claim rejections;</li>
+<li>referral volume (already in <code>vw_customer</code>);</li>
+<li>Saudi headcount;</li>
+<li>vacancies;</li>
+<li>average and licensed beds (for activated bed rate);</li>
+<li>marketing expense from <code>fact_gl_fs_monthly</code>;</li>
+<li>doctor slots from <code>legacy_capacity_slots</code>.</li>
+</ul>
+</li>
+</ul>
+<p><strong>KPI facts.</strong> <code>gold.fact_bsc_kpi_monthly</code> is built by dbt from the metrics and <code>map_bsc_kpi</code>:</p>
+<ul>
+<li><strong>Columns:</strong> <code>numerator</code>, <code>denominator</code>, <code>target_numerator</code>, <code>target_denominator</code>, <code>month_count</code> and <code>data_source</code>.</li>
+<li><strong>Ratios stay additive:</strong> every ratio is stored as its two parts, so a corporate, category or period-range figure is Σnumerator / Σdenominator. The hospitals' rates are never averaged, which matches the scorecard's pooled rule.</li>
+<li><strong>Stocks</strong> (beds, FTE, headcount, AR, assets) are stored with <code>month_count</code>, so averages over a range are correct.</li>
+</ul>
+<p><strong>What a change costs:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Change</th>
+<th>Where</th>
+<th>Refresh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Target, weight, threshold, owner, category, label, order, direction, format</td>
+<td>A new version row in the <code>default.map_bsc_*</code> table</td>
+<td>Nightly dbt + SSAS Daily (or the fast path, with approval)</td>
+</tr>
+<tr>
+<td>Swap a KPI's numerator or denominator between existing metrics, change its multiplier or rollup rule</td>
+<td><code>map_bsc_kpi</code></td>
+<td>Same</td>
+</tr>
+<tr>
+<td>A new KPI built from existing metrics</td>
+<td>A row in <code>map_bsc_kpi</code>, plus targets and weights</td>
+<td>Same: <strong>no SSAS deploy</strong></td>
+</tr>
+<tr>
+<td>A new metric (new source logic)</td>
+<td>dbt SQL in <code>fact_bsc_metric_monthly</code></td>
+<td>dbt build + SSAS Daily</td>
+</tr>
+<tr>
+<td>A new rollup or period rule (rare)</td>
+<td>SSAS generic measure</td>
+<td>SSAS deploy</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tests</strong> (on the <code>stg_ref__bsc_*</code> current-value views):</p>
+<ul>
+<li>Unique keys, accepted values, and foreign keys from every config table to <code>map_bsc_kpi</code>.</li>
+<li>Every metric named in a composition exists in <code>fact_bsc_metric_monthly</code>.</li>
+<li>Every active KPI has a target for each budgeted branch (warn).</li>
+<li>Thresholds are ordered, and manual values exist only for manual KPIs.</li>
+<li>One row per KPI × branch × month.</li>
+</ul>
+<p><strong>A bad edit can't reach the report.</strong> If an edit fails a test, the nightly <code>tag:hnh</code> build fails. The SSAS gate stays closed, and the report keeps yesterday's figures. The BI manager can also run <code>dbt test --select stg_ref__bsc_*</code> straight after an edit.</p>
+<h4 id="621-editing-routine-for-the-bi-manager">6.2.1 Editing routine for the BI manager</h4>
+<pre><code class="language-sql"><span class="hljs-comment">-- Change Days in AR target for 2027 (all hospitals)</span>
+<span class="hljs-keyword">INSERT</span> <span class="hljs-keyword">INTO</span> default.map_bsc_target
+  (kpi_code, branch_id, <span class="hljs-keyword">year</span>, <span class="hljs-keyword">month</span>, target_value, scale_with_months, source_basis, changed_at, changed_by, change_note, is_deleted)
+<span class="hljs-keyword">VALUES</span> (<span class="hljs-string">&#x27;FIN_DAYS_IN_AR&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">2027</span>, <span class="hljs-number">0</span>, <span class="hljs-number">170</span>, <span class="hljs-number">0</span>, <span class="hljs-string">&#x27;Board 2027&#x27;</span>, now64(<span class="hljs-number">3</span>), <span class="hljs-string">&#x27;bi_manager&#x27;</span>, <span class="hljs-string">&#x27;FY2027 target approved&#x27;</span>, <span class="hljs-number">0</span>);
+
+<span class="hljs-comment">-- See the history of a key</span>
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">FROM</span> default.map_bsc_target <span class="hljs-keyword">WHERE</span> kpi_code <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;FIN_DAYS_IN_AR&#x27;</span> <span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> changed_at;
+</code></pre>
+<p>The same pattern covers the other tables: a weight, an owner, a hospital's category, a monthly manual value (HAI, falls, training, …), or a KPI's composition. <code>docs/bsc_config.md</code> will list every table, its columns and an example.</p>
+<h3 id="63-ssas-layer-structure-only-no-configuration">6.3 SSAS layer: structure only, no configuration</h3>
+<p><strong>Tables.</strong> All are small, single-partition tables refreshed in full by <code>process.ps1 -Mode Daily</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Source view</th>
+<th>Kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BSC KPI</code></td>
+<td><code>ssas_dim_bsc_kpi</code></td>
+<td>dimension; sort by display order; pillar and objective attributes</td>
+</tr>
+<tr>
+<td><code>BSC KPI Values</code></td>
+<td><code>ssas_fact_bsc_kpi_monthly</code></td>
+<td>fact → Branch, Date (month), BSC KPI</td>
+</tr>
+<tr>
+<td><code>BSC Weights</code></td>
+<td><code>ssas_fact_bsc_weight</code></td>
+<td>fact → BSC KPI (profile resolved per branch in dbt)</td>
+</tr>
+<tr>
+<td><code>Branch</code></td>
+<td>existing</td>
+<td>gains <code>BSC Category</code> and an <code>Is Hospital</code> flag (1–8)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Generic measures.</strong> About 12, in folder <code>Balanced Scorecard\…</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Measures</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Values</td>
+<td><code>BSC Actual</code>, <code>BSC Target</code>, <code>BSC Variance %</code></td>
+</tr>
+<tr>
+<td>Scoring</td>
+<td><code>BSC Score</code>, <code>BSC Status</code> (icon or colour code), <code>BSC Unit Score</code></td>
+</tr>
+<tr>
+<td>Pillar and overall</td>
+<td><code>BSC Pillar Score</code>, <code>BSC Overall Score</code>, <code>BSC Hit Rate</code></td>
+</tr>
+<tr>
+<td>Formatting and ownership</td>
+<td><code>BSC Value (formatted)</code>, <code>BSC Owner</code></td>
+</tr>
+</tbody>
+</table>
+<p>How they work:</p>
+<ul>
+<li><strong>Rules come from data.</strong> Each reads its rollup, period and direction rule from <code>BSC KPI</code> columns through a small <code>SWITCH</code> of rule types, not of KPIs. Adding a KPI never touches DAX.</li>
+<li><strong>Thresholds come from data.</strong> Scores read <code>map_bsc_threshold</code> values carried on <code>BSC KPI</code>.</li>
+<li><strong>Formatting is per KPI.</strong> The value is shown in each KPI's own format (%, SAR, days, minutes) through a dynamic format string. Check that SQL Server 2025 AS honours measure format-string expressions in Power BI Report Server visuals; if not, use a formatted-text measure for display.</li>
+<li><strong>Model conventions apply:</strong>
+<ul>
+<li>KPI Values relates only to Branch, Date and BSC KPI, so the <code>measure_guards.py</code> guards (P41) apply;</li>
+<li>snapshot handling is not needed, because stocks carry <code>month_count</code>;</li>
+<li>each measure gets checks in <code>ssas/tests/measures/balanced_scorecard.json</code> against <code>gold.fact_bsc_kpi_monthly</code>.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Perspective <code>Balanced Scorecard</code>:</strong></p>
+<ul>
+<li>The BSC tables, Branch and Date, Time Calculation;</li>
+<li>the detail facts used by the drill-through pages (section 6.5);</li>
+<li>configured through <code>PERSPECTIVES</code> / <code>PERSPECTIVE_MEASURE_DOMAINS</code> in <code>model_config.py</code>.</li>
+</ul>
+<p><strong>Who uses it (decision D4).</strong> The scorecard is for top management only:</p>
+<ul>
+<li><strong>Report access:</strong> the BI manager grants it through Power BI Report Server folder permissions on the scorecard folder.</li>
+<li><strong>Data rules:</strong> the model keeps its existing rules, unchanged.</li>
+<li><strong>Excel and other report tools:</strong> the perspective is a view, not a security boundary. Any <code>HNH_BI_Users</code> member who connects to the model with Excel can read the BSC tables, still filtered to their own branches. This is acceptable because the scorecard shows only branch-month aggregates of data those users can already see.</li>
+</ul>
+<p><strong>Security.</strong> <code>HNH Readers</code> is unchanged:</p>
+<ul>
+<li><strong>Branch filter.</strong> It flows to <code>BSC KPI Values</code> through Branch. A user limited to Abha sees Abha only.</li>
+<li><strong>&quot;Corporate&quot;.</strong> It means &quot;all hospitals the user may see&quot;, and excludes Head Office through <code>Is Hospital</code>.</li>
+<li><strong>What is dropped:</strong>
+<ul>
+<li>KPI-owner security (the <code>Viewer Access</code> role, the <code>{&quot;*&quot;,&quot;Full&quot;}</code> fallback, the client-side tile hiding);</li>
+<li>the e-mail logins, which do not work on this workgroup server anyway (<code>USERPRINCIPALNAME()</code> returns <code>HNHANALYTICSSRV\user</code>).</li>
+</ul>
+</li>
+</ul>
+<h3 id="64-report-power-bi-desktop-for-report-server-live-connection-to-the-perspective">6.4 Report (Power BI Desktop for Report Server, live connection to the perspective)</h3>
+<p>The scorecard pages use a new custom visual, <strong>HNH Balanced Scorecard</strong> (section 6.7, decision D2). It follows the current boards' design, adds the improvements below and applies the Hayat brand. The drill-through pages use native visuals.</p>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Built with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BSC (landing)</td>
+<td>Custom visual, overview mode: overall gauge, four pillar cards</td>
+</tr>
+<tr>
+<td>Financial / Customer / Internal Process / Learning &amp; Growth</td>
+<td>Custom visual, board mode (pillar filter): KPI tiles grouped by objective</td>
+</tr>
+<tr>
+<td>Owner view</td>
+<td>Custom visual, owner mode (owners shown as information only)</td>
+</tr>
+<tr>
+<td>Hospital Comparison</td>
+<td>Custom visual, comparison mode: focus hospital against peers; <code>BSC Category</code> slicer</td>
+</tr>
+<tr>
+<td><strong>KPI Detail</strong> (drill-through)</td>
+<td>Native visuals, see 6.5</td>
+</tr>
+<tr>
+<td><strong>Detail pages</strong> (drill-through)</td>
+<td>Native visuals, see 6.5</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Slicers:</strong>
+<ul>
+<li>Branch (with &quot;all&quot; = Corporate) and <code>BSC Category</code>;</li>
+<li>a Date month range, which replaces the From/To bridges;</li>
+<li>optionally Time Calculation (YTD, etc.).</li>
+</ul>
+</li>
+<li><strong>Theme:</strong> the HNH colours move into the report theme JSON.</li>
+<li><strong>Saving format:</strong> the file must be saved by Desktop for Report Server in the legacy layout (Notes/05).</li>
+</ul>
+<h3 id="65-drill-through-three-levels">6.5 Drill-through, three levels</h3>
+<ol>
+<li><strong>Scorecard to KPI Detail.</strong> Right-click a KPI tile in the custom visual (the visual opens Power BI's own context menu on that KPI's selection) to open a page with drill-through field <code>BSC KPI[KPI Code]</code> and filters kept. It shows:
+<ul>
+<li>monthly actual against target (trend);</li>
+<li>every hospital for that KPI, ranked;</li>
+<li>numerator and denominator;</li>
+<li>the definition, owner, weight and target basis (from config);</li>
+<li>the <code>data_source</code> flag (Oasis / Fusion);</li>
+<li>for manual KPIs, the note and who entered it.</li>
+</ul>
+</li>
+<li><strong>KPI Detail to transaction detail.</strong> A second drill-through goes from the hospital × month on the KPI Detail page to a page per KPI family. Its visuals read existing <code>HNH_Analytics</code> facts, filtered by Branch and Date.</li>
+<li><strong>Which family page each KPI uses.</strong> <code>map_bsc_kpi.detail_page</code> names the family page, and the KPI Detail page shows a button only for that page (a button with a conditional destination).</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Family page</th>
+<th>KPIs</th>
+<th>Detail facts and breakdowns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Revenue</td>
+<td>1–3, 8, 11, 12, 18, 25, 27, 28, 44, 55</td>
+<td>Charge Lines by department, service, product category, payer, doctor</td>
+</tr>
+<tr>
+<td>Finance (GL)</td>
+<td>4–6, 9, 10, 34, 35, 56, 62–65</td>
+<td>GL balances by FS line and account; Fusion GL Journal Lines. Oasis months need <code>fact_gl_fs_monthly</code> added to SSAS as <code>GL FS Monthly</code> (134K rows)</td>
+</tr>
+<tr>
+<td>Patient volume</td>
+<td>14, 15, 20, 22, 24, 26, 41, 42, 57, 67</td>
+<td>Encounters, Admissions, Episodes by department, doctor, payer, visit type</td>
+</tr>
+<tr>
+<td>Beds &amp; clinical</td>
+<td>21, 23, 36, 37, 45, 60</td>
+<td>Bed Occupancy by ward and bed; Admissions with LOS and readmission flags</td>
+</tr>
+<tr>
+<td>Revenue cycle</td>
+<td>29–33</td>
+<td>Claim Lines by payer, NPHIES reason, status; Pre-auth Lines; Order Lines</td>
+</tr>
+<tr>
+<td>Workforce</td>
+<td>43, 44, 46–48, 68</td>
+<td>Headcount, Worker Movements, Employee by department, job, nationality</td>
+</tr>
+<tr>
+<td>Patient experience</td>
+<td>13, 16</td>
+<td>Survey Responses / Answers</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Exposure under existing rules.</strong> Detail pages show what <code>HNH Readers</code> already allows. Patient details, pay and employee names stay behind the PII and pay flags. Doctor-level revenue is visible to all users of a branch, as it is in other reports today.</p>
+<h3 id="66-benefits-and-drawbacks-of-option-b">6.6 Benefits and drawbacks of option B</h3>
+<p><strong>Benefits</strong></p>
+<ul>
+<li><strong>One place for configuration.</strong> One catalogue drives every page, the scoring and the drill paths. Target, weight, threshold, owner, category and most formula changes are row edits in DWH tables, with no SSAS deploy and no JavaScript editing. This replaces the 15-step change in Notes/06.</li>
+<li><strong>Correct numbers.</strong> It reuses the reconciled <code>bsc</code> logic on gold: Oasis + Fusion GL by cutover, and corrected definitions. That fixes the post-Fusion finance gap and the blank Learning &amp; Growth KPIs.</li>
+<li><strong>Real drill-through.</strong> The new visual opens Power BI's context menu, tooltips and cross-filtering, so drill-through works, from KPI to hospital and month, then to transaction lines.</li>
+<li><strong>Consistent security.</strong> It uses the <code>HNH Readers</code> rules, which close the open <code>*</code>=Full fallback and the browser-only tile hiding.</li>
+<li><strong>Less to maintain:</strong>
+<ul>
+<li>about 12 measures instead of 258;</li>
+<li>no calculated tables;</li>
+<li>no ODBC refresh or <code>chDWH</code> DSN for the report (it connects live);</li>
+<li>about 2.5 MB of duplicated JavaScript removed.</li>
+</ul>
+</li>
+<li><strong>Testable.</strong> dbt tests, loader validation, and SSAS measure-against-SQL checks.</li>
+<li><strong>Group C KPIs get a controlled entry path.</strong> Manual values carry an audit trail.</li>
+</ul>
+<p><strong>Drawbacks</strong></p>
+<ul>
+<li><strong>KPIs are pre-aggregated by branch × month.</strong> A KPI cannot be sliced by department, payer or doctor; only its detail pages can. Option C would allow that, at the cost of formulas living in SSAS.</li>
+<li><strong>Two definitions can coexist.</strong> For example, <code>Claim Rejection Rate %</code> in SSAS and KPI 33 in the scorecard use different denominators (4.1). Users comparing reports will see differences. Mitigations:
+<ul>
+<li>label the definition on the KPI Detail page;</li>
+<li>list the differences;</li>
+<li>converge one definition at a time.</li>
+</ul>
+</li>
+<li><strong>We own a custom visual.</strong>
+<ul>
+<li>The HNH Balanced Scorecard visual is TypeScript code that the BI team must maintain.</li>
+<li>Each Power BI Report Server upgrade must be checked against the visual's API version.</li>
+<li>It is a private visual (not certified), so it is imported into the report file.</li>
+<li>It replaces about 2.5 MB of copied JavaScript with one versioned package that reads its configuration from data.</li>
+</ul>
+</li>
+<li><strong>Data is a day old, not near real time.</strong> Changes appear after the nightly dbt build and <code>process.ps1 -Mode Daily</code>. Today the report re-queries live views at each refresh. The fast path (<code>-Force</code>) needs approval each time.</li>
+<li><strong>Branch security only.</strong> Pre-aggregated rows have no staff or pay key, so specialty and pay restrictions do not narrow scorecard values. This is acceptable because report access is limited to top management (decision D4). Pay-derived KPIs (for example cost per fire) show branch totals.</li>
+<li><strong>Manual KPIs need a monthly routine.</strong> The BI manager owns it, and every entry is a ClickHouse insert.</li>
+<li><strong>Edits are SQL inserts.</strong> That is fast for the BI manager, but a mistake in a key is only caught by the dbt tests (section 6.2). There is no form with validation.</li>
+<li><strong>Numbers move.</strong> They come from the new server and corrected definitions, so 2025–2026 values differ from the current report, mainly finance after cutover. <code>docs/reconciliation_bsc.md</code> explains the differences.</li>
+<li><strong>Some changes still need SSAS.</strong> A new rule type, a new detail family page, or adding <code>GL FS Monthly</code> for Oasis GL drill-through each need an SSAS deploy (with approval).</li>
+</ul>
+<h3 id="67-custom-visual-hnh-balanced-scorecard">6.7 Custom visual &quot;HNH Balanced Scorecard&quot;</h3>
+<p><strong>Design reference.</strong> The current boards were rendered with sample data. The prototype of the new visual is <code>docs/superpowers/specs/assets/2026-10-20-bsc-visual-prototype.html</code>: open it in Edge, switch between the two modes, hover a tile, right-click a tile.</p>
+<p><strong>Carried over from the current boards:</strong></p>
+<ul>
+<li>the blue-to-navy header band;</li>
+<li>semicircle score gauges with a target marker;</li>
+<li>the four pillar cards with their questions;</li>
+<li>objective sections (F1 … L3) with primary KPIs given more space;</li>
+<li>variance chips and &quot;at risk&quot; counts;</li>
+<li>the owner view and the hospital comparison.</li>
+</ul>
+<p><strong>Brand</strong> (from <code>branding/</code>):</p>
+<ul>
+<li><strong>Colours:</strong> navy <code>#0A1E32</code> / <code>#002E5A</code>; the logo's blue gradient <code>#13ACE3</code> → <code>#1478BE</code>; sky <code>#32A4E5</code> for data.</li>
+<li><strong>Status colours:</strong> green-teal for on track, <code>#EF8B00</code> for watch, <code>#DB280A</code> for at risk.</li>
+<li><strong>Logo:</strong> the logo mark sits in the header band, and the band's ribbon shape is taken from it.</li>
+<li><strong>Font:</strong> Segoe UI, as today. The guideline PDF holds its text as outlines, so the brand typeface is not known. If brand font files exist, they can be embedded in the visual.</li>
+</ul>
+<p><strong>Improvements:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Improvement</th>
+<th>Today</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>All KPI lists, labels, objectives, owners, weights, thresholds, formats and directions arrive as data columns from <code>BSC KPI</code>. No configuration is written in the visual</td>
+<td>About 2.5 MB of copied JavaScript configuration</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Right-click opens Power BI's context menu (drill-through to KPI Detail and the family page, include and exclude). A click cross-filters the other visuals. Hover shows a report-page tooltip or the built-in tooltip with numerator, denominator, score and source</td>
+<td>No interaction</td>
+</tr>
+<tr>
+<td>3</td>
+<td>12-month sparkline per KPI, with the target line; 12-month pillar score trend</td>
+<td>Sparklines are empty</td>
+</tr>
+<tr>
+<td>4</td>
+<td>&quot;No data yet&quot; is its own state: definition to be agreed, waiting for this month's manual entry, or not yet calculated. It is never shown as 0 or as a bare dash</td>
+<td>Blank tiles</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Each tile has a status icon and word (✓ on track, ! watch, ▼ at risk) as well as a colour, and a &quot;lower is better&quot; note</td>
+<td>Colour only</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Badges for data source (Oasis + Fusion GL, Oasis, manual entry) and owner</td>
+<td>—</td>
+</tr>
+<tr>
+<td>7</td>
+<td>KPI status strip on each pillar card: one square per KPI. Hover names the KPI, click goes to it</td>
+<td>—</td>
+</tr>
+<tr>
+<td>8</td>
+<td>An on-card legend explains how the score is calculated</td>
+<td>Hidden in the JavaScript</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Keyboard navigation, high-contrast mode, Power BI rendering events (so export and subscriptions wait for the visual)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Format pane: mode (overview, board, owner, comparison), and theme colours with brand defaults</td>
+<td>Edit the script</td>
+</tr>
+</tbody>
+</table>
+<p><strong>How the visual is built:</strong></p>
+<ul>
+<li><strong>Package:</strong> TypeScript with <code>powerbi-visuals-tools</code> (pbiviz), D3 v7, packaged as a private <code>.pbiviz</code> and imported into the report.</li>
+<li><strong>API version:</strong> pinned to the highest version that Power BI Report Server 1.26 and Desktop for Report Server (May 2026) accept. This is confirmed first with a minimal test visual.</li>
+<li><strong>Data:</strong>
+<ul>
+<li>categorical mapping: category <code>BSC KPI[KPI Code]</code>, plus <code>Branch</code> in comparison mode;</li>
+<li>KPI attributes as grouping columns;</li>
+<li>measures <code>BSC Actual</code>, <code>BSC Target</code>, <code>BSC Score</code>, <code>BSC Status</code>, <code>BSC Numerator</code>, <code>BSC Denominator</code>, and <code>BSC Trend</code>, which returns 12 monthly values as text so a selection stays one KPI.</li>
+</ul>
+</li>
+<li><strong>Selection and drill-through:</strong> each KPI gets a selection id from its category. <code>selectionManager.showContextMenu</code> gives Power BI's drill-through menu, and the tooltip service gives tooltips.</li>
+<li><strong>Build machine:</strong> Node 24 is already on this server, but <code>powerbi-visuals-tools</code> is not installed. Installing it (npm) is a software install on the production server and needs approval; it can also be built on a separate PC.</li>
+<li><strong>Source:</strong> in the repository under <code>powerbi_tmdl/hnh_bsc_visual/</code>, with unit tests for the scoring and formatting functions.</li>
+</ul>
+<hr>
+<h2 id="7-plan">7. Plan</h2>
+<p>Every step that writes to ClickHouse, deploys or processes SSAS, or changes the report server waits for approval (<a href="http://CLAUDE.html">CLAUDE.md</a>).</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Work</th>
+<th>Output</th>
+<th>Size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0. Decisions</strong></td>
+<td>Per-KPI definitions (Appendix B); approve the visual design (prototype)</td>
+<td>Approved design spec <code>2026-10-2x-hnh-bsc-ssas-design.md</code></td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>1. Config tables</strong></td>
+<td>DDL for the <code>default.map_bsc_*</code> change-log tables. A script that generates the first INSERTs from the handover files: catalogue, owners, <code>TARGETS_INDUSTRY</code>, weight profiles (category keyed), thresholds, categories, with the KPI 39 name and the aliases fixed. <code>stg_ref__bsc_*</code> (latest row per key) with dbt tests. <code>docs/bsc_config.md</code> editing guide</td>
+<td>Config in ClickHouse (DDL and first insert need approval)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>2. Metrics and KPI fact</strong></td>
+<td><code>fact_bsc_metric_monthly</code> (unpivot of <code>bsc_vw_*</code>), <code>fact_bsc_kpi_monthly</code>, <code>dim_bsc_kpi</code>, <code>fact_bsc_weight</code>, <code>BSC Category</code> / <code>Is Hospital</code> on <code>dim_branch</code>. Unit tests on the composition and rollup rules. Reconcile group A KPIs against the current report for Jan–Sep 2026, explaining each difference</td>
+<td>Gold tables; reconciliation note</td>
+<td>M–L</td>
+</tr>
+<tr>
+<td><strong>3. SSAS</strong></td>
+<td><code>ssas_*</code> views and contracts, <code>model_config.py</code> entries, generic measures with descriptions and guards, the <code>Balanced Scorecard</code> perspective, measure checks, BPA, pytest, Pester. <code>deploy.ps1 -Stage TestMeasures</code> on <code>HNH_Analytics_Test</code>, then <code>-Stage All</code></td>
+<td>Perspective live on the test slot, then production (approval each)</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>4a. Visual: API probe</strong></td>
+<td>Minimal test visual at the candidate API version; open it in Desktop for Report Server and on the report server (needs approval to install <code>powerbi-visuals-tools</code>, or a separate PC)</td>
+<td>Confirmed API version</td>
+<td>S</td>
+</tr>
+<tr>
+<td><strong>4b. Visual: build</strong></td>
+<td><code>powerbi_tmdl/hnh_bsc_visual/</code>: four modes, context menu, tooltips, sparklines, format pane, rendering events, unit tests. Reviewed against the prototype</td>
+<td><code>.pbiviz</code> package</td>
+<td>L</td>
+</tr>
+<tr>
+<td><strong>4c. Report</strong></td>
+<td>Build in Desktop for Report Server, live to the perspective: landing, four pillar pages, owner view, hospital comparison (custom visual), KPI Detail and family detail pages (native). Test as a non-admin top-management login</td>
+<td>New pbix in a top-management folder on the report server, beside the old report</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>5. Group B KPIs</strong></td>
+<td>Agree definitions, add metrics (7, 33, 41, 46–48, 58, 60, 62)</td>
+<td>+9 KPIs</td>
+<td>M</td>
+</tr>
+<tr>
+<td><strong>6. Group C manual entry</strong></td>
+<td>Workbook sheet for manual values, owners per KPI, monthly routine; HAI, falls, training, DOA, audit, staff satisfaction, PROMs</td>
+<td>+10 KPIs as data is entered</td>
+<td>S build, ongoing</td>
+</tr>
+<tr>
+<td><strong>7. Group D</strong></td>
+<td>Business definitions for 19, 40, 59, 61, 65, 70, 71, then source or manual entry</td>
+<td>Remaining KPIs</td>
+<td>depends on the business</td>
+</tr>
+<tr>
+<td><strong>8. Switch</strong></td>
+<td>Users compare old and new side by side; retire the handover pbix and the <code>chDWH</code> dependency</td>
+<td>One scorecard</td>
+<td>S</td>
+</tr>
+</tbody>
+</table>
+<p>Phases 1–4 deliver the 45 KPIs that work today, plus drill-through, on SSAS. Phases 5–7 can run in parallel once phase 2 exists.</p>
+<hr>
+<h2 id="8-path-to-option-c-later">8. Path to option C later</h2>
+<p>Option B does not block option C. When a KPI needs slicing by department, payer or doctor:</p>
+<ol>
+<li>Write its SSAS measure over the facts.</li>
+<li>Add a measure check that it equals <code>fact_bsc_kpi_monthly</code> at branch × month.</li>
+<li>Set <code>map_bsc_kpi.ssas_measure</code> so that the KPI Detail page shows the sliceable version.</li>
+</ol>
+<p>Revenue, volumes, BOR, ALOS, readmissions and RCM KPIs are the natural first candidates, because their SSAS measures exist already (4.1).</p>
+<hr>
+<h2 id="9-decisions">9. Decisions</h2>
+<p>Taken on 2026-10-20:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td>Option A, B or C</td>
+<td>B (implied by D2–D7)</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>Report look</td>
+<td><strong>A new custom visual, similar in design to the current boards, with improvements and the Hayat brand</strong> (section 6.7)</td>
+</tr>
+<tr>
+<td>D3</td>
+<td>Where a scorecard definition differs from SSAS, which wins</td>
+<td><strong>Decided per KPI by the user</strong> (Appendix B). Both definitions are built as metrics, so a choice can be changed later in <code>map_bsc_kpi</code></td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Who sees it; security</td>
+<td><strong>Top management only. Access is managed on the report server; the model keeps the same <code>HNH Readers</code> rules</strong></td>
+</tr>
+<tr>
+<td>D6</td>
+<td>Where configuration lives</td>
+<td><strong>ClickHouse <code>default</code> reference tables, not CSV files</strong> (insert-only change logs, section 6.2)</td>
+</tr>
+<tr>
+<td>D7</td>
+<td>Owner of the configuration and the manual values</td>
+<td><strong>BI manager</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Still open. The recommendation applies unless changed:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decision</th>
+<th>Recommendation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D5</td>
+<td>&quot;Corporate&quot; = hospitals 1–8 the user can see, Head Office excluded</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>D8</td>
+<td>Group C and D KPIs</td>
+<td>Show them as &quot;No data yet&quot; tiles (the prototype does), so the gaps stay visible. Hide one with <code>is_active = 0</code></td>
+</tr>
+<tr>
+<td>D9</td>
+<td>Hospitals not in the warehouse (Jazan - Sabya, Riyadh - Al Kharj) and the fourth category &quot;Specialist &amp; Bespoke&quot;</td>
+<td>Leave out until they exist as branches</td>
+</tr>
+<tr>
+<td>D10</td>
+<td>Brand typeface</td>
+<td>Segoe UI unless brand font files are supplied</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="appendix-a-kpis-todays-status-source-and-drill-target">Appendix A: KPIs, today's status, source and drill target</h2>
+<p>Status: <strong>A</strong> live, <strong>B</strong> derivable, <strong>C</strong> manual, <strong>D</strong> definition needed. Source: the <code>bsc</code> view or metric behind the KPI on <code>.214</code>. Drill: the family page in section 6.5.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>KPI</th>
+<th>Pillar</th>
+<th>Status</th>
+<th>Source (num / den; target)</th>
+<th>Drill</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Net Revenue Achievement</td>
+<td>F</td>
+<td>A</td>
+<td>GL net revenue; budget REV_NET</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Net Revenue Achievement (YTD vs Previous YTD)</td>
+<td>F</td>
+<td>A</td>
+<td>YTD GL revenue; PY YTD</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Net Revenue Achievement (Month YoY)</td>
+<td>F</td>
+<td>A</td>
+<td>Range GL revenue; same range PY</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>4</td>
+<td>EBITDA Margin</td>
+<td>F</td>
+<td>A</td>
+<td>EBITDA / net revenue; budget</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Cost-to-Revenue Ratio</td>
+<td>F</td>
+<td>A</td>
+<td>(revenue − EBITDA) / revenue; budget</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Days in AR</td>
+<td>F</td>
+<td>A</td>
+<td>Average AR × days / revenue; 180</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Net Collection Rate</td>
+<td>F</td>
+<td>B</td>
+<td>Remittances / approved claims (definition to agree)</td>
+<td>Revenue cycle</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Revenue per Bed</td>
+<td>F</td>
+<td>A</td>
+<td>Revenue / average available beds; budget</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Return on Asset</td>
+<td>F</td>
+<td>A</td>
+<td>Income / opening assets; 12% annual (annualise or pro-rate)</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>10</td>
+<td>EBITDA per Bed</td>
+<td>F</td>
+<td>A</td>
+<td>EBITDA / average beds; budget</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Multi-Specialty Revenue Share</td>
+<td>C</td>
+<td>A</td>
+<td>(OP + non-LTC IP revenue) / GL revenue; target revenue</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Payer-Segment Revenue Mix</td>
+<td>C</td>
+<td>A</td>
+<td>Insurance revenue / GL revenue; target</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Patient Satisfaction (Press Ganey)</td>
+<td>C</td>
+<td>A (manual)</td>
+<td>Manual value (today: hand-loaded sheet)</td>
+<td>Patient experience</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Patient Retention</td>
+<td>C</td>
+<td>A</td>
+<td>(OP census − new) / OP census; 0.65</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>15</td>
+<td>New Patient Acquisition</td>
+<td>C</td>
+<td>A</td>
+<td>New OP / OP census; 0.7 or 0.3 by hospital</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>16</td>
+<td>PREMs Score</td>
+<td>C</td>
+<td>A (manual)</td>
+<td>Manual value; 0.85</td>
+<td>Patient experience</td>
+</tr>
+<tr>
+<td>17</td>
+<td>PROMs Score</td>
+<td>C</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Non-MoH Revenue Share</td>
+<td>C</td>
+<td>A</td>
+<td>Non-MoH revenue / GL revenue; target</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Non-Eligible Referral Rate</td>
+<td>C</td>
+<td>D</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Total Payer Volume</td>
+<td>C</td>
+<td>A</td>
+<td>Insurance census; target</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>21</td>
+<td>BOR</td>
+<td>IP</td>
+<td>A</td>
+<td>Occupied / available bed nights; 0.70</td>
+<td>Beds</td>
+</tr>
+<tr>
+<td>22</td>
+<td>OP Utilization</td>
+<td>IP</td>
+<td>A</td>
+<td>OP census / legacy slots; target</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>23</td>
+<td>ALOS</td>
+<td>IP</td>
+<td>A</td>
+<td>Σ LOS / discharges (non-LTC); 4</td>
+<td>Beds</td>
+</tr>
+<tr>
+<td>24</td>
+<td>OP-to-IP Conversion</td>
+<td>IP</td>
+<td>A</td>
+<td>Admissions / OP census; target</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>25</td>
+<td>High-Value Service-Line Revenue Share</td>
+<td>IP</td>
+<td>A</td>
+<td>HV revenue / GL revenue; 0.18</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Census for High-Value Services</td>
+<td>IP</td>
+<td>A</td>
+<td>HV volume / census; 0.12</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>27</td>
+<td>OP Revenue per Episode</td>
+<td>IP</td>
+<td>A</td>
+<td>OP revenue / OP episodes; target</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Ancillary Service Utilization</td>
+<td>IP</td>
+<td>A</td>
+<td>Ancillary / OP revenue; OP target × 0.6</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Revenue Leakage Rate</td>
+<td>IP</td>
+<td>A</td>
+<td>10 × pending / submitted claims; 0.05</td>
+<td>Revenue cycle</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Claim Initial Rejection Rate</td>
+<td>IP</td>
+<td>A</td>
+<td>Rejections / submitted; 0.10</td>
+<td>Revenue cycle</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Order Not Done</td>
+<td>IP</td>
+<td>A</td>
+<td>Approved not done / orders; 0.10</td>
+<td>Revenue cycle</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Insurance Approval Turnaround Time</td>
+<td>IP</td>
+<td>A</td>
+<td>Σ TAT / pre-auths (weighted, fixes 3.3 #3); 20 min</td>
+<td>Revenue cycle</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Claim Final Rejection Rate</td>
+<td>IP</td>
+<td>B</td>
+<td>Final rejected / adjudicated (claim lines)</td>
+<td>Revenue cycle</td>
+</tr>
+<tr>
+<td>34</td>
+<td>Budget Variance (Cost Budget)</td>
+<td>IP</td>
+<td>A</td>
+<td>(opex − budget) / budget; 0</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>35</td>
+<td>G&amp;A Expense Ratio</td>
+<td>IP</td>
+<td>A</td>
+<td>G&amp;A / revenue; budget</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>36</td>
+<td>30-Day Readmission Rate</td>
+<td>IP</td>
+<td>A</td>
+<td>Readmissions / discharges; 0.10 ceiling</td>
+<td>Beds</td>
+</tr>
+<tr>
+<td>37</td>
+<td>48-Hour Readmission Rate (Critical)</td>
+<td>IP</td>
+<td>A</td>
+<td>ICU readmissions / ICU discharges; 0.03 ceiling</td>
+<td>Beds</td>
+</tr>
+<tr>
+<td>38</td>
+<td>HAI Rate</td>
+<td>IP</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>39</td>
+<td>Fall Rate with Harm</td>
+<td>IP</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>40</td>
+<td>Payer Contract Activation</td>
+<td>IP</td>
+<td>D</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>41</td>
+<td>External/Other Facility Referral Volume</td>
+<td>IP</td>
+<td>B</td>
+<td><code>referrals_volume</code> (Ghirnata and Muhayil unmapped, O-B8)</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Total Patient Volume</td>
+<td>IP</td>
+<td>A</td>
+<td>OP + admissions + ER; target</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>43</td>
+<td>Turnover Ratio</td>
+<td>LG</td>
+<td>A</td>
+<td>Resignations / average headcount; 0.06 × months / 12</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>44</td>
+<td>Revenue per FTE</td>
+<td>LG</td>
+<td>A</td>
+<td>Revenue / average FTE; budget</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>45</td>
+<td>Staff-to-Bed Ratio</td>
+<td>LG</td>
+<td>A</td>
+<td>Average FTE / average beds; 4 (band)</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>46</td>
+<td>Saudization</td>
+<td>LG</td>
+<td>B</td>
+<td>Saudi headcount / headcount (new <code>vw_work_force</code>)</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>47</td>
+<td>Job Vacancy Rate</td>
+<td>LG</td>
+<td>B</td>
+<td>Vacant / approved positions (Oracle Recruiting; partial coverage)</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>48</td>
+<td>Time to Fill</td>
+<td>LG</td>
+<td>B</td>
+<td>Average days approval to fill</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>49</td>
+<td>Timely Completion Rate for Digital Initiatives</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>50</td>
+<td>Training Coverage Rate</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value (Fusion Learning later)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>51</td>
+<td>Mandatory Training Completion Rate</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>52</td>
+<td>Cost per Learner</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>53</td>
+<td>DOA Compliance</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>54</td>
+<td>Audit Finding Closure Rate</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>55</td>
+<td>Revenue per Doctor</td>
+<td>Add</td>
+<td>A</td>
+<td>Revenue / average doctors (incl. part-time); budget</td>
+<td>Revenue</td>
+</tr>
+<tr>
+<td>56</td>
+<td>EBITDA per Doctor</td>
+<td>Add</td>
+<td>A</td>
+<td>EBITDA / average doctors; budget</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>57</td>
+<td>ER Volume Growth</td>
+<td>Add</td>
+<td>A</td>
+<td>ER / PY ER − 1; target</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>58</td>
+<td>Doctor Utilization</td>
+<td>Add</td>
+<td>B</td>
+<td>Doctor visits / legacy slots</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>59</td>
+<td>Referral to Hub</td>
+<td>Add</td>
+<td>D</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>60</td>
+<td>Activated Bed Rate</td>
+<td>Add</td>
+<td>B</td>
+<td>Average available / licensed beds</td>
+<td>Beds</td>
+</tr>
+<tr>
+<td>61</td>
+<td>Referral Conversion Rate</td>
+<td>Add</td>
+<td>D</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>62</td>
+<td>Patient Acquisition Cost</td>
+<td>Add</td>
+<td>B</td>
+<td>Marketing GL / new patients</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>63</td>
+<td>Total Consumables Ratio</td>
+<td>Add</td>
+<td>A</td>
+<td>Medical consumables / revenue; budget (Fusion has no consumables caption yet, O-P3-8)</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>64</td>
+<td>Days Inventory Outstanding</td>
+<td>Add</td>
+<td>A</td>
+<td>Average inventory × days / COGS; budget</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>65</td>
+<td>Breakeven Revenue Gap</td>
+<td>Add</td>
+<td>D</td>
+<td>Needs a fixed/variable cost split</td>
+<td>Finance</td>
+</tr>
+<tr>
+<td>66</td>
+<td>Patient Complaint Rate</td>
+<td>LG/C</td>
+<td>A (manual)</td>
+<td>Complaints / census; 0.005</td>
+<td>Patient experience</td>
+</tr>
+<tr>
+<td>67</td>
+<td>Avg OP Waiting Time</td>
+<td>Add</td>
+<td>A</td>
+<td>Σ wait / OP census; 20 min</td>
+<td>Patient volume</td>
+</tr>
+<tr>
+<td>68</td>
+<td>Clinical Staff-to-Doctor Ratio</td>
+<td>Add</td>
+<td>A (no target)</td>
+<td>Average clinical / average doctors</td>
+<td>Workforce</td>
+</tr>
+<tr>
+<td>69</td>
+<td>Staff Satisfaction</td>
+<td>LG</td>
+<td>C</td>
+<td>Manual value</td>
+<td>—</td>
+</tr>
+<tr>
+<td>70</td>
+<td>Cost per Hire</td>
+<td>LG</td>
+<td>D</td>
+<td>Recruiting cost source needed</td>
+<td>—</td>
+</tr>
+<tr>
+<td>71</td>
+<td>Cost per Fire</td>
+<td>LG</td>
+<td>D</td>
+<td>Separation cost (end-of-service pay)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="appendix-b-per-kpi-definition-choices-decision-d3">Appendix B: per-KPI definition choices (decision D3)</h2>
+<p>These are the KPIs where two definitions exist:</p>
+<ul>
+<li><strong>A</strong> is the scorecard definition: the handover report, or the corrected <code>bsc</code> view on <code>.214</code>.</li>
+<li><strong>B</strong> is the <code>HNH_Analytics</code> measure, or a correction of a handover defect.</li>
+</ul>
+<p>Both variants will be built as metrics, so the choice is a row in <code>map_bsc_kpi</code> and can be changed later without code. Write A or B in the last column. &quot;Rec.&quot; is my recommendation and the reason.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>KPI</th>
+<th>A: scorecard</th>
+<th>B: SSAS / correction</th>
+<th>Rec.</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Net Revenue Achievement</td>
+<td>GL net revenue (Oasis to each branch's Fusion cutover, then Fusion including unposted) ÷ budget REV_NET</td>
+<td>Charge-line <code>Revenue</code> ÷ <code>Target Revenue</code> (<code>fact_target_daily</code>)</td>
+<td>A: finance's figure, matches the budget</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Net Revenue Achievement (YTD vs Previous YTD)</td>
+<td>GL revenue YTD ÷ PY YTD</td>
+<td>Charge-line revenue YTD ÷ PY YTD</td>
+<td>Same as KPI 1</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Net Revenue Achievement (Month YoY)</td>
+<td>GL revenue ÷ same months last year</td>
+<td>Charge-line revenue YoY</td>
+<td>Same as KPI 1</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>EBITDA Margin</td>
+<td><code>fact_gl_fs_monthly</code>, unposted included, opex excludes depreciation and amortisation</td>
+<td><code>EBITDA Margin %</code>: Fusion posted only, from 2026 (Oasis-feed revenue is almost zero when posted)</td>
+<td>A: B is wrong before and after cutover</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Cost-to-Revenue Ratio</td>
+<td>(revenue − EBITDA) ÷ revenue</td>
+<td>(TOTAL_DC + TOTAL_GA) ÷ REV_NET from <code>Income Statement</code></td>
+<td>A</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Days in AR</td>
+<td>Combined GL AR, average of opening and closing × days ÷ revenue</td>
+<td>Fusion GL only</td>
+<td>A</td>
+<td></td>
+</tr>
+<tr>
+<td>8 / 10</td>
+<td>Revenue per Bed, EBITDA per Bed</td>
+<td>÷ average available beds (bed occupancy)</td>
+<td>÷ <code>Branch[Licensed Beds]</code> (static)</td>
+<td>A: follows activated beds</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Return on Asset</td>
+<td>Period income ÷ opening assets, compared with an annual 12%</td>
+<td>Same, annualised (× 12 ÷ months)</td>
+<td>B: compares like with like</td>
+<td></td>
+</tr>
+<tr>
+<td>13</td>
+<td>Patient Satisfaction (Press Ganey)</td>
+<td>Monthly manual value (today: hand-loaded sheet)</td>
+<td>Survey <code>Answer Score</code> mean or NPS from <code>Survey Answers</code></td>
+<td>Your call: B exists for every hospital and month</td>
+<td></td>
+</tr>
+<tr>
+<td>14</td>
+<td>Patient Retention</td>
+<td>(OP census − new OP) ÷ OP census</td>
+<td><code>Returning Patients</code> ÷ <code>Unique Patients</code> (OP + ER, distinct patients)</td>
+<td>A: what the target 0.65 was set for</td>
+<td></td>
+</tr>
+<tr>
+<td>22 / 58</td>
+<td>OP Utilization, Doctor Utilization</td>
+<td>÷ legacy capacity slots</td>
+<td>÷ <code>Slots Total</code> (inflated by 24-hour templates, O-B3)</td>
+<td>A until O-B3 is fixed</td>
+<td></td>
+</tr>
+<tr>
+<td>29</td>
+<td>Revenue Leakage Rate</td>
+<td>10 × pending claims ÷ submitted claims</td>
+<td>SSAS <code>Leak Rate %</code>: ordered services not billed</td>
+<td>Your call: they measure different things; B matches the name</td>
+<td></td>
+</tr>
+<tr>
+<td>30</td>
+<td>Claim Initial Rejection Rate</td>
+<td>Rejected ÷ submitted (statement month)</td>
+<td><code>First-pass Rejection Rate %</code></td>
+<td>B: SSAS defines first pass explicitly</td>
+<td></td>
+</tr>
+<tr>
+<td>32</td>
+<td>Insurance Approval Turnaround Time</td>
+<td>Unweighted average of monthly averages</td>
+<td>Average over all pre-auths (<code>Sent to Response Avg (min)</code>)</td>
+<td>B: fixes a defect</td>
+<td></td>
+</tr>
+<tr>
+<td>33</td>
+<td>Claim Final Rejection Rate</td>
+<td>Rejected ÷ adjudicated submitted amount</td>
+<td>Rejected ÷ (approved + rejected)</td>
+<td>Your call; both carry the co-pay issue O-B11</td>
+<td></td>
+</tr>
+<tr>
+<td>43</td>
+<td>Turnover Ratio</td>
+<td>Resignations (Oasis for branches 1–5, Fusion for 6–8) ÷ average headcount</td>
+<td><code>Turnover Rate %</code>: Fusion leavers, all reasons</td>
+<td>A: Fusion leaver reasons are not maintained for 1–5</td>
+<td></td>
+</tr>
+<tr>
+<td>44 / 55 / 56</td>
+<td>Revenue per FTE, Revenue per Doctor, EBITDA per Doctor</td>
+<td>Includes part-time doctors seen only through revenue (0.5 FTE each)</td>
+<td>Fusion headcount and FTE only</td>
+<td>A</td>
+<td></td>
+</tr>
+<tr>
+<td>46</td>
+<td>Saudization</td>
+<td>Saudi ÷ (headcount − part-time doctors)</td>
+<td><code>Saudisation Rate %</code></td>
+<td>Check they agree. If not, A</td>
+<td></td>
+</tr>
+<tr>
+<td>63</td>
+<td>Total Consumables Ratio</td>
+<td>GL &quot;medical consumables&quot; ÷ revenue (Fusion has no such caption yet, so 0)</td>
+<td>Patient consumption cost (supply chain) ÷ revenue</td>
+<td>B until finance maps the Fusion caption (O-P3-8)</td>
+<td></td>
+</tr>
+<tr>
+<td>64</td>
+<td>Days Inventory Outstanding</td>
+<td>GL inventory × days ÷ GL COGS</td>
+<td><code>Days of Stock</code>: stock ÷ last month's daily consumption</td>
+<td>Your call</td>
+<td></td>
+</tr>
+<tr>
+<td>67</td>
+<td>Avg OP Waiting Time</td>
+<td>Σ wait ÷ OP census (a visit without a wait counts as 0)</td>
+<td>Average over visits with a recorded wait</td>
+<td>B: missing waits are not zero waits</td>
+<td></td>
+</tr>
+<tr>
+<td>29 (factor)</td>
+<td>Revenue Leakage multiplier</td>
+<td>Keep × 10 (user-approved)</td>
+<td>Drop it</td>
+<td>Your call: it becomes a visible <code>multiplier</code> column either way</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+            
+            
+        </body>
+        </html>

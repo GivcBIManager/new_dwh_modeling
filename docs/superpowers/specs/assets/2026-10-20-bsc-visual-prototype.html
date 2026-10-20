@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hayat BSC visual prototype</title>
+<style>
+:root{
+  --navy:#0A1E32; --navy-2:#002E5A; --blue-dk:#1478BE; --blue:#13ACE3; --sky:#32A4E5;
+  --surface:#F4F7FB; --card:#FFFFFF; --line:#DCE5EF; --muted:#5B6B7D; --ink:#0A1E32;
+  --good:#0E9F8E; --good-bg:#E3F6F3; --warn:#EF8B00; --warn-bg:#FFF2E0; --bad:#DB280A; --bad-bg:#FDE9E5;
+  --nodata:#9AA7B5; --nodata-bg:#EEF2F6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#E9EEF4;font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+.frame{width:1920px;height:904px;margin:0 auto;background:var(--surface);position:relative;overflow:hidden}
+.modebar{display:flex;gap:6px;justify-content:center;padding:10px;background:#D6DFEA;font-size:13px}
+.modebar button{border:1px solid #B9C7D6;background:#fff;border-radius:6px;padding:6px 14px;font:inherit;cursor:pointer}
+.modebar button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.modebar span{align-self:center;color:var(--muted);margin-left:12px}
+
+/* header band: the logo ribbon */
+.band{height:112px;position:relative;color:#fff;display:flex;align-items:center;padding:0 40px;gap:28px;
+  background:linear-gradient(100deg,var(--blue) 0%,var(--blue-dk) 46%,var(--navy-2) 78%,var(--navy) 100%)}
+.band svg.ribbon{position:absolute;right:0;top:0;height:112px;opacity:.16}
+.band .mark{height:56px;width:56px;flex:none}
+.band h1{margin:0;font-size:34px;font-weight:800;letter-spacing:-.01em}
+.band .sub{font-size:15px;opacity:.88;margin-top:2px}
+.band .ctx{margin-left:auto;text-align:right;font-size:14px;line-height:1.5;position:relative}
+.band .ctx b{font-size:18px;display:block}
+
+/* overview */
+.ov{display:grid;grid-template-columns:420px 1fr;gap:20px;padding:20px 24px;height:calc(904px - 112px)}
+.overall{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;align-items:center}
+.overall h2{margin:0;font-size:18px;font-weight:600;color:var(--muted);align-self:flex-start}
+.overall .legend{margin-top:auto;width:100%;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;line-height:1.7}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.pillars{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:20px}
+.pillar{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;outline-offset:3px}
+.pillar:focus-visible{outline:3px solid var(--blue)}
+.pillar header{padding:16px 20px 12px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px}
+.pillar header h3{margin:0;font-size:22px;font-weight:800}
+.pillar header p{margin:0;font-size:14px;color:var(--muted);flex:1}
+.pillar header .w{font-size:13px;color:var(--muted)}
+.pillar .body{display:grid;grid-template-columns:230px 1fr;gap:18px;padding:12px 20px 14px;flex:1}
+.pillar .facts{display:flex;flex-direction:column;gap:10px;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;width:max-content}
+.chip.good{background:var(--good-bg);color:#08776B}.chip.warn{background:var(--warn-bg);color:#A35F00}.chip.bad{background:var(--bad-bg);color:#A81E06}.chip.nodata{background:var(--nodata-bg);color:var(--muted)}
+.trendcap{font-size:12px;color:var(--muted)}
+.strip{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.strip i{width:16px;height:16px;border-radius:4px;display:block}
+.strip i.good{background:var(--good)}.strip i.warn{background:var(--warn)}.strip i.bad{background:var(--bad)}.strip i.nodata{background:repeating-linear-gradient(45deg,#D5DDE6 0 3px,#EEF2F6 3px 6px)}
+
+/* board */
+.board{padding:16px 24px;height:calc(904px - 112px);display:flex;flex-direction:column;gap:12px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;font:inherit;font-size:16px;font-weight:600;color:var(--muted);padding:8px 14px;border-bottom:3px solid transparent;cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--blue)}
+.tabs .q{margin-left:auto;align-self:center;font-size:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;overflow:auto;padding-bottom:6px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px 10px;position:relative;display:flex;flex-direction:column;gap:6px;min-height:150px;cursor:context-menu}
+.tile:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.tile.primary{grid-column:span 2;border-left:5px solid var(--blue)}
+.tile .top{display:flex;align-items:flex-start;gap:8px}
+.tile h4{margin:0;font-size:16px;font-weight:700;flex:1;line-height:1.25}
+.tile .val{font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1.1}
+.tile.primary .val{font-size:38px}
+.tile .tgt{font-size:14px;color:var(--muted)}
+.tile .meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-top:auto}
+.badge{border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11px;color:var(--muted)}
+.badge.manual{border-color:#C9B6F0;color:#5B3FA8;background:#F4F0FD}
+.tile.nodata .val{color:var(--nodata);font-size:20px;font-weight:600}
+.var{font-size:13px;font-weight:700;border-radius:6px;padding:3px 8px;white-space:nowrap}
+.var.good{background:var(--good-bg);color:#08776B}.var.warn{background:var(--warn-bg);color:#A35F00}.var.bad{background:var(--bad-bg);color:#A81E06}
+.sec{font-size:15px;font-weight:700;color:var(--navy);margin:6px 0 -4px;grid-column:1/-1;display:flex;gap:10px;align-items:baseline}
+.sec span{font-weight:400;color:var(--muted);font-size:14px}
+
+/* tooltip + context menu */
+.tip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55;width:290px;box-shadow:0 10px 30px rgba(10,30,50,.35);display:none;z-index:5}
+.tip b{font-size:14px}
+.tip table{width:100%;border-collapse:collapse;margin-top:6px}
+.tip td{padding:1px 0}.tip td+td{text-align:right;font-weight:600}
+.menu{position:absolute;background:#fff;border:1px solid #C9D3DE;border-radius:6px;box-shadow:0 8px 24px rgba(10,30,50,.2);font-size:14px;min-width:230px;display:none;z-index:6;padding:4px 0}
+.menu div{padding:7px 14px;cursor:default}.menu div:hover{background:#EEF4FA}
+.menu .sep{height:1px;background:var(--line);padding:0;margin:4px 0}
+.menu .sub{color:var(--muted);font-size:12px;padding:4px 14px}
+@media (prefers-reduced-motion:no-preference){.gauge-arc{transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1)}}
+</style>
+</head>
+<body>
+<div class="modebar" role="toolbar" aria-label="Prototype views">
+  <button data-mode="overview" aria-pressed="true">Overview mode</button>
+  <button data-mode="board" aria-pressed="false">Pillar board mode</button>
+  <span>One visual, two modes. Right-click a KPI tile for the drill-through menu; hover for the tooltip. Sample data.</span>
+</div>
+<div class="frame" id="frame">
+  <div class="band">
+    <svg class="mark" viewBox="0 0 100 100" aria-label="Hayat Healthcare">
+      <defs><linearGradient id="mk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#DDEFFA"/></linearGradient></defs>
+      <path fill="url(#mk)" d="M66 4h16a14 14 0 0 1 14 14v64a14 14 0 0 1-14 14H66z"/>
+      <path fill="url(#mk)" d="M18 4h22c-7 10-7 22 0 32H18A16 16 0 0 1 18 4z"/>
+      <path fill="url(#mk)" d="M34 36h16a16 16 0 0 1 0 32H34c7-10 7-22 0-32z" opacity=".85"/>
+      <path fill="url(#mk)" d="M18 64h22c-7 10-7 22 0 32H18a16 16 0 0 1 0-32z"/>
+    </svg>
+    <div>
+      <h1 id="title">Balanced scorecard</h1>
+      <div class="sub" id="subtitle">How the group is performing against its strategy</div>
+    </div>
+    <svg class="ribbon" viewBox="0 0 600 112" preserveAspectRatio="none" aria-hidden="true">
+      <path fill="#fff" d="M600 0H430c-40 30-40 82 0 112h170z"/><path fill="#fff" d="M410 0H300c-28 30-28 82 0 112h110c-40-30-40-82 0-112z" opacity=".6"/>
+    </svg>
+    <div class="ctx"><b>Corporate</b>All hospitals · Jan – Sep 2026<br><span style="opacity:.8">Data to 30 Sep 2026 · refreshed nightly</span></div>
+  </div>
+  <div id="view"></div>
+  <div class="tip" id="tip" role="tooltip"></div>
+  <div class="menu" id="menu" role="menu"></div>
+</div>
+
+<script>
+// ---- sample rows, shaped like the planned SSAS dataView (KPI dimension columns + generic measures) ----
+const PILLARS = [
+  {k:"Financial", q:"Are we delivering sustainable financial performance and disciplined capital use?", w:.30},
+  {k:"Customer", q:"Are patients choosing us and experiencing excellent care?", w:.20},
+  {k:"Internal Process", q:"Are our clinical and operational processes effective?", w:.35},
+  {k:"Learning & Growth", q:"Are we building the capabilities to sustain success?", w:.15}];
+const OBJ = {F1:"Revenue",F2:"Profitability",F3:"Cash & collections",F4:"Asset productivity",F5:"Physician economics",
+  C1:"Market position",C2:"Patient experience",C3:"Commercial growth",P1:"Capacity",P2:"High-value services",P3:"Revenue cycle",
+  P4:"Cost management",P5:"Clinical quality",P6:"Payer contracts",L1:"Workforce",L2:"Capability",L3:"Digital & compliance"};
+// num, name, objective, type, format, lower-better, group (A live, B derivable, C manual, D undefined)
+const K = [
+[1,"Net Revenue Achievement","F1","P","sar",0,"A"],[2,"Net Revenue Achievement (YTD vs Previous YTD)","F1","S","sar",0,"A"],[3,"Net Revenue Achievement (Month YoY)","F1","S","sar",0,"A"],
+[4,"EBITDA Margin","F2","P","pct",0,"A"],[5,"Cost-to-Revenue Ratio","F2","S","pct",1,"A"],[63,"Total Consumables Ratio","F2","S","pct",1,"A"],
+[6,"Days in AR","F3","P","days",1,"A"],[7,"Net Collection Rate","F3","S","pct",0,"B"],[64,"Days Inventory Outstanding","F3","S","days",1,"A"],[65,"Breakeven Revenue Gap","F3","S","sar",0,"D"],
+[8,"Revenue per Bed","F4","P","sar",0,"A"],[9,"Return on Asset","F4","P","pct",0,"A"],[10,"EBITDA per Bed","F4","S","sar",0,"A"],
+[55,"Revenue per Doctor","F5","S","sar",0,"A"],[56,"EBITDA per Doctor","F5","S","sar",0,"A"],
+[11,"Multi-Specialty Revenue Share","C1","P","pct",0,"A"],[12,"Payer-Segment Revenue Mix","C1","P","pct",0,"A"],
+[13,"Patient Satisfaction (Press Ganey)","C2","P","pct",0,"C"],[14,"Patient Retention","C2","S","pct",0,"A"],[15,"New Patient Acquisition","C2","S","pct",0,"A"],
+[16,"PREMs Score","C2","S","pct",0,"C"],[17,"PROMs Score","C2","S","pct",0,"C"],[66,"Patient Complaint Rate","C2","S","pct",1,"C"],[67,"Avg OP Waiting Time","C2","S","mins",1,"A"],
+[18,"Non-MoH Revenue Share","C3","P","pct",0,"A"],[19,"Non-Eligible Referral Rate","C3","S","pct",1,"D"],[20,"Total Payer Volume","C3","S","num",0,"A"],[61,"Referral Conversion Rate","C3","S","pct",0,"D"],[62,"Patient Acquisition Cost","C3","S","sar",1,"B"],
+[21,"BOR (Bed Occupancy Rate)","P1","P","pct",0,"A"],[22,"OP Utilization","P1","P","pct",0,"A"],[23,"ALOS (Average Length of Stay)","P1","S","days",1,"A"],[24,"OP-to-IP Conversion","P1","S","pct",0,"A"],
+[42,"Total Patient Volume","P1","S","num",0,"A"],[57,"ER Volume Growth","P1","S","pct",0,"A"],[58,"Doctor Utilization","P1","S","pct",0,"B"],[60,"Activated Bed Rate","P1","S","pct",0,"B"],
+[25,"High-Value Service-Line Revenue Share","P2","P","pct",0,"A"],[26,"Census for High-Value Services","P2","P","pct",0,"A"],[27,"OP Revenue per Episode","P2","S","sar",0,"A"],[28,"Ancillary Service Utilization","P2","S","pct",0,"A"],
+[29,"Revenue Leakage Rate","P3","P","pct",1,"A"],[30,"Claim Initial Rejection Rate","P3","S","pct",1,"A"],[31,"Order Not Done","P3","S","pct",1,"A"],[32,"Insurance Approval Turnaround Time","P3","S","mins",1,"A"],[33,"Claim Final Rejection Rate","P3","S","pct",1,"B"],
+[34,"Budget Variance (Cost Budget)","P4","P","pct",1,"A"],[35,"G&A Expense Ratio","P4","S","pct",1,"A"],
+[36,"30-Day Readmission Rate","P5","P","pct",1,"A"],[37,"48-Hour Readmission Rate (Critical)","P5","P","pct",1,"A"],[38,"HAI Rate","P5","S","pct",1,"C"],[39,"Fall Rate with Harm","P5","S","pct",1,"C"],
+[40,"Payer Contract Activation","P6","P","pct",0,"D"],[41,"External/Other Facility Referral Volume","P6","S","num",0,"B"],[59,"Referral to Hub","P6","S","pct",0,"D"],
+[43,"Turnover Ratio","L1","P","pct",1,"A"],[44,"Revenue per FTE","L1","P","sar",0,"A"],[45,"Staff-to-Bed Ratio","L1","S","num",0,"A"],[46,"Saudization","L1","S","pct",0,"B"],
+[47,"Job Vacancy Rate","L1","S","pct",1,"B"],[48,"Time to Fill","L1","S","days",1,"B"],[68,"Clinical Staff-to-Doctor Ratio","L1","S","num",0,"A"],[69,"Staff Satisfaction","L1","S","pct",0,"C"],
+[70,"Cost per Hire","L1","S","sar",1,"D"],[71,"Cost per Fire","L1","S","sar",1,"D"],
+[49,"Timely Completion Rate for Digital Initiatives","L2","P","pct",0,"C"],[50,"Training Coverage Rate","L2","S","pct",0,"C"],[51,"Mandatory Training Completion Rate","L2","S","pct",0,"C"],[52,"Cost per Learner","L2","S","sar",1,"C"],
+[53,"DOA Compliance","L3","P","pct",0,"C"],[54,"Audit Finding Closure Rate","L3","S","pct",0,"C"]];
+const OWN = {F:"CEO",C:"COO",P:"CMO",L:"CHRO"};
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const base = f => ({sar: 2e6 + rnd()*3e7, pct: .05 + rnd()*.8, days: 20 + rnd()*160, mins: 12 + rnd()*20, num: 2 + rnd()*4000}[f]);
+const kpis = K.map(([n,name,obj,type,fmt,lb,grp]) => {
+  const t = base(fmt), live = grp === "A" || (grp === "C" && n !== 17 && n < 70 && rnd() > .45);
+  const a = live ? t * (lb ? (0.82 + rnd()*.36) : (0.8 + rnd()*.34)) : null;
+  const trend = live ? Array.from({length:12}, (_,i) => t * (0.86 + rnd()*.24 + i*.006)) : [];
+  return {n, name, obj, pillar: PILLARS.find(p => p.k[0] === (obj[0] === "P" ? "I" : obj[0])).k,
+    type, fmt, lb, grp, manual: grp === "C", actual: a, target: t, trend, owner: OWN[obj[0]],
+    source: n <= 10 || n === 34 || n === 35 || n === 63 || n === 64 ? "Oasis + Fusion GL" : (grp === "C" ? "Manual entry" : "Oasis"),
+    num: a ? a * 1000 : null, den: 1000};
+});
+// ---- scoring (in the real visual: thresholds + weights arrive as columns from the BSC KPI table) ----
+const T = {base:85, slope:.6, good:85, warn:70};
+function score(k){ if(k.actual==null||!k.target) return null;
+  const v = (k.lb ? (k.target-k.actual) : (k.actual-k.target)) / Math.abs(k.target) * 100;
+  return {v, s: Math.max(0, Math.min(100, Math.round(T.base + T.slope*v)))}; }
+const status = k => { const r = score(k); if(!r) return "nodata"; return r.s >= T.good ? "good" : r.s >= T.warn ? "warn" : "bad"; };
+const LABEL = {good:"On track", warn:"Watch", bad:"At risk", nodata:"No data yet"};
+const ICON = {good:"✓", warn:"!", bad:"▼", nodata:"–"};
+function fmt(v,f){ if(v==null) return "–";
+  if(f==="pct") return (v*100).toFixed(1)+"%"; if(f==="sar") return "SAR "+(v>=1e6?(v/1e6).toFixed(1)+"M":Math.round(v).toLocaleString());
+  if(f==="days") return v.toFixed(1)+" days"; if(f==="mins") return v.toFixed(0)+" min"; return v>=100?Math.round(v).toLocaleString():v.toFixed(2); }
+function pillarScore(p){ const ks = kpis.filter(k => k.pillar===p && score(k)); if(!ks.length) return null;
+  return Math.round(ks.reduce((s,k)=>s+Math.min(score(k).s,120),0)/ks.length); }
+
+// ---- gauge: arc drawn as the logo's rounded ribbon ----
+function gauge(val, size, label){
+  const r = size/2 - 14, c = Math.PI*r, pct = val==null?0:Math.min(val,100)/100;
+  const col = val==null?"var(--nodata)":val>=T.good?"var(--good)":val>=T.warn?"var(--warn)":"var(--bad)";
+  const tgt = T.good/100, ang = Math.PI*(1-tgt), tx = size/2 + r*Math.cos(ang), ty = size/2 - r*Math.sin(ang);
+  return `<svg width="${size}" height="${size/2+28}" viewBox="0 0 ${size} ${size/2+28}" role="img" aria-label="${label}: ${val??'no data'} percent">
+    <defs><linearGradient id="g${size}" x1="0" x2="1"><stop offset="0" stop-color="#13ACE3"/><stop offset="1" stop-color="#1478BE"/></linearGradient></defs>
+    <path d="M14 ${size/2} A${r} ${r} 0 0 1 ${size-14} ${size/2}" fill="none" stroke="#E4EBF3" stroke-width="22" stroke-linecap="round"/>
+    <path class="gauge-arc" d="M14 ${size/2} A${r} ${r} 0 0 1 ${size-14} ${size/2}" fill="none" stroke="url(#g${size})" stroke-width="22" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct)}"/>
+    <line x1="${tx}" y1="${ty}" x2="${size/2+(r-26)*Math.cos(ang)}" y2="${size/2-(r-26)*Math.sin(ang)}" stroke="var(--navy)" stroke-width="3"/>
+    <text x="${size/2}" y="${size/2-6}" text-anchor="middle" font-size="${size/5.2}" font-weight="800" fill="${col}">${val==null?"–":val+"%"}</text>
+    <text x="${size/2}" y="${size/2+20}" text-anchor="middle" font-size="13" fill="var(--muted)">target ${T.good}%</text></svg>`;
+}
+function spark(k, w, h){
+  if(!k.trend.length) return `<svg width="${w}" height="${h}"></svg>`;
+  const xs = k.trend, mn = Math.min(...xs, k.target)*.95, mx = Math.max(...xs, k.target)*1.05;
+  const X = i => 2 + i*(w-4)/(xs.length-1), Y = v => h-3 - (v-mn)/(mx-mn)*(h-6);
+  const d = xs.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join("");
+  return `<svg width="${w}" height="${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${Y(k.target)}" y2="${Y(k.target)}" stroke="#0A1E32" stroke-dasharray="3 3" stroke-width="1"/>
+    <path d="${d}" fill="none" stroke="#32A4E5" stroke-width="2"/><circle cx="${X(xs.length-1)}" cy="${Y(xs.at(-1))}" r="3.5" fill="#1478BE"/></svg>`;
+}
+function pillarSpark(p, w, h){
+  const pts = Array.from({length:12},(_,i)=>{ const v = pillarScore(p); return v==null?null:Math.max(55,Math.min(100,v-8+i*.7+(rnd()-.5)*6)); });
+  if(pts[0]==null) return "";
+  const X = i => 2+i*(w-4)/11, Y = v => h-3-(v-50)/55*(h-6);
+  return `<svg width="${w}" height="${h}" aria-hidden="true"><line x1="0" x2="${w}" y1="${Y(T.good)}" y2="${Y(T.good)}" stroke="#0A1E32" stroke-dasharray="3 3"/>
+    <path d="${pts.map((v,i)=>(i?"L":"M")+X(i)+" "+Y(v)).join("")}" fill="none" stroke="#13ACE3" stroke-width="2.5"/></svg>`;
+}
+
+// ---- views ----
+const view = document.getElementById("view");
+function renderOverview(){
+  const all = Math.round(PILLARS.reduce((s,p)=>s+(pillarScore(p.k)??0)*p.w,0));
+  const counts = s => kpis.filter(k=>status(k)===s).length;
+  view.innerHTML = `<div class="ov">
+    <section class="overall" aria-label="Overall score"><h2>Overall weighted score</h2>
+      ${gauge(all, 360, "Overall score")}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+        ${["good","warn","bad","nodata"].map(s=>`<span class="chip ${s}">${ICON[s]} ${counts(s)} ${LABEL[s].toLowerCase()}</span>`).join("")}</div>
+      <div class="legend">Pillar weights: Financial 30%, Customer 20%, Internal process 35%, Learning &amp; growth 15%.<br>
+        A KPI scores 85 at target and moves 0.6 points per 1% above or below it.<br>
+        <span class="dot" style="background:var(--good)"></span>85 and over <span class="dot" style="background:var(--warn);margin-left:10px"></span>70–84 <span class="dot" style="background:var(--bad);margin-left:10px"></span>under 70</div>
+    </section>
+    <div class="pillars">${PILLARS.map(p=>{ const ks = kpis.filter(k=>k.pillar===p.k), sc = pillarScore(p.k);
+      const risk = ks.filter(k=>status(k)==="bad").length, nd = ks.filter(k=>status(k)==="nodata").length;
+      const st = sc==null?"nodata":sc>=T.good?"good":sc>=T.warn?"warn":"bad";
+      return `<article class="pillar" tabindex="0" data-p="${p.k}" aria-label="${p.k} pillar">
+        <header><h3>${p.k}</h3><p>${p.q}</p><span class="w">${Math.round(p.w*100)}% of score</span></header>
+        <div class="body"><div>${gauge(sc, 220, p.k)}</div>
+          <div class="facts"><span class="chip ${st}">${ICON[st]} ${LABEL[st]}</span>
+            <div>${risk ? `<b style="color:var(--bad)">${risk} at risk</b>` : "None at risk"} · ${ks.length-nd} of ${ks.length} KPIs reporting</div>
+            <div><div class="trendcap">Pillar score, last 12 months</div>${pillarSpark(p.k, 300, 46)}</div>
+            <div><div class="trendcap">Every KPI in this pillar</div><div class="strip">${ks.map(k=>`<i class="${status(k)}" data-n="${k.n}" title="${k.name}: ${LABEL[status(k)]}"></i>`).join("")}</div></div>
+          </div></div></article>`;}).join("")}</div></div>`;
+  view.querySelectorAll(".pillar").forEach(el=>el.addEventListener("click",()=>{cur=el.dataset.p; setMode("board");}));
+  wireTiles(view.querySelectorAll(".strip i"));
+}
+let cur = "Financial";
+function renderBoard(){
+  const p = PILLARS.find(x=>x.k===cur), ks = kpis.filter(k=>k.pillar===cur);
+  const objs = [...new Set(ks.map(k=>k.obj))];
+  view.innerHTML = `<div class="board">
+    <div class="tabs" role="tablist">${PILLARS.map(x=>`<button role="tab" aria-selected="${x.k===cur}" data-p="${x.k}">${x.k}</button>`).join("")}<span class="q">${p.q}</span></div>
+    <div class="grid">${objs.map(o=>`<div class="sec">${o} · ${OBJ[o]}<span>${ks.filter(k=>k.obj===o).length} KPIs</span></div>`+
+      ks.filter(k=>k.obj===o).sort((a,b)=>(a.type>b.type?1:-1)||a.n-b.n).map(tile).join("")).join("")}</div></div>`;
+  view.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{cur=b.dataset.p; renderBoard();}));
+  wireTiles(view.querySelectorAll(".tile"));
+}
+function tile(k){
+  const st = status(k), r = score(k), prim = k.type==="P";
+  if(st==="nodata") return `<div class="tile nodata ${prim?"primary":""}" tabindex="0" data-n="${k.n}">
+    <div class="top"><h4>${k.name}</h4><span class="chip nodata">– No data yet</span></div>
+    <div class="val">${k.grp==="D"?"Definition to be agreed":k.manual?"Waiting for this month's entry":"Not yet calculated"}</div>
+    <div class="tgt">Target ${fmt(k.target,k.fmt)}</div>
+    <div class="meta"><span>Owner ${k.owner}</span>${k.manual?'<span class="badge manual">Manual entry</span>':""}</div></div>`;
+  const sign = r.v>=0?"+":"";
+  return `<div class="tile ${prim?"primary":""}" tabindex="0" data-n="${k.n}">
+    <div class="top"><h4>${k.name}</h4><span class="var ${st}" aria-label="${LABEL[st]}">${ICON[st]} ${sign}${r.v.toFixed(1)}%</span></div>
+    <div style="display:flex;align-items:flex-end;gap:16px"><div><div class="val">${fmt(k.actual,k.fmt)}</div><div class="tgt">Target ${fmt(k.target,k.fmt)}${k.lb?" · lower is better":""}</div></div>
+      <div style="margin-left:auto">${spark(k, prim?340:150, prim?64:44)}</div></div>
+    <div class="meta"><span>Owner ${k.owner}</span><span class="badge">${k.source}</span>${k.manual?'<span class="badge manual">Manual entry</span>':""}<span style="margin-left:auto">Score ${r.s}</span></div></div>`;
+}
+// ---- tooltip + context menu (in the real visual: tooltipService + selectionManager.showContextMenu) ----
+const tip = document.getElementById("tip"), menu = document.getElementById("menu"), frame = document.getElementById("frame");
+function pos(el, e){ const fr = frame.getBoundingClientRect(); let x = e.clientX-fr.left+14, y = e.clientY-fr.top+14;
+  if(x+300>1920) x-=320; if(y+200>904) y-=210; el.style.left=x+"px"; el.style.top=y+"px"; }
+function wireTiles(nodes){ nodes.forEach(el=>{ const k = kpis.find(x=>x.n==el.dataset.n);
+  el.addEventListener("mousemove",e=>{ if(menu.style.display==="block") return; const r = score(k);
+    tip.innerHTML = `<b>${k.name}</b><br><span style="opacity:.8">${OBJ[k.obj]} · ${k.type==="P"?"primary":"supporting"} · owner ${k.owner}</span>
+      <table><tr><td>Actual</td><td>${fmt(k.actual,k.fmt)}</td></tr><tr><td>Target</td><td>${fmt(k.target,k.fmt)}</td></tr>
+      ${k.actual!=null?`<tr><td>Numerator</td><td>${Math.round(k.num).toLocaleString()}</td></tr><tr><td>Denominator</td><td>${k.den.toLocaleString()}</td></tr><tr><td>Score</td><td>${r?r.s:"–"}</td></tr>`:""}
+      <tr><td>Source</td><td>${k.source}</td></tr></table><div style="margin-top:6px;opacity:.75">Right-click for details</div>`;
+    tip.style.display="block"; pos(tip,e); });
+  el.addEventListener("mouseleave",()=>tip.style.display="none");
+  el.addEventListener("contextmenu",e=>{ e.preventDefault(); tip.style.display="none";
+    menu.innerHTML = `<div class="sub">${k.name}</div><div>Drill through ▸ KPI detail</div><div>Drill through ▸ ${detailPage(k)}</div><div class="sep"></div><div>Show as a table</div><div>Include</div><div>Exclude</div><div class="sep"></div><div>Copy</div>`;
+    menu.style.display="block"; pos(menu,e); });
+});}
+function detailPage(k){ const o = k.obj; return {F:"Revenue & finance detail",C:"Patient volume detail",P:o==="P3"?"Revenue cycle detail":"Beds & clinical detail",L:"Workforce detail"}[o[0]]; }
+document.addEventListener("click",e=>{ if(!menu.contains(e.target)) menu.style.display="none"; });
+function setMode(m){ document.querySelectorAll(".modebar button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.mode===m));
+  document.getElementById("title").textContent = m==="overview" ? "Balanced scorecard" : cur;
+  document.getElementById("subtitle").textContent = m==="overview" ? "How the group is performing against its strategy" : PILLARS.find(p=>p.k===cur).q;
+  m==="overview" ? renderOverview() : renderBoard(); }
+document.querySelectorAll(".modebar button").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+const qs = new URLSearchParams(location.search); if(qs.get("p")) cur = qs.get("p");
+setMode(qs.get("mode")||"overview");
+</script>
+</body>
+</html>
