@@ -176,6 +176,72 @@ models:
         data_type: "Nullable(String)"
       - name: is_hospital
         data_type: "String"
+  - name: ssas_dim_bsc_kpi
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: bsc_kpi_key
+        data_type: "Int64"
+      - name: kpi_code
+        data_type: "String"
+      - name: kpi_num
+        data_type: "Int64"
+      - name: kpi_name
+        data_type: "String"
+      - name: short_label
+        data_type: "String"
+      - name: pillar
+        data_type: "String"
+      - name: pillar_order
+        data_type: "Int64"
+      - name: pillar_weight
+        data_type: "Float64"
+      - name: pillar_question
+        data_type: "String"
+      - name: objective_code
+        data_type: "String"
+      - name: objective_title
+        data_type: "String"
+      - name: objective_question
+        data_type: "String"
+      - name: objective_order
+        data_type: "Int64"
+      - name: kpi_type
+        data_type: "String"
+      - name: direction
+        data_type: "String"
+      - name: value_format
+        data_type: "String"
+      - name: chart_hint
+        data_type: "String"
+      - name: display_order
+        data_type: "Int64"
+      - name: definition
+        data_type: "String"
+      - name: status
+        data_type: "String"
+      - name: target_source
+        data_type: "String"
+      - name: value_source
+        data_type: "String"
+      - name: detail_page
+        data_type: "String"
+      - name: owner
+        data_type: "String"
+      - name: co_owners
+        data_type: "String"
+      - name: score_base
+        data_type: "Float64"
+      - name: score_slope
+        data_type: "Float64"
+      - name: good_from
+        data_type: "Float64"
+      - name: watch_from
+        data_type: "Float64"
+      - name: corporate_weight
+        data_type: "Float64"
+      - name: is_active
+        data_type: "String"
   - name: ssas_dim_budget_line
     config:
       contract: {enforced: true}
@@ -1348,6 +1414,88 @@ models:
         data_type: "String"
       - name: is_inpatient_ward
         data_type: "String"
+  - name: ssas_fact_bsc_budgeted_fte
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: year_date_key
+        data_type: "Int64"
+      - name: budgeted_fte
+        data_type: "Nullable(Decimal(18, 4))"
+  - name: ssas_fact_bsc_manual_value
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: bsc_kpi_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: month_date_key
+        data_type: "Int64"
+      - name: numerator
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: denominator
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: note
+        data_type: "String"
+  - name: ssas_fact_bsc_target_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: bsc_kpi_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: month_date_key
+        data_type: "Int64"
+      - name: target_value
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: scale_with_months
+        data_type: "Int64"
+      - name: source_basis
+        data_type: "String"
+  - name: ssas_fact_bsc_weight
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: bsc_kpi_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: weight
+        data_type: "Float64"
+  - name: ssas_fact_bsc_workforce_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: month_date_key
+        data_type: "Int64"
+      - name: person_id
+        data_type: "String"
+      - name: row_type
+        data_type: "String"
+      - name: staff_key
+        data_type: "Int64"
+      - name: employee_key
+        data_type: "Int64"
+      - name: headcount
+        data_type: "Int64"
+      - name: fte
+        data_type: "Float64"
+      - name: is_doctor
+        data_type: "Int64"
+      - name: is_medical
+        data_type: "Int64"
+      - name: is_saudi
+        data_type: "Int64"
+      - name: resignations
+        data_type: "Int64"
+      - name: data_source
+        data_type: "String"
   - name: ssas_fact_budget_monthly
     config:
       contract: {enforced: true}
@@ -1689,6 +1837,36 @@ models:
       - name: closing_balance
         data_type: "Nullable(Decimal(18, 4))"
       - name: period_end_date_key
+        data_type: "Int64"
+  - name: ssas_fact_gl_fs_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: source_system
+        data_type: "String"
+      - name: account_code
+        data_type: "String"
+      - name: fs_type
+        data_type: "String"
+      - name: fs_element
+        data_type: "String"
+      - name: fs_category
+        data_type: "String"
+      - name: fs_caption
+        data_type: "String"
+      - name: fs_line
+        data_type: "String"
+      - name: opening_balance
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: opening_journal_amount
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: movement
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: closing_balance
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: month_date_key
         data_type: "Int64"
   - name: ssas_fact_gl_journal_line
     config:
@@ -2240,6 +2418,22 @@ models:
         data_type: "String"
       - name: ap_matched_amount
         data_type: "Nullable(Decimal(18, 4))"
+  - name: ssas_fact_recruiting_requisition
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: requisition_id
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: approved_date_key
+        data_type: "Int64"
+      - name: filled_date_key
+        data_type: "Nullable(Int64)"
+      - name: number_to_hire
+        data_type: "Int64"
+      - name: days_to_fill
+        data_type: "Nullable(Int64)"
   - name: ssas_fact_revenue_adjustment
     config:
       contract: {enforced: true}
