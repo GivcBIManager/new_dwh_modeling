@@ -3451,13 +3451,13 @@ table _Measures
 	measure 'BSC Actual' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
-				VAR KpiStatus = SELECTEDVALUE ( 'BSC KPI'[Status] )
+				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
 				VAR Source = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					SWITCH (
 						TRUE (),
-						ISBLANK ( Code ) || KpiStatus = "parked", BLANK (),
+						ISBLANK ( Code ) || KpiState = "parked", BLANK (),
 						Source = "manual", CALCULATE ( [BSC Manual Value], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
 						CALCULATE (
 						SWITCH (
@@ -3538,13 +3538,13 @@ table _Measures
 	measure 'BSC Target' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
-				VAR KpiStatus = SELECTEDVALUE ( 'BSC KPI'[Status] )
+				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
 				VAR Source = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					SWITCH (
 						TRUE (),
-						ISBLANK ( Code ) || KpiStatus = "parked", BLANK (),
+						ISBLANK ( Code ) || KpiState = "parked", BLANK (),
 						Source = "fixed", CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
 						Source = "prior_year", CALCULATE ( [BSC Actual], SAMEPERIODLASTYEAR ( Past ) ),
 						Source = "budget",
@@ -3647,12 +3647,12 @@ table _Measures
 	/// Parked (parked KPI, or no value for any hospital in any period), No data yet (no value in this selection), No target, or the status.
 	measure 'BSC State' =
 			VAR __Value = ( -- measure body
-				VAR KpiStatus = SELECTEDVALUE ( 'BSC KPI'[Status] )
+				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
 				VAR A = [BSC Actual]
 				RETURN
 					SWITCH (
 						TRUE (),
-						KpiStatus = "parked", "Parked",
+						KpiState = "parked", "Parked",
 						ISBLANK ( A ) && ISBLANK ( CALCULATE ( [BSC Actual], REMOVEFILTERS ( 'Date' ), REMOVEFILTERS ( Branch ) ) ), "Parked",
 						ISBLANK ( A ), "No data yet",
 						ISBLANK ( [BSC Status] ), "No target",

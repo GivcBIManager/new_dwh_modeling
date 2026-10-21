@@ -122,3 +122,15 @@ def test_bsc_tables_generated():
     rel = (MODEL / "relationships.tmdl").read_text(encoding="utf-8")
     assert "fromColumn: 'BSC Targets'.'BSC KPI Key'" in rel and "toColumn: 'BSC KPI'.'BSC KPI Key'" in rel
     assert (MODEL / "perspectives" / "Balanced Scorecard.tmdl").exists()
+
+
+# Names SSAS 2022 rejects as DAX variables ("The syntax for 'KpiStatus' is incorrect", deploy of 2026-10-21) or that
+# shadow a DAX function (LastDate). Found by EVALUATE ROW ( "v", VAR <name> = 1 RETURN 1 ) on the server.
+RESERVED_VARIABLE_NAMES = {"kpistatus", "kpigoal", "kpivalue", "kpitrend", "kpiweight", "lastdate", "firstdate"}
+
+
+def test_measure_variables_avoid_reserved_names():
+    import re
+    bad = sorted({(m.name, v) for m in MEASURES for v in re.findall(r"\bVAR\s+(\w+)\s*=", m.expression, re.I)
+                  if v.lower() in RESERVED_VARIABLE_NAMES})
+    assert bad == []
