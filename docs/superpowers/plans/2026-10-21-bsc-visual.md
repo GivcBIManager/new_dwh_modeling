@@ -4,7 +4,9 @@
 
 **Goal:** A private Power BI custom visual, "HNH Balanced Scorecard", that draws the scorecard pages (overview, pillar board, owner view, hospital comparison) from the `Balanced Scorecard` perspective of `HNH_Analytics`, with Power BI's drill-through menu, tooltips and cross-filtering.
 
-**Architecture:** One TypeScript visual (`pbiviz`, D3 v7) with a categorical data view: one row per KPI from `BSC KPI` grouping columns, the scorecard measures as values, and `Branch` as an optional series for comparison mode. Pure modules turn the data view into a view model (parse, format, state, trend), DOM builders draw it, and `visual.ts` wires the host services. Five small SSAS measures give the visual what the KPI rows cannot: the target trend, pillar and overall scores and the pillar trend evaluated once per pillar, and a selection label.
+**Architecture:** One TypeScript visual (`pbiviz`, D3 v7) with a categorical data view: one row per KPI from `BSC KPI` grouping columns, two measures as values (`[BSC Visual Payload]`, `[BSC Selection Label]`), and `Branch` as an optional series for comparison mode. Pure modules turn the data view into a view model (parse the payload, format, state, trend, pillar and overall averages), DOM builders draw it, and `visual.ts` wires the host services.
+
+**Amendment 2026-10-21 (after Task 2, user decisions):** the scorecard query with one measure per value took 41–46 s (`.superpowers/sdd/2026-10-21-bsc-visual/perf-investigation.md`). The user chose (1) **one combined measure** per KPI row, `BSC Visual Payload`, computing actual, target, variance, score, state, weight and the 12-month actual, target and score trends in one evaluation, scoring still in DAX; the visual only averages KPI scores into pillar and overall scores; (2) **value-identical rewrites** of `BSC Actual`, `BSC Target`, `BSC Variance %`, `BSC Score`, `BSC State` (investigation R1–R3). Task 9 does both and runs right after Task 2; Tasks 3, 5 and 8 read the payload. Task 2's `BSC Target Trend`, `BSC Visual Pillar Score`, `BSC Visual Overall Score` and `BSC Visual Pillar Trend` are removed by Task 9; `BSC Selection Label` stays.
 
 **Tech Stack:** TypeScript, `powerbi-visuals-tools` (pbiviz), `powerbi-visuals-api` (version fixed by Task 1), D3 v7, `powerbi-visuals-utils-formattingmodel`, Vitest + jsdom for tests, esbuild for the screenshot harness, Edge headless for screenshots. SSAS TMDL and the existing `ssas/tools` / `ssas/tests` checks for the measures.
 
@@ -97,7 +99,39 @@ git add ssas
 git commit -m "Add the scorecard visual's trend, pillar, overall and label measures"
 ```
 
+### Task 9: Payload measure and faster scorecard measures (runs after Task 2)
+
+**Files:**
+- Modify: `ssas/HNH_Analytics/tables/_Measures.tmdl`, `ssas/tests/measures/balanced_scorecard.json`, `ssas/tests/performance.json`, perspectives via `sync_perspectives.py`
+
+**Interfaces:**
+- Consumes: the investigation's patterns (`perf-investigation.md` section 5): R1 flat dispatcher table (`CALCULATETABLE ( ROW ( "<KPI_CODE>", [measure], … ), Past, REMOVEFILTERS ( 'BSC KPI' ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )` read with `MAXX`), R2 State computed once, R3 one row table over several periods via `GENERATE`.
+- Produces: `[BSC Visual Payload]` text per KPI row, fields separated by `|` (so DAX `PATHITEM` reads them), in this order:
+  1. actual, 2. target, 3. variance, 4. score, 5. state word, 6. KPI weight (`[BSC KPI Weight]`), 7. actual trend, 8. target trend, 9. score trend.
+  Numbers as `FORMAT ( v, "0.############", "en-US" )`, blank as an empty field; trends are 12 values oldest first separated by `;` (the `BSC Trend` window: 12 months ending at the last month in context capped at today), empty for blank. When a guard trips, the payload is the guard text itself (starts with `"`).
+  The values must equal `[BSC Actual]`, `[BSC Target]`, `[BSC Variance %]`, `[BSC Score]`, `[BSC State]`, `[BSC KPI Weight]`, `[BSC Trend]`, and the monthly `[BSC Target]` and `[BSC Score]`, for every KPI row.
+
+- [ ] **Step 1: Write the checks** (DAX-only, `select 0` = number of mismatching rows, so a wrong field fails):
+  - `BSC Visual Payload matches the scorecard measures, every KPI, branch 6, 2026-08` — over `SUMMARIZECOLUMNS('BSC KPI'[KPI Code], …)` compare `PATHITEM(payload, k)` (k = 1–6) with the measure (numbers within 1e-9, text exactly) and field 7 with `[BSC Trend]`.
+  - same for `all hospitals, 2026` and for `all hospitals, 2026 Q1`.
+  - `BSC Visual Payload target and score trends match the monthly measures, branch 6, 2026` — month 12 of fields 8 and 9 equals `[BSC Target]` / `[BSC Score]` for 2026-08… use the 12 months ending at the selection.
+  - `Pillar score from the payload equals BSC Pillar Score, Financial, branch 6, 2026-08` — `DIVIDE(SUMX(rows with score and weight > 0, score × weight), SUMX(same, weight))` over the payload fields equals `[BSC Pillar Score]` (this pins the visual's averaging rule, Task 3 `pillarScore`).
+  - `BSC Visual Payload is the guard text under a wrong filter` (`Payer[Category]` filter → starts with `"`).
+  - Remove the checks of the four removed measures.
+- [ ] **Step 2: Run** `python -m pytest ssas/tools -q`. Expected: FAIL `test_checks_reference_existing_columns_and_measures` (payload missing).
+- [ ] **Step 3: Rewrite** `BSC Actual` and `BSC Target` (R1), `BSC Variance %`, `BSC Score`, `BSC State` (R2/R3, eager variables), keeping every returned value and guard text; add `BSC Visual Payload` (folder `Balanced Scorecard\Visual`, format `General`, `annotation hnh_guard_allow = BSC KPI`); remove the four Task 2 measures. Then `measure_guards.py`, `sync_perspectives.py`.
+- [ ] **Step 4: Prove the rewrites are value-identical before committing**, read-only on `HNH_Analytics_Test` (which holds today's measures): one query that DEFINEs the rewritten measures **and every model measure that depends on them** (a query-scoped override is not seen by undefined dependants) under new names, and compares them row by row with the deployed ones for: KPI × branch 6 × 2026-08; KPI × all hospitals × 2026; KPI × Branch × 2026-03; and a wrong-filter case (guard texts equal). Expected: 0 mismatches. Time the payload query (the `performance.json` shape) twice. Expected: second run under 3 s. Record both in the report.
+- [ ] **Step 5: Update `performance.json`**: the Scorecard entry now asks for the KPI attribute columns, `[BSC Visual Payload]` and `[BSC Selection Label]` (limits 10 s / 3 s unchanged).
+- [ ] **Step 6: Run** pytest, BPA, `measure_guards.py --check`, Pester. Expected: green. Commit.
+
+```bash
+git add ssas
+git commit -m "Compute the scorecard visual's values in one payload measure and speed up the scorecard measures"
+```
+
 ### Task 3: Project, data roles and the view model
+
+> **Amended by Task 9:** the measure roles are only `payload` (`[BSC Visual Payload]`) and `selectionLabel`; `parse.ts` splits the payload (`parsePayload(text: string|null): Payload | { guard: string }`, fields per Task 9; a trailing dot as in `"100."` is a valid number). `KpiRow` gains `weight: number|null` and `scoreTrend: (number|null)[]`. New `src/model/score.ts`: `pillarScore(rows: KpiRow[]): number|null` = Σ(score × weight) / Σ weight over rows with a score and weight > 0 (null when none); `overallScore(pillars: PillarSummary[]): number|null` = Σ(pillar score × pillar weight) / Σ pillar weight over pillars with a score; `pillarTrend(rows): (number|null)[]` = `pillarScore` month by month from `scoreTrend`. Tests: the formulas on fixtures, including a pillar with no scored KPI (null) and a weight of 0 (ignored). The roles `actual`, `target`, `variance`, `score`, `state`, `trend`, `targetTrend`, `pillarScore`, `overallScore`, `pillarTrend` below are replaced by `payload`.
 
 **Files:**
 - Create: `powerbi_tmdl/hnh_bsc_visual/` from `pbiviz new hnh_bsc_visual` (then `pbiviz.json`: displayName `HNH Balanced Scorecard`, `apiVersion` from Task 1, author `InmaBImanager`, version `1.0.0.0`), `package.json` scripts `test` = `vitest run`, `package` = `pbiviz package`
@@ -232,7 +266,7 @@ git commit -m "Add the scorecard visual's format pane with brand defaults"
 
 - [ ] **Step 1: Screenshots.** Run `dev/screenshot.ps1`. Expected: four PNGs. Compare them with the prototype (`?mode=overview`, `?mode=board`) side by side: header band, gauges, pillar cards, tiles, chips, legend. Fix differences, rerun `npm test`.
 - [ ] **Step 2: Package** with `npx pbiviz package`. Expected: `dist/hnh_bsc_visual…1.0.0.0.pbiviz`. Do not commit `dist`.
-- [ ] **Step 3: Server, test slot (the user runs it):** `powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage TestMeasures *> C:\HNH\testmeasures.log`. Expected: Task 2's checks pass; then the speed tests through the run_perf wrapper (group added and removed around `test.ps1 -Stage Performance`). Expected: the Scorecard entry under 10 s cold, 3 s warm, and the existing entries under their limits. A failure here is fixed before Step 4.
+- [ ] **Step 3 (amended by Task 9: Task 9's checks and the payload Scorecard entry run here too): Server, test slot (the user runs it):** `powershell -ExecutionPolicy Bypass -File ssas\scripts\deploy.ps1 -Stage TestMeasures *> C:\HNH\testmeasures.log`. Expected: Task 2's checks pass; then the speed tests through the run_perf wrapper (group added and removed around `test.ps1 -Stage Performance`). Expected: the Scorecard entry under 10 s cold, 3 s warm, and the existing entries under their limits. A failure here is fixed before Step 4.
 - [ ] **Step 4: User check in Desktop for Report Server** (live to `HNH_Analytics_Test`, perspective `Balanced Scorecard`, as a non-admin member of `HNH_BI_Users`): import the `.pbiviz`, bind the roles as README lists; for each mode check the layout against the screenshots; right-click a tile → "Drill through" lists the KPI Detail page; hover → tooltip; click → other visuals filter; Tab moves between tiles and Shift+F10 opens the menu; Windows high contrast keeps every state readable; export to PDF waits for the visual.
 - [ ] **Step 5: Ledger the user's results; commit** the harness, icon and README.
 
