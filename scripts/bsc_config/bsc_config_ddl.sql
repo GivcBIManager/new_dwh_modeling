@@ -63,3 +63,15 @@ CREATE TABLE IF NOT EXISTS default.map_bsc_budgeted_fte
     branch_id UInt8, year UInt16, budgeted_fte Float64,
     changed_at DateTime64(3), changed_by String, change_note String, is_deleted UInt8
 ) ENGINE = MergeTree ORDER BY (branch_id, year, changed_at);
+
+CREATE TABLE IF NOT EXISTS default.map_bsc_parameter
+(
+    name String, value Float64,
+    changed_at DateTime64(3), changed_by String, change_note String, is_deleted UInt8
+) ENGINE = MergeTree ORDER BY (name, changed_at);
+
+CREATE TABLE IF NOT EXISTS default.map_bsc_licensed_beds
+(
+    branch_id UInt8, year UInt16, licensed_beds Float64,
+    changed_at DateTime64(3), changed_by String, change_note String, is_deleted UInt8
+) ENGINE = MergeTree ORDER BY (branch_id, year, changed_at);

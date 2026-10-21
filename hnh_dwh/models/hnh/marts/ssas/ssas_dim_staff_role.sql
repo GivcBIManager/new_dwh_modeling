@@ -7,5 +7,6 @@ select
     staff_grade,
     category,
     specialty,
-    unified_specialty
+    unified_specialty,
+    if(is_high_value_specialty = 1, 'Yes', 'No') as is_high_value_specialty   -- scorecard KPI 26 (booked doctor)
 from {{ ref('dim_staff') }}

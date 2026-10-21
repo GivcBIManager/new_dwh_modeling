@@ -271,3 +271,22 @@ Describe 'final review fixes' {
         ([regex]::Matches($text, '[\x00-\x08\x0B\x0C\x0E-\x1F]')).Count | Should Be 0
     }
 }
+
+Describe 'Plan 2 Task 1 models' {
+    It 'dim_bsc_parameter falls back to 8, 4 and 0.6 without rows' {
+        $p = "select 'x' as name, toFloat64(0) as value, now64(3) as last_changed_at limit 0"
+        $r = @(Invoke-ModelWithSources (Get-RenderedModel 'dim_bsc_parameter' @{ stg_ref__bsc_parameter = $p }) @{})
+        $r.Count | Should Be 1
+        [double]$r[0].clinic_hours_per_day | Should Be 8
+        [double]$r[0].clinic_patients_per_hour | Should Be 4
+        [double]$r[0].ancillary_target_share | Should Be 0.6
+    }
+    It 'fact_bsc_licensed_beds carries a year into later years' {
+        $lb = "select toUInt8(6) as branch_id, toUInt16(2026) as year, toFloat64(100) as licensed_beds, now64(3) as last_changed_at"
+        $sql = (Get-RenderedModel 'fact_bsc_licensed_beds' @{ stg_ref__bsc_licensed_beds = $lb }).Replace("toDateOrNull('')", "toDateOrNull('2027-03-01')")
+        $r = @(Invoke-ModelWithSources $sql @{} | ForEach-Object { $_ })
+        @($r | Where-Object { [int]$_.year_date_key -eq 20270101 })[0].licensed_beds | Should Be 100
+        @($r | Where-Object { [int]$_.year_date_key -eq 20260101 })[0].licensed_beds | Should Be 100
+        $r.Count | Should Be 2
+    }
+}

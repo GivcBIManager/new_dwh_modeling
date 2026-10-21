@@ -65,3 +65,11 @@ models:
       - name: branch_key
         tests:
           - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+  - name: dim_bsc_parameter
+    description: Scorecard parameters as one row (clinic hours per day, patients per hour, ancillary target share).
+  - name: fact_bsc_licensed_beds
+    description: Licensed beds per hospital and year (KPI 60), carried into later years.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, year_date_key]
+          config: {severity: warn}

@@ -1,0 +1,25 @@
+-- Update of 2026-10-21 (plan 2026-10-21-bsc-ssas-measures, Task 1): parameters, licensed beds, and new versions of
+-- 11 KPI rows (KPI 22 renamed Clinic Utilization, KPI 58 renamed OP Doctor Utilization, new definition texts).
+-- Applied with apply_bsc_config.ps1 -Update; insert-only, the latest row per key wins.
+
+INSERT INTO default.map_bsc_parameter (name, value, changed_at, changed_by, change_note, is_deleted) VALUES
+    ('clinic_hours_per_day', 8, now64(3), 'plan2', 'Outpatient Dashboard clinic capacity rule', 0),
+    ('clinic_patients_per_hour', 4, now64(3), 'plan2', 'Outpatient Dashboard clinic capacity rule', 0),
+    ('ancillary_target_share', 0.6, now64(3), 'plan2', 'handover rule: ancillary target = OP revenue target x 0.6', 0);
+
+INSERT INTO default.map_bsc_licensed_beds (branch_id, year, licensed_beds, changed_at, changed_by, change_note, is_deleted)
+SELECT branch_key, toUInt16(2026), toFloat64(licensed_beds), now64(3), 'plan2', 'from gold.dim_branch; correct per hospital', 0
+FROM gold.dim_branch WHERE branch_key BETWEEN 1 AND 8;
+
+INSERT INTO default.map_bsc_kpi (kpi_code, kpi_num, kpi_name, short_label, objective_code, kpi_type, direction, value_format, chart_hint, display_order, definition, status, target_source, value_source, detail_page, changed_at, changed_by, change_note, is_deleted) VALUES
+    ('INT_OP_UTILIZATION', 22, 'Clinic Utilization', 'Clinic Utilization', 'P1', 'Primary', 'higher', 'pct', 'gauge', 22, 'Arrived OP visits divided by clinic capacity: clinics times hours per day times patients per hour times working days without Fridays.', 'active', 'budget', 'measure', 'volume', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('INT_DOCTOR_UTILIZATION', 58, 'OP Doctor Utilization', 'OP Doctor Utilization', 'P1', 'Supporting', 'higher', 'pct', 'gauge', 58, 'Arrived OP visits divided by clinic capacity slots (legacy capacity rule).', 'active', 'none', 'measure', 'volume', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('FIN_COST_TO_REVENUE', 5, 'Cost-to-Revenue Ratio', 'Cost-to-Revenue Ratio', 'F2', 'Supporting', 'lower', 'pct', 'bullet', 5, 'Operating cost (net revenue minus EBITDA) divided by net revenue. Target: budget net revenue minus budget EBITDA, divided by budget net revenue.', 'active', 'budget', 'measure', 'finance', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('CUS_PATIENT_SATISFACTION', 13, 'Patient Satisfaction (Press Ganey)', 'Patient Satisfaction (Press Ganey)', 'C2', 'Primary', 'higher', 'pct', 'gauge', 13, 'NPS over the pooled answers of the Hospital NPS and Physician NPS questions: promoters minus detractors, divided by answers, times 100.', 'active', 'none', 'measure', 'experience', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('INT_REVENUE_LEAKAGE', 29, 'Revenue Leakage Rate', 'Revenue Leakage Rate', 'P3', 'Primary', 'lower', 'pct', 'bullet', 29, 'Net amount of invoices not submitted divided by the net amount of invoices, by invoice date, for non-manual submissions of insurance and government payers.', 'active', 'fixed', 'measure', 'revenue_cycle', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('INT_APPROVAL_TAT', 32, 'Insurance Approval Turnaround Time', 'Insurance Approval Turnaround Time', 'P3', 'Supporting', 'lower', 'mins', 'line', 32, 'Average minutes from sending a pre-authorisation line to the payer\'s response.', 'active', 'fixed', 'measure', 'revenue_cycle', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('INT_READMISSION_30D', 36, '30-Day Readmission Rate', '30-Day Readmission Rate', 'P5', 'Primary', 'ceiling', 'pct', 'gauge', 36, 'Readmissions within 30 days divided by discharges.', 'active', 'fixed', 'measure', 'beds', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('LRN_SAUDIZATION', 46, 'Saudization', 'Saudization', 'L1', 'Supporting', 'higher', 'pct', 'bullet', 46, 'Saudi heads divided by headcount without part-time doctors, at the last closed month of the period.', 'active', 'none', 'measure', 'workforce', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('INT_ACTIVATED_BEDS', 60, 'Activated Bed Rate', 'Activated Bed Rate', 'P1', 'Supporting', 'higher', 'pct', 'gauge', 60, 'Average available beds divided by licensed beds (the BI manager\'s licensed beds per hospital and year).', 'active', 'none', 'measure', 'beds', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('CUS_ACQUISITION_COST', 62, 'Patient Acquisition Cost', 'Patient Acquisition Cost', 'C3', 'Supporting', 'lower', 'sar', 'hbar', 62, 'GL marketing expense divided by distinct new outpatients.', 'active', 'none', 'measure', 'finance', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0),
+    ('FIN_DAYS_INVENTORY', 64, 'Days Inventory Outstanding', 'Days Inventory Outstanding', 'F3', 'Supporting', 'lower', 'days', 'stat', 64, 'Average GL inventory times days, divided by GL cost of goods sold, medical consumables and cost of medicines.', 'active', 'budget', 'measure', 'finance', now64(3), 'plan2', 'KPI definitions of 2026-10-21', 0);

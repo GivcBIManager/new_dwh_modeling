@@ -4,8 +4,8 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Describe 'apply_bsc_config.ps1 -DryRun' {
     $out = (& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $here 'apply_bsc_config.ps1') -DryRun 6>&1 2>&1) -join "`n"
-    It 'creates the 10 config tables' {
-        ([regex]::Matches($out, 'CREATE TABLE IF NOT EXISTS default\.map_bsc_\w+')).Count | Should Be 10
+    It 'creates the 12 config tables' {
+        ([regex]::Matches($out, 'CREATE TABLE IF NOT EXISTS default\.map_bsc_\w+')).Count | Should Be 12
     }
     It 'counts the seed rows per table' {
         $out | Should Match 'default\.map_bsc_kpi: 70 rows'
@@ -14,6 +14,17 @@ Describe 'apply_bsc_config.ps1 -DryRun' {
         $out | Should Match 'default\.map_bsc_manual_value: INSERT \.\.\. SELECT from default\.bsc_patient_satisfaction'
     }
     It 'writes nothing' {
+        $out | Should Match '\(dry run\) nothing written'
+    }
+}
+
+Describe 'apply_bsc_config.ps1 -DryRun -Update' {
+    $upd = Join-Path $here 'bsc_config_update_2026-10-21.sql'
+    $out = (& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $here 'apply_bsc_config.ps1') -DryRun -Update $upd 6>&1 2>&1) -join "`n"
+    It 'lists the update rows and writes nothing' {
+        $out | Should Match 'update default\.map_bsc_parameter: 3 rows'
+        $out | Should Match 'update default\.map_bsc_kpi: 11 rows'
+        $out | Should Match 'update default\.map_bsc_licensed_beds: INSERT \.\.\. SELECT from gold\.dim_branch'
         $out | Should Match '\(dry run\) nothing written'
     }
 }

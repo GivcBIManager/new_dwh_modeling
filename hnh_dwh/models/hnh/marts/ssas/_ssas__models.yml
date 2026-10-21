@@ -242,6 +242,18 @@ models:
         data_type: "Float64"
       - name: is_active
         data_type: "String"
+  - name: ssas_dim_bsc_parameter
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: bsc_parameter_key
+        data_type: "Int64"
+      - name: clinic_hours_per_day
+        data_type: "Float64"
+      - name: clinic_patients_per_hour
+        data_type: "Float64"
+      - name: ancillary_target_share
+        data_type: "Float64"
   - name: ssas_dim_budget_line
     config:
       contract: {enforced: true}
@@ -1012,6 +1024,8 @@ models:
         data_type: "String"
       - name: unified_specialty
         data_type: "String"
+      - name: is_high_value_specialty
+        data_type: "String"
   - name: ssas_dim_store
     config:
       contract: {enforced: true}
@@ -1424,6 +1438,16 @@ models:
         data_type: "Int64"
       - name: budgeted_fte
         data_type: "Nullable(Decimal(18, 4))"
+  - name: ssas_fact_bsc_licensed_beds
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: year_date_key
+        data_type: "Int64"
+      - name: licensed_beds
+        data_type: "Float64"
   - name: ssas_fact_bsc_manual_value
     config:
       contract: {enforced: true}

@@ -158,6 +158,21 @@ INSERT INTO default.map_bsc_budgeted_fte (branch_id, year, budgeted_fte, changed
 VALUES (6, 2026, 820, now64(3), 'bi_manager', 'HR establishment 2026', 0);
 ```
 
+### `map_bsc_parameter`: scorecard parameters
+
+Key: `name`. Values used by the measures:
+- `clinic_hours_per_day` (8) and `clinic_patients_per_hour` (4): the clinic capacity behind KPI 22, Clinic Utilization;
+- `ancillary_target_share` (0.6): the ancillary target as a share of the OP revenue target, KPI 28.
+
+```sql
+INSERT INTO default.map_bsc_parameter (name, value, changed_at, changed_by, change_note, is_deleted)
+VALUES ('clinic_hours_per_day', 9, now64(3), 'bi_manager', 'clinics open 9 hours from 2027', 0);
+```
+
+### `map_bsc_licensed_beds`: licensed beds
+
+Key: `branch_id` (1–8), `year`. It is the Activated Bed Rate denominator (KPI 60). A year without a row keeps the latest earlier figure.
+
 ## Who can write
 
 Inserting needs a ClickHouse login with `INSERT` on these tables. Reading them needs `SELECT`. The report and SSAS read them only through the gold models.
