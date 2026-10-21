@@ -110,7 +110,7 @@ function Get-HnhAnnotation {
 
 function Save-HnhModel {
     # One SaveChanges = one transaction: users keep the old data until it commits (SSAS spec 9.4).
-    param([Parameter(Mandatory = $true)]$Model, [int]$MaxParallelism = 6)
+    param([Parameter(Mandatory = $true)]$Model, [int]$MaxParallelism = 12)
     $opts = New-Object Microsoft.AnalysisServices.Tabular.SaveOptions
     $opts.MaxParallelism = $MaxParallelism
     [void]$Model.SaveChanges($opts)
