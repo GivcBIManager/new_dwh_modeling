@@ -115,6 +115,57 @@ def test_measure_guards_are_current():
     assert measure_guards.render(MEASURES_TEXT, rels, kinds) == MEASURES_TEXT, "run python ssas/tools/measure_guards.py"
 
 
+# The scorecard measures that hold the KPI dispatch lists (bsc visual plan, Task 9): (ROW lists of KPI measures, ROW
+# lists of budget targets) and as many SWITCH ( Code, "<CODE>", MAXX ( <table>, [@<CODE>] ), ... ) lookups of each.
+BSC_KPI_LISTS = {"BSC Actual": (1, 0), "BSC Target": (0, 1), "BSC Variance %": (1, 1), "BSC Score": (1, 1),
+                 "BSC State": (1, 1), "BSC Visual Payload": (1, 1)}
+BSC_MEASURE_KPIS, BSC_BUDGET_KPIS = 49, 21
+
+
+def bsc_kpi_list_problems(measures) -> list:
+    """Differences between the KPI ROW lists and SWITCH lookups of the BSC_KPI_LISTS measures (empty when they agree).
+    A code missing from one list would fall to the SWITCH's BLANK () in that measure only."""
+    import re
+    row_re = re.compile(r'ROW \(\n((?:[ \t]*"@[^"]+", \[[^\]]+\],?\n)+)[ \t]*\)')
+    switch_re = re.compile(r'SWITCH \(\n[ \t]*Code,\n((?:[ \t]*"[^"]+", MAXX \( \w+, \[@[^\]]+\] \),\n)+)[ \t]*BLANK \(\)')
+    problems, rows, switches = [], {"measure": [], "budget": []}, {"measure": [], "budget": []}
+    for name, (want_measure, want_budget) in BSC_KPI_LISTS.items():
+        text = measures[name].expression
+        found = {"measure": [], "budget": []}
+        for block in row_re.findall(text):
+            pairs = frozenset(re.findall(r'"@([^"]+)", \[([^\]]+)\]', block))
+            found["budget" if all(m.startswith("BSC Target ") for _, m in pairs) else "measure"].append(pairs)
+        for kind, want in (("measure", want_measure), ("budget", want_budget)):
+            if len(found[kind]) != want:
+                problems.append(f"{name}: {len(found[kind])} {kind} ROW lists, expected {want}")
+            rows[kind] += [(name, pairs) for pairs in found[kind]]
+        lookups = [re.findall(r'"([^"]+)", MAXX \( (\w+), \[@([^\]]+)\] \)', block) for block in switch_re.findall(text)]
+        if len(lookups) != want_measure + want_budget:
+            problems.append(f"{name}: {len(lookups)} SWITCH ( Code, ... ) lookups, expected {want_measure + want_budget}")
+        for entries in lookups:
+            problems += [f"{name}: {code} reads [@{column}]" for code, _, column in entries if code != column]
+            if len({table for _, table, _ in entries}) != 1:
+                problems.append(f"{name}: one lookup reads several tables")
+            kind = "budget" if all("Budget" in table for _, table, _ in entries) else "measure"
+            switches[kind].append((name, frozenset(code for code, _, _ in entries)))
+    for kind, size in (("measure", BSC_MEASURE_KPIS), ("budget", BSC_BUDGET_KPIS)):
+        reference = rows[kind][0][1] if rows[kind] else frozenset()
+        if len(reference) != size:
+            problems.append(f"{rows[kind][0][0] if rows[kind] else '?'}: {len(reference)} {kind} KPIs, expected {size}")
+        codes = frozenset(code for code, _ in reference)
+        for name, pairs in rows[kind][1:]:
+            if pairs != reference:
+                problems.append(f"{name}: {kind} ROW list differs: {sorted(pairs ^ reference)}")
+        for name, found_codes in switches[kind]:
+            if found_codes != codes:
+                problems.append(f"{name}: {kind} lookup differs: {sorted(found_codes ^ codes)}")
+    return problems
+
+
+def test_bsc_kpi_lists_agree():
+    assert bsc_kpi_list_problems({m.name: m for m in MEASURES}) == []
+
+
 def test_bsc_tables_generated():
     kpi = (MODEL / "tables" / "BSC KPI.tmdl").read_text(encoding="utf-8")
     assert "column 'KPI Code'" in kpi
