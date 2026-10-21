@@ -17,7 +17,7 @@ export function isGuard(text: unknown): text is string {
 /** Split [BSC Visual Payload]: nine fields separated by "|". A guard text is returned as { guard }. */
 export function parsePayload(text: string | null): Payload | { guard: string } {
     if (isGuard(text)) return { guard: text };
-    const f = text === null || text === undefined ? [] : text.split("|");
+    const f = text === null || text === undefined ? [] : String(text).split("|");
     const state = (f[4] ?? "").trim();
     return {
         actual: parseNumber(f[0]),
@@ -45,8 +45,14 @@ function emptyCounts(): Record<StateKey, number> {
     return { good: 0, warn: 0, bad: 0, nodata: 0, parked: 0, notarget: 0 };
 }
 
+function tally(rows: KpiRow[]): Record<StateKey, number> {
+    const counts = emptyCounts();
+    for (const k of rows) counts[k.state]++;
+    return counts;
+}
+
 function emptyModel(guard: string | null): ViewModel {
-    return { pillars: [], overallScore: null, label: "", thresholds: { base: 85, slope: 0.6, good: 85, watch: 70 }, branches: [], guardMessage: guard };
+    return { pillars: [], overallScore: null, overallByBranch: [], label: "", thresholds: { base: 85, slope: 0.6, good: 85, watch: 70 }, branches: [], guardMessage: guard };
 }
 
 const asStr = (v: unknown): string => (v === null || v === undefined ? "" : String(v));
@@ -86,7 +92,7 @@ export function parseDataView(dv: DataView): ViewModel {
     const branches: string[] = [];
 
     groups.forEach((g, gi) => {
-        const branch = hasBranch ? asStr(g.name) : null;
+        const branch = hasBranch ? (asStr(g.name) || "(Blank)") : null;
         if (branch !== null) branches.push(branch);
         const payloadCol = find(g, "payload");
         const labelCol = find(g, "selectionLabel");
@@ -140,13 +146,16 @@ export function parseDataView(dv: DataView): ViewModel {
     const pillars: PillarSummary[] = [];
     for (const [name, list] of byPillar) {
         list.sort((a, b) => (Number(b.primary) - Number(a.primary)) || (a.displayOrder - b.displayOrder) || (a.seriesIndex ?? 0) - (b.seriesIndex ?? 0));
-        const counts = emptyCounts();
-        for (const k of list) counts[k.state]++;
-        // With several branches the pillar score is that of the first branch; the comparison view scores per branch.
-        const scoring = hasBranch ? list.filter(k => k.seriesIndex === list[0].seriesIndex) : list;
+        // counts, score and trend describe the first branch; byBranch carries every branch for the comparison view.
+        const firstRows = hasBranch ? list.filter(k => k.seriesIndex === 0) : list;
+        const counts = tally(firstRows);
         pillars.push({
             name, order: list[0].pillarOrder, weight: list[0].pillarWeight, question: list[0].pillarQuestion,
-            score: pillarScore(scoring), trend: pillarTrend(scoring), kpis: list, counts,
+            score: pillarScore(firstRows), trend: pillarTrend(firstRows), kpis: list, counts,
+            byBranch: branches.map((b, bi) => {
+                const br = list.filter(k => k.seriesIndex === bi);
+                return { branch: b, score: pillarScore(br), counts: tally(br) };
+            }),
         });
     }
     pillars.sort((a, b) => a.order - b.order);
@@ -155,6 +164,10 @@ export function parseDataView(dv: DataView): ViewModel {
     return {
         pillars,
         overallScore: overallScore(pillars),
+        overallByBranch: branches.map((b, bi) => ({
+            branch: b,
+            score: overallScore(pillars.map(p => ({ ...p, score: p.byBranch[bi].score }))),
+        })),
         label,
         thresholds: { base: first("scoreBase", 85), slope: first("scoreSlope", 0.6), good: first("goodFrom", 85), watch: first("watchFrom", 70) },
         branches,

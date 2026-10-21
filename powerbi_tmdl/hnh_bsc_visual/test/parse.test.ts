@@ -84,6 +84,45 @@ describe("parseDataView", () => {
         expect(ks.map(k => [k.branch, k.seriesIndex, k.score])).toEqual([["Hospital A", 0, 80], ["Hospital B", 1, 70]]);
     });
 
+    it("describes the first branch in counts, score and trend and gives per-branch values", () => {
+        const vm = parseDataView(makeDataView([
+            row("A1", "Financial", 1, 0.3, { displayOrder: 1, payload: [ok(80, 1, "On track", [70, 80]), ok(40, 1, "At risk", [30, 40])] }),
+            row("A2", "Financial", 1, 0.3, { displayOrder: 2, payload: [ok(70, 1, "Watch", [60, 70]), ok(90, 1, "On track", [80, 90])] }),
+        ], { branches: ["Hospital A", "Hospital B"] }));
+        const fin = vm.pillars[0];
+        expect(fin.kpis).toHaveLength(4);
+        expect(fin.counts).toEqual({ good: 1, warn: 1, bad: 0, nodata: 0, parked: 0, notarget: 0 });
+        expect(fin.score).toBeCloseTo(75);
+        expect(fin.trend).toEqual([65, 75]);
+        expect(fin.byBranch).toHaveLength(2);
+        expect(fin.byBranch[0]).toMatchObject({ branch: "Hospital A", counts: { good: 1, warn: 1, bad: 0 } });
+        expect(fin.byBranch[0].score).toBeCloseTo(75);
+        expect(fin.byBranch[1]).toMatchObject({ branch: "Hospital B", counts: { good: 1, warn: 0, bad: 1 } });
+        expect(fin.byBranch[1].score).toBeCloseTo(65);
+        expect(vm.overallByBranch.map(b => b.branch)).toEqual(["Hospital A", "Hospital B"]);
+        expect(vm.overallByBranch[0].score).toBeCloseTo(75);
+        expect(vm.overallByBranch[1].score).toBeCloseTo(65);
+        expect(vm.overallScore).toBeCloseTo(75);
+    });
+
+    it("has no per-branch values without a branch series", () => {
+        const vm = parseDataView(makeDataView([row("A1", "Financial", 1, 0.3, { payload: ok(80, 1) })]));
+        expect(vm.pillars[0].byBranch).toEqual([]);
+        expect(vm.overallByBranch).toEqual([]);
+    });
+
+    it("names a blank branch (Blank)", () => {
+        const vm = parseDataView(makeDataView([row("A1", "Financial", 1, 0.3, { payload: [ok(1, 1), ok(2, 1)] })], { branches: ["", "Hospital B"] }));
+        expect(vm.branches).toEqual(["(Blank)", "Hospital B"]);
+    });
+
+    it("returns the guard message when only the second branch carries it", () => {
+        const g = "\"BSC Visual Payload can't be analysed by Payer\"";
+        const vm = parseDataView(makeDataView([row("A1", "Financial", 1, 0.3, { payload: [ok(1, 1), g] })], { branches: ["A", "B"] }));
+        expect(vm.guardMessage).toBe(g);
+        expect(vm.pillars).toEqual([]);
+    });
+
     it("returns the guard message and no rows", () => {
         const g = "\"BSC Visual Payload can't be analysed by Payer\"";
         const vm = parseDataView(makeDataView([row("A1", "Financial", 1, 0.3, { payload: g })]));
