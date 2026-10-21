@@ -19,6 +19,7 @@ again rewrites the wrappers and the guard measures from the current relationship
 
 Usage: python ssas/tools/measure_guards.py [--check]
 """
+import hashlib
 import re
 import sys
 from pathlib import Path
@@ -189,9 +190,16 @@ def unrelated_tables(facts: set, rels: list, kinds: dict, allow: set) -> list:
     return sorted(candidates - allowed - allow)
 
 
+MAX_NAME = 100  # keep object names short; a long fact list is named by count and a hash (bsc ssas plan, Task 7)
+
+
 def guard_name(facts: set, allow: set) -> str:
     name = GUARD_PREFIX + " + ".join(sorted(facts))
-    return name + (" | " + ", ".join(sorted(allow)) if allow else "")
+    name += (" | " + ", ".join(sorted(allow)) if allow else "")
+    if len(name) <= MAX_NAME:
+        return name
+    digest = hashlib.sha1(name.encode("utf-8")).hexdigest()[:8]
+    return f"{GUARD_PREFIX}{len(facts)} facts #{digest}"
 
 
 def _dax_table(name: str) -> str:

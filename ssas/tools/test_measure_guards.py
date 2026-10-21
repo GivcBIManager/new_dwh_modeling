@@ -108,3 +108,14 @@ def test_render_keeps_the_original_expression_recoverable():
     assert [(m.name, m.expression) for m in t.measures(g.strip_guards(once))] == \
         [(m.name, m.expression) for m in t.measures(MEASURES)]
     assert "\t\t\tVAR x = COUNTROWS ( Encounters )\n\t\t\tRETURN x\n" in g.strip_guards(once)
+
+
+def test_guard_names_stay_within_100_characters():
+    short = g.guard_name({"Encounters"}, set())
+    assert short == "_Guard Encounters"
+    facts = {f"Fact Table Number {i}" for i in range(12)}
+    long_name = g.guard_name(facts, {"BSC KPI"})
+    assert len(long_name) <= 100
+    assert long_name.startswith("_Guard 12 facts")
+    assert long_name == g.guard_name(set(facts), {"BSC KPI"})
+    assert long_name != g.guard_name(facts, set())
