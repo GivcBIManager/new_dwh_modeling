@@ -112,3 +112,21 @@
 .cmp .peer{border-left:2px solid var(--line)}
 .topline{display:flex;gap:18px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
 .topline b{color:var(--ink);font-size:18px}.topline .focus b{color:var(--blue-dk)}
+
+/* interactions */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.hnh-bsc .selected{outline:3px solid var(--blue-dk);outline-offset:1px}
+.hnh-bsc .dimmed{opacity:.45}
+.cmp th[data-branch]{cursor:pointer}
+
+/* high contrast: the host palette sets these variables; icons and words carry the state */
+.hnh-bsc.hc{
+  --surface:var(--hc-bg); --card:var(--hc-bg); --ink:var(--hc-fg); --muted:var(--hc-fg); --line:var(--hc-fg);
+  --good:var(--hc-fg); --warn:var(--hc-fg); --bad:var(--hc-fg); --nodata:var(--hc-fg);
+  --good-bg:var(--hc-bg); --warn-bg:var(--hc-bg); --bad-bg:var(--hc-bg); --nodata-bg:var(--hc-bg);
+  --blue:var(--hc-sel); --blue-dk:var(--hc-sel); --navy:var(--hc-fg); --navy-2:var(--hc-fg);
+}
+.hnh-bsc.hc .band{background:var(--hc-bg);color:var(--hc-fg);border-bottom:2px solid var(--hc-fg)}
+.hnh-bsc.hc .chip,.hnh-bsc.hc .var,.hnh-bsc.hc .cmp td{color:var(--hc-fg);border:1px solid var(--hc-fg)}
+.hnh-bsc.hc .strip i{background:var(--hc-bg);border:2px solid var(--hc-fg)}
+.hnh-bsc.hc .strip i.bad{background:var(--hc-fg)}

@@ -20,7 +20,7 @@ export function statusStrip(rows: KpiRow[]): HTMLElement {
     for (const k of rows) {
         strip.appendChild(el("i", {
             class: stateClass(k.state), "data-key": k.rowIndex, "data-series": k.seriesIndex,
-            title: `${k.name}: ${k.stateWord}`, tabindex: 0,
+            role: "img", "aria-label": `${k.name}: ${k.stateWord}`, tabindex: 0,
         }));
     }
     return strip;

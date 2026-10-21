@@ -31,7 +31,7 @@ describe("tile", () => {
         const v = t.querySelector(".var")!;
         expect(v.classList.contains("good")).toBe(true);
         expect(v.textContent).toContain("✓");
-        expect(v.getAttribute("aria-label")).toContain("On track");
+        expect(v.querySelector(".sr-only")!.textContent).toContain("On track");
     });
     it("shows the manual badge and series index", () => {
         const t = tile(row({ manual: true, seriesIndex: 2 }));
@@ -73,6 +73,7 @@ describe("chips", () => {
         expect(cells.length).toBe(2);
         expect(cells[1].classList.contains("warn")).toBe(true);
         expect(cells[1].getAttribute("data-key")).toBe("8");
-        expect(cells[0].getAttribute("title")).toContain("Net revenue");
+        expect(cells[0].getAttribute("role")).toBe("img");
+        expect(cells[0].getAttribute("aria-label")).toBe("Net revenue: On track");
     });
 });
