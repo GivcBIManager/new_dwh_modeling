@@ -119,6 +119,18 @@ describe("board", () => {
     });
 });
 
+describe("overview rounding and target line", () => {
+    it("shows 85 as on track in the pillar chip and gauge, and draws the good threshold on the pillar trend", () => {
+        const root = mount();
+        const rs = [row("F1", "Financial", 1, 0.3, { payload: payload({ actual: 1, target: 1, variance: 0, score: 84.6, state: "Watch", weight: 1, trend: [80, 82, 84.6], scoreTrend: [80, 82, 84.6] }) })];
+        renderView(root, parseDataView(makeDataView(rs)), "overview", ui());
+        const card = root.querySelector(".pillar")!;
+        expect(card.querySelector(".facts .chip")!.className).toContain("good");
+        expect(card.querySelector(".gauge-arc")!.getAttribute("stroke")).toBe("var(--good)");
+        expect(card.querySelector(".facts .spark-target")).not.toBeNull();
+    });
+});
+
 describe("owner", () => {
     it("groups KPIs by owner", () => {
         const root = mount();
@@ -151,6 +163,14 @@ describe("comparison", () => {
         const second = [...root.querySelectorAll("tbody tr")[1].querySelectorAll("th,td")].map(c => c.textContent);
         expect(second.slice(1)).toEqual(["–", "80", "80"]);
         expect(root.querySelector(".topline")!.textContent).toContain("Jazan");
+        expect(root.querySelector(".cmp-legend")!.textContent).toContain("no data yet");
+        expect(root.querySelector(".cmp-scroll table")).not.toBeNull();
+        const td = first.querySelectorAll("td");
+        expect(td[0].getAttribute("title")).toBe("Jazan: 60 · At risk");
+        expect(td[0].getAttribute("aria-label")).toBe("Jazan: 60 · At risk");
+        const nod = root.querySelectorAll("tbody tr")[1].querySelectorAll("td")[0];
+        expect(nod.getAttribute("aria-label")).toBe("Jazan: No data yet");
+        expect(nod.textContent).toBe("–");
     });
     it("defaults focus to the first hospital", () => {
         const root = mount();

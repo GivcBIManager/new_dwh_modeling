@@ -12,7 +12,8 @@ export function allFirstRows(vm: ViewModel): KpiRow[] {
 /** Score-to-state, using the visual's thresholds. */
 export function scoreState(score: number | null, t: ViewModel["thresholds"]): StateKey {
     if (score === null || !Number.isFinite(score)) return "nodata";
-    return score >= t.good ? "good" : score >= t.watch ? "warn" : "bad";
+    const shown = Math.round(score);
+    return shown >= t.good ? "good" : shown >= t.watch ? "warn" : "bad";
 }
 
 export const STATE_WORD: Record<"good" | "warn" | "bad" | "nodata", string> = {

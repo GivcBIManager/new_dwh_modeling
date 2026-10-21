@@ -20,7 +20,7 @@ export function tile(row: KpiRow): HTMLElement {
     const top = el("div", { class: "top" }, [el("h4", {}, [row.name])]);
     if (hasValue && finite(row.variance) && cls !== "nodata") {
         const v = formatVariance(row.variance);
-        top.appendChild(el("span", { class: `var ${cls}` }, [`${ICON[row.state]} ${v}`, el("span", { class: "sr-only" }, [` ${row.stateWord}`])]));
+        top.appendChild(el("span", { class: `var ${cls}` }, [`${ICON[row.state]} ${row.stateWord} · ${v}`]));
     } else {
         top.appendChild(stateChip(row.state, row.stateWord));
     }

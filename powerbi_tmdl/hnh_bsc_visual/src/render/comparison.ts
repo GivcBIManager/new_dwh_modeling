@@ -33,11 +33,15 @@ export function comparison(vm: ViewModel, focus: string | null): HTMLElement {
         for (const b of order) {
             const r = at(b);
             const cls = hasScore(r) ? stateClass(r.state) : "nodata";
-            tr.appendChild(el("td", { class: b === f ? `${cls} focus` : cls }, [hasScore(r) ? String(Math.round(r.score as number)) : "–"]));
+            const shown = hasScore(r) ? String(Math.round(r.score as number)) : null;
+            const say = `${b}: ${shown === null ? "No data yet" : `${shown} · ${r?.stateWord}`}`;
+            tr.appendChild(el("td", { class: b === f ? `${cls} focus` : cls, title: say, "aria-label": say }, [shown ?? "–"]));
         }
         const m = median(order.slice(1).map(at).filter(hasScore).map(r => r.score as number));
         tr.appendChild(el("td", { class: "peer" }, [m === null ? "–" : String(Math.round(m))]));
         body.appendChild(tr);
     }
-    return el("div", { class: "cmp" }, [top, el("table", {}, [el("thead", {}, [head]), body])]);
+    const t = vm.thresholds;
+    const legend = el("div", { class: "cmp-legend" }, [`Scores are points out of 100: ${t.good} and over on track, ${t.watch}–${t.good - 1} watch, under ${t.watch} at risk; – means no data yet.`]);
+    return el("div", { class: "cmp" }, [top, legend, el("div", { class: "cmp-scroll" }, [el("table", {}, [el("thead", {}, [head]), body])])]);
 }

@@ -44,7 +44,7 @@ function card(p: PillarSummary, vm: ViewModel): HTMLElement {
         el("div", {}, [risk ? el("b", { class: "risk" }, [`${risk} at risk`]) : "None at risk", ` · ${reporting} of ${rows.length} KPIs reporting`]),
     ]);
     if (p.trend.filter(v => v !== null).length >= 2) {
-        facts.appendChild(el("div", {}, [el("div", { class: "trendcap" }, ["Pillar score, by month"]), sparkline(p.trend, [], 300, 46)]));
+        facts.appendChild(el("div", {}, [el("div", { class: "trendcap" }, ["Pillar score, by month"]), sparkline(p.trend, p.trend.map(() => t.good), 300, 46)]));
     }
     facts.appendChild(el("div", {}, [el("div", { class: "trendcap" }, ["Every KPI in this pillar"]), statusStrip(rows)]));
     return el("article", { class: "pillar", tabindex: 0, "data-pillar": p.name, "aria-label": `${p.name} pillar` }, [

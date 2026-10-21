@@ -18,6 +18,11 @@ foreach ($mode in 'overview', 'board', 'owner', 'comparison') {
     & $edge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 "--screenshot=$png" --window-size=1920,904 ($page + '?mode=' + $mode)
     Start-Sleep -Milliseconds 800
 }
+foreach ($mode in 'overview', 'board') {
+    $png = Join-Path $out "$mode-1280x720.png"
+    & $edge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 "--screenshot=$png" --window-size=1280,720 ($page + '?mode=' + $mode)
+    Start-Sleep -Milliseconds 800
+}
 $proto = Join-Path (Split-Path (Split-Path $proj -Parent) -Parent) 'docs\superpowers\specs\assets\2026-10-20-bsc-visual-prototype.html'
 if (Test-Path $proto) {
     $purl = 'file:///' + ($proto -replace '\\', '/')

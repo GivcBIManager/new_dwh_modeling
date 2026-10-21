@@ -31,7 +31,8 @@ The model is `HNH_Analytics` (perspective `Balanced Scorecard`). Every page bind
 | the 21 attribute roles (KPI Code, KPI Name, Short Label, Pillar, Pillar Order, Pillar Weight, Pillar Question, Objective Code, Objective Title, Objective Order, KPI Type, Direction, Value Format, Display Order, Status, Value Source, Owner, Score Base, Score Slope, Good From, Watch From) | the matching `'BSC KPI'` columns |
 | Payload | `[BSC Visual Payload]` |
 | Selection label | `[BSC Selection Label]` |
-| Hospital (comparison mode only) | `'Branch'[Branch Name]` |
+| Branch (comparison mode only; the well Power BI shows as "Branch", it takes one hospital per series) | `'Branch'[Branch Name]` |
+| Tooltips (optional) | a report-page tooltip, if the page has one; leave empty to use the visual's own tooltip |
 
 Then, per page, set Format pane > Scorecard > View:
 
@@ -43,3 +44,11 @@ Then, per page, set Format pane > Scorecard > View:
 | Hospital Comparison | Hospital comparison | slicer on `'Branch'[BSC Category]` |
 
 The drill-through page (KPI Detail) takes `'BSC KPI'[KPI Code]` as its drill-through field.
+
+## Design notes
+
+- The gauges show points: scores run 0 to 100 and are not percentages, so the centre reads "85", not "85%".
+- The gauge arc and the pillar chip follow the state of the displayed (rounded) score, so 85 is never orange. Green is 85 and over, orange 70 to 84, red under 70.
+- Each KPI tile's variance chip carries the state word ("▼ At risk · −29.5%"), not only an icon and a colour.
+- The pillar trend and the KPI trends draw a dashed line: the target for a KPI, the "on track" threshold for a pillar.
+- Comparison cells read "<hospital>: <score> · <state>" to a screen reader and in the hover title; no-data cells read "No data yet".

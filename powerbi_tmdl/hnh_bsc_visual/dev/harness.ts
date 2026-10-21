@@ -12,32 +12,57 @@ const PILLARS = [
     { name: "Learning & Growth", order: 4, weight: 0.15, count: 16, q: "Are our people and systems ready for tomorrow?", objectives: ["Workforce", "Technology"] },
 ];
 const OWNERS = ["Finance Department", "Patient Experience", "Medical Director", "Nursing Affairs", "Operations", "Human Resources", "Supply Chain", "Revenue Cycle", "Quality Department", "Information Technology"];
-const DIRECTIONS = ["higher", "higher", "lower", "ceiling", "on_target"];
-const FORMATS = ["sar", "pct", "days", "mins", "num"];
-const NAMES = ["Net revenue", "Operating margin", "Collection rate", "Claim rejection", "Bed occupancy", "Average length of stay", "ER wait time", "Patient satisfaction", "Staff turnover", "Training hours", "Readmission rate", "Theatre utilisation", "Stock days", "Denial recovery"];
 const MONTHS = 12;
+const BASE = 85, SLOPE = 0.6, GOOD = 85, WATCH = 70;
 
-function scaleFor(fmt: string): number {
-    return fmt === "sar" ? 5_000_000 : fmt === "pct" ? 0.8 : fmt === "days" ? 6 : fmt === "mins" ? 40 : 1200;
+interface Spec { name: string; fmt: string; dir: string; target: number }
+const SPECS: Spec[] = [
+    { name: "Net patient revenue", fmt: "sar", dir: "higher", target: 5_200_000 },
+    { name: "Operating cost per bed day", fmt: "sar", dir: "ceiling", target: 1_800 },
+    { name: "Pharmacy cost", fmt: "sar", dir: "ceiling", target: 2_400_000 },
+    { name: "Outstanding insurance receivables", fmt: "sar", dir: "lower", target: 7_900_000 },
+    { name: "Claim rejection rate", fmt: "pct", dir: "lower", target: 0.06 },
+    { name: "Collection rate", fmt: "pct", dir: "higher", target: 0.92 },
+    { name: "Bed occupancy rate", fmt: "pct", dir: "on_target", target: 0.78 },
+    { name: "Staff turnover rate", fmt: "pct", dir: "lower", target: 0.11 },
+    { name: "Readmission within 30 days", fmt: "pct", dir: "lower", target: 0.045 },
+    { name: "Theatre utilisation rate", fmt: "pct", dir: "higher", target: 0.82 },
+    { name: "Average length of stay", fmt: "days", dir: "on_target", target: 3.8 },
+    { name: "Days in accounts receivable", fmt: "days", dir: "lower", target: 62 },
+    { name: "Inventory days on hand", fmt: "days", dir: "on_target", target: 24 },
+    { name: "ER door-to-doctor time", fmt: "mins", dir: "lower", target: 18 },
+    { name: "Lab turnaround time", fmt: "mins", dir: "lower", target: 45 },
+    { name: "Discharge process time", fmt: "mins", dir: "lower", target: 120 },
+    { name: "Patient satisfaction (NPS)", fmt: "num", dir: "higher", target: 72 },
+    { name: "Cost-to-revenue ratio", fmt: "num", dir: "ceiling", target: 0.88 },
+    { name: "Nurse-to-patient ratio", fmt: "num", dir: "on_target", target: 5.5 },
+];
+const LONG: Spec[] = [
+    { name: "Share of elective surgeries starting within 15 minutes of schedule", fmt: "pct", dir: "higher", target: 0.85 },
+    { name: "Outpatient prescriptions dispensed within 20 minutes of arrival", fmt: "pct", dir: "higher", target: 0.9 },
+];
+const QUALIFIER = ["", " (YTD)", " (month)"];
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+/** Score from the target variance: base 85 at target, 0.6 points per 1%, direction-aware, clamped and rounded. */
+function scoreOf(variance: number, dir: string): number {
+    const signed = dir === "lower" || dir === "ceiling" ? -variance : dir === "on_target" ? -Math.abs(variance) : variance;
+    return Math.round(clamp(BASE + SLOPE * 100 * signed, 0, 100));
 }
+const stateOf = (score: number) => (score >= GOOD ? "On track" : score >= WATCH ? "Watch" : "At risk");
 
-function series(base: number, spread: number): number[] {
-    return Array.from({ length: MONTHS }, () => base * (1 + (rnd() - 0.5) * spread));
-}
-
-function branchPayload(kind: string, fmt: string, dir: string, tilt: number): string {
+function branchPayload(kind: string, spec: Spec, tilt: number): string {
     if (kind === "empty") return payload({ state: "" });
     if (kind === "parked") return payload({ state: "Parked" });
-    const t = scaleFor(fmt) * (0.8 + rnd() * 0.4);
-    const score = Math.max(20, Math.min(100, 78 + tilt + (rnd() - 0.5) * 50));
-    const delta = (score - 85) / 100 * (dir === "lower" || dir === "ceiling" ? -1 : 1);
-    const actual = t * (1 + delta);
-    const state = score >= 85 ? "On track" : score >= 70 ? "Watch" : "At risk";
-    const ts = series(actual, 0.1);
-    ts[MONTHS - 1] = actual;
+    const target = spec.target * (1 + (rnd() - 0.5) * 0.04);
+    const variance = (rnd() - 0.5) * 0.55 + tilt;
+    const actual = target * (1 + variance);
+    const score = scoreOf(variance, spec.dir);
+    const trend = Array.from({ length: MONTHS }, () => actual * (1 + (rnd() - 0.5) * 0.1));
+    trend[MONTHS - 1] = actual;
     return payload({
-        actual, target: t, variance: actual / t - 1, score: Math.round(score * 10) / 10, state, weight: 1 + Math.floor(rnd() * 3),
-        trend: ts, targetTrend: Array(MONTHS).fill(t), scoreTrend: ts.map(() => Math.round((score + (rnd() - 0.5) * 20) * 10) / 10),
+        actual, target, variance, score, state: stateOf(score), weight: 1 + Math.floor(rnd() * 3),
+        trend, targetTrend: Array(MONTHS).fill(target), scoreTrend: trend.map(v => scoreOf(v / target - 1, spec.dir)),
     });
 }
 
@@ -46,24 +71,25 @@ export function buildRows(branches: number): FixtureRow[] {
     let n = 0;
     for (const p of PILLARS) {
         for (let i = 0; i < p.count; i++, n++) {
-            const fmt = FORMATS[n % FORMATS.length];
-            const dir = DIRECTIONS[n % DIRECTIONS.length];
+            const longIdx = p.order === 1 && i === 5 ? 0 : p.order === 3 && i === 9 ? 1 : -1;
+            const spec = longIdx >= 0 ? LONG[longIdx] : SPECS[(n * 7) % SPECS.length];
+            const qual = longIdx >= 0 ? "" : QUALIFIER[Math.floor(n / SPECS.length) % QUALIFIER.length];
+            const objIdx = i % p.objectives.length;
+            const allParked = p.order === 4 && objIdx === 1;
+            const parkedCatalogue = allParked || n % 17 === 6;
             const manual = n % 9 === 4;
-            const parkedCatalogue = n % 17 === 6;
             const noData = !parkedCatalogue && n % 11 === 3;
             const kind = parkedCatalogue ? "parked" : noData ? "empty" : "value";
-            const objective = p.objectives[i % p.objectives.length];
-            const tilt = (p.order - 2.5) * 4;
+            const tilt = (2.5 - p.order) * 0.03;
             rows.push({
                 kpi: `${p.name.slice(0, 1)}${p.order}-${String(i + 1).padStart(2, "0")}`,
-                kpiName: `${NAMES[n % NAMES.length]} (${p.name} ${i + 1})`,
-                shortLabel: NAMES[n % NAMES.length],
+                kpiName: spec.name + qual, shortLabel: spec.name,
                 pillar: p.name, pillarOrder: p.order, pillarWeight: p.weight, pillarQuestion: p.q,
-                objectiveCode: `${p.name.slice(0, 1)}${p.order}.${(i % p.objectives.length) + 1}`, objectiveTitle: objective, objectiveOrder: (i % p.objectives.length) + 1,
-                kpiType: i < 4 ? "Primary" : "Supporting", direction: dir, valueFormat: fmt, displayOrder: i + 1,
+                objectiveCode: `${p.name.slice(0, 1)}${p.order}.${objIdx + 1}`, objectiveTitle: p.objectives[objIdx], objectiveOrder: objIdx + 1,
+                kpiType: i < 4 ? "Primary" : "Supporting", direction: spec.dir, valueFormat: spec.fmt, displayOrder: i + 1,
                 kpiStatus: parkedCatalogue ? "parked" : "active", valueSource: manual ? "manual" : "measure",
-                owner: OWNERS[n % OWNERS.length], scoreBase: 85, scoreSlope: 0.6, goodFrom: 85, watchFrom: 70,
-                payload: branches > 0 ? Array.from({ length: branches }, (_, b) => branchPayload(kind, fmt, dir, tilt + (b - 1) * 8)) : branchPayload(kind, fmt, dir, tilt),
+                owner: OWNERS[n % OWNERS.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
+                payload: branches > 0 ? Array.from({ length: branches }, (_, b) => branchPayload(kind, spec, tilt + (b - 1) * 0.06)) : branchPayload(kind, spec, tilt),
                 selectionLabel: "Corporate · Jan 2026 – Sep 2026",
             });
         }

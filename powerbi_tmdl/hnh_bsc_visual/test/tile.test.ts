@@ -31,7 +31,7 @@ describe("tile", () => {
         const v = t.querySelector(".var")!;
         expect(v.classList.contains("good")).toBe(true);
         expect(v.textContent).toContain("✓");
-        expect(v.querySelector(".sr-only")!.textContent).toContain("On track");
+        expect(v.textContent).toBe("✓ On track · +5.0%");
     });
     it("shows the manual badge and series index", () => {
         const t = tile(row({ manual: true, seriesIndex: 2 }));

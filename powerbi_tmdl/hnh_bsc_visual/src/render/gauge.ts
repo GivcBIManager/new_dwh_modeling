@@ -6,7 +6,7 @@ export function gauge(score: number | null, size: number, good: number, label: s
     const r = size / 2 - 14, c = Math.PI * r, mid = size / 2;
     const pct = has ? Math.max(0, Math.min(score as number, 100)) / 100 : 0;
     const shown = has ? Math.round(score as number) : null;
-    const col = !has ? "var(--nodata)" : (score as number) >= good ? "var(--good)" : (score as number) >= watch ? "var(--warn)" : "var(--bad)";
+    const col = !has ? "var(--nodata)" : shown !== null && shown >= good ? "var(--good)" : shown !== null && shown >= watch ? "var(--warn)" : "var(--bad)";
     const ang = Math.PI * (1 - good / 100);
     const arc = `M14 ${mid} A${r} ${r} 0 0 1 ${size - 14} ${mid}`;
     const s = svg("svg", {
