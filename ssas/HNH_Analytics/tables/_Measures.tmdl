@@ -3723,6 +3723,102 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
+	/// The KPI target of the 12 months ending at the last month in context, oldest first, separated by semicolons (target line of the sparkline).
+	measure 'BSC Target Trend' =
+			VAR __Value = ( -- measure body
+				VAR EndMonth = CALCULATE ( MAX ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR Months = TOPN ( 12, FILTER ( ALL ( 'Date'[Year Month] ), 'Date'[Year Month] <= EndMonth ), 'Date'[Year Month], DESC )
+				RETURN
+					CONCATENATEX (
+						Months,
+						VAR MonthKey = 'Date'[Year Month]
+						VAR MonthValue = CALCULATE ( [BSC Target], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = MonthKey )
+						RETURN IF ( ISNUMBER ( MonthValue ), FORMAT ( MonthValue, "0.########" ), "" ),
+						";",
+						'Date'[Year Month], ASC
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 19 facts #e451b8cd]
+			RETURN IF ( __Wrong = "", __Value, """BSC Target Trend"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Balanced Scorecard\Scoring
+
+		annotation hnh_guard_allow = BSC KPI
+	/// Pillar score of the KPI row's pillar over all KPIs the visual shows, on the pillar's first KPI row only (blank on the others).
+	measure 'BSC Visual Pillar Score' =
+			VAR __Value = ( -- measure body
+				VAR PillarName = SELECTEDVALUE ( 'BSC KPI'[Pillar] )
+				VAR KpiCode = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
+				VAR FirstCode = CALCULATE ( MIN ( 'BSC KPI'[KPI Code] ), ALLSELECTED ( 'BSC KPI' ), 'BSC KPI'[Pillar] = PillarName )
+				RETURN IF ( NOT ISBLANK ( KpiCode ) && KpiCode = FirstCode, CALCULATE ( [BSC Pillar Score], ALLSELECTED ( 'BSC KPI' ), 'BSC KPI'[Pillar] = PillarName ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			RETURN IF ( __Wrong = "", __Value, """BSC Visual Pillar Score"" can't be analysed by " & __Wrong )
+		formatString: #,0.0
+		displayFolder: Balanced Scorecard\Visual
+
+		annotation hnh_guard_allow = BSC KPI
+	/// Overall score over all KPIs the visual shows, on the first KPI row only (blank on the others).
+	measure 'BSC Visual Overall Score' =
+			VAR __Value = ( -- measure body
+				VAR KpiCode = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
+				VAR FirstCode = CALCULATE ( MIN ( 'BSC KPI'[KPI Code] ), ALLSELECTED ( 'BSC KPI' ) )
+				RETURN IF ( NOT ISBLANK ( KpiCode ) && KpiCode = FirstCode, CALCULATE ( [BSC Overall Score], ALLSELECTED ( 'BSC KPI' ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			RETURN IF ( __Wrong = "", __Value, """BSC Visual Overall Score"" can't be analysed by " & __Wrong )
+		formatString: #,0.0
+		displayFolder: Balanced Scorecard\Visual
+
+		annotation hnh_guard_allow = BSC KPI
+	/// Pillar score of the 12 months ending at the last month in context, oldest first, separated by semicolons, on the pillar's first KPI row only.
+	measure 'BSC Visual Pillar Trend' =
+			VAR __Value = ( -- measure body
+				VAR PillarName = SELECTEDVALUE ( 'BSC KPI'[Pillar] )
+				VAR KpiCode = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
+				VAR PillarKpis = CALCULATETABLE ( VALUES ( 'BSC KPI'[KPI Code] ), ALLSELECTED ( 'BSC KPI' ), 'BSC KPI'[Pillar] = PillarName )
+				VAR FirstCode = MINX ( PillarKpis, 'BSC KPI'[KPI Code] )
+				VAR EndMonth = CALCULATE ( MAX ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR Months = TOPN ( 12, FILTER ( ALL ( 'Date'[Year Month] ), 'Date'[Year Month] <= EndMonth ), 'Date'[Year Month], DESC )
+				RETURN
+					IF (
+						NOT ISBLANK ( KpiCode ) && KpiCode = FirstCode,
+						CONCATENATEX (
+							Months,
+							VAR MonthKey = 'Date'[Year Month]
+							VAR MonthValue = CALCULATE ( [BSC Pillar Score], REMOVEFILTERS ( 'BSC KPI' ), PillarKpis, REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = MonthKey )
+							RETURN IF ( ISNUMBER ( MonthValue ), FORMAT ( MonthValue, "0.########" ), "" ),
+							";",
+							'Date'[Year Month], ASC
+						)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			RETURN IF ( __Wrong = "", __Value, """BSC Visual Pillar Trend"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Balanced Scorecard\Visual
+
+		annotation hnh_guard_allow = BSC KPI
+	/// Hospitals and period of the selection: the hospital, Corporate or n hospitals, then the first and last month in context up to today.
+	measure 'BSC Selection Label' =
+			VAR Hospitals = CALCULATE ( COUNTROWS ( Branch ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+			VAR AllHospitals = CALCULATE ( COUNTROWS ( Branch ), ALL ( Branch ), Branch[Is Hospital] = "Yes" )
+			VAR HospitalText =
+				IF (
+					Hospitals = 1,
+					CALCULATE ( SELECTEDVALUE ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
+					IF ( Hospitals = AllHospitals, "Corporate", Hospitals & " hospitals" )
+				)
+			VAR PeriodStart = CALCULATE ( MIN ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR FirstText = FORMAT ( PeriodStart, "MMM yyyy", "en-US" )
+			VAR LastText = FORMAT ( PeriodEnd, "MMM yyyy", "en-US" )
+			VAR PeriodText = IF ( ISBLANK ( PeriodStart ), "", IF ( FirstText = LastText, FirstText, FirstText & " – " & LastText ) )
+			RETURN HospitalText & IF ( PeriodText = "", "", " · " & PeriodText )
+		formatString: General
+		displayFolder: Balanced Scorecard\Visual
+
+		annotation hnh_guard_allow = BSC KPI
 
 	/// Filtered tables that cannot filter Admissions, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard 17 facts #3ba24bc3' =

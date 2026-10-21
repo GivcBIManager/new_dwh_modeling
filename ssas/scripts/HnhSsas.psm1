@@ -75,6 +75,16 @@ function Test-HnhGate {
     return ($FinishedAt -gt $LastProcessedRunAt)
 }
 
+function Test-HnhSpeed {
+    # A performance entry passes when the cold run is under its cold_limit (3 s when absent) and the warm run under its warm_limit (1 s when absent).
+    param([Parameter(Mandatory = $true)][double]$Cold, [Parameter(Mandatory = $true)][double]$Warm, [Parameter(Mandatory = $true)]$Check)
+    $coldLimit = 3.0
+    $warmLimit = 1.0
+    if ($Check.PSObject.Properties['cold_limit']) { $coldLimit = [double]$Check.cold_limit }
+    if ($Check.PSObject.Properties['warm_limit']) { $warmLimit = [double]$Check.warm_limit }
+    return (($Cold -lt $coldLimit) -and ($Warm -lt $warmLimit))
+}
+
 function Format-HnhTableRef {
     param([Parameter(Mandatory = $true)][string]$Name)
     return "'" + $Name.Replace("'", "''") + "'"

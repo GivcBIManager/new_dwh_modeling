@@ -170,7 +170,7 @@ try {
                     $watch.Restart()
                     [void](Dax $check.dax $user)
                     $warm = $watch.Elapsed.TotalSeconds
-                    Report "speed $($check.name)" ($cold -lt 3 -and $warm -lt 1) ('cold {0:N2} s, warm {1:N2} s (connection included)' -f $cold, $warm)
+                    Report "speed $($check.name)" (Test-HnhSpeed -Cold $cold -Warm $warm -Check $check) ('cold {0:N2} s, warm {1:N2} s (connection included)' -f $cold, $warm)
                 } catch {
                     Report "speed $($check.name)" $false $_.Exception.Message
                 }

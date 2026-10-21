@@ -90,3 +90,18 @@ Describe 'Select-HnhTestMode (decision P38)' {
     It 'loads everything when the test database does not exist' { Select-HnhTestMode -Exists $false -ReadyPartitions 0 -Full $false | Should Be 'Full' }
     It 'loads everything when the test database was cleared' { Select-HnhTestMode -Exists $true -ReadyPartitions 0 -Full $false | Should Be 'Full' }
 }
+
+Describe 'Test-HnhSpeed' {
+    It 'uses 3 s cold and 1 s warm when the entry has no limits' {
+        $check = [pscustomobject]@{ name = 'plain' }
+        Test-HnhSpeed -Cold 2.9 -Warm 0.9 -Check $check | Should Be $true
+        Test-HnhSpeed -Cold 3.2 -Warm 0.5 -Check $check | Should Be $false
+        Test-HnhSpeed -Cold 1.0 -Warm 1.1 -Check $check | Should Be $false
+    }
+    It 'uses the limits of the entry' {
+        $check = [pscustomobject]@{ name = 'wide'; cold_limit = 10; warm_limit = 3 }
+        Test-HnhSpeed -Cold 6 -Warm 2 -Check $check | Should Be $true
+        Test-HnhSpeed -Cold 10.5 -Warm 2 -Check $check | Should Be $false
+        Test-HnhSpeed -Cold 6 -Warm 3.5 -Check $check | Should Be $false
+    }
+}
