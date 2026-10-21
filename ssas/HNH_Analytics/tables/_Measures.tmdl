@@ -3454,68 +3454,121 @@ table _Measures
 				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
 				VAR Source = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				-- every KPI measure in one row: one table for all KPI rows, not a SWITCH of measures rebuilt per row
+				VAR Measured =
+					CALCULATETABLE (
+						ROW (
+							"@FIN_NET_REVENUE", [BSC Net Revenue],
+							"@FIN_REVENUE_GROWTH", [BSC Net Revenue],
+							"@FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
+							"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
+							"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
+							"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+							"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
+							"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
+							"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
+							"@FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
+							"@FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
+							"@FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
+							"@CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
+							"@CUS_PAYER_MIX", [BSC Payer Mix],
+							"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
+							"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
+							"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+							"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
+							"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
+							"@CUS_PAYER_VOLUME", [BSC Payer Volume],
+							"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+							"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
+							"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
+							"@INT_ALOS", [BSC ALOS (days)],
+							"@INT_OP_TO_IP", [BSC OP to IP Conversion],
+							"@INT_PATIENT_VOLUME", [BSC Patient Volume],
+							"@INT_ER_GROWTH", [BSC ER Growth],
+							"@INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
+							"@INT_ACTIVATED_BEDS", [BSC Activated Beds],
+							"@INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
+							"@INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
+							"@INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
+							"@INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
+							"@INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
+							"@INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
+							"@INT_ORDER_NOT_DONE", [BSC Order Not Done],
+							"@INT_APPROVAL_TAT", [BSC Approval TAT (min)],
+							"@INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
+							"@INT_GA_RATIO", [BSC G&A Ratio],
+							"@INT_READMISSION_30D", [BSC Readmission 30d],
+							"@INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
+							"@INT_EXTERNAL_REFERRALS", [BSC External Referrals],
+							"@LRN_TURNOVER", [BSC Turnover],
+							"@LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
+							"@LRN_STAFF_TO_BED", [BSC Staff to Bed],
+							"@LRN_SAUDIZATION", [BSC Saudization],
+							"@LRN_VACANCY_RATE", [BSC Vacancy Rate],
+							"@LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
+							"@LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor]
+						),
+						Past,
+						REMOVEFILTERS ( 'BSC KPI' ),
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
 				RETURN
 					SWITCH (
 						TRUE (),
 						ISBLANK ( Code ) || KpiState = "parked", BLANK (),
 						Source = "manual", CALCULATE ( [BSC Manual Value], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
-						CALCULATE (
 						SWITCH (
 							Code,
-							"FIN_NET_REVENUE", [BSC Net Revenue],
-							"FIN_REVENUE_GROWTH", [BSC Net Revenue],
-							"FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
-							"FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
-							"FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
-							"FIN_DAYS_IN_AR", [BSC Days in AR (days)],
-							"FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
-							"FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
-							"FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
-							"FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
-							"FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
-							"FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
-							"CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
-							"CUS_PAYER_MIX", [BSC Payer Mix],
-							"CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
-							"CUS_PATIENT_RETENTION", [BSC Patient Retention],
-							"CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
-							"CUS_OP_WAIT", [BSC OP Waiting Time (min)],
-							"CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
-							"CUS_PAYER_VOLUME", [BSC Payer Volume],
-							"CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
-							"INT_BED_OCCUPANCY", [BSC Bed Occupancy],
-							"INT_OP_UTILIZATION", [BSC Clinic Utilization],
-							"INT_ALOS", [BSC ALOS (days)],
-							"INT_OP_TO_IP", [BSC OP to IP Conversion],
-							"INT_PATIENT_VOLUME", [BSC Patient Volume],
-							"INT_ER_GROWTH", [BSC ER Growth],
-							"INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
-							"INT_ACTIVATED_BEDS", [BSC Activated Beds],
-							"INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
-							"INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
-							"INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
-							"INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
-							"INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
-							"INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
-							"INT_ORDER_NOT_DONE", [BSC Order Not Done],
-							"INT_APPROVAL_TAT", [BSC Approval TAT (min)],
-							"INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
-							"INT_GA_RATIO", [BSC G&A Ratio],
-							"INT_READMISSION_30D", [BSC Readmission 30d],
-							"INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
-							"INT_EXTERNAL_REFERRALS", [BSC External Referrals],
-							"LRN_TURNOVER", [BSC Turnover],
-							"LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
-							"LRN_STAFF_TO_BED", [BSC Staff to Bed],
-							"LRN_SAUDIZATION", [BSC Saudization],
-							"LRN_VACANCY_RATE", [BSC Vacancy Rate],
-							"LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
-							"LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor],
+							"FIN_NET_REVENUE", MAXX ( Measured, [@FIN_NET_REVENUE] ),
+							"FIN_REVENUE_GROWTH", MAXX ( Measured, [@FIN_REVENUE_GROWTH] ),
+							"FIN_EBITDA_MARGIN", MAXX ( Measured, [@FIN_EBITDA_MARGIN] ),
+							"FIN_COST_TO_REVENUE", MAXX ( Measured, [@FIN_COST_TO_REVENUE] ),
+							"FIN_CONSUMABLES_RATIO", MAXX ( Measured, [@FIN_CONSUMABLES_RATIO] ),
+							"FIN_DAYS_IN_AR", MAXX ( Measured, [@FIN_DAYS_IN_AR] ),
+							"FIN_DAYS_INVENTORY", MAXX ( Measured, [@FIN_DAYS_INVENTORY] ),
+							"FIN_REVENUE_PER_BED", MAXX ( Measured, [@FIN_REVENUE_PER_BED] ),
+							"FIN_RETURN_ON_ASSETS", MAXX ( Measured, [@FIN_RETURN_ON_ASSETS] ),
+							"FIN_EBITDA_PER_BED", MAXX ( Measured, [@FIN_EBITDA_PER_BED] ),
+							"FIN_REVENUE_PER_DOCTOR", MAXX ( Measured, [@FIN_REVENUE_PER_DOCTOR] ),
+							"FIN_EBITDA_PER_DOCTOR", MAXX ( Measured, [@FIN_EBITDA_PER_DOCTOR] ),
+							"CUS_MULTI_SPECIALTY_SHARE", MAXX ( Measured, [@CUS_MULTI_SPECIALTY_SHARE] ),
+							"CUS_PAYER_MIX", MAXX ( Measured, [@CUS_PAYER_MIX] ),
+							"CUS_PATIENT_SATISFACTION", MAXX ( Measured, [@CUS_PATIENT_SATISFACTION] ),
+							"CUS_PATIENT_RETENTION", MAXX ( Measured, [@CUS_PATIENT_RETENTION] ),
+							"CUS_NEW_PATIENTS", MAXX ( Measured, [@CUS_NEW_PATIENTS] ),
+							"CUS_OP_WAIT", MAXX ( Measured, [@CUS_OP_WAIT] ),
+							"CUS_NON_MOH_SHARE", MAXX ( Measured, [@CUS_NON_MOH_SHARE] ),
+							"CUS_PAYER_VOLUME", MAXX ( Measured, [@CUS_PAYER_VOLUME] ),
+							"CUS_ACQUISITION_COST", MAXX ( Measured, [@CUS_ACQUISITION_COST] ),
+							"INT_BED_OCCUPANCY", MAXX ( Measured, [@INT_BED_OCCUPANCY] ),
+							"INT_OP_UTILIZATION", MAXX ( Measured, [@INT_OP_UTILIZATION] ),
+							"INT_ALOS", MAXX ( Measured, [@INT_ALOS] ),
+							"INT_OP_TO_IP", MAXX ( Measured, [@INT_OP_TO_IP] ),
+							"INT_PATIENT_VOLUME", MAXX ( Measured, [@INT_PATIENT_VOLUME] ),
+							"INT_ER_GROWTH", MAXX ( Measured, [@INT_ER_GROWTH] ),
+							"INT_DOCTOR_UTILIZATION", MAXX ( Measured, [@INT_DOCTOR_UTILIZATION] ),
+							"INT_ACTIVATED_BEDS", MAXX ( Measured, [@INT_ACTIVATED_BEDS] ),
+							"INT_HIGH_VALUE_REVENUE", MAXX ( Measured, [@INT_HIGH_VALUE_REVENUE] ),
+							"INT_HIGH_VALUE_CENSUS", MAXX ( Measured, [@INT_HIGH_VALUE_CENSUS] ),
+							"INT_OP_REVENUE_PER_EPISODE", MAXX ( Measured, [@INT_OP_REVENUE_PER_EPISODE] ),
+							"INT_ANCILLARY_UTILIZATION", MAXX ( Measured, [@INT_ANCILLARY_UTILIZATION] ),
+							"INT_REVENUE_LEAKAGE", MAXX ( Measured, [@INT_REVENUE_LEAKAGE] ),
+							"INT_CLAIM_INITIAL_REJECTION", MAXX ( Measured, [@INT_CLAIM_INITIAL_REJECTION] ),
+							"INT_ORDER_NOT_DONE", MAXX ( Measured, [@INT_ORDER_NOT_DONE] ),
+							"INT_APPROVAL_TAT", MAXX ( Measured, [@INT_APPROVAL_TAT] ),
+							"INT_COST_BUDGET_VARIANCE", MAXX ( Measured, [@INT_COST_BUDGET_VARIANCE] ),
+							"INT_GA_RATIO", MAXX ( Measured, [@INT_GA_RATIO] ),
+							"INT_READMISSION_30D", MAXX ( Measured, [@INT_READMISSION_30D] ),
+							"INT_READMISSION_48H_CRITICAL", MAXX ( Measured, [@INT_READMISSION_48H_CRITICAL] ),
+							"INT_EXTERNAL_REFERRALS", MAXX ( Measured, [@INT_EXTERNAL_REFERRALS] ),
+							"LRN_TURNOVER", MAXX ( Measured, [@LRN_TURNOVER] ),
+							"LRN_REVENUE_PER_FTE", MAXX ( Measured, [@LRN_REVENUE_PER_FTE] ),
+							"LRN_STAFF_TO_BED", MAXX ( Measured, [@LRN_STAFF_TO_BED] ),
+							"LRN_SAUDIZATION", MAXX ( Measured, [@LRN_SAUDIZATION] ),
+							"LRN_VACANCY_RATE", MAXX ( Measured, [@LRN_VACANCY_RATE] ),
+							"LRN_TIME_TO_FILL", MAXX ( Measured, [@LRN_TIME_TO_FILL] ),
+							"LRN_CLINICAL_TO_DOCTOR", MAXX ( Measured, [@LRN_CLINICAL_TO_DOCTOR] ),
 							BLANK ()
-						),
-							Past,
-							REMOVEFILTERS ( 'BSC KPI' ),
-							KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 						)
 					)
 			) -- end of measure body
@@ -3539,44 +3592,72 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
 				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
-				VAR Source = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR TargetSource = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR Skipped = ISBLANK ( Code ) || KpiState = "parked"
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				-- every budget target in one row: one table for all KPI rows, not a SWITCH of measures rebuilt per row
+				VAR Budgeted =
+					CALCULATETABLE (
+						ROW (
+							"@FIN_NET_REVENUE", [BSC Target Net Revenue],
+							"@FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
+							"@FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
+							"@FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
+							"@FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
+							"@FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
+							"@FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
+							"@FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
+							"@FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
+							"@CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
+							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
+							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
+							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
+							"@INT_OP_TO_IP", [BSC Target OP to IP],
+							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
+							"@INT_ER_GROWTH", [BSC Target ER Growth],
+							"@INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
+							"@INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
+							"@INT_GA_RATIO", [BSC Target G&A Ratio],
+							"@LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE]
+						),
+						Past,
+						REMOVEFILTERS ( 'BSC KPI' ),
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+				VAR FixedTarget = CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR PriorYear = CALCULATE ( [BSC Actual], SAMEPERIODLASTYEAR ( Past ) )
 				RETURN
 					SWITCH (
 						TRUE (),
-						ISBLANK ( Code ) || KpiState = "parked", BLANK (),
-						Source = "fixed", CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
-						Source = "prior_year", CALCULATE ( [BSC Actual], SAMEPERIODLASTYEAR ( Past ) ),
-						Source = "budget",
-							CALCULATE (
-						SWITCH (
-							Code,
-							"FIN_NET_REVENUE", [BSC Target Net Revenue],
-							"FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
-							"FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
-							"FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
-							"FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
-							"FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
-							"FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
-							"FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
-							"FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
-							"CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
-							"CUS_PAYER_MIX", [BSC Target Payer Mix],
-							"CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
-							"CUS_PAYER_VOLUME", [BSC Target Payer Volume],
-							"INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
-							"INT_OP_TO_IP", [BSC Target OP to IP],
-							"INT_PATIENT_VOLUME", [BSC Target Patient Volume],
-							"INT_ER_GROWTH", [BSC Target ER Growth],
-							"INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
-							"INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
-							"INT_GA_RATIO", [BSC Target G&A Ratio],
-							"LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE],
-							BLANK ()
-						),
-								Past,
-								REMOVEFILTERS ( 'BSC KPI' ),
-								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+						Skipped, BLANK (),
+						TargetSource = "fixed", FixedTarget,
+						TargetSource = "prior_year", PriorYear,
+						TargetSource = "budget",
+							SWITCH (
+								Code,
+								"FIN_NET_REVENUE", MAXX ( Budgeted, [@FIN_NET_REVENUE] ),
+								"FIN_EBITDA_MARGIN", MAXX ( Budgeted, [@FIN_EBITDA_MARGIN] ),
+								"FIN_COST_TO_REVENUE", MAXX ( Budgeted, [@FIN_COST_TO_REVENUE] ),
+								"FIN_CONSUMABLES_RATIO", MAXX ( Budgeted, [@FIN_CONSUMABLES_RATIO] ),
+								"FIN_DAYS_INVENTORY", MAXX ( Budgeted, [@FIN_DAYS_INVENTORY] ),
+								"FIN_REVENUE_PER_BED", MAXX ( Budgeted, [@FIN_REVENUE_PER_BED] ),
+								"FIN_EBITDA_PER_BED", MAXX ( Budgeted, [@FIN_EBITDA_PER_BED] ),
+								"FIN_REVENUE_PER_DOCTOR", MAXX ( Budgeted, [@FIN_REVENUE_PER_DOCTOR] ),
+								"FIN_EBITDA_PER_DOCTOR", MAXX ( Budgeted, [@FIN_EBITDA_PER_DOCTOR] ),
+								"CUS_MULTI_SPECIALTY_SHARE", MAXX ( Budgeted, [@CUS_MULTI_SPECIALTY_SHARE] ),
+								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
+								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
+								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
+								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
+								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
+								"INT_ER_GROWTH", MAXX ( Budgeted, [@INT_ER_GROWTH] ),
+								"INT_OP_REVENUE_PER_EPISODE", MAXX ( Budgeted, [@INT_OP_REVENUE_PER_EPISODE] ),
+								"INT_ANCILLARY_UTILIZATION", MAXX ( Budgeted, [@INT_ANCILLARY_UTILIZATION] ),
+								"INT_GA_RATIO", MAXX ( Budgeted, [@INT_GA_RATIO] ),
+								"LRN_REVENUE_PER_FTE", MAXX ( Budgeted, [@LRN_REVENUE_PER_FTE] ),
+								BLANK ()
 							),
 						BLANK ()
 					)
@@ -3599,16 +3680,224 @@ table _Measures
 	/// Variance of actual against target in the KPI's direction: (actual - target) / |target| when higher is better, (target - actual) / |target| when lower is better, -|actual - target| / |target| for on target.
 	measure 'BSC Variance %' =
 			VAR __Value = ( -- measure body
-				VAR A = [BSC Actual]
-				VAR T = [BSC Target]
+				-- BSC Actual and BSC Target inlined: one table of the KPI measures for every period this measure needs
+				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
+				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
+				VAR ValueSource = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
+				VAR TargetSource = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR Skipped = ISBLANK ( Code ) || KpiState = "parked"
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR PastPY = CALCULATETABLE ( VALUES ( 'Date'[Date] ), SAMEPERIODLASTYEAR ( Past ) )
+				VAR Periods = UNION ( ROW ( "@Period", 0 ), ROW ( "@Period", 1 ) )
+				VAR PeriodDates =
+					UNION (
+						SELECTCOLUMNS ( Past, "@Period", 0, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( PastPY, "@Period", 1, "@Date", 'Date'[Date] )
+					)
+				VAR Measured =
+					GENERATE (
+						Periods,
+						VAR P = [@Period]
+						RETURN
+							CALCULATETABLE (
+								ROW (
+									"@FIN_NET_REVENUE", [BSC Net Revenue],
+									"@FIN_REVENUE_GROWTH", [BSC Net Revenue],
+									"@FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
+									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
+									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
+									"@FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
+									"@CUS_PAYER_MIX", [BSC Payer Mix],
+									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
+									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
+									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
+									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
+									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
+									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
+									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
+									"@INT_ALOS", [BSC ALOS (days)],
+									"@INT_OP_TO_IP", [BSC OP to IP Conversion],
+									"@INT_PATIENT_VOLUME", [BSC Patient Volume],
+									"@INT_ER_GROWTH", [BSC ER Growth],
+									"@INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
+									"@INT_ACTIVATED_BEDS", [BSC Activated Beds],
+									"@INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
+									"@INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
+									"@INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
+									"@INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
+									"@INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
+									"@INT_ORDER_NOT_DONE", [BSC Order Not Done],
+									"@INT_APPROVAL_TAT", [BSC Approval TAT (min)],
+									"@INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
+									"@INT_GA_RATIO", [BSC G&A Ratio],
+									"@INT_READMISSION_30D", [BSC Readmission 30d],
+									"@INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
+									"@INT_EXTERNAL_REFERRALS", [BSC External Referrals],
+									"@LRN_TURNOVER", [BSC Turnover],
+									"@LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
+									"@LRN_STAFF_TO_BED", [BSC Staff to Bed],
+									"@LRN_SAUDIZATION", [BSC Saudization],
+									"@LRN_VACANCY_RATE", [BSC Vacancy Rate],
+									"@LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
+									"@LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor]
+								),
+								REMOVEFILTERS ( 'Date' ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+								REMOVEFILTERS ( 'BSC KPI' ),
+								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							)
+					)
+				VAR Actuals =
+					ADDCOLUMNS (
+						Periods,
+						"@Actual",
+							VAR P = [@Period]
+							VAR PeriodMeasures = FILTER ( Measured, [@Period] = P )
+							RETURN
+								SWITCH (
+									TRUE (),
+									Skipped, BLANK (),
+									ValueSource = "manual", CALCULATE (
+										[BSC Manual Value],
+										REMOVEFILTERS ( 'Date' ),
+										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+										KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+									),
+									SWITCH (
+										Code,
+										"FIN_NET_REVENUE", MAXX ( PeriodMeasures, [@FIN_NET_REVENUE] ),
+										"FIN_REVENUE_GROWTH", MAXX ( PeriodMeasures, [@FIN_REVENUE_GROWTH] ),
+										"FIN_EBITDA_MARGIN", MAXX ( PeriodMeasures, [@FIN_EBITDA_MARGIN] ),
+										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
+										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
+										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
+										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
+										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
+										"FIN_EBITDA_PER_BED", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_BED] ),
+										"FIN_REVENUE_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_DOCTOR] ),
+										"FIN_EBITDA_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_DOCTOR] ),
+										"CUS_MULTI_SPECIALTY_SHARE", MAXX ( PeriodMeasures, [@CUS_MULTI_SPECIALTY_SHARE] ),
+										"CUS_PAYER_MIX", MAXX ( PeriodMeasures, [@CUS_PAYER_MIX] ),
+										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
+										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
+										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
+										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
+										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
+										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
+										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
+										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
+										"INT_OP_TO_IP", MAXX ( PeriodMeasures, [@INT_OP_TO_IP] ),
+										"INT_PATIENT_VOLUME", MAXX ( PeriodMeasures, [@INT_PATIENT_VOLUME] ),
+										"INT_ER_GROWTH", MAXX ( PeriodMeasures, [@INT_ER_GROWTH] ),
+										"INT_DOCTOR_UTILIZATION", MAXX ( PeriodMeasures, [@INT_DOCTOR_UTILIZATION] ),
+										"INT_ACTIVATED_BEDS", MAXX ( PeriodMeasures, [@INT_ACTIVATED_BEDS] ),
+										"INT_HIGH_VALUE_REVENUE", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_REVENUE] ),
+										"INT_HIGH_VALUE_CENSUS", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_CENSUS] ),
+										"INT_OP_REVENUE_PER_EPISODE", MAXX ( PeriodMeasures, [@INT_OP_REVENUE_PER_EPISODE] ),
+										"INT_ANCILLARY_UTILIZATION", MAXX ( PeriodMeasures, [@INT_ANCILLARY_UTILIZATION] ),
+										"INT_REVENUE_LEAKAGE", MAXX ( PeriodMeasures, [@INT_REVENUE_LEAKAGE] ),
+										"INT_CLAIM_INITIAL_REJECTION", MAXX ( PeriodMeasures, [@INT_CLAIM_INITIAL_REJECTION] ),
+										"INT_ORDER_NOT_DONE", MAXX ( PeriodMeasures, [@INT_ORDER_NOT_DONE] ),
+										"INT_APPROVAL_TAT", MAXX ( PeriodMeasures, [@INT_APPROVAL_TAT] ),
+										"INT_COST_BUDGET_VARIANCE", MAXX ( PeriodMeasures, [@INT_COST_BUDGET_VARIANCE] ),
+										"INT_GA_RATIO", MAXX ( PeriodMeasures, [@INT_GA_RATIO] ),
+										"INT_READMISSION_30D", MAXX ( PeriodMeasures, [@INT_READMISSION_30D] ),
+										"INT_READMISSION_48H_CRITICAL", MAXX ( PeriodMeasures, [@INT_READMISSION_48H_CRITICAL] ),
+										"INT_EXTERNAL_REFERRALS", MAXX ( PeriodMeasures, [@INT_EXTERNAL_REFERRALS] ),
+										"LRN_TURNOVER", MAXX ( PeriodMeasures, [@LRN_TURNOVER] ),
+										"LRN_REVENUE_PER_FTE", MAXX ( PeriodMeasures, [@LRN_REVENUE_PER_FTE] ),
+										"LRN_STAFF_TO_BED", MAXX ( PeriodMeasures, [@LRN_STAFF_TO_BED] ),
+										"LRN_SAUDIZATION", MAXX ( PeriodMeasures, [@LRN_SAUDIZATION] ),
+										"LRN_VACANCY_RATE", MAXX ( PeriodMeasures, [@LRN_VACANCY_RATE] ),
+										"LRN_TIME_TO_FILL", MAXX ( PeriodMeasures, [@LRN_TIME_TO_FILL] ),
+										"LRN_CLINICAL_TO_DOCTOR", MAXX ( PeriodMeasures, [@LRN_CLINICAL_TO_DOCTOR] ),
+										BLANK ()
+									)
+								)
+					)
+				VAR A = MAXX ( FILTER ( Actuals, [@Period] = 0 ), [@Actual] )
+				VAR APY = MAXX ( FILTER ( Actuals, [@Period] = 1 ), [@Actual] )
+				VAR Budgeted =
+					CALCULATETABLE (
+						ROW (
+							"@FIN_NET_REVENUE", [BSC Target Net Revenue],
+							"@FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
+							"@FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
+							"@FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
+							"@FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
+							"@FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
+							"@FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
+							"@FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
+							"@FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
+							"@CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
+							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
+							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
+							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
+							"@INT_OP_TO_IP", [BSC Target OP to IP],
+							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
+							"@INT_ER_GROWTH", [BSC Target ER Growth],
+							"@INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
+							"@INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
+							"@INT_GA_RATIO", [BSC Target G&A Ratio],
+							"@LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE]
+						),
+						Past,
+						REMOVEFILTERS ( 'BSC KPI' ),
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+				VAR FixedTarget = CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR T =
+					SWITCH (
+						TRUE (),
+						Skipped, BLANK (),
+						TargetSource = "fixed", FixedTarget,
+						TargetSource = "prior_year", APY,
+						TargetSource = "budget",
+							SWITCH (
+								Code,
+								"FIN_NET_REVENUE", MAXX ( Budgeted, [@FIN_NET_REVENUE] ),
+								"FIN_EBITDA_MARGIN", MAXX ( Budgeted, [@FIN_EBITDA_MARGIN] ),
+								"FIN_COST_TO_REVENUE", MAXX ( Budgeted, [@FIN_COST_TO_REVENUE] ),
+								"FIN_CONSUMABLES_RATIO", MAXX ( Budgeted, [@FIN_CONSUMABLES_RATIO] ),
+								"FIN_DAYS_INVENTORY", MAXX ( Budgeted, [@FIN_DAYS_INVENTORY] ),
+								"FIN_REVENUE_PER_BED", MAXX ( Budgeted, [@FIN_REVENUE_PER_BED] ),
+								"FIN_EBITDA_PER_BED", MAXX ( Budgeted, [@FIN_EBITDA_PER_BED] ),
+								"FIN_REVENUE_PER_DOCTOR", MAXX ( Budgeted, [@FIN_REVENUE_PER_DOCTOR] ),
+								"FIN_EBITDA_PER_DOCTOR", MAXX ( Budgeted, [@FIN_EBITDA_PER_DOCTOR] ),
+								"CUS_MULTI_SPECIALTY_SHARE", MAXX ( Budgeted, [@CUS_MULTI_SPECIALTY_SHARE] ),
+								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
+								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
+								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
+								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
+								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
+								"INT_ER_GROWTH", MAXX ( Budgeted, [@INT_ER_GROWTH] ),
+								"INT_OP_REVENUE_PER_EPISODE", MAXX ( Budgeted, [@INT_OP_REVENUE_PER_EPISODE] ),
+								"INT_ANCILLARY_UTILIZATION", MAXX ( Budgeted, [@INT_ANCILLARY_UTILIZATION] ),
+								"INT_GA_RATIO", MAXX ( Budgeted, [@INT_GA_RATIO] ),
+								"LRN_REVENUE_PER_FTE", MAXX ( Budgeted, [@LRN_REVENUE_PER_FTE] ),
+								BLANK ()
+							),
+						BLANK ()
+					)
 				VAR Dir = SELECTEDVALUE ( 'BSC KPI'[Direction] )
 				VAR Diff = SWITCH ( Dir, "higher", A - T, "on_target", - ABS ( A - T ), T - A )
-				RETURN
-					IF (
-						ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ),
-						BLANK (),
-						IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) )
-					)
+				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
+				RETURN V
 			) -- end of measure body
 			VAR __Wrong = [_Guard 19 facts #e451b8cd]
 			RETURN IF ( __Wrong = "", __Value, """BSC Variance %"" can't be analysed by " & __Wrong )
@@ -3619,10 +3908,227 @@ table _Measures
 	/// KPI score 0-100: score base + score slope x variance in points, from the KPI's thresholds.
 	measure 'BSC Score' =
 			VAR __Value = ( -- measure body
-				VAR V = [BSC Variance %]
+				-- BSC Actual and BSC Target inlined: one table of the KPI measures for every period this measure needs
+				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
+				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
+				VAR ValueSource = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
+				VAR TargetSource = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR Skipped = ISBLANK ( Code ) || KpiState = "parked"
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR PastPY = CALCULATETABLE ( VALUES ( 'Date'[Date] ), SAMEPERIODLASTYEAR ( Past ) )
+				VAR Periods = UNION ( ROW ( "@Period", 0 ), ROW ( "@Period", 1 ) )
+				VAR PeriodDates =
+					UNION (
+						SELECTCOLUMNS ( Past, "@Period", 0, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( PastPY, "@Period", 1, "@Date", 'Date'[Date] )
+					)
+				VAR Measured =
+					GENERATE (
+						Periods,
+						VAR P = [@Period]
+						RETURN
+							CALCULATETABLE (
+								ROW (
+									"@FIN_NET_REVENUE", [BSC Net Revenue],
+									"@FIN_REVENUE_GROWTH", [BSC Net Revenue],
+									"@FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
+									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
+									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
+									"@FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
+									"@CUS_PAYER_MIX", [BSC Payer Mix],
+									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
+									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
+									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
+									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
+									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
+									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
+									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
+									"@INT_ALOS", [BSC ALOS (days)],
+									"@INT_OP_TO_IP", [BSC OP to IP Conversion],
+									"@INT_PATIENT_VOLUME", [BSC Patient Volume],
+									"@INT_ER_GROWTH", [BSC ER Growth],
+									"@INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
+									"@INT_ACTIVATED_BEDS", [BSC Activated Beds],
+									"@INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
+									"@INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
+									"@INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
+									"@INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
+									"@INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
+									"@INT_ORDER_NOT_DONE", [BSC Order Not Done],
+									"@INT_APPROVAL_TAT", [BSC Approval TAT (min)],
+									"@INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
+									"@INT_GA_RATIO", [BSC G&A Ratio],
+									"@INT_READMISSION_30D", [BSC Readmission 30d],
+									"@INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
+									"@INT_EXTERNAL_REFERRALS", [BSC External Referrals],
+									"@LRN_TURNOVER", [BSC Turnover],
+									"@LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
+									"@LRN_STAFF_TO_BED", [BSC Staff to Bed],
+									"@LRN_SAUDIZATION", [BSC Saudization],
+									"@LRN_VACANCY_RATE", [BSC Vacancy Rate],
+									"@LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
+									"@LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor]
+								),
+								REMOVEFILTERS ( 'Date' ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+								REMOVEFILTERS ( 'BSC KPI' ),
+								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							)
+					)
+				VAR Actuals =
+					ADDCOLUMNS (
+						Periods,
+						"@Actual",
+							VAR P = [@Period]
+							VAR PeriodMeasures = FILTER ( Measured, [@Period] = P )
+							RETURN
+								SWITCH (
+									TRUE (),
+									Skipped, BLANK (),
+									ValueSource = "manual", CALCULATE (
+										[BSC Manual Value],
+										REMOVEFILTERS ( 'Date' ),
+										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+										KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+									),
+									SWITCH (
+										Code,
+										"FIN_NET_REVENUE", MAXX ( PeriodMeasures, [@FIN_NET_REVENUE] ),
+										"FIN_REVENUE_GROWTH", MAXX ( PeriodMeasures, [@FIN_REVENUE_GROWTH] ),
+										"FIN_EBITDA_MARGIN", MAXX ( PeriodMeasures, [@FIN_EBITDA_MARGIN] ),
+										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
+										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
+										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
+										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
+										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
+										"FIN_EBITDA_PER_BED", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_BED] ),
+										"FIN_REVENUE_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_DOCTOR] ),
+										"FIN_EBITDA_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_DOCTOR] ),
+										"CUS_MULTI_SPECIALTY_SHARE", MAXX ( PeriodMeasures, [@CUS_MULTI_SPECIALTY_SHARE] ),
+										"CUS_PAYER_MIX", MAXX ( PeriodMeasures, [@CUS_PAYER_MIX] ),
+										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
+										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
+										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
+										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
+										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
+										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
+										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
+										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
+										"INT_OP_TO_IP", MAXX ( PeriodMeasures, [@INT_OP_TO_IP] ),
+										"INT_PATIENT_VOLUME", MAXX ( PeriodMeasures, [@INT_PATIENT_VOLUME] ),
+										"INT_ER_GROWTH", MAXX ( PeriodMeasures, [@INT_ER_GROWTH] ),
+										"INT_DOCTOR_UTILIZATION", MAXX ( PeriodMeasures, [@INT_DOCTOR_UTILIZATION] ),
+										"INT_ACTIVATED_BEDS", MAXX ( PeriodMeasures, [@INT_ACTIVATED_BEDS] ),
+										"INT_HIGH_VALUE_REVENUE", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_REVENUE] ),
+										"INT_HIGH_VALUE_CENSUS", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_CENSUS] ),
+										"INT_OP_REVENUE_PER_EPISODE", MAXX ( PeriodMeasures, [@INT_OP_REVENUE_PER_EPISODE] ),
+										"INT_ANCILLARY_UTILIZATION", MAXX ( PeriodMeasures, [@INT_ANCILLARY_UTILIZATION] ),
+										"INT_REVENUE_LEAKAGE", MAXX ( PeriodMeasures, [@INT_REVENUE_LEAKAGE] ),
+										"INT_CLAIM_INITIAL_REJECTION", MAXX ( PeriodMeasures, [@INT_CLAIM_INITIAL_REJECTION] ),
+										"INT_ORDER_NOT_DONE", MAXX ( PeriodMeasures, [@INT_ORDER_NOT_DONE] ),
+										"INT_APPROVAL_TAT", MAXX ( PeriodMeasures, [@INT_APPROVAL_TAT] ),
+										"INT_COST_BUDGET_VARIANCE", MAXX ( PeriodMeasures, [@INT_COST_BUDGET_VARIANCE] ),
+										"INT_GA_RATIO", MAXX ( PeriodMeasures, [@INT_GA_RATIO] ),
+										"INT_READMISSION_30D", MAXX ( PeriodMeasures, [@INT_READMISSION_30D] ),
+										"INT_READMISSION_48H_CRITICAL", MAXX ( PeriodMeasures, [@INT_READMISSION_48H_CRITICAL] ),
+										"INT_EXTERNAL_REFERRALS", MAXX ( PeriodMeasures, [@INT_EXTERNAL_REFERRALS] ),
+										"LRN_TURNOVER", MAXX ( PeriodMeasures, [@LRN_TURNOVER] ),
+										"LRN_REVENUE_PER_FTE", MAXX ( PeriodMeasures, [@LRN_REVENUE_PER_FTE] ),
+										"LRN_STAFF_TO_BED", MAXX ( PeriodMeasures, [@LRN_STAFF_TO_BED] ),
+										"LRN_SAUDIZATION", MAXX ( PeriodMeasures, [@LRN_SAUDIZATION] ),
+										"LRN_VACANCY_RATE", MAXX ( PeriodMeasures, [@LRN_VACANCY_RATE] ),
+										"LRN_TIME_TO_FILL", MAXX ( PeriodMeasures, [@LRN_TIME_TO_FILL] ),
+										"LRN_CLINICAL_TO_DOCTOR", MAXX ( PeriodMeasures, [@LRN_CLINICAL_TO_DOCTOR] ),
+										BLANK ()
+									)
+								)
+					)
+				VAR A = MAXX ( FILTER ( Actuals, [@Period] = 0 ), [@Actual] )
+				VAR APY = MAXX ( FILTER ( Actuals, [@Period] = 1 ), [@Actual] )
+				VAR Budgeted =
+					CALCULATETABLE (
+						ROW (
+							"@FIN_NET_REVENUE", [BSC Target Net Revenue],
+							"@FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
+							"@FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
+							"@FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
+							"@FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
+							"@FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
+							"@FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
+							"@FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
+							"@FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
+							"@CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
+							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
+							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
+							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
+							"@INT_OP_TO_IP", [BSC Target OP to IP],
+							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
+							"@INT_ER_GROWTH", [BSC Target ER Growth],
+							"@INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
+							"@INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
+							"@INT_GA_RATIO", [BSC Target G&A Ratio],
+							"@LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE]
+						),
+						Past,
+						REMOVEFILTERS ( 'BSC KPI' ),
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+				VAR FixedTarget = CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR T =
+					SWITCH (
+						TRUE (),
+						Skipped, BLANK (),
+						TargetSource = "fixed", FixedTarget,
+						TargetSource = "prior_year", APY,
+						TargetSource = "budget",
+							SWITCH (
+								Code,
+								"FIN_NET_REVENUE", MAXX ( Budgeted, [@FIN_NET_REVENUE] ),
+								"FIN_EBITDA_MARGIN", MAXX ( Budgeted, [@FIN_EBITDA_MARGIN] ),
+								"FIN_COST_TO_REVENUE", MAXX ( Budgeted, [@FIN_COST_TO_REVENUE] ),
+								"FIN_CONSUMABLES_RATIO", MAXX ( Budgeted, [@FIN_CONSUMABLES_RATIO] ),
+								"FIN_DAYS_INVENTORY", MAXX ( Budgeted, [@FIN_DAYS_INVENTORY] ),
+								"FIN_REVENUE_PER_BED", MAXX ( Budgeted, [@FIN_REVENUE_PER_BED] ),
+								"FIN_EBITDA_PER_BED", MAXX ( Budgeted, [@FIN_EBITDA_PER_BED] ),
+								"FIN_REVENUE_PER_DOCTOR", MAXX ( Budgeted, [@FIN_REVENUE_PER_DOCTOR] ),
+								"FIN_EBITDA_PER_DOCTOR", MAXX ( Budgeted, [@FIN_EBITDA_PER_DOCTOR] ),
+								"CUS_MULTI_SPECIALTY_SHARE", MAXX ( Budgeted, [@CUS_MULTI_SPECIALTY_SHARE] ),
+								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
+								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
+								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
+								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
+								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
+								"INT_ER_GROWTH", MAXX ( Budgeted, [@INT_ER_GROWTH] ),
+								"INT_OP_REVENUE_PER_EPISODE", MAXX ( Budgeted, [@INT_OP_REVENUE_PER_EPISODE] ),
+								"INT_ANCILLARY_UTILIZATION", MAXX ( Budgeted, [@INT_ANCILLARY_UTILIZATION] ),
+								"INT_GA_RATIO", MAXX ( Budgeted, [@INT_GA_RATIO] ),
+								"LRN_REVENUE_PER_FTE", MAXX ( Budgeted, [@LRN_REVENUE_PER_FTE] ),
+								BLANK ()
+							),
+						BLANK ()
+					)
+				VAR Dir = SELECTEDVALUE ( 'BSC KPI'[Direction] )
+				VAR Diff = SWITCH ( Dir, "higher", A - T, "on_target", - ABS ( A - T ), T - A )
+				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
 				VAR ScoreBase = SELECTEDVALUE ( 'BSC KPI'[Score Base] )
 				VAR ScoreSlope = SELECTEDVALUE ( 'BSC KPI'[Score Slope] )
-				RETURN IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+				VAR S = IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+				RETURN S
 			) -- end of measure body
 			VAR __Wrong = [_Guard 19 facts #e451b8cd]
 			RETURN IF ( __Wrong = "", __Value, """BSC Score"" can't be analysed by " & __Wrong )
@@ -3647,16 +4153,249 @@ table _Measures
 	/// Parked (parked KPI, or no value for any hospital in any period), No data yet (no value in this selection), No target, or the status.
 	measure 'BSC State' =
 			VAR __Value = ( -- measure body
+				-- BSC Actual and BSC Target inlined: one table of the KPI measures for every period this measure needs
+				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
 				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
-				VAR A = [BSC Actual]
+				VAR ValueSource = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
+				VAR TargetSource = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR Skipped = ISBLANK ( Code ) || KpiState = "parked"
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR PastPY = CALCULATETABLE ( VALUES ( 'Date'[Date] ), SAMEPERIODLASTYEAR ( Past ) )
+				VAR PastAll = CALCULATETABLE ( VALUES ( 'Date'[Date] ), REMOVEFILTERS ( 'Date' ), 'Date'[Date] <= TODAY () )
+				VAR Periods = UNION ( ROW ( "@Period", 0 ), ROW ( "@Period", 1 ), ROW ( "@Period", 2 ) )
+				VAR PeriodDates =
+					UNION (
+						SELECTCOLUMNS ( Past, "@Period", 0, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( PastPY, "@Period", 1, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( PastAll, "@Period", 2, "@Date", 'Date'[Date] )
+					)
+				VAR PeriodBranches =
+					UNION (
+						CROSSJOIN ( FILTER ( Periods, [@Period] <> 2 ), SELECTCOLUMNS ( VALUES ( Branch[Branch Key] ), "@Branch", Branch[Branch Key] ) ),
+						CROSSJOIN ( ROW ( "@Period", 2 ), SELECTCOLUMNS ( ALL ( Branch[Branch Key] ), "@Branch", Branch[Branch Key] ) )
+					)
+				VAR Measured =
+					GENERATE (
+						Periods,
+						VAR P = [@Period]
+						RETURN
+							CALCULATETABLE (
+								ROW (
+									"@FIN_NET_REVENUE", [BSC Net Revenue],
+									"@FIN_REVENUE_GROWTH", [BSC Net Revenue],
+									"@FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
+									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
+									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
+									"@FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
+									"@CUS_PAYER_MIX", [BSC Payer Mix],
+									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
+									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
+									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
+									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
+									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
+									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
+									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
+									"@INT_ALOS", [BSC ALOS (days)],
+									"@INT_OP_TO_IP", [BSC OP to IP Conversion],
+									"@INT_PATIENT_VOLUME", [BSC Patient Volume],
+									"@INT_ER_GROWTH", [BSC ER Growth],
+									"@INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
+									"@INT_ACTIVATED_BEDS", [BSC Activated Beds],
+									"@INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
+									"@INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
+									"@INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
+									"@INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
+									"@INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
+									"@INT_ORDER_NOT_DONE", [BSC Order Not Done],
+									"@INT_APPROVAL_TAT", [BSC Approval TAT (min)],
+									"@INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
+									"@INT_GA_RATIO", [BSC G&A Ratio],
+									"@INT_READMISSION_30D", [BSC Readmission 30d],
+									"@INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
+									"@INT_EXTERNAL_REFERRALS", [BSC External Referrals],
+									"@LRN_TURNOVER", [BSC Turnover],
+									"@LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
+									"@LRN_STAFF_TO_BED", [BSC Staff to Bed],
+									"@LRN_SAUDIZATION", [BSC Saudization],
+									"@LRN_VACANCY_RATE", [BSC Vacancy Rate],
+									"@LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
+									"@LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor]
+								),
+								REMOVEFILTERS ( 'Date' ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+								REMOVEFILTERS ( Branch ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodBranches, [@Period] = P ), "@Branch", [@Branch] ), Branch[Branch Key] ),
+								REMOVEFILTERS ( 'BSC KPI' ),
+								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							)
+					)
+				VAR Actuals =
+					ADDCOLUMNS (
+						Periods,
+						"@Actual",
+							VAR P = [@Period]
+							VAR PeriodMeasures = FILTER ( Measured, [@Period] = P )
+							RETURN
+								SWITCH (
+									TRUE (),
+									Skipped, BLANK (),
+									ValueSource = "manual", CALCULATE (
+										[BSC Manual Value],
+										REMOVEFILTERS ( 'Date' ),
+										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+										REMOVEFILTERS ( Branch ),
+										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodBranches, [@Period] = P ), "@Branch", [@Branch] ), Branch[Branch Key] ),
+										KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+									),
+									SWITCH (
+										Code,
+										"FIN_NET_REVENUE", MAXX ( PeriodMeasures, [@FIN_NET_REVENUE] ),
+										"FIN_REVENUE_GROWTH", MAXX ( PeriodMeasures, [@FIN_REVENUE_GROWTH] ),
+										"FIN_EBITDA_MARGIN", MAXX ( PeriodMeasures, [@FIN_EBITDA_MARGIN] ),
+										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
+										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
+										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
+										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
+										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
+										"FIN_EBITDA_PER_BED", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_BED] ),
+										"FIN_REVENUE_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_DOCTOR] ),
+										"FIN_EBITDA_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_DOCTOR] ),
+										"CUS_MULTI_SPECIALTY_SHARE", MAXX ( PeriodMeasures, [@CUS_MULTI_SPECIALTY_SHARE] ),
+										"CUS_PAYER_MIX", MAXX ( PeriodMeasures, [@CUS_PAYER_MIX] ),
+										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
+										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
+										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
+										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
+										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
+										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
+										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
+										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
+										"INT_OP_TO_IP", MAXX ( PeriodMeasures, [@INT_OP_TO_IP] ),
+										"INT_PATIENT_VOLUME", MAXX ( PeriodMeasures, [@INT_PATIENT_VOLUME] ),
+										"INT_ER_GROWTH", MAXX ( PeriodMeasures, [@INT_ER_GROWTH] ),
+										"INT_DOCTOR_UTILIZATION", MAXX ( PeriodMeasures, [@INT_DOCTOR_UTILIZATION] ),
+										"INT_ACTIVATED_BEDS", MAXX ( PeriodMeasures, [@INT_ACTIVATED_BEDS] ),
+										"INT_HIGH_VALUE_REVENUE", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_REVENUE] ),
+										"INT_HIGH_VALUE_CENSUS", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_CENSUS] ),
+										"INT_OP_REVENUE_PER_EPISODE", MAXX ( PeriodMeasures, [@INT_OP_REVENUE_PER_EPISODE] ),
+										"INT_ANCILLARY_UTILIZATION", MAXX ( PeriodMeasures, [@INT_ANCILLARY_UTILIZATION] ),
+										"INT_REVENUE_LEAKAGE", MAXX ( PeriodMeasures, [@INT_REVENUE_LEAKAGE] ),
+										"INT_CLAIM_INITIAL_REJECTION", MAXX ( PeriodMeasures, [@INT_CLAIM_INITIAL_REJECTION] ),
+										"INT_ORDER_NOT_DONE", MAXX ( PeriodMeasures, [@INT_ORDER_NOT_DONE] ),
+										"INT_APPROVAL_TAT", MAXX ( PeriodMeasures, [@INT_APPROVAL_TAT] ),
+										"INT_COST_BUDGET_VARIANCE", MAXX ( PeriodMeasures, [@INT_COST_BUDGET_VARIANCE] ),
+										"INT_GA_RATIO", MAXX ( PeriodMeasures, [@INT_GA_RATIO] ),
+										"INT_READMISSION_30D", MAXX ( PeriodMeasures, [@INT_READMISSION_30D] ),
+										"INT_READMISSION_48H_CRITICAL", MAXX ( PeriodMeasures, [@INT_READMISSION_48H_CRITICAL] ),
+										"INT_EXTERNAL_REFERRALS", MAXX ( PeriodMeasures, [@INT_EXTERNAL_REFERRALS] ),
+										"LRN_TURNOVER", MAXX ( PeriodMeasures, [@LRN_TURNOVER] ),
+										"LRN_REVENUE_PER_FTE", MAXX ( PeriodMeasures, [@LRN_REVENUE_PER_FTE] ),
+										"LRN_STAFF_TO_BED", MAXX ( PeriodMeasures, [@LRN_STAFF_TO_BED] ),
+										"LRN_SAUDIZATION", MAXX ( PeriodMeasures, [@LRN_SAUDIZATION] ),
+										"LRN_VACANCY_RATE", MAXX ( PeriodMeasures, [@LRN_VACANCY_RATE] ),
+										"LRN_TIME_TO_FILL", MAXX ( PeriodMeasures, [@LRN_TIME_TO_FILL] ),
+										"LRN_CLINICAL_TO_DOCTOR", MAXX ( PeriodMeasures, [@LRN_CLINICAL_TO_DOCTOR] ),
+										BLANK ()
+									)
+								)
+					)
+				VAR A = MAXX ( FILTER ( Actuals, [@Period] = 0 ), [@Actual] )
+				VAR APY = MAXX ( FILTER ( Actuals, [@Period] = 1 ), [@Actual] )
+				VAR AllTime = MAXX ( FILTER ( Actuals, [@Period] = 2 ), [@Actual] )
+				VAR Budgeted =
+					CALCULATETABLE (
+						ROW (
+							"@FIN_NET_REVENUE", [BSC Target Net Revenue],
+							"@FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
+							"@FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
+							"@FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
+							"@FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
+							"@FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
+							"@FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
+							"@FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
+							"@FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
+							"@CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
+							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
+							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
+							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
+							"@INT_OP_TO_IP", [BSC Target OP to IP],
+							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
+							"@INT_ER_GROWTH", [BSC Target ER Growth],
+							"@INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
+							"@INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
+							"@INT_GA_RATIO", [BSC Target G&A Ratio],
+							"@LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE]
+						),
+						Past,
+						REMOVEFILTERS ( 'BSC KPI' ),
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+				VAR FixedTarget = CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR T =
+					SWITCH (
+						TRUE (),
+						Skipped, BLANK (),
+						TargetSource = "fixed", FixedTarget,
+						TargetSource = "prior_year", APY,
+						TargetSource = "budget",
+							SWITCH (
+								Code,
+								"FIN_NET_REVENUE", MAXX ( Budgeted, [@FIN_NET_REVENUE] ),
+								"FIN_EBITDA_MARGIN", MAXX ( Budgeted, [@FIN_EBITDA_MARGIN] ),
+								"FIN_COST_TO_REVENUE", MAXX ( Budgeted, [@FIN_COST_TO_REVENUE] ),
+								"FIN_CONSUMABLES_RATIO", MAXX ( Budgeted, [@FIN_CONSUMABLES_RATIO] ),
+								"FIN_DAYS_INVENTORY", MAXX ( Budgeted, [@FIN_DAYS_INVENTORY] ),
+								"FIN_REVENUE_PER_BED", MAXX ( Budgeted, [@FIN_REVENUE_PER_BED] ),
+								"FIN_EBITDA_PER_BED", MAXX ( Budgeted, [@FIN_EBITDA_PER_BED] ),
+								"FIN_REVENUE_PER_DOCTOR", MAXX ( Budgeted, [@FIN_REVENUE_PER_DOCTOR] ),
+								"FIN_EBITDA_PER_DOCTOR", MAXX ( Budgeted, [@FIN_EBITDA_PER_DOCTOR] ),
+								"CUS_MULTI_SPECIALTY_SHARE", MAXX ( Budgeted, [@CUS_MULTI_SPECIALTY_SHARE] ),
+								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
+								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
+								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
+								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
+								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
+								"INT_ER_GROWTH", MAXX ( Budgeted, [@INT_ER_GROWTH] ),
+								"INT_OP_REVENUE_PER_EPISODE", MAXX ( Budgeted, [@INT_OP_REVENUE_PER_EPISODE] ),
+								"INT_ANCILLARY_UTILIZATION", MAXX ( Budgeted, [@INT_ANCILLARY_UTILIZATION] ),
+								"INT_GA_RATIO", MAXX ( Budgeted, [@INT_GA_RATIO] ),
+								"LRN_REVENUE_PER_FTE", MAXX ( Budgeted, [@LRN_REVENUE_PER_FTE] ),
+								BLANK ()
+							),
+						BLANK ()
+					)
+				VAR Dir = SELECTEDVALUE ( 'BSC KPI'[Direction] )
+				VAR Diff = SWITCH ( Dir, "higher", A - T, "on_target", - ABS ( A - T ), T - A )
+				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
+				VAR ScoreBase = SELECTEDVALUE ( 'BSC KPI'[Score Base] )
+				VAR ScoreSlope = SELECTEDVALUE ( 'BSC KPI'[Score Slope] )
+				VAR S = IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+				VAR GoodFrom = SELECTEDVALUE ( 'BSC KPI'[Good From] )
+				VAR WatchFrom = SELECTEDVALUE ( 'BSC KPI'[Watch From] )
+				VAR Rating = IF ( NOT ISBLANK ( S ), IF ( S >= GoodFrom, "On track", IF ( S >= WatchFrom, "Watch", "At risk" ) ) )
 				RETURN
 					SWITCH (
 						TRUE (),
 						KpiState = "parked", "Parked",
-						ISBLANK ( A ) && ISBLANK ( CALCULATE ( [BSC Actual], REMOVEFILTERS ( 'Date' ), REMOVEFILTERS ( Branch ) ) ), "Parked",
+						ISBLANK ( A ) && ISBLANK ( AllTime ), "Parked",
 						ISBLANK ( A ), "No data yet",
-						ISBLANK ( [BSC Status] ), "No target",
-						[BSC Status]
+						ISBLANK ( Rating ), "No target",
+						Rating
 					)
 			) -- end of measure body
 			VAR __Wrong = [_Guard 19 facts #e451b8cd]
@@ -3723,78 +4462,314 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
-	/// The KPI target of the 12 months ending at the last month in context, oldest first, separated by semicolons (target line of the sparkline).
-	measure 'BSC Target Trend' =
+	/// Everything the scorecard visual shows for the KPI in context, from one evaluation: actual | target | variance | score | state | KPI weight | actual trend | target trend | score trend. Numbers in en-US without grouping, blank as an empty field; each trend is the 12 months ending at the last month in context, oldest first, separated by semicolons. Same values as BSC Actual, BSC Target, BSC Variance %, BSC Score, BSC State, BSC KPI Weight and BSC Trend; the guard text when a guard trips.
+	measure 'BSC Visual Payload' =
 			VAR __Value = ( -- measure body
+				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
+				VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )
+				VAR ValueSource = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
+				VAR TargetSource = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR Skipped = ISBLANK ( Code ) || KpiState = "parked"
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR Dir = SELECTEDVALUE ( 'BSC KPI'[Direction] )
+				VAR ScoreBase = SELECTEDVALUE ( 'BSC KPI'[Score Base] )
+				VAR ScoreSlope = SELECTEDVALUE ( 'BSC KPI'[Score Slope] )
+				VAR GoodFrom = SELECTEDVALUE ( 'BSC KPI'[Good From] )
+				VAR WatchFrom = SELECTEDVALUE ( 'BSC KPI'[Watch From] )
+				VAR PastPY = CALCULATETABLE ( VALUES ( 'Date'[Date] ), SAMEPERIODLASTYEAR ( Past ) )
+				VAR PastAll = CALCULATETABLE ( VALUES ( 'Date'[Date] ), REMOVEFILTERS ( 'Date' ), 'Date'[Date] <= TODAY () )
 				VAR EndMonth = CALCULATE ( MAX ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				VAR Months = TOPN ( 12, FILTER ( ALL ( 'Date'[Year Month] ), 'Date'[Year Month] <= EndMonth ), 'Date'[Year Month], DESC )
-				RETURN
-					CONCATENATEX (
-						Months,
-						VAR MonthKey = 'Date'[Year Month]
-						VAR MonthValue = CALCULATE ( [BSC Target], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = MonthKey )
-						RETURN IF ( ISNUMBER ( MonthValue ), FORMAT ( MonthValue, "0.########" ), "" ),
-						";",
-						'Date'[Year Month], ASC
+				-- periods: 0 the selection, 1 its prior year, 2 all time and all hospitals, a Year Month key that month, the key - 100 its prior year
+				VAR Periods =
+					UNION (
+						ROW ( "@Period", 0 ),
+						ROW ( "@Period", 1 ),
+						ROW ( "@Period", 2 ),
+						SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] ),
+						SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] - 100 )
 					)
-			) -- end of measure body
-			VAR __Wrong = [_Guard 19 facts #e451b8cd]
-			RETURN IF ( __Wrong = "", __Value, """BSC Target Trend"" can't be analysed by " & __Wrong )
-		formatString: General
-		displayFolder: Balanced Scorecard\Scoring
-
-		annotation hnh_guard_allow = BSC KPI
-	/// Pillar score of the KPI row's pillar over all KPIs the visual shows, on the pillar's first KPI row only (blank on the others).
-	measure 'BSC Visual Pillar Score' =
-			VAR __Value = ( -- measure body
-				VAR PillarName = SELECTEDVALUE ( 'BSC KPI'[Pillar] )
-				VAR KpiCode = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
-				VAR FirstCode = CALCULATE ( MIN ( 'BSC KPI'[KPI Code] ), ALLSELECTED ( 'BSC KPI' ), 'BSC KPI'[Pillar] = PillarName )
-				RETURN IF ( NOT ISBLANK ( KpiCode ) && KpiCode = FirstCode, CALCULATE ( [BSC Pillar Score], ALLSELECTED ( 'BSC KPI' ), 'BSC KPI'[Pillar] = PillarName ) )
-			) -- end of measure body
-			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
-			RETURN IF ( __Wrong = "", __Value, """BSC Visual Pillar Score"" can't be analysed by " & __Wrong )
-		formatString: #,0.0
-		displayFolder: Balanced Scorecard\Visual
-
-		annotation hnh_guard_allow = BSC KPI
-	/// Overall score over all KPIs the visual shows, on the first KPI row only (blank on the others).
-	measure 'BSC Visual Overall Score' =
-			VAR __Value = ( -- measure body
-				VAR KpiCode = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
-				VAR FirstCode = CALCULATE ( MIN ( 'BSC KPI'[KPI Code] ), ALLSELECTED ( 'BSC KPI' ) )
-				RETURN IF ( NOT ISBLANK ( KpiCode ) && KpiCode = FirstCode, CALCULATE ( [BSC Overall Score], ALLSELECTED ( 'BSC KPI' ) ) )
-			) -- end of measure body
-			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
-			RETURN IF ( __Wrong = "", __Value, """BSC Visual Overall Score"" can't be analysed by " & __Wrong )
-		formatString: #,0.0
-		displayFolder: Balanced Scorecard\Visual
-
-		annotation hnh_guard_allow = BSC KPI
-	/// Pillar score of the 12 months ending at the last month in context, oldest first, separated by semicolons, on the pillar's first KPI row only.
-	measure 'BSC Visual Pillar Trend' =
-			VAR __Value = ( -- measure body
-				VAR PillarName = SELECTEDVALUE ( 'BSC KPI'[Pillar] )
-				VAR KpiCode = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
-				VAR PillarKpis = CALCULATETABLE ( VALUES ( 'BSC KPI'[KPI Code] ), ALLSELECTED ( 'BSC KPI' ), 'BSC KPI'[Pillar] = PillarName )
-				VAR FirstCode = MINX ( PillarKpis, 'BSC KPI'[KPI Code] )
-				VAR EndMonth = CALCULATE ( MAX ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-				VAR Months = TOPN ( 12, FILTER ( ALL ( 'Date'[Year Month] ), 'Date'[Year Month] <= EndMonth ), 'Date'[Year Month], DESC )
-				RETURN
-					IF (
-						NOT ISBLANK ( KpiCode ) && KpiCode = FirstCode,
-						CONCATENATEX (
-							Months,
-							VAR MonthKey = 'Date'[Year Month]
-							VAR MonthValue = CALCULATE ( [BSC Pillar Score], REMOVEFILTERS ( 'BSC KPI' ), PillarKpis, REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = MonthKey )
-							RETURN IF ( ISNUMBER ( MonthValue ), FORMAT ( MonthValue, "0.########" ), "" ),
-							";",
-							'Date'[Year Month], ASC
-						)
+				VAR MonthDates =
+					GENERATE (
+						SELECTCOLUMNS ( Months, "@Month", 'Date'[Year Month] ),
+						VAR M = [@Month]
+						VAR MonthPast = CALCULATETABLE ( VALUES ( 'Date'[Date] ), REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = M, 'Date'[Date] <= TODAY () )
+						RETURN
+							UNION (
+								SELECTCOLUMNS ( MonthPast, "@Period", M, "@Date", 'Date'[Date] ),
+								SELECTCOLUMNS ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), SAMEPERIODLASTYEAR ( MonthPast ) ), "@Period", M - 100, "@Date", 'Date'[Date] )
+							)
 					)
+				VAR PeriodDates =
+					UNION (
+						SELECTCOLUMNS ( Past, "@Period", 0, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( PastPY, "@Period", 1, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( PastAll, "@Period", 2, "@Date", 'Date'[Date] ),
+						SELECTCOLUMNS ( MonthDates, "@Period", [@Period], "@Date", [@Date] )
+					)
+				VAR PeriodBranches =
+					UNION (
+						CROSSJOIN ( FILTER ( Periods, [@Period] <> 2 ), SELECTCOLUMNS ( VALUES ( Branch[Branch Key] ), "@Branch", Branch[Branch Key] ) ),
+						CROSSJOIN ( ROW ( "@Period", 2 ), SELECTCOLUMNS ( ALL ( Branch[Branch Key] ), "@Branch", Branch[Branch Key] ) )
+					)
+				VAR Measured =
+					GENERATE (
+						Periods,
+						VAR P = [@Period]
+						RETURN
+							CALCULATETABLE (
+								ROW (
+									"@FIN_NET_REVENUE", [BSC Net Revenue],
+									"@FIN_REVENUE_GROWTH", [BSC Net Revenue],
+									"@FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
+									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
+									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
+									"@FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
+									"@CUS_PAYER_MIX", [BSC Payer Mix],
+									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
+									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
+									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
+									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
+									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
+									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
+									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
+									"@INT_ALOS", [BSC ALOS (days)],
+									"@INT_OP_TO_IP", [BSC OP to IP Conversion],
+									"@INT_PATIENT_VOLUME", [BSC Patient Volume],
+									"@INT_ER_GROWTH", [BSC ER Growth],
+									"@INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
+									"@INT_ACTIVATED_BEDS", [BSC Activated Beds],
+									"@INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
+									"@INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
+									"@INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
+									"@INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
+									"@INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
+									"@INT_ORDER_NOT_DONE", [BSC Order Not Done],
+									"@INT_APPROVAL_TAT", [BSC Approval TAT (min)],
+									"@INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
+									"@INT_GA_RATIO", [BSC G&A Ratio],
+									"@INT_READMISSION_30D", [BSC Readmission 30d],
+									"@INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
+									"@INT_EXTERNAL_REFERRALS", [BSC External Referrals],
+									"@LRN_TURNOVER", [BSC Turnover],
+									"@LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
+									"@LRN_STAFF_TO_BED", [BSC Staff to Bed],
+									"@LRN_SAUDIZATION", [BSC Saudization],
+									"@LRN_VACANCY_RATE", [BSC Vacancy Rate],
+									"@LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
+									"@LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor]
+								),
+								REMOVEFILTERS ( 'Date' ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+								REMOVEFILTERS ( Branch ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodBranches, [@Period] = P ), "@Branch", [@Branch] ), Branch[Branch Key] ),
+								REMOVEFILTERS ( 'BSC KPI' ),
+								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							)
+					)
+				VAR Actuals =
+					ADDCOLUMNS (
+						Periods,
+						"@Actual",
+							VAR P = [@Period]
+							VAR PeriodMeasures = FILTER ( Measured, [@Period] = P )
+							RETURN
+								SWITCH (
+									TRUE (),
+									Skipped, BLANK (),
+									ValueSource = "manual", CALCULATE (
+										[BSC Manual Value],
+										REMOVEFILTERS ( 'Date' ),
+										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+										REMOVEFILTERS ( Branch ),
+										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodBranches, [@Period] = P ), "@Branch", [@Branch] ), Branch[Branch Key] ),
+										KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+									),
+									SWITCH (
+										Code,
+										"FIN_NET_REVENUE", MAXX ( PeriodMeasures, [@FIN_NET_REVENUE] ),
+										"FIN_REVENUE_GROWTH", MAXX ( PeriodMeasures, [@FIN_REVENUE_GROWTH] ),
+										"FIN_EBITDA_MARGIN", MAXX ( PeriodMeasures, [@FIN_EBITDA_MARGIN] ),
+										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
+										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
+										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
+										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
+										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
+										"FIN_EBITDA_PER_BED", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_BED] ),
+										"FIN_REVENUE_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_DOCTOR] ),
+										"FIN_EBITDA_PER_DOCTOR", MAXX ( PeriodMeasures, [@FIN_EBITDA_PER_DOCTOR] ),
+										"CUS_MULTI_SPECIALTY_SHARE", MAXX ( PeriodMeasures, [@CUS_MULTI_SPECIALTY_SHARE] ),
+										"CUS_PAYER_MIX", MAXX ( PeriodMeasures, [@CUS_PAYER_MIX] ),
+										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
+										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
+										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
+										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
+										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
+										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
+										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
+										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
+										"INT_OP_TO_IP", MAXX ( PeriodMeasures, [@INT_OP_TO_IP] ),
+										"INT_PATIENT_VOLUME", MAXX ( PeriodMeasures, [@INT_PATIENT_VOLUME] ),
+										"INT_ER_GROWTH", MAXX ( PeriodMeasures, [@INT_ER_GROWTH] ),
+										"INT_DOCTOR_UTILIZATION", MAXX ( PeriodMeasures, [@INT_DOCTOR_UTILIZATION] ),
+										"INT_ACTIVATED_BEDS", MAXX ( PeriodMeasures, [@INT_ACTIVATED_BEDS] ),
+										"INT_HIGH_VALUE_REVENUE", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_REVENUE] ),
+										"INT_HIGH_VALUE_CENSUS", MAXX ( PeriodMeasures, [@INT_HIGH_VALUE_CENSUS] ),
+										"INT_OP_REVENUE_PER_EPISODE", MAXX ( PeriodMeasures, [@INT_OP_REVENUE_PER_EPISODE] ),
+										"INT_ANCILLARY_UTILIZATION", MAXX ( PeriodMeasures, [@INT_ANCILLARY_UTILIZATION] ),
+										"INT_REVENUE_LEAKAGE", MAXX ( PeriodMeasures, [@INT_REVENUE_LEAKAGE] ),
+										"INT_CLAIM_INITIAL_REJECTION", MAXX ( PeriodMeasures, [@INT_CLAIM_INITIAL_REJECTION] ),
+										"INT_ORDER_NOT_DONE", MAXX ( PeriodMeasures, [@INT_ORDER_NOT_DONE] ),
+										"INT_APPROVAL_TAT", MAXX ( PeriodMeasures, [@INT_APPROVAL_TAT] ),
+										"INT_COST_BUDGET_VARIANCE", MAXX ( PeriodMeasures, [@INT_COST_BUDGET_VARIANCE] ),
+										"INT_GA_RATIO", MAXX ( PeriodMeasures, [@INT_GA_RATIO] ),
+										"INT_READMISSION_30D", MAXX ( PeriodMeasures, [@INT_READMISSION_30D] ),
+										"INT_READMISSION_48H_CRITICAL", MAXX ( PeriodMeasures, [@INT_READMISSION_48H_CRITICAL] ),
+										"INT_EXTERNAL_REFERRALS", MAXX ( PeriodMeasures, [@INT_EXTERNAL_REFERRALS] ),
+										"LRN_TURNOVER", MAXX ( PeriodMeasures, [@LRN_TURNOVER] ),
+										"LRN_REVENUE_PER_FTE", MAXX ( PeriodMeasures, [@LRN_REVENUE_PER_FTE] ),
+										"LRN_STAFF_TO_BED", MAXX ( PeriodMeasures, [@LRN_STAFF_TO_BED] ),
+										"LRN_SAUDIZATION", MAXX ( PeriodMeasures, [@LRN_SAUDIZATION] ),
+										"LRN_VACANCY_RATE", MAXX ( PeriodMeasures, [@LRN_VACANCY_RATE] ),
+										"LRN_TIME_TO_FILL", MAXX ( PeriodMeasures, [@LRN_TIME_TO_FILL] ),
+										"LRN_CLINICAL_TO_DOCTOR", MAXX ( PeriodMeasures, [@LRN_CLINICAL_TO_DOCTOR] ),
+										BLANK ()
+									)
+								)
+					)
+				VAR TargetPeriods = UNION ( ROW ( "@Period", 0 ), SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] ) )
+				VAR Budgeted =
+					GENERATE (
+						TargetPeriods,
+						VAR P = [@Period]
+						RETURN
+							CALCULATETABLE (
+								ROW (
+									"@FIN_NET_REVENUE", [BSC Target Net Revenue],
+									"@FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
+									"@FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
+									"@FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
+									"@CUS_PAYER_MIX", [BSC Target Payer Mix],
+									"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
+									"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+									"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
+									"@INT_OP_TO_IP", [BSC Target OP to IP],
+									"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
+									"@INT_ER_GROWTH", [BSC Target ER Growth],
+									"@INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
+									"@INT_GA_RATIO", [BSC Target G&A Ratio],
+									"@LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE]
+								),
+								REMOVEFILTERS ( 'Date' ),
+								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
+								REMOVEFILTERS ( 'BSC KPI' ),
+								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							)
+					)
+				VAR Targets =
+					ADDCOLUMNS (
+						TargetPeriods,
+						"@Target",
+							VAR P = [@Period]
+							VAR PeriodBudgets = FILTER ( Budgeted, [@Period] = P )
+							RETURN
+								SWITCH (
+									TRUE (),
+									Skipped, BLANK (),
+									TargetSource = "fixed", CALCULATE ( [BSC Fixed Target], REMOVEFILTERS ( 'Date' ), TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
+									TargetSource = "prior_year", MAXX ( FILTER ( Actuals, [@Period] = IF ( P = 0, 1, P - 100 ) ), [@Actual] ),
+									TargetSource = "budget",
+										SWITCH (
+											Code,
+											"FIN_NET_REVENUE", MAXX ( PeriodBudgets, [@FIN_NET_REVENUE] ),
+											"FIN_EBITDA_MARGIN", MAXX ( PeriodBudgets, [@FIN_EBITDA_MARGIN] ),
+											"FIN_COST_TO_REVENUE", MAXX ( PeriodBudgets, [@FIN_COST_TO_REVENUE] ),
+											"FIN_CONSUMABLES_RATIO", MAXX ( PeriodBudgets, [@FIN_CONSUMABLES_RATIO] ),
+											"FIN_DAYS_INVENTORY", MAXX ( PeriodBudgets, [@FIN_DAYS_INVENTORY] ),
+											"FIN_REVENUE_PER_BED", MAXX ( PeriodBudgets, [@FIN_REVENUE_PER_BED] ),
+											"FIN_EBITDA_PER_BED", MAXX ( PeriodBudgets, [@FIN_EBITDA_PER_BED] ),
+											"FIN_REVENUE_PER_DOCTOR", MAXX ( PeriodBudgets, [@FIN_REVENUE_PER_DOCTOR] ),
+											"FIN_EBITDA_PER_DOCTOR", MAXX ( PeriodBudgets, [@FIN_EBITDA_PER_DOCTOR] ),
+											"CUS_MULTI_SPECIALTY_SHARE", MAXX ( PeriodBudgets, [@CUS_MULTI_SPECIALTY_SHARE] ),
+											"CUS_PAYER_MIX", MAXX ( PeriodBudgets, [@CUS_PAYER_MIX] ),
+											"CUS_NON_MOH_SHARE", MAXX ( PeriodBudgets, [@CUS_NON_MOH_SHARE] ),
+											"CUS_PAYER_VOLUME", MAXX ( PeriodBudgets, [@CUS_PAYER_VOLUME] ),
+											"INT_OP_UTILIZATION", MAXX ( PeriodBudgets, [@INT_OP_UTILIZATION] ),
+											"INT_OP_TO_IP", MAXX ( PeriodBudgets, [@INT_OP_TO_IP] ),
+											"INT_PATIENT_VOLUME", MAXX ( PeriodBudgets, [@INT_PATIENT_VOLUME] ),
+											"INT_ER_GROWTH", MAXX ( PeriodBudgets, [@INT_ER_GROWTH] ),
+											"INT_OP_REVENUE_PER_EPISODE", MAXX ( PeriodBudgets, [@INT_OP_REVENUE_PER_EPISODE] ),
+											"INT_ANCILLARY_UTILIZATION", MAXX ( PeriodBudgets, [@INT_ANCILLARY_UTILIZATION] ),
+											"INT_GA_RATIO", MAXX ( PeriodBudgets, [@INT_GA_RATIO] ),
+											"LRN_REVENUE_PER_FTE", MAXX ( PeriodBudgets, [@LRN_REVENUE_PER_FTE] ),
+											BLANK ()
+										),
+									BLANK ()
+								)
+					)
+				VAR Scored =
+					ADDCOLUMNS (
+						ADDCOLUMNS (
+							Targets,
+							"@Actual", VAR P = [@Period] RETURN MAXX ( FILTER ( Actuals, [@Period] = P ), [@Actual] )
+						),
+						"@Variance",
+							VAR A = [@Actual]
+							VAR T = [@Target]
+							VAR Diff = SWITCH ( Dir, "higher", A - T, "on_target", - ABS ( A - T ), T - A )
+							RETURN IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
+					)
+				VAR Scores =
+					ADDCOLUMNS (
+						Scored,
+						"@Score", VAR V = [@Variance] RETURN IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+					)
+				VAR A = MAXX ( FILTER ( Scores, [@Period] = 0 ), [@Actual] )
+				VAR T = MAXX ( FILTER ( Scores, [@Period] = 0 ), [@Target] )
+				VAR V = MAXX ( FILTER ( Scores, [@Period] = 0 ), [@Variance] )
+				VAR S = MAXX ( FILTER ( Scores, [@Period] = 0 ), [@Score] )
+				VAR AllTime = MAXX ( FILTER ( Actuals, [@Period] = 2 ), [@Actual] )
+				VAR Rating = IF ( NOT ISBLANK ( S ), IF ( S >= GoodFrom, "On track", IF ( S >= WatchFrom, "Watch", "At risk" ) ) )
+				VAR StateWord =
+					SWITCH (
+						TRUE (),
+						KpiState = "parked", "Parked",
+						ISBLANK ( A ) && ISBLANK ( AllTime ), "Parked",
+						ISBLANK ( A ), "No data yet",
+						ISBLANK ( Rating ), "No target",
+						Rating
+					)
+				VAR WeightValue = [BSC KPI Weight]
+				VAR MonthScores = FILTER ( Scores, [@Period] <> 0 )
+				RETURN
+					IF ( ISNUMBER ( A ), FORMAT ( A, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( T ), FORMAT ( T, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( V ), FORMAT ( V, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( S ), FORMAT ( S, "0.############", "en-US" ) )
+						& "|" & StateWord & "|" & IF ( ISNUMBER ( WeightValue ), FORMAT ( WeightValue, "0.############", "en-US" ) )
+						& "|" & CONCATENATEX ( MonthScores, IF ( ISNUMBER ( [@Actual] ), FORMAT ( [@Actual], "0.############", "en-US" ) ), ";", [@Period], ASC )
+						& "|" & CONCATENATEX ( MonthScores, IF ( ISNUMBER ( [@Target] ), FORMAT ( [@Target], "0.############", "en-US" ) ), ";", [@Period], ASC )
+						& "|" & CONCATENATEX ( MonthScores, IF ( ISNUMBER ( [@Score] ), FORMAT ( [@Score], "0.############", "en-US" ) ), ";", [@Period], ASC )
 			) -- end of measure body
 			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
-			RETURN IF ( __Wrong = "", __Value, """BSC Visual Pillar Trend"" can't be analysed by " & __Wrong )
+			RETURN IF ( __Wrong = "", __Value, """BSC Visual Payload"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Balanced Scorecard\Visual
 
