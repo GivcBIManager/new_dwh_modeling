@@ -32,6 +32,8 @@ models:
         data_type: "Int64"
       - name: scheduled_minutes
         data_type: "Int64"
+      - name: bsc_capacity_slots
+        data_type: "Float64"
   - name: ssas_agg_episode_billing
     config:
       contract: {enforced: true}
@@ -170,6 +172,10 @@ models:
         data_type: "Nullable(Int64)"
       - name: pg_branch_code
         data_type: "Nullable(String)"
+      - name: bsc_category
+        data_type: "Nullable(String)"
+      - name: is_hospital
+        data_type: "String"
   - name: ssas_dim_budget_line
     config:
       contract: {enforced: true}
@@ -834,6 +840,8 @@ models:
         data_type: "String"
       - name: is_medication_category
         data_type: "String"
+      - name: is_bsc_ancillary
+        data_type: "String"
   - name: ssas_dim_service
     config:
       contract: {enforced: true}
@@ -1217,6 +1225,8 @@ models:
       - name: is_died
         data_type: "String"
       - name: is_dama
+        data_type: "String"
+      - name: is_referral_policy
         data_type: "String"
   - name: ssas_fact_ap_invoice_line
     config:
@@ -1604,6 +1614,8 @@ models:
         data_type: "Nullable(Int64)"
       - name: booking_lead_days
         data_type: "Nullable(Int64)"
+      - name: is_referral_policy
+        data_type: "String"
   - name: ssas_fact_episode
     config:
       contract: {enforced: true}

@@ -30,9 +30,8 @@ unit_tests:
         rows: |
           select 'ancillary_category' as list_name, 'LAB' as code, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
     expect:
-      format: sql
-      rows: |
-        select toUInt8(b) as branch_key, toNullable(c) as category_code, toUInt8(f) as is_bsc_ancillary
-        from values('b UInt8, c String, f UInt8', (1, 'LAB', 1), (1, 'XRY', 0), (2, ' lab ', 1))
-        union all
-        select toUInt8(0), cast(null as Nullable(String)), toUInt8(0)
+      rows:
+        - {branch_key: 1, category_code: "LAB", is_bsc_ancillary: 1}
+        - {branch_key: 1, category_code: "XRY", is_bsc_ancillary: 0}
+        - {branch_key: 2, category_code: " lab ", is_bsc_ancillary: 1}
+        - {branch_key: 0, category_code: null, is_bsc_ancillary: 0}

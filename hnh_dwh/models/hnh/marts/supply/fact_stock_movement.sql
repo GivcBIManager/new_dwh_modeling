@@ -55,6 +55,7 @@ fusion_by_line as (
            tupleElement(fl_lot_pair, 1) as fl_lot_number, tupleElement(fl_lot_pair, 2) as fl_expiry_date
     from fusion
     where reference_status = 'oasis_line'
+      and go_live_date is not null and transaction_date >= go_live_date  -- Fusion rows before the go-live are left out
     group by branch_key, oasis_line_id
 ),
 

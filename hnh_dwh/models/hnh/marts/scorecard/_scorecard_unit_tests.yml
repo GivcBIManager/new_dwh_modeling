@@ -56,7 +56,7 @@ unit_tests:
       rows: |
         select toInt64(bitShiftRight(cityHash64(concat(k, '|')), 1)) as bsc_kpi_key, toUInt8(b) as branch_key,
                toFloat64(multiIf(b = 6 and k = 'FIN_NET_REVENUE', 0.05, b = 6, 0, k = 'FIN_NET_REVENUE', 0.042, 0.02)) as weight
-        from (select arrayJoin(['FIN_NET_REVENUE', 'INT_ALOS']) as k) cross join (select toUInt8(number + 1) as b from numbers(8))
+        from (select arrayJoin(['FIN_NET_REVENUE', 'INT_ALOS']) as k) as kpis cross join (select toUInt8(number + 1) as b from numbers(8)) as branches
 
   - name: fact_bsc_workforce_monthly_keeps_vw_work_force_people
     description: >

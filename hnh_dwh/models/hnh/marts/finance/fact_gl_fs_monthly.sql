@@ -72,7 +72,8 @@ oasis as (
         r.month_start                                              as month_start,
         'oasis'                                                    as source_system,
         -- a GL code without main/sub account (some unmapped Jazan codes) keeps its own key
-        if(ifNull(a.account_code, '') = '', toString(r.oasis_gl_account_key), a.account_code) as account_code,
+        -- ifNull, not if(): the left join makes account_code Nullable, and it is in the sort key (allow_nullable_key = 0)
+        ifNull(nullIf(a.account_code, ''), toString(r.oasis_gl_account_key)) as account_code,
         ifNull(a.fs_type, '')                                      as fs_type,
         ifNull(a.fs_element, '')                                   as fs_element,
         ifNull(a.fs_category, '')                                  as fs_category,
