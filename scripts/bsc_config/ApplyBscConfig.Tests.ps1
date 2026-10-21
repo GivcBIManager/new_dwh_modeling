@@ -28,3 +28,10 @@ Describe 'apply_bsc_config.ps1 -DryRun -Update' {
         $out | Should Match '\(dry run\) nothing written'
     }
 }
+
+Describe 'update of 2026-10-21' {
+    It 'formats KPI 13 (NPS points) as a number, not a percentage' {
+        $line = (Get-Content (Join-Path $here 'bsc_config_update_2026-10-21.sql') | Where-Object { $_ -match "^\s+\('CUS_PATIENT_SATISFACTION'" })
+        $line | Should Match "'higher', 'num',"
+    }
+}
