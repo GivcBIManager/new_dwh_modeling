@@ -31,6 +31,7 @@ export function tooltipItems(row: KpiRow): VisualTooltipDataItem[] {
     const item = (displayName: string, value: string): VisualTooltipDataItem => ({ displayName, value });
     return [
         item("KPI", row.name || DASH),
+        ...(row.branch ? [item("Hospital", row.branch)] : []),
         item("Objective title", row.objectiveTitle || DASH),
         item("Actual", has(row.actual) ? formatValue(row.actual, row.valueFormat) : DASH),
         item("Target", has(row.target) ? formatValue(row.target, row.valueFormat) : DASH),

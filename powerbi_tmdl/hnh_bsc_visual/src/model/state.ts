@@ -1,4 +1,4 @@
-import type { StateKey } from "./types";
+import type { KpiRow, StateKey } from "./types";
 
 export function stateOf(stateText: string | null, kpiStatus: string, valueSource: string): { key: StateKey; word: string; reason: string | null } {
     const manual = valueSource === "manual";
@@ -18,4 +18,9 @@ export function stateOf(stateText: string | null, kpiStatus: string, valueSource
                 reason: manual ? "Waiting for this month's entry" : "Not yet calculated for this selection",
             };
     }
+}
+
+/** A row the comparison shows a score for: a finite score and a state other than no data or parked. */
+export function hasScore(r: KpiRow | undefined): r is KpiRow {
+    return !!r && typeof r.score === "number" && Number.isFinite(r.score) && r.state !== "nodata" && r.state !== "parked";
 }

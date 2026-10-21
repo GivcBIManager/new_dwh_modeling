@@ -129,6 +129,39 @@ describe("Visual", () => {
             visual.update(opts(two()));
             expect(active(element)).toBe("Financial");
         });
+        it("keeps keyboard focus on the picked tab after the re-render", () => {
+            const { visual, element } = setup({ read: reader(null) });
+            document.body.appendChild(element);
+            visual.update(opts(two()));
+            const old = element.querySelector('.tabs [data-pillar="Customer"]') as HTMLElement;
+            old.focus();
+            old.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+            const now = element.querySelector('.tabs [data-pillar="Customer"]') as HTMLElement;
+            expect(now).not.toBe(old);
+            expect(document.activeElement).toBe(now);
+            element.remove();
+        });
+        it("keeps keyboard focus on the picked hospital header after Enter", () => {
+            const read: Reader = () => ({ mode: "comparison", ui: { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false } });
+            const { visual, element } = setup({ read });
+            document.body.appendChild(element);
+            visual.update(opts(makeDataView([mk("F1", "Financial", 1)], { branches: ["A", "B"] })));
+            const th = element.querySelector('th[data-branch="B"]') as HTMLElement;
+            th.focus();
+            th.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+            expect((document.activeElement as HTMLElement).dataset.branch).toBe("B");
+            expect(document.activeElement).not.toBe(th);
+            element.remove();
+        });
+        it("does not take focus after a mouse pick on an unfocused element", () => {
+            const { visual, element } = setup({ read: reader(null) });
+            document.body.appendChild(element);
+            visual.update(opts(two()));
+            (document.activeElement as HTMLElement | null)?.blur();
+            tab(element, "Customer");
+            expect(document.activeElement).toBe(document.body);
+            element.remove();
+        });
         it("hospital headers are focusable and Enter picks the hospital", () => {
             const read: Reader = () => ({ mode: "comparison", ui: { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false } });
             const { visual, element } = setup({ read });

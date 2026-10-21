@@ -179,11 +179,64 @@ describe("comparison", () => {
     });
     it("handles one hospital with a missing KPI", () => {
         const root = mount();
-        const r = [row("F1", "Financial", 1, 0.3, { payload: [payload({ state: "No data yet" })] })];
+        const r = [
+            row("F1", "Financial", 1, 0.3, { displayOrder: 1, payload: [ok(90)] }),
+            row("F2", "Financial", 1, 0.3, { displayOrder: 2, payload: [payload({ state: "No data yet" })] }),
+        ];
         renderView(root, parseDataView(makeDataView(r, { branches: ["Abha"] })), "comparison", ui());
-        const cells = [...root.querySelectorAll("tbody tr")[0].querySelectorAll("th,td")].map(c => c.textContent);
-        expect(cells).toEqual(["F1 name", "–", "–"]);
+        const cells = [...root.querySelectorAll("tbody tr")[1].querySelectorAll("th,td")].map(c => c.textContent);
+        expect(cells).toEqual(["F2 name", "–", "–"]);
         expect(root.querySelectorAll("thead th.focus").length).toBe(1);
+    });
+    it("gives score cells the KPI x branch key and leaves dash cells inert", () => {
+        const root = mount();
+        renderView(root, parseDataView(makeDataView(brRows, { branches: ["Abha", "Jazan"] })), "comparison", ui());
+        const [first, second] = [...root.querySelectorAll("tbody tr")].map(tr => [...tr.querySelectorAll("td")]);
+        expect([first[0].dataset.key, first[0].dataset.series, first[0].getAttribute("tabindex")]).toEqual(["0", "0", "0"]);
+        expect([first[1].dataset.key, first[1].dataset.series]).toEqual(["0", "1"]);
+        expect(second[1].textContent).toBe("–");
+        expect(second[1].hasAttribute("data-key") || second[1].hasAttribute("tabindex")).toBe(false);
+        expect(first[2].classList.contains("peer") && first[2].hasAttribute("data-key")).toBe(false);
+    });
+    it("skips a branch whose KPIs are all unscored", () => {
+        const root = mount();
+        const r = [
+            row("F1", "Financial", 1, 0.3, { displayOrder: 1, payload: [ok(90), payload({ state: "No data yet" }), ok(60, "At risk")] }),
+            row("F2", "Financial", 1, 0.3, { displayOrder: 2, payload: [ok(80, "Watch"), payload({ state: "Parked" }), ok(70, "Watch")] }),
+        ];
+        renderView(root, parseDataView(makeDataView(r, { branches: ["Abha", "Head Office", "Jazan"] })), "comparison", ui({ focusBranch: "Head Office" }));
+        expect([...root.querySelectorAll("thead th")].map(h => h.textContent)).toEqual(["KPI", "Abha", "Jazan", "Peer median"]);
+        expect(root.querySelector(".topline")!.textContent).not.toContain("Head Office");
+        expect(root.querySelector("thead th.focus")!.textContent).toBe("Abha");
+        expect([...root.querySelectorAll("tbody tr")[0].querySelectorAll("td")].map(c => c.textContent)).toEqual(["90", "60", "60"]);
+        expect(root.querySelector('td[data-series="1"]')).toBeNull();
+        expect(root.querySelector('td[data-series="2"]')).not.toBeNull();
+    });
+    it("says so when no branch has a score", () => {
+        const root = mount();
+        const r = [row("F1", "Financial", 1, 0.3, { payload: [payload({ state: "No data yet" }), payload({ state: "No data yet" })] })];
+        renderView(root, parseDataView(makeDataView(r, { branches: ["Abha", "Jazan"] })), "comparison", ui());
+        expect(root.querySelector("table")).toBeNull();
+        expect(root.querySelector(".empty")!.textContent).toBe("No hospital has a KPI score in this selection");
+    });
+});
+
+describe("branch hint outside comparison", () => {
+    const brRows: FixtureRow[] = [row("F1", "Financial", 1, 0.3, { payload: [ok(90), ok(60, "At risk")] })];
+    it("names the hospital shown in overview, board and owner when a branch series exists", () => {
+        for (const m of ["overview", "board", "owner"] as const) {
+            const root = mount();
+            renderView(root, parseDataView(makeDataView(brRows, { branches: ["Abha", "Jazan"] })), m, ui());
+            expect(root.querySelector(".hint")!.textContent).toBe("Showing Abha — switch to Hospital comparison to compare hospitals");
+        }
+    });
+    it("is absent in comparison mode and without a branch series", () => {
+        const root = mount();
+        renderView(root, parseDataView(makeDataView(brRows, { branches: ["Abha", "Jazan"] })), "comparison", ui());
+        expect(root.querySelector(".hint")).toBeNull();
+        const plain = mount();
+        renderView(plain, parseDataView(makeDataView(rows)), "overview", ui());
+        expect(plain.querySelector(".hint")).toBeNull();
     });
 });
 

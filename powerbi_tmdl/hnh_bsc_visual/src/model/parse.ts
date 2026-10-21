@@ -5,7 +5,7 @@ import DataViewValueColumn = powerbi.DataViewValueColumn;
 import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
 import { Payload, KpiRow, PillarSummary, StateKey, ViewModel } from "./types";
 import { parseNumber, parseTrend } from "./trend";
-import { stateOf } from "./state";
+import { hasScore, stateOf } from "./state";
 import { overallScore, pillarScore, pillarTrend } from "./score";
 
 const GUARD_MARK = "can't be analysed by";
@@ -88,7 +88,7 @@ export function parseDataView(dv: DataView): ViewModel {
 
     const attr = (role: string, i: number): unknown => cols.get(role)?.values[i];
     const rows: KpiRow[] = [];
-    let label = "";
+    const labels: string[] = [];
     const branches: string[] = [];
 
     groups.forEach((g, gi) => {
@@ -97,7 +97,7 @@ export function parseDataView(dv: DataView): ViewModel {
         const payloadCol = find(g, "payload");
         const labelCol = find(g, "selectionLabel");
         for (let i = 0; i < kpiCol.values.length; i++) {
-            if (!label && labelCol && labelCol.values[i]) label = asStr(labelCol.values[i]);
+            if (!labels[gi] && labelCol && labelCol.values[i]) labels[gi] = asStr(labelCol.values[i]);
             const p = parsePayload(payloadCol ? (payloadCol.values[i] as string | null) : null) as Payload;
             const kpiStatus = asStr(attr("kpiStatus", i));
             const valueSource = asStr(attr("valueSource", i));
@@ -159,6 +159,16 @@ export function parseDataView(dv: DataView): ViewModel {
         });
     }
     pillars.sort((a, b) => a.order - b.order);
+
+    // With several branch series each group's label names its own hospital. The comparison shows the branches with a
+    // KPI score: one of them keeps its label, several read "<n> hospitals · <period>".
+    let label = labels.find(l => !!l) ?? "";
+    if (hasBranch && branches.length > 1) {
+        const scored = branches.map((_, bi) => bi).filter(bi => rows.some(r => r.seriesIndex === bi && hasScore(r)));
+        const sep = label.indexOf(" · ");
+        label = scored.length === 1 && labels[scored[0]] ? labels[scored[0]]
+            : `${scored.length || branches.length} hospitals` + (sep < 0 ? "" : label.slice(sep));
+    }
 
     const first = (role: string, fallback: number) => asNum(cols.get(role)?.values.find(v => v !== null && v !== undefined)) ?? fallback;
     return {

@@ -121,9 +121,16 @@ export class Visual implements IVisual {
 
     private pickFrom(hit: HTMLElement): void {
         if (!this.interactive || !this.vm) return;
-        if (hit.dataset.pillar !== undefined) this.pick.pillar = hit.dataset.pillar;
-        else if (hit.dataset.branch !== undefined) this.pick.focusBranch = hit.dataset.branch;
+        const attr = hit.dataset.pillar !== undefined ? "pillar" : "branch";
+        const value = hit.dataset[attr] as string;
+        if (attr === "pillar") this.pick.pillar = value; else this.pick.focusBranch = value;
+        const hadFocus = hit.ownerDocument.activeElement === hit;
         this.render();
+        // The re-render replaced the tab or header: give focus back to its successor, so keyboard users keep their place.
+        if (hadFocus) {
+            const same = Array.from(this.root.querySelectorAll<HTMLElement>(`${hit.tagName.toLowerCase()}[data-${attr}]`)).find(e => e.dataset[attr] === value);
+            same?.focus();
+        }
     }
 
     /** One selection id per row: the KPI category, plus the branch series when there is one with a name. */

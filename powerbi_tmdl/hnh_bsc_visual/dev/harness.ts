@@ -66,7 +66,12 @@ function branchPayload(kind: string, spec: Spec, tilt: number): string {
     });
 }
 
-export function buildRows(branches: number): FixtureRow[] {
+/** The comparison page binds [BSC Visual Payload Scores]: the first six fields, empty trends. */
+const scoresOnly = (p: string) => p.split("|").slice(0, 6).join("|") + "|||";
+const PERIOD = "Jan 2026 – Sep 2026";
+
+/** Rows for the given branch series (none: one corporate column). A branch named "Head Office" has no KPI values. */
+export function buildRows(branches: string[] | null): FixtureRow[] {
     const rows: FixtureRow[] = [];
     let n = 0;
     for (const p of PILLARS) {
@@ -89,8 +94,10 @@ export function buildRows(branches: number): FixtureRow[] {
                 kpiType: i < 4 ? "Primary" : "Supporting", direction: spec.dir, valueFormat: spec.fmt, displayOrder: i + 1,
                 kpiStatus: parkedCatalogue ? "parked" : "active", valueSource: manual ? "manual" : "measure",
                 owner: OWNERS[n % OWNERS.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
-                payload: branches > 0 ? Array.from({ length: branches }, (_, b) => branchPayload(kind, spec, tilt + (b - 1) * 0.06)) : branchPayload(kind, spec, tilt),
-                selectionLabel: "Corporate · Jan 2026 – Sep 2026",
+                payload: branches
+                    ? branches.map((b, bi) => scoresOnly(b === "Head Office" ? payload({ state: "No data yet" }) : branchPayload(kind, spec, tilt + (bi - 1) * 0.06)))
+                    : branchPayload(kind, spec, tilt),
+                selectionLabel: branches ? branches.map(b => `${b} · ${PERIOD}`) : `Corporate · ${PERIOD}`,
             });
         }
     }
@@ -99,8 +106,8 @@ export function buildRows(branches: number): FixtureRow[] {
 
 const params = new URLSearchParams(location.search);
 const mode = params.get("mode") ?? "overview";
-const branches = mode === "comparison" ? ["Hospital A", "Hospital B", "Hospital C"] : undefined;
-const dv = makeDataView(buildRows(branches ? branches.length : 0), branches ? { branches } : {});
+const branches = mode === "comparison" ? ["Hospital A", "Hospital B", "Head Office", "Hospital C"] : null;
+const dv = makeDataView(buildRows(branches), branches ? { branches } : {});
 (dv.metadata as unknown as { objects: unknown }).objects = { scorecard: { mode } };
 
 const selection = { select: () => Promise.resolve([]), clear: () => Promise.resolve({}), showContextMenu: () => undefined, getSelectionIds: () => [], registerOnSelectCallback: () => undefined };

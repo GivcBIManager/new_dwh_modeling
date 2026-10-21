@@ -70,15 +70,6 @@
 .sec{font-size:15px;font-weight:700;color:var(--navy);margin:6px 0 -4px;grid-column:1/-1;display:flex;gap:10px;align-items:baseline}
 .sec span{font-weight:400;color:var(--muted);font-size:14px}
 
-/* tooltip + context menu */
-.tip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55;width:290px;box-shadow:0 10px 30px rgba(10,30,50,.35);display:none;z-index:5}
-.tip b{font-size:14px}
-.tip table{width:100%;border-collapse:collapse;margin-top:6px}
-.tip td{padding:1px 0}.tip td+td{text-align:right;font-weight:600}
-.menu{position:absolute;background:#fff;border:1px solid #C9D3DE;border-radius:6px;box-shadow:0 8px 24px rgba(10,30,50,.2);font-size:14px;min-width:230px;display:none;z-index:6;padding:4px 0}
-.menu div{padding:7px 14px;cursor:default}.menu div:hover{background:#EEF4FA}
-.menu .sep{height:1px;background:var(--line);padding:0;margin:4px 0}
-.menu .sub{color:var(--muted);font-size:12px;padding:4px 14px}
 @media (prefers-reduced-motion:no-preference){.gauge-arc{transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1)}}
 .strip i:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 
@@ -153,3 +144,8 @@
 .hnh-bsc.hc .strip i.nodata{background:var(--hc-bg);border-style:dashed}
 .hnh-bsc.hc .selected{outline-color:var(--hc-sel)}
 .cmp th[data-branch]:focus-visible{outline:3px solid var(--blue)}
+
+/* branch series outside comparison mode: which hospital the page shows */
+.hnh-bsc .hint{flex:none;padding:6px 24px;font-size:13px;color:var(--muted);background:var(--card);border-bottom:1px solid var(--line)}
+.cmp td[data-key]{cursor:context-menu}
+.cmp td[data-key]:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}

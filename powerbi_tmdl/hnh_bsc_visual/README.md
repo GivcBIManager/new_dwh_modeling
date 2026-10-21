@@ -24,15 +24,14 @@ Power BI Desktop for Report Server: Home, then the Visualizations pane "..." men
 
 ## Field wells
 
-The model is `HNH_Analytics` (perspective `Balanced Scorecard`). Every page binds the same wells:
+The model is `HNH_Analytics` (perspective `Balanced Scorecard`). Every page binds the same wells, except the Payload on the Hospital Comparison page:
 
 | Well | Field |
 |---|---|
 | the 21 attribute roles (KPI Code, KPI Name, Short Label, Pillar, Pillar Order, Pillar Weight, Pillar Question, Objective Code, Objective Title, Objective Order, KPI Type, Direction, Value Format, Display Order, Status, Value Source, Owner, Score Base, Score Slope, Good From, Watch From) | the matching `'BSC KPI'` columns |
-| Payload | `[BSC Visual Payload]` |
+| Payload | `[BSC Visual Payload]`; on the Hospital Comparison page `[BSC Visual Payload Scores]` (same first six fields, no monthly trends, so KPI × hospital stays fast) |
 | Selection label | `[BSC Selection Label]` |
 | Branch (comparison mode only; the well Power BI shows as "Branch", it takes one hospital per series) | `'Branch'[Branch Name]` |
-| Tooltips (optional) | a report-page tooltip, if the page has one; leave empty to use the visual's own tooltip |
 
 Then, per page, set Format pane > Scorecard > View:
 
@@ -41,9 +40,11 @@ Then, per page, set Format pane > Scorecard > View:
 | BSC landing | Overview | |
 | Financial, Customer, Internal Process, Learning & Growth | Pillar board | page filter on `'BSC KPI'[Pillar]` |
 | Owner view | Owner view | |
-| Hospital Comparison | Hospital comparison | slicer on `'Branch'[BSC Category]` |
+| Hospital Comparison | Hospital comparison | Payload `[BSC Visual Payload Scores]`; visual-level filter `'Branch'[Is Hospital]` is `Yes`; slicer on `'Branch'[BSC Category]` |
 
 The drill-through page (KPI Detail) takes `'BSC KPI'[KPI Code]` as its drill-through field.
+
+Tooltips: the visual shows its own tooltip (KPI, hospital on the comparison page, objective, actual, target, variance, score, state, owner, source). To use a report-page tooltip instead, set Format pane > General > Tooltips > Type to *Report page* and pick the page; the visual has no Tooltips well.
 
 ## Design notes
 
@@ -52,3 +53,7 @@ The drill-through page (KPI Detail) takes `'BSC KPI'[KPI Code]` as its drill-thr
 - Each KPI tile's variance chip carries the state word ("▼ At risk · −29.5%"), not only an icon and a colour.
 - The pillar trend and the KPI trends draw a dashed line: the target for a KPI, the "on track" threshold for a pillar.
 - Comparison cells read "<hospital>: <score> · <state>" to a screen reader and in the hover title; no-data cells read "No data yet".
+- Comparison score cells take the click (cross-filter), the right-click menu (drill-through to KPI Detail) and the tooltip for that KPI and hospital; "–" cells do nothing.
+- The comparison leaves out a branch with no KPI score at all (Head Office, a hospital outside the period); the visual-level filter on `'Branch'[Is Hospital]` keeps such branches out of the query too.
+- With several hospitals the header reads "<n> hospitals · <period>"; with one, that hospital's label.
+- If the Branch well is filled on an overview, board or owner page, those views show the first hospital only, and a line under the header says so.

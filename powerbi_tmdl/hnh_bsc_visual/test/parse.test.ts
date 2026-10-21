@@ -105,6 +105,37 @@ describe("parseDataView", () => {
         expect(vm.overallScore).toBeCloseTo(75);
     });
 
+    it("with several branches the label counts the hospitals and keeps the period", () => {
+        const vm = parseDataView(makeDataView([
+            row("A1", "Financial", 1, 0.3, { payload: [ok(80, 1), ok(70, 1)], selectionLabel: ["Abha · Jan 2026 – Sep 2026", "Jazan · Jan 2026 – Sep 2026"] }),
+        ], { branches: ["Abha", "Jazan"] }));
+        expect(vm.label).toBe("2 hospitals · Jan 2026 – Sep 2026");
+    });
+    it("with several branches and a label without a period says only the count", () => {
+        const vm = parseDataView(makeDataView([
+            row("A1", "Financial", 1, 0.3, { payload: [ok(80, 1), ok(70, 1), ok(60, 1)], selectionLabel: ["Abha", "Jazan", "Khamis"] }),
+        ], { branches: ["Abha", "Jazan", "Khamis"] }));
+        expect(vm.label).toBe("3 hospitals");
+    });
+    it("counts only the branches the comparison shows (with a KPI score)", () => {
+        const vm = parseDataView(makeDataView([
+            row("A1", "Financial", 1, 0.3, { payload: [ok(80, 1), payload({ state: "No data yet" }), ok(60, 1)], selectionLabel: ["Abha · Aug 2026", "Head Office · Aug 2026", "Jazan · Aug 2026"] }),
+        ], { branches: ["Abha", "Head Office", "Jazan"] }));
+        expect(vm.label).toBe("2 hospitals · Aug 2026");
+    });
+    it("uses the one scored branch's label when the others have no score", () => {
+        const vm = parseDataView(makeDataView([
+            row("A1", "Financial", 1, 0.3, { payload: [payload({ state: "No data yet" }), ok(60, 1)], selectionLabel: ["Head Office · Aug 2026", "Jazan · Aug 2026"] }),
+        ], { branches: ["Head Office", "Jazan"] }));
+        expect(vm.label).toBe("Jazan · Aug 2026");
+    });
+    it("with one branch keeps that branch's label", () => {
+        const vm = parseDataView(makeDataView([
+            row("A1", "Financial", 1, 0.3, { payload: [ok(80, 1)], selectionLabel: ["Abha · Aug 2026"] }),
+        ], { branches: ["Abha"] }));
+        expect(vm.label).toBe("Abha · Aug 2026");
+    });
+
     it("has no per-branch values without a branch series", () => {
         const vm = parseDataView(makeDataView([row("A1", "Financial", 1, 0.3, { payload: ok(80, 1) })]));
         expect(vm.pillars[0].byBranch).toEqual([]);

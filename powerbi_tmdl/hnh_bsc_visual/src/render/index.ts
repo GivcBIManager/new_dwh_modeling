@@ -28,6 +28,10 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
     if (mode === "board" && title === DEFAULT_TITLE) title = boardPillar(vm, ui.pillar).name;
     const subtitle = mode === "board" ? boardPillar(vm, ui.pillar).question || ui.subtitle : ui.subtitle;
     if (ui.showHeader) root.appendChild(header(vm, title, subtitle));
+    // With a branch series bound, overview, board and owner describe the first hospital only.
+    if (mode !== "comparison" && vm.branches.length > 0) {
+        root.appendChild(el("div", { class: "hint", role: "note" }, [`Showing ${vm.branches[0]} — switch to Hospital comparison to compare hospitals`]));
+    }
 
     const body = mode === "overview" ? overview(vm)
         : mode === "board" ? board(vm, ui.pillar, !ui.showHeader)

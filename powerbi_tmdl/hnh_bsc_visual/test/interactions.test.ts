@@ -58,6 +58,41 @@ describe("tooltipItems", () => {
     });
 });
 
+describe("wire on the comparison table", () => {
+    function cmpSetup() {
+        const root = document.createElement("div");
+        document.body.appendChild(root);
+        const vm = parseDataView(makeDataView(rows.map(r => ({ ...r, payload: [r.payload as string, r.payload as string] })), { branches: ["Abha", "Jazan"] }));
+        renderView(root, vm, "comparison", { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false });
+        const all = vm.pillars.flatMap(p => p.kpis);
+        const ids = new Map<string, unknown>();
+        for (const r of all) ids.set(selectionKey(r.rowIndex, r.seriesIndex), { key: `${r.code}@${r.branch}`, equals(o: { key: string }) { return o.key === this.key; } });
+        const f = fakeHost();
+        wire(root, all, ids as never, f.host);
+        return { root, ids, ...f };
+    }
+    const cell = (root: HTMLElement, key: number, series: number) => root.querySelector(`td[data-key="${key}"][data-series="${series}"]`) as HTMLElement;
+
+    it("right-click on a score cell opens the context menu for that KPI and hospital", () => {
+        const { root, ids, calls } = cmpSetup();
+        cell(root, 1, 1).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 5, clientY: 6 }));
+        expect(calls).toEqual([{ fn: "showContextMenu", args: [ids.get("1:1"), { x: 5, y: 6 }] }]);
+    });
+    it("hovering a score cell shows the KPI tooltip with the hospital", () => {
+        const { root, ids, calls } = cmpSetup();
+        cell(root, 0, 1).dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: 1, clientY: 2 }));
+        const arg = calls[0].args[0] as { dataItems: { displayName: string; value: string }[]; identities: unknown[] };
+        expect(calls[0].fn).toBe("show");
+        expect(arg.identities).toEqual([ids.get("0:1")]);
+        expect(arg.dataItems.slice(0, 2)).toEqual([{ displayName: "KPI", value: "Revenue" }, { displayName: "Hospital", value: "Jazan" }]);
+    });
+    it("clicking a score cell selects that KPI and hospital", () => {
+        const { root, ids, calls } = cmpSetup();
+        cell(root, 2, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls[0]).toEqual({ fn: "select", args: [ids.get("2:0"), false] });
+    });
+});
+
 describe("wire", () => {
     it("selects the KPI id on click and adds with Ctrl", () => {
         const { root, ids, calls } = setup();

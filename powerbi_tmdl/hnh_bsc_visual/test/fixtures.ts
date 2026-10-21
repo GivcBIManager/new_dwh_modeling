@@ -5,7 +5,7 @@ import DataView = powerbi.DataView;
 export interface FixtureRow {
     [role: string]: unknown;
     payload?: string | (string | null)[] | null;
-    selectionLabel?: string | null;
+    selectionLabel?: string | (string | null)[] | null;
 }
 
 export interface FixtureOpts {
@@ -40,7 +40,8 @@ export function makeDataView(rows: FixtureRow[], opts: FixtureOpts = {}): DataVi
             values: rows.map(r => pick(r)),
         });
         const pay = (r: FixtureRow) => (Array.isArray(r.payload) ? r.payload[gi] ?? null : (r.payload ?? null));
-        return { name: b, values: [col("payload", pay), col("selectionLabel", r => r.selectionLabel ?? null)] };
+        const lab = (r: FixtureRow) => (Array.isArray(r.selectionLabel) ? r.selectionLabel[gi] ?? null : (r.selectionLabel ?? null));
+        return { name: b, values: [col("payload", pay), col("selectionLabel", lab)] };
     });
     const flat = groups.flatMap(g => g.values);
     const values: Record<string, unknown> = Object.assign([...flat], { grouped: () => groups });

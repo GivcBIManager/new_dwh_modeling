@@ -1,7 +1,8 @@
-import type { KpiRow, ViewModel } from "../model/types";
+import type { ViewModel } from "../model/types";
 import { el } from "./dom";
 import { stateClass } from "./chips";
 import { empty } from "./empty";
+import { hasScore } from "../model/state";
 
 export function median(v: number[]): number | null {
     if (!v.length) return null;
@@ -10,14 +11,20 @@ export function median(v: number[]): number | null {
 }
 
 const num = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
-const hasScore = (r: KpiRow | undefined): r is KpiRow => !!r && num(r.score) && r.state !== "nodata" && r.state !== "parked";
 
-/** KPIs as rows, hospitals as columns; focus hospital first; peer median of the other hospitals. */
+/**
+ * KPIs as rows, hospitals as columns; focus hospital first; peer median of the other hospitals. A branch without any
+ * KPI score (Head Office, a hospital outside the period) is left out. Score cells carry the KPI x branch key, so
+ * selection, the context menu and the tooltip work on them; dash cells stay inert.
+ */
 export function comparison(vm: ViewModel, focus: string | null): HTMLElement {
     if (vm.branches.length === 0) return empty("Add a hospital field to compare hospitals");
-    const f = focus && vm.branches.includes(focus) ? focus : vm.branches[0];
-    const order = [f, ...vm.branches.filter(b => b !== f)];
+    const every = vm.pillars.flatMap(p => p.kpis);
     const idx = (b: string) => vm.branches.indexOf(b);
+    const scored = vm.branches.filter(b => every.some(r => r.seriesIndex === idx(b) && hasScore(r)));
+    if (scored.length === 0) return empty("No hospital has a KPI score in this selection");
+    const f = focus && scored.includes(focus) ? focus : scored[0];
+    const order = [f, ...scored.filter(b => b !== f)];
 
     const top = el("div", { class: "topline" }, order.map(b => {
         const s = vm.overallByBranch.find(x => x.branch === b)?.score;
@@ -26,7 +33,6 @@ export function comparison(vm: ViewModel, focus: string | null): HTMLElement {
 
     const head = el("tr", {}, [el("th", {}, ["KPI"]), ...order.map(b => el("th", { class: b === f ? "focus" : "", "data-branch": b, tabindex: 0 }, [b])), el("th", { class: "peer" }, ["Peer median"])]);
     const body = el("tbody");
-    const every = vm.pillars.flatMap(p => p.kpis);
     for (const k of every.filter(r => r.seriesIndex === 0)) {
         const at = (b: string) => every.find(r => r.code === k.code && r.seriesIndex === idx(b));
         const tr = el("tr", {}, [el("th", { scope: "row" }, [k.name])]);
@@ -35,7 +41,8 @@ export function comparison(vm: ViewModel, focus: string | null): HTMLElement {
             const cls = hasScore(r) ? stateClass(r.state) : "nodata";
             const shown = hasScore(r) ? String(Math.round(r.score as number)) : null;
             const say = `${b}: ${shown === null ? "No data yet" : `${shown} · ${r?.stateWord}`}`;
-            tr.appendChild(el("td", { class: b === f ? `${cls} focus` : cls, title: say, "aria-label": say }, [shown ?? "–"]));
+            const key = hasScore(r) ? { "data-key": r.rowIndex, "data-series": r.seriesIndex, tabindex: 0 } : {};
+            tr.appendChild(el("td", { class: b === f ? `${cls} focus` : cls, title: say, "aria-label": say, ...key }, [shown ?? "–"]));
         }
         const m = median(order.slice(1).map(at).filter(hasScore).map(r => r.score as number));
         tr.appendChild(el("td", { class: "peer" }, [m === null ? "–" : String(Math.round(m))]));

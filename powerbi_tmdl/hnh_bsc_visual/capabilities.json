@@ -119,11 +119,6 @@
       "displayName": "Selection Label",
       "name": "selectionLabel",
       "kind": "Measure"
-    },
-    {
-      "displayName": "Tooltips",
-      "name": "tooltips",
-      "kind": "Measure"
     }
   ],
   "dataViewMappings": [
@@ -332,11 +327,6 @@
               {
                 "bind": {
                   "to": "selectionLabel"
-                }
-              },
-              {
-                "for": {
-                  "in": "tooltips"
                 }
               }
             ],
