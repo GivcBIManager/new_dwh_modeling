@@ -3804,10 +3804,12 @@ table _Measures
 			VAR Hospitals = CALCULATE ( COUNTROWS ( Branch ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
 			VAR AllHospitals = CALCULATE ( COUNTROWS ( Branch ), ALL ( Branch ), Branch[Is Hospital] = "Yes" )
 			VAR HospitalText =
-				IF (
-					Hospitals = 1,
-					CALCULATE ( SELECTEDVALUE ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
-					IF ( Hospitals = AllHospitals, "Corporate", Hospitals & " hospitals" )
+				SWITCH (
+					TRUE (),
+					Hospitals = 0, "No hospital",
+					Hospitals = 1, CALCULATE ( SELECTEDVALUE ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
+					Hospitals = AllHospitals, "Corporate",
+					Hospitals & " hospitals"
 				)
 			VAR PeriodStart = CALCULATE ( MIN ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 			VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
