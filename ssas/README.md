@@ -30,9 +30,20 @@ restore or drop changes the production instance; the test slot `HNH_Analytics_Te
 ## Change the model
 
 1. Columns changed in a `gold.ssas_*` view → `python scripts/gen_view_contracts.py`, then `python ssas/tools/generate.py`. Without `clickhouse_connect` (the server), run `python ssas/tools/generate.py --from-contracts` after updating `_ssas__models.yml`.
-2. Measures: edit `tables/_Measures.tmdl` (`measure` blocks, `///` description, `formatString`, `displayFolder`). The display folder is `<domain>\<topic>`, where the domain is a perspective name (`Patient Flow`, `Revenue Cycle`, `Claims & Pre-auth`, `Finance`, `Workforce`, `Supply Chain`, `Patient Experience`) or `Diagnostics`; each perspective shows its domain's measures (`PERSPECTIVE_MEASURE_DOMAINS` in `tools/model_config.py` for Executive and Patient Details). New snapshot measures carry `annotation hnh_snapshot = 1` and are added to the list in every `ISSELECTEDMEASURE` of `tables/Time Calculation.tmdl`. Every measure needs at least one check in `tests/measures/<domain>.json` (`allow_zero: true` only where blank is the intended answer). After editing measures run `python ssas/tools/measure_guards.py` (wraps every measure in its "can't be analysed by" guard, P41) and then `python ssas/tools/sync_perspectives.py`. Edit a measure's own expression between `VAR __Value = ( -- measure body` and `) -- end of measure body`.
+2. Measures: edit `tables/_Measures.tmdl` (`measure` blocks, `///` description, `formatString`, `displayFolder`). The display folder is `<domain>\<topic>`, where the domain is a perspective name (`Patient Flow`, `Revenue Cycle`, `Claims & Pre-auth`, `Finance`, `Workforce`, `Supply Chain`, `Patient Experience`, `Balanced Scorecard`) or `Diagnostics`; each perspective shows its domain's measures (`PERSPECTIVE_MEASURE_DOMAINS` in `tools/model_config.py` for Executive and Patient Details). New snapshot measures carry `annotation hnh_snapshot = 1` and are added to the list in every `ISSELECTEDMEASURE` of `tables/Time Calculation.tmdl`. Every measure needs at least one check in `tests/measures/<domain>.json` (`allow_zero: true` only where blank is the intended answer). After editing measures run `python ssas/tools/measure_guards.py` (wraps every measure in its "can't be analysed by" guard, P41) and then `python ssas/tools/sync_perspectives.py`. Edit a measure's own expression between `VAR __Value = ( -- measure body` and `) -- end of measure body`.
 3. Check offline: `TabularEditor.exe ssas\HNH_Analytics -A ssas\bpa_rules.json -V` (no `type=error`), `python -m pytest ssas/tools`, `Invoke-Pester -Script ssas\scripts` (all Pester files).
 4. Run `deploy.ps1 -Stage All` from the working copy on the server (no copy step).
+
+## Balanced scorecard
+
+Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bsc-ssas-perspective-analysis.md`):
+- **Formulas** are the measures in folder `Balanced Scorecard\…` of `tables/_Measures.tmdl`: one measure per KPI, the
+  dispatchers `BSC Actual` and `BSC Target`, and the scoring measures. A new KPI needs its measure, a line in the
+  `SWITCH` of `BSC Actual` (and `BSC Target` for a budget target), a check in `tests/measures/balanced_scorecard.json`,
+  and a deploy.
+- **Settings** (catalogue, targets, weights, thresholds, owners, categories, parameters, manual values) are rows in the
+  ClickHouse `default.map_bsc_*` tables, edited by the BI manager (`docs/bsc_config.md`). They reach the model through
+  the nightly build and `process.ps1 -Mode Daily`; no deploy is needed.
 
 ## Run
 
