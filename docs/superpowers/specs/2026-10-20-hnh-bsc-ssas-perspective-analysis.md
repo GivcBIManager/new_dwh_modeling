@@ -619,6 +619,22 @@ Each KPI's formula is the SSAS measure for the definition below (D12). Changing 
 | 64 | Days Inventory Outstanding | GL average inventory × days ÷ (GL cost of medicines + medical consumables) |
 | 67 | Avg OP Waiting Time | Average over OP visits with a recorded wait |
 
+### Further definitions (decided 2026-10-21, for the SSAS measures)
+
+| # | KPI | Decision |
+|---|---|---|
+| 5 | Cost-to-Revenue target | (budget REV_NET − budget EBITDA) ÷ budget REV_NET, the same shape as the actual |
+| 13 | Patient Satisfaction | One NPS over the pooled answers of the Hospital NPS and Physician NPS questions: (promoters − detractors) ÷ answers × 100 |
+| 22 | renamed **Clinic Utilization** | Arrived OP visits ÷ (clinics × hours per day × patients per hour × working days without Fridays), as the Outpatient Dashboard's `Clinics Utilization`. Clinics come from the branch's clinic count; hours per day (8) and patients per hour (4) are config values (`map_bsc_parameter`) |
+| 58 | renamed **OP Doctor Utilization** | Arrived OP visits ÷ clinic capacity slots (legacy capacity rule) |
+| 29 | Revenue Leakage | By invoice date. Numerator: claims not submitted. Denominator: net amount of credit invoices. Both only non-manual submissions and insurance and government payers |
+| 32 | Insurance Approval Turnaround | Average per pre-auth line (the model's `Sent to Response Avg (min)`) |
+| 36 | 30-Day Readmission Rate | Readmissions within 30 days ÷ discharges. The model's `Readmission Rate 30d %` (÷ admissions) is unchanged |
+| 46 | Saudization | The last closed month of the period, like headcount. The model's `Saudisation Rate %` follows the same rule |
+| 60 | Activated Bed Rate | Average available beds ÷ licensed beds from a config table (`map_bsc_licensed_beds`, per hospital and year), so the BI manager can correct a hospital's licensed beds |
+| 62 | Patient Acquisition Cost | GL marketing ÷ distinct new OP patients |
+| 64 | Days Inventory Outstanding | Cost = GL captions `cost of goods sold` and `medical consumables` plus the line `cost of medicines`. Fusion months show as calculated until finance posts consumption |
+
 ### Other KPI decisions
 
 | # | KPI | Decision |
