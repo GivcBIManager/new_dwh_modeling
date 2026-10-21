@@ -350,6 +350,121 @@
       }
     }
   ],
+  "objects": {
+    "scorecard": {
+      "properties": {
+        "mode": {
+          "type": {
+            "enumeration": [
+              {
+                "value": "overview"
+              },
+              {
+                "value": "board"
+              },
+              {
+                "value": "owner"
+              },
+              {
+                "value": "comparison"
+              }
+            ]
+          }
+        },
+        "title": {
+          "type": {
+            "text": true
+          }
+        },
+        "subtitle": {
+          "type": {
+            "text": true
+          }
+        },
+        "showHeader": {
+          "type": {
+            "bool": true
+          }
+        }
+      }
+    },
+    "colours": {
+      "properties": {
+        "headerStart": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "headerMiddle": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "headerEnd": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "data": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "onTrack": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "watch": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "atRisk": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "noData": {
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "tooltips": {
     "supportedTypes": {
       "default": true,

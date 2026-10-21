@@ -13,14 +13,15 @@ import "./../style/visual.less";
 import type { ViewModel } from "./model/types";
 import { parseDataView } from "./model/parse";
 import { renderView, type Mode, type UiState } from "./render/index";
+import { applyColours, buildFormattingModel, readSettings, toOptions, VisualSettings } from "./settings";
 import { INTERNAL_SELECTOR, markSelected, selectionKey, wire } from "./interactions";
 
-/** Task 7 replaces this with the format-pane settings. */
-export function readOptions(_dataView: DataView | undefined): { mode: Mode; ui: UiState } {
-    return {
-        mode: "overview",
-        ui: { pillar: null, focusBranch: null, title: "Balanced scorecard", subtitle: "How the group is performing against its strategy", showHeader: true },
-    };
+/** Mode, header state and (when read from the format pane) the full settings. Tests may supply a reader without settings. */
+export interface Options { mode: Mode; ui: UiState; settings?: VisualSettings }
+
+export function readOptions(dataView: DataView | undefined): Options {
+    const settings = readSettings(dataView);
+    return { ...toOptions(settings), settings };
 }
 
 export class Visual implements IVisual {
@@ -31,7 +32,8 @@ export class Visual implements IVisual {
     private ids = new Map<string, ISelectionId>();
     private vm: ViewModel | null = null;
     private mode: Mode = "overview";
-    private setUi: UiState = readOptions(undefined).ui;
+    private setUi: UiState = toOptions(new VisualSettings()).ui;
+    private settings: VisualSettings = new VisualSettings();
     private pick: { pillar: string | null; focusBranch: string | null } = { pillar: null, focusBranch: null };
     private interactive = true;
 
@@ -60,6 +62,7 @@ export class Visual implements IVisual {
             if (opt.ui.pillar !== this.setUi.pillar) this.pick.pillar = null;
             if (opt.ui.focusBranch !== this.setUi.focusBranch) this.pick.focusBranch = null;
             this.setUi = opt.ui;
+            if (opt.settings) this.settings = opt.settings;
             this.mode = opt.mode;
             this.vm = parseDataView(dv as DataView);
             if (this.pick.pillar !== null && !this.vm.pillars.some(p => p.name === this.pick.pillar)) this.pick.pillar = null;
@@ -81,6 +84,7 @@ export class Visual implements IVisual {
         this.unwire();
         this.interactive = this.host.hostCapabilities?.allowInteractions !== false;
         this.applyPalette();
+        applyColours(this.root, this.settings, !!this.host.colorPalette?.isHighContrast);
         const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, focusBranch: this.pick.focusBranch ?? this.setUi.focusBranch };
         renderView(this.root, this.vm, this.mode, ui);
         this.root.classList.toggle("hc", !!this.host.colorPalette?.isHighContrast);
@@ -98,6 +102,10 @@ export class Visual implements IVisual {
         set("--hc-fg", p?.foreground?.value);
         set("--hc-bg", p?.background?.value);
         set("--hc-sel", p?.foregroundSelected?.value);
+    }
+
+    public getFormattingModel(): powerbi.visuals.FormattingModel {
+        return buildFormattingModel(this.settings);
     }
 
     private refreshSelection(): void {
