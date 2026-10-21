@@ -1561,14 +1561,14 @@ table _Measures
 				VAR Saudi =
 					SUMX (
 						VALUES ( Branch[Branch Key] ),
-						VAR LastMonth = CALCULATE ( MAX ( 'Workforce Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Workforce Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ) )
-						RETURN CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head", 'Workforce Monthly'[Is Saudi] = 1 )
+						VAR LastMonth = [BSC Last Workforce Month]
+						RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head", 'Workforce Monthly'[Is Saudi] = 1 ) )
 					)
 				VAR Heads =
 					SUMX (
 						VALUES ( Branch[Branch Key] ),
-						VAR LastMonth = CALCULATE ( MAX ( 'Workforce Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Workforce Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ) )
-						RETURN CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head" )
+						VAR LastMonth = [BSC Last Workforce Month]
+						RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head" ) )
 					)
 				RETURN DIVIDE ( Saudi, Heads )
 			) -- end of measure body
@@ -2660,48 +2660,87 @@ table _Measures
 			RETURN SUM ( Branch[Clinics Count] ) * PerClinicDay * WorkingDays
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Average monthly headcount by the scorecard rules (part-time doctors included): per hospital, the mean over months, added over hospitals.
+	/// Month Date Key of the latest Workforce Monthly month up to the end of the period, whatever the date filters; blank for a period that starts after today.
+	measure 'BSC Last Workforce Month' =
+			VAR __Value = ( -- measure body
+				VAR PeriodEnd = MAX ( 'Date'[Date] )
+				VAR EndKey = YEAR ( PeriodEnd ) * 10000 + MONTH ( PeriodEnd ) * 100 + DAY ( PeriodEnd )
+				RETURN IF ( MIN ( 'Date'[Date] ) <= TODAY (), CALCULATE ( MAX ( 'Workforce Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] <= EndKey ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Workforce Monthly]
+			RETURN IF ( __Wrong = "", __Value, """BSC Last Workforce Month"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Balanced Scorecard\Building Blocks
+	/// Average monthly headcount by the scorecard rules (part-time doctors included): per hospital, the mean over months (the last closed month when none has data yet), added over hospitals.
 	measure 'BSC Average Headcount' =
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ) ) )
+					VAR InContext = AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ) ) )
+					VAR LastMonth = [BSC Last Workforce Month]
+					RETURN
+						IF (
+							ISBLANK ( InContext ) && NOT ISBLANK ( LastMonth ),
+							CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth ),
+							InContext
+						)
 				)
 			) -- end of measure body
 			VAR __Wrong = [_Guard Workforce Monthly]
 			RETURN IF ( __Wrong = "", __Value, """BSC Average Headcount"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Average monthly FTE by the scorecard rules (part-time doctors at 0.5): per hospital, the mean over months, added over hospitals.
+	/// Average monthly FTE by the scorecard rules (part-time doctors at 0.5): per hospital, the mean over months (the last closed month when none has data yet), added over hospitals.
 	measure 'BSC Average FTE' =
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[FTE] ) ) )
+					VAR InContext = AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[FTE] ) ) )
+					VAR LastMonth = [BSC Last Workforce Month]
+					RETURN
+						IF (
+							ISBLANK ( InContext ) && NOT ISBLANK ( LastMonth ),
+							CALCULATE ( SUM ( 'Workforce Monthly'[FTE] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth ),
+							InContext
+						)
 				)
 			) -- end of measure body
 			VAR __Wrong = [_Guard Workforce Monthly]
 			RETURN IF ( __Wrong = "", __Value, """BSC Average FTE"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Average monthly doctors by the scorecard rules (part-time doctors included).
+	/// Average monthly doctors by the scorecard rules (part-time doctors included), with the same last-closed-month fallback.
 	measure 'BSC Average Doctors' =
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Is Doctor] = 1 ) )
+					VAR InContext = AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Is Doctor] = 1 ) )
+					VAR LastMonth = [BSC Last Workforce Month]
+					RETURN
+						IF (
+							ISBLANK ( InContext ) && NOT ISBLANK ( LastMonth ),
+							CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Is Doctor] = 1 ),
+							InContext
+						)
 				)
 			) -- end of measure body
 			VAR __Wrong = [_Guard Workforce Monthly]
 			RETURN IF ( __Wrong = "", __Value, """BSC Average Doctors"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Average monthly nurses and doctors by the scorecard rules (part-time doctors included).
+	/// Average monthly nurses and doctors by the scorecard rules (part-time doctors included), with the same last-closed-month fallback.
 	measure 'BSC Average Medical' =
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
-					AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Is Medical] = 1 ) )
+					VAR InContext = AVERAGEX ( VALUES ( 'Date'[Year Month] ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Is Medical] = 1 ) )
+					VAR LastMonth = [BSC Last Workforce Month]
+					RETURN
+						IF (
+							ISBLANK ( InContext ) && NOT ISBLANK ( LastMonth ),
+							CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Is Medical] = 1 ),
+							InContext
+						)
 				)
 			) -- end of measure body
 			VAR __Wrong = [_Guard Workforce Monthly]
@@ -2949,10 +2988,11 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Patient Volume"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 57: ER visits / ER visits of the same period last year - 1.
+	/// KPI 57: ER visits / ER visits of the same days last year - 1 (days up to today).
 	measure 'BSC ER Growth' =
 			VAR __Value = ( -- measure body
-				VAR PriorYear = CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR PriorYear = CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( Past ) )
 				RETURN IF ( NOT ISBLANK ( PriorYear ), DIVIDE ( [ER Visits], PriorYear ) - 1 )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Encounters]
@@ -3136,14 +3176,14 @@ table _Measures
 				VAR Saudi =
 					SUMX (
 						VALUES ( Branch[Branch Key] ),
-						VAR LastMonth = CALCULATE ( MAX ( 'Workforce Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Workforce Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ) )
-						RETURN CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head", 'Workforce Monthly'[Is Saudi] = 1 )
+						VAR LastMonth = [BSC Last Workforce Month]
+						RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head", 'Workforce Monthly'[Is Saudi] = 1 ) )
 					)
 				VAR Heads =
 					SUMX (
 						VALUES ( Branch[Branch Key] ),
-						VAR LastMonth = CALCULATE ( MAX ( 'Workforce Monthly'[Month Date Key] ), REMOVEFILTERS ( 'Workforce Monthly' ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ) )
-						RETURN CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head" )
+						VAR LastMonth = [BSC Last Workforce Month]
+						RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head" ) )
 					)
 				RETURN DIVIDE ( Saudi, Heads )
 			) -- end of measure body
@@ -3349,10 +3389,11 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Target Patient Volume"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Targets
-	/// Target of KPI 57: target ER census / ER visits of the same period last year - 1.
+	/// Target of KPI 57: target ER census / ER visits of the same days last year - 1 (days up to today).
 	measure 'BSC Target ER Growth' =
 			VAR __Value = ( -- measure body
-				VAR PriorYear = CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( 'Date'[Date] ) )
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR PriorYear = CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( Past ) )
 				RETURN IF ( NOT ISBLANK ( PriorYear ), DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "ER" ), PriorYear ) - 1 )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Encounters + Targets]
@@ -3406,17 +3447,18 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Fixed Target"" can't be analysed by " & __Wrong )
 		formatString: #,0.00
 		displayFolder: Balanced Scorecard\Targets
-	/// Scorecard actual of the KPI in context: its measure (or the BI manager's manual value), for hospitals only; blank for a parked KPI.
+	/// Scorecard actual of the KPI in context: its measure (or the BI manager's manual value), for hospitals only and the days up to today; blank for a parked KPI.
 	measure 'BSC Actual' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
 				VAR KpiStatus = SELECTEDVALUE ( 'BSC KPI'[Status] )
 				VAR Source = SELECTEDVALUE ( 'BSC KPI'[Value Source] )
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					SWITCH (
 						TRUE (),
 						ISBLANK ( Code ) || KpiStatus = "parked", BLANK (),
-						Source = "manual", CALCULATE ( [BSC Manual Value], KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
+						Source = "manual", CALCULATE ( [BSC Manual Value], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
 						CALCULATE (
 						SWITCH (
 							Code,
@@ -3471,6 +3513,7 @@ table _Measures
 							"LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor],
 							BLANK ()
 						),
+							Past,
 							REMOVEFILTERS ( 'BSC KPI' ),
 							KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 						)
@@ -3491,18 +3534,19 @@ table _Measures
 				)
 
 		annotation hnh_guard_allow = BSC KPI
-	/// Scorecard target of the KPI in context: fixed (BI manager's table), budget-based, or the same period last year.
+	/// Scorecard target of the KPI in context, for the days up to today: fixed (BI manager's table), budget-based, or the same days last year.
 	measure 'BSC Target' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
 				VAR KpiStatus = SELECTEDVALUE ( 'BSC KPI'[Status] )
 				VAR Source = SELECTEDVALUE ( 'BSC KPI'[Target Source] )
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					SWITCH (
 						TRUE (),
 						ISBLANK ( Code ) || KpiStatus = "parked", BLANK (),
-						Source = "fixed", CALCULATE ( [BSC Fixed Target], KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
-						Source = "prior_year", CALCULATE ( [BSC Actual], SAMEPERIODLASTYEAR ( 'Date'[Date] ) ),
+						Source = "fixed", CALCULATE ( [BSC Fixed Target], Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
+						Source = "prior_year", CALCULATE ( [BSC Actual], SAMEPERIODLASTYEAR ( Past ) ),
 						Source = "budget",
 							CALCULATE (
 						SWITCH (
@@ -3530,6 +3574,7 @@ table _Measures
 							"LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE],
 							BLANK ()
 						),
+								Past,
 								REMOVEFILTERS ( 'BSC KPI' ),
 								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 							),
@@ -3599,7 +3644,7 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
-	/// Parked (parked KPI, or no value in any period), No data yet (no value in this selection), No target, or the status.
+	/// Parked (parked KPI, or no value for any hospital in any period), No data yet (no value in this selection), No target, or the status.
 	measure 'BSC State' =
 			VAR __Value = ( -- measure body
 				VAR KpiStatus = SELECTEDVALUE ( 'BSC KPI'[Status] )
@@ -3608,7 +3653,7 @@ table _Measures
 					SWITCH (
 						TRUE (),
 						KpiStatus = "parked", "Parked",
-						ISBLANK ( A ) && ISBLANK ( CALCULATE ( [BSC Actual], REMOVEFILTERS ( 'Date' ) ) ), "Parked",
+						ISBLANK ( A ) && ISBLANK ( CALCULATE ( [BSC Actual], REMOVEFILTERS ( 'Date' ), REMOVEFILTERS ( Branch ) ) ), "Parked",
 						ISBLANK ( A ), "No data yet",
 						ISBLANK ( [BSC Status] ), "No target",
 						[BSC Status]
