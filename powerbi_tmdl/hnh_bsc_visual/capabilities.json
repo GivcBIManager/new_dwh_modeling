@@ -1,0 +1,361 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "KPI Code",
+      "name": "kpi",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "KPI Name",
+      "name": "kpiName",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Short Label",
+      "name": "shortLabel",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Pillar",
+      "name": "pillar",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Pillar Order",
+      "name": "pillarOrder",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Pillar Weight",
+      "name": "pillarWeight",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Pillar Question",
+      "name": "pillarQuestion",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Objective Code",
+      "name": "objectiveCode",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Objective Title",
+      "name": "objectiveTitle",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Objective Order",
+      "name": "objectiveOrder",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "KPI Type",
+      "name": "kpiType",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Direction",
+      "name": "direction",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Value Format",
+      "name": "valueFormat",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Display Order",
+      "name": "displayOrder",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Status",
+      "name": "kpiStatus",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Value Source",
+      "name": "valueSource",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Owner",
+      "name": "owner",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Score Base",
+      "name": "scoreBase",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Score Slope",
+      "name": "scoreSlope",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Good From",
+      "name": "goodFrom",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Watch From",
+      "name": "watchFrom",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Branch",
+      "name": "branch",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Payload",
+      "name": "payload",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Selection Label",
+      "name": "selectionLabel",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Tooltips",
+      "name": "tooltips",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "kpi": {
+            "min": 1,
+            "max": 1
+          },
+          "kpiName": {
+            "max": 1
+          },
+          "shortLabel": {
+            "max": 1
+          },
+          "pillar": {
+            "max": 1
+          },
+          "pillarOrder": {
+            "max": 1
+          },
+          "pillarWeight": {
+            "max": 1
+          },
+          "pillarQuestion": {
+            "max": 1
+          },
+          "objectiveCode": {
+            "max": 1
+          },
+          "objectiveTitle": {
+            "max": 1
+          },
+          "objectiveOrder": {
+            "max": 1
+          },
+          "kpiType": {
+            "max": 1
+          },
+          "direction": {
+            "max": 1
+          },
+          "valueFormat": {
+            "max": 1
+          },
+          "displayOrder": {
+            "max": 1
+          },
+          "kpiStatus": {
+            "max": 1
+          },
+          "valueSource": {
+            "max": 1
+          },
+          "owner": {
+            "max": 1
+          },
+          "scoreBase": {
+            "max": 1
+          },
+          "scoreSlope": {
+            "max": 1
+          },
+          "goodFrom": {
+            "max": 1
+          },
+          "watchFrom": {
+            "max": 1
+          },
+          "branch": {
+            "max": 1
+          },
+          "payload": {
+            "max": 1
+          },
+          "selectionLabel": {
+            "max": 1
+          }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "select": [
+            {
+              "bind": {
+                "to": "kpi"
+              }
+            },
+            {
+              "bind": {
+                "to": "kpiName"
+              }
+            },
+            {
+              "bind": {
+                "to": "shortLabel"
+              }
+            },
+            {
+              "bind": {
+                "to": "pillar"
+              }
+            },
+            {
+              "bind": {
+                "to": "pillarOrder"
+              }
+            },
+            {
+              "bind": {
+                "to": "pillarWeight"
+              }
+            },
+            {
+              "bind": {
+                "to": "pillarQuestion"
+              }
+            },
+            {
+              "bind": {
+                "to": "objectiveCode"
+              }
+            },
+            {
+              "bind": {
+                "to": "objectiveTitle"
+              }
+            },
+            {
+              "bind": {
+                "to": "objectiveOrder"
+              }
+            },
+            {
+              "bind": {
+                "to": "kpiType"
+              }
+            },
+            {
+              "bind": {
+                "to": "direction"
+              }
+            },
+            {
+              "bind": {
+                "to": "valueFormat"
+              }
+            },
+            {
+              "bind": {
+                "to": "displayOrder"
+              }
+            },
+            {
+              "bind": {
+                "to": "kpiStatus"
+              }
+            },
+            {
+              "bind": {
+                "to": "valueSource"
+              }
+            },
+            {
+              "bind": {
+                "to": "owner"
+              }
+            },
+            {
+              "bind": {
+                "to": "scoreBase"
+              }
+            },
+            {
+              "bind": {
+                "to": "scoreSlope"
+              }
+            },
+            {
+              "bind": {
+                "to": "goodFrom"
+              }
+            },
+            {
+              "bind": {
+                "to": "watchFrom"
+              }
+            }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {
+              "count": 500
+            }
+          }
+        },
+        "values": {
+          "group": {
+            "by": "branch",
+            "select": [
+              {
+                "bind": {
+                  "to": "payload"
+                }
+              },
+              {
+                "bind": {
+                  "to": "selectionLabel"
+                }
+              },
+              {
+                "for": {
+                  "in": "tooltips"
+                }
+              }
+            ],
+            "dataReductionAlgorithm": {
+              "top": {
+                "count": 20
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "tooltips": {
+    "supportedTypes": {
+      "default": true,
+      "canvas": true
+    }
+  },
+  "supportsKeyboardFocus": true,
+  "privileges": []
+}
