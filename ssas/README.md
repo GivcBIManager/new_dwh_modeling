@@ -38,9 +38,20 @@ restore or drop changes the production instance; the test slot `HNH_Analytics_Te
 
 Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bsc-ssas-perspective-analysis.md`):
 - **Formulas** are the measures in folder `Balanced Scorecard\…` of `tables/_Measures.tmdl`: one measure per KPI, the
-  dispatchers `BSC Actual` and `BSC Target`, and the scoring measures. A new KPI needs its measure, a line in the
-  `SWITCH` of `BSC Actual` (and `BSC Target` for a budget target), a check in `tests/measures/balanced_scorecard.json`,
-  and a deploy.
+  dispatchers `BSC Actual` and `BSC Target`, the scoring measures, and the visual's `BSC Visual Payload` (overview,
+  board, owner pages) and `BSC Visual Payload Scores` (hospital comparison page). The dispatchers and the measures that
+  inline them (`BSC Variance %`, `BSC Score`, `BSC State` and both payloads) each hold the KPI list twice: a
+  `ROW ( "@<CODE>", [<measure>], … )` table and a `SWITCH ( Code, "<CODE>", MAXX ( …, [@<CODE>] ), … )` lookup.
+  `tools/gen_bsc_kpi_lists.py` writes all of them from its `KPIS` and `BUDGETS` lists. To add a KPI:
+  1. Add its row to the catalogue (`default.map_bsc_kpi`, `docs/bsc_config.md`).
+  2. Add its measure (`BSC <name>`, folder `Balanced Scorecard\<pillar>`) and, for a budget target, its
+     `BSC Target <name>` measure (folder `Balanced Scorecard\Targets`).
+  3. Add `("<CODE>", "<measure>")` to `KPIS` in `tools/gen_bsc_kpi_lists.py` (and to `BUDGETS` for a budget target),
+     then run `python ssas/tools/gen_bsc_kpi_lists.py`.
+  4. Run `python ssas/tools/measure_guards.py`, then `python ssas/tools/sync_perspectives.py`.
+  5. Add a check for the new measure in `tests/measures/balanced_scorecard.json`.
+  6. Run `python -m pytest ssas/tools`; `test_bsc_kpi_lists_agree` fails when a list is missing the KPI, and
+     `test_gen_bsc_kpi_lists.py` when the generator was not run. Then deploy.
 - **Settings** (catalogue, targets, weights, thresholds, owners, categories, parameters, manual values) are rows in the
   ClickHouse `default.map_bsc_*` tables, edited by the BI manager (`docs/bsc_config.md`). They reach the model through
   the nightly build and `process.ps1 -Mode Daily`; no deploy is needed.

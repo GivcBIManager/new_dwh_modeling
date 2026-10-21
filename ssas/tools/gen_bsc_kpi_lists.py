@@ -1,0 +1,154 @@
+"""Write the scorecard's KPI lists into ssas/HNH_Analytics/tables/_Measures.tmdl (bsc visual plan, Task 9).
+
+BSC Actual, BSC Target and the measures that inline them (BSC Variance %, BSC Score, BSC State, BSC Visual Payload,
+BSC Visual Payload Scores) read every KPI measure in one ROW ( "@<CODE>", [<measure>], ... ) table and pick the KPI in
+context with SWITCH ( Code, "<CODE>", MAXX ( <table>, [@<CODE>] ), ..., BLANK () ). This tool rewrites every such ROW
+list and SWITCH lookup from KPIS (the KPI measures) and BUDGETS (the budget targets), keeping each block's indentation
+and lookup table. To add a KPI, add its line below and run the tool, then measure_guards.py and sync_perspectives.py.
+
+Usage: python ssas/tools/gen_bsc_kpi_lists.py [--check]   (--check: exit 1 when the file is not current)
+"""
+import re
+import sys
+from pathlib import Path
+
+MEASURES_FILE = Path(__file__).resolve().parents[1] / "HNH_Analytics" / "tables" / "_Measures.tmdl"
+
+# (KPI code in 'BSC KPI'[KPI Code], measure that computes its actual), in dispatch order.
+KPIS = [
+    ("FIN_NET_REVENUE", "BSC Net Revenue"),
+    ("FIN_REVENUE_GROWTH", "BSC Net Revenue"),
+    ("FIN_EBITDA_MARGIN", "BSC EBITDA Margin"),
+    ("FIN_COST_TO_REVENUE", "BSC Cost to Revenue"),
+    ("FIN_CONSUMABLES_RATIO", "BSC Consumables Ratio"),
+    ("FIN_DAYS_IN_AR", "BSC Days in AR (days)"),
+    ("FIN_DAYS_INVENTORY", "BSC Days Inventory (days)"),
+    ("FIN_REVENUE_PER_BED", "BSC Revenue per Bed"),
+    ("FIN_RETURN_ON_ASSETS", "BSC Return on Assets"),
+    ("FIN_EBITDA_PER_BED", "BSC EBITDA per Bed"),
+    ("FIN_REVENUE_PER_DOCTOR", "BSC Revenue per Doctor"),
+    ("FIN_EBITDA_PER_DOCTOR", "BSC EBITDA per Doctor"),
+    ("CUS_MULTI_SPECIALTY_SHARE", "BSC Multi-Specialty Revenue Share"),
+    ("CUS_PAYER_MIX", "BSC Payer Mix"),
+    ("CUS_PATIENT_SATISFACTION", "BSC Patient Satisfaction"),
+    ("CUS_PATIENT_RETENTION", "BSC Patient Retention"),
+    ("CUS_NEW_PATIENTS", "BSC New Patient Acquisition"),
+    ("CUS_OP_WAIT", "BSC OP Waiting Time (min)"),
+    ("CUS_NON_MOH_SHARE", "BSC Non-MoH Revenue Share"),
+    ("CUS_PAYER_VOLUME", "BSC Payer Volume"),
+    ("CUS_ACQUISITION_COST", "BSC Patient Acquisition Cost"),
+    ("INT_BED_OCCUPANCY", "BSC Bed Occupancy"),
+    ("INT_OP_UTILIZATION", "BSC Clinic Utilization"),
+    ("INT_ALOS", "BSC ALOS (days)"),
+    ("INT_OP_TO_IP", "BSC OP to IP Conversion"),
+    ("INT_PATIENT_VOLUME", "BSC Patient Volume"),
+    ("INT_ER_GROWTH", "BSC ER Growth"),
+    ("INT_DOCTOR_UTILIZATION", "BSC OP Doctor Utilization"),
+    ("INT_ACTIVATED_BEDS", "BSC Activated Beds"),
+    ("INT_HIGH_VALUE_REVENUE", "BSC High-Value Revenue Share"),
+    ("INT_HIGH_VALUE_CENSUS", "BSC High-Value Census"),
+    ("INT_OP_REVENUE_PER_EPISODE", "BSC OP Revenue per Episode"),
+    ("INT_ANCILLARY_UTILIZATION", "BSC Ancillary Utilization"),
+    ("INT_REVENUE_LEAKAGE", "BSC Revenue Leakage"),
+    ("INT_CLAIM_INITIAL_REJECTION", "BSC Claim Initial Rejection"),
+    ("INT_ORDER_NOT_DONE", "BSC Order Not Done"),
+    ("INT_APPROVAL_TAT", "BSC Approval TAT (min)"),
+    ("INT_COST_BUDGET_VARIANCE", "BSC Cost Budget Variance"),
+    ("INT_GA_RATIO", "BSC G&A Ratio"),
+    ("INT_READMISSION_30D", "BSC Readmission 30d"),
+    ("INT_READMISSION_48H_CRITICAL", "BSC Readmission 48h Critical"),
+    ("INT_EXTERNAL_REFERRALS", "BSC External Referrals"),
+    ("LRN_TURNOVER", "BSC Turnover"),
+    ("LRN_REVENUE_PER_FTE", "BSC Revenue per FTE"),
+    ("LRN_STAFF_TO_BED", "BSC Staff to Bed"),
+    ("LRN_SAUDIZATION", "BSC Saudization"),
+    ("LRN_VACANCY_RATE", "BSC Vacancy Rate"),
+    ("LRN_TIME_TO_FILL", "BSC Time to Fill (days)"),
+    ("LRN_CLINICAL_TO_DOCTOR", "BSC Clinical to Doctor"),
+]
+
+# (KPI code, measure that computes its budget target) for the KPIs whose Target Source is "budget".
+BUDGETS = [
+    ("FIN_NET_REVENUE", "BSC Target Net Revenue"),
+    ("FIN_EBITDA_MARGIN", "BSC Target EBITDA Margin"),
+    ("FIN_COST_TO_REVENUE", "BSC Target Cost to Revenue"),
+    ("FIN_CONSUMABLES_RATIO", "BSC Target Consumables Ratio"),
+    ("FIN_DAYS_INVENTORY", "BSC Target Days Inventory (days)"),
+    ("FIN_REVENUE_PER_BED", "BSC Target Revenue per Bed"),
+    ("FIN_EBITDA_PER_BED", "BSC Target EBITDA per Bed"),
+    ("FIN_REVENUE_PER_DOCTOR", "BSC Target Revenue per Doctor"),
+    ("FIN_EBITDA_PER_DOCTOR", "BSC Target EBITDA per Doctor"),
+    ("CUS_MULTI_SPECIALTY_SHARE", "BSC Target Multi-Specialty Share"),
+    ("CUS_PAYER_MIX", "BSC Target Payer Mix"),
+    ("CUS_NON_MOH_SHARE", "BSC Target Non-MoH Share"),
+    ("CUS_PAYER_VOLUME", "BSC Target Payer Volume"),
+    ("INT_OP_UTILIZATION", "BSC Target Clinic Utilization"),
+    ("INT_OP_TO_IP", "BSC Target OP to IP"),
+    ("INT_PATIENT_VOLUME", "BSC Target Patient Volume"),
+    ("INT_ER_GROWTH", "BSC Target ER Growth"),
+    ("INT_OP_REVENUE_PER_EPISODE", "BSC Target OP Revenue per Episode"),
+    ("INT_ANCILLARY_UTILIZATION", "BSC Target Ancillary Utilization"),
+    ("INT_GA_RATIO", "BSC Target G&A Ratio"),
+    ("LRN_REVENUE_PER_FTE", "BSC Target Revenue per FTE"),
+]
+
+# ROW ( then "@<CODE>", [<measure>] lines one tab deeper, up to the ) at the ROW's indentation. A list of budget
+# targets when every measure is a "BSC Target ..." measure.
+ROW_RE = re.compile(r'(?m)^(\t*)ROW \(\n((?:\1\t"@[^"]+", \[[^\]]+\],?\n)+)(?=\1\))')
+# Code, then "<CODE>", MAXX ( <table>, [@<CODE>] ), lines up to BLANK (). Budget targets when <table> says Budget.
+SWITCH_RE = re.compile(r'(?m)^(\t*)Code,\n((?:\1"[^"]+", MAXX \( (\w+), \[@[^\]]+\] \),\n)+)(?=\1BLANK \(\))')
+MEASURE_RE = re.compile(r"(?m)^\tmeasure (?:'((?:[^']|'')+)'|(\S+))")
+
+
+def _row_kind(block: str) -> str:
+    measures = re.findall(r'"@[^"]+", \[([^\]]+)\]', block)
+    return "budget" if all(m.startswith("BSC Target ") for m in measures) else "kpi"
+
+
+def _switch_kind(table: str) -> str:
+    return "budget" if "Budget" in table else "kpi"
+
+
+def _measure_at(text: str, pos: int) -> str:
+    names = [m.group(1) or m.group(2) for m in MEASURE_RE.finditer(text, 0, pos)]
+    return names[-1].replace("''", "'") if names else ""
+
+
+def list_blocks(text: str) -> list:
+    """(measure name, "ROW kpi" | "ROW budget" | "SWITCH kpi" | "SWITCH budget") of every KPI list in the text."""
+    found = [(m.start(), "ROW " + _row_kind(m.group(2))) for m in ROW_RE.finditer(text)]
+    found += [(m.start(), "SWITCH " + _switch_kind(m.group(3))) for m in SWITCH_RE.finditer(text)]
+    return [(_measure_at(text, pos), kind) for pos, kind in sorted(found)]
+
+
+def render(text: str, kpis: list = KPIS, budgets: list = BUDGETS) -> str:
+    """The text with every ROW list and SWITCH lookup rewritten from the KPI lists."""
+    def row(m):
+        lines = budgets if _row_kind(m.group(2)) == "budget" else kpis
+        entries = ",\n".join(f'{m.group(1)}\t"@{code}", [{measure}]' for code, measure in lines)
+        return f"{m.group(1)}ROW (\n{entries}\n"
+
+    def switch(m):
+        tabs, table = m.group(1), m.group(3)
+        lines = budgets if _switch_kind(table) == "budget" else kpis
+        return f"{tabs}Code,\n" + "".join(f'{tabs}"{code}", MAXX ( {table}, [@{code}] ),\n' for code, _ in lines)
+
+    return SWITCH_RE.sub(switch, ROW_RE.sub(row, text))
+
+
+def main() -> int:
+    text = MEASURES_FILE.read_text(encoding="utf-8")
+    new = render(text)
+    if "--check" in sys.argv[1:]:
+        if new != text:
+            print("KPI lists out of date: run python ssas/tools/gen_bsc_kpi_lists.py")
+            return 1
+        return 0
+    if new != text:
+        MEASURES_FILE.write_text(new, encoding="utf-8", newline="\n")
+    print(f"{len(list_blocks(new))} KPI lists in {MEASURES_FILE.name}: {len(KPIS)} KPIs, {len(BUDGETS)} budget targets")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

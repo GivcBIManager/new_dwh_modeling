@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import hnh_tmdl as t  # noqa: E402
 import model_config as cfg  # noqa: E402
+import gen_bsc_kpi_lists  # noqa: E402
 
 SSAS = Path(__file__).resolve().parents[1]
 MODEL = SSAS / "HNH_Analytics"
@@ -118,8 +119,8 @@ def test_measure_guards_are_current():
 # The scorecard measures that hold the KPI dispatch lists (bsc visual plan, Task 9): (ROW lists of KPI measures, ROW
 # lists of budget targets) and as many SWITCH ( Code, "<CODE>", MAXX ( <table>, [@<CODE>] ), ... ) lookups of each.
 BSC_KPI_LISTS = {"BSC Actual": (1, 0), "BSC Target": (0, 1), "BSC Variance %": (1, 1), "BSC Score": (1, 1),
-                 "BSC State": (1, 1), "BSC Visual Payload": (1, 1)}
-BSC_MEASURE_KPIS, BSC_BUDGET_KPIS = 49, 21
+                 "BSC State": (1, 1), "BSC Visual Payload": (1, 1), "BSC Visual Payload Scores": (1, 1)}
+BSC_MEASURE_KPIS, BSC_BUDGET_KPIS = len(gen_bsc_kpi_lists.KPIS), len(gen_bsc_kpi_lists.BUDGETS)  # 49, 21
 
 
 def bsc_kpi_list_problems(measures) -> list:
