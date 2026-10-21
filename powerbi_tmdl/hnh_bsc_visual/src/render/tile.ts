@@ -32,9 +32,9 @@ export function tile(row: KpiRow): HTMLElement {
             el("div", { class: "val" }, [formatValue(row.actual, row.valueFormat)]),
             el("div", { class: "tgt" }, [note ? `${targetText} · ${note}` : targetText]),
         ]);
-        const body = el("div", { style: "display:flex;align-items:flex-end;gap:16px" }, [left]);
+        const body = el("div", { class: "body" }, [left]);
         if (row.trend.filter(finite).length >= 2) {
-            body.appendChild(el("div", { style: "margin-left:auto" }, [sparkline(row.trend, row.targetTrend, row.primary ? 340 : 150, row.primary ? 64 : 44)]));
+            body.appendChild(el("div", { class: "sparkbox" }, [sparkline(row.trend, row.targetTrend, row.primary ? 340 : 150, row.primary ? 64 : 44)]));
         }
         root.appendChild(body);
     } else {
@@ -45,7 +45,7 @@ export function tile(row: KpiRow): HTMLElement {
     const meta = el("div", { class: "meta" }, [el("span", {}, [row.owner ? `Owner ${row.owner}` : null])]);
     if (row.manual) meta.appendChild(el("span", { class: "badge manual" }, ["Manual entry"]));
     if (hasValue && finite(row.score)) {
-        meta.appendChild(el("span", { style: "margin-left:auto" }, [`Score ${Math.round(row.score)}`]));
+        meta.appendChild(el("span", { class: "score" }, [`Score ${Math.round(row.score)}`]));
     }
     root.appendChild(meta);
     return root;
