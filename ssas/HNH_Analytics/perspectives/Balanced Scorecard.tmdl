@@ -1,0 +1,188 @@
+perspective 'Balanced Scorecard'
+
+	perspectiveTable 'Admission Source'
+		includeAll
+
+	perspectiveTable 'Admission Treating Doctor'
+		includeAll
+
+	perspectiveTable Admissions
+		includeAll
+
+	perspectiveTable 'Appointment Outcome'
+		includeAll
+
+	perspectiveTable 'BSC Budgeted FTE'
+		includeAll
+
+	perspectiveTable 'BSC KPI'
+		includeAll
+
+	perspectiveTable 'BSC Licensed Beds'
+		includeAll
+
+	perspectiveTable 'BSC Manual Values'
+		includeAll
+
+	perspectiveTable 'BSC Parameters'
+		includeAll
+
+	perspectiveTable 'BSC Targets'
+		includeAll
+
+	perspectiveTable 'BSC Weights'
+		includeAll
+
+	perspectiveTable Bed
+		includeAll
+
+	perspectiveTable 'Bed Occupancy'
+		includeAll
+
+	perspectiveTable 'Booked Doctor'
+		includeAll
+
+	perspectiveTable Branch
+		includeAll
+
+	perspectiveTable 'Budget Line'
+		includeAll
+
+	perspectiveTable 'Care Type'
+		includeAll
+
+	perspectiveTable 'Charge Lines'
+		includeAll
+
+	perspectiveTable 'Claim Lines'
+		includeAll
+
+	perspectiveTable 'Claim Status'
+		includeAll
+
+	perspectiveTable 'Clinic Capacity'
+		includeAll
+
+	perspectiveTable Date
+		includeAll
+
+	perspectiveTable Department
+		includeAll
+
+	perspectiveTable 'Discharge Outcome'
+		includeAll
+
+	perspectiveTable 'ER Priority'
+		includeAll
+
+	perspectiveTable 'Eligibility Type'
+		includeAll
+
+	perspectiveTable Employee
+		includeAll
+
+	perspectiveTable Encounters
+		includeAll
+
+	perspectiveTable Episodes
+		includeAll
+
+	perspectiveTable 'GL FS Monthly'
+		includeAll
+
+	perspectiveTable 'Income Statement'
+		includeAll
+
+	perspectiveTable Invoices
+		includeAll
+
+	perspectiveTable 'NPHIES Reason'
+		includeAll
+
+	perspectiveTable Patient
+		includeAll
+
+	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable 'Pre-auth Lines'
+		includeAll
+
+	perspectiveTable 'Pre-auth Outcome'
+		includeAll
+
+	perspectiveTable 'Product Category'
+		includeAll
+
+	perspectiveTable Requisitions
+		includeAll
+
+	perspectiveTable Service
+		includeAll
+
+	perspectiveTable Staff
+		includeAll
+
+	perspectiveTable 'Survey Answers'
+		includeAll
+
+	perspectiveTable 'Survey Question'
+		includeAll
+
+	perspectiveTable 'Survey Service'
+		includeAll
+
+	perspectiveTable Targets
+		includeAll
+
+	perspectiveTable Time
+		includeAll
+
+	perspectiveTable 'Workforce Monthly'
+		includeAll
+
+	perspectiveTable 'Time Calculation'
+		includeAll
+
+	perspectiveTable _Measures
+		perspectiveMeasure 'Current User'
+		perspectiveMeasure '_Guard AP Invoice Lines'
+		perspectiveMeasure '_Guard AP Open Items'
+		perspectiveMeasure '_Guard AP Payments'
+		perspectiveMeasure '_Guard Absence Days'
+		perspectiveMeasure '_Guard Absence Days + Headcount'
+		perspectiveMeasure '_Guard Admissions'
+		perspectiveMeasure '_Guard Admissions + Bed Occupancy'
+		perspectiveMeasure '_Guard Admissions + Episodes | Admission Source'
+		perspectiveMeasure '_Guard Bed Occupancy'
+		perspectiveMeasure '_Guard Cash Receipts'
+		perspectiveMeasure '_Guard Charge Lines'
+		perspectiveMeasure '_Guard Charge Lines + Revenue Adjustments'
+		perspectiveMeasure '_Guard Claim Lines'
+		perspectiveMeasure '_Guard Claim Payments'
+		perspectiveMeasure '_Guard Clinic Capacity'
+		perspectiveMeasure '_Guard Encounters'
+		perspectiveMeasure '_Guard Episode Billing'
+		perspectiveMeasure '_Guard Episodes'
+		perspectiveMeasure '_Guard GL Balances'
+		perspectiveMeasure '_Guard Headcount'
+		perspectiveMeasure '_Guard Headcount + Payroll'
+		perspectiveMeasure '_Guard Headcount + Worker Movements'
+		perspectiveMeasure '_Guard Income Statement'
+		perspectiveMeasure '_Guard Invoices'
+		perspectiveMeasure '_Guard Leave Balances'
+		perspectiveMeasure '_Guard Order Lines'
+		perspectiveMeasure '_Guard Patient Consumption'
+		perspectiveMeasure '_Guard Payroll'
+		perspectiveMeasure '_Guard Pre-auth Lines'
+		perspectiveMeasure '_Guard Purchase Lines'
+		perspectiveMeasure '_Guard Revenue Adjustments'
+		perspectiveMeasure '_Guard Staff Productivity'
+		perspectiveMeasure '_Guard Stock Monthly'
+		perspectiveMeasure '_Guard Stock Monthly + Stock Movements'
+		perspectiveMeasure '_Guard Stock Movements'
+		perspectiveMeasure '_Guard Surgeries'
+		perspectiveMeasure '_Guard Survey Answers'
+		perspectiveMeasure '_Guard Survey Responses'
+		perspectiveMeasure '_Guard Targets'
+		perspectiveMeasure '_Guard Worker Movements'

@@ -1,0 +1,95 @@
+/// Monthly GL balances per hospital and account, Oasis before each branch's Fusion cutover and Fusion after it.
+table 'GL FS Monthly'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Account Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: account_code
+
+	column 'FS Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_type
+
+	column 'FS Element'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_element
+
+	column 'FS Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_category
+
+	column 'FS Caption'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_caption
+
+	column 'FS Line'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_line
+
+	column 'Opening Balance'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: opening_balance
+
+	column 'Opening Journal Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: opening_journal_amount
+
+	column Movement
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: movement
+
+	column 'Closing Balance'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: closing_balance
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	partition 'GL FS Monthly' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_gl_fs_monthly")
+				in
+				    Source
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_gl_fs_monthly

@@ -27,6 +27,8 @@ def test_friendly_names_and_acronyms():
     assert t.friendly("staff_name_ar") == "Staff Name AR"
     assert t.friendly("can_see_pii") == "Can See PII"
     assert t.friendly("is_icu_readmission_48h") == "Is ICU Readmission 48h"
+    assert t.friendly("bsc_category") == "BSC Category"
+    assert t.friendly("kpi_code") == "KPI Code"
 
 
 def test_quoting():

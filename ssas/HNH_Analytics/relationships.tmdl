@@ -181,6 +181,54 @@ relationship bed_occupancy_department_key
 	fromColumn: 'Bed Occupancy'.'Department Key'
 	toColumn: Department.'Department Key'
 
+relationship bsc_budgeted_fte_branch_key
+	fromColumn: 'BSC Budgeted FTE'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bsc_budgeted_fte_year_date_key
+	fromColumn: 'BSC Budgeted FTE'.'Year Date Key'
+	toColumn: Date.'Date Key'
+
+relationship bsc_licensed_beds_branch_key
+	fromColumn: 'BSC Licensed Beds'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bsc_licensed_beds_year_date_key
+	fromColumn: 'BSC Licensed Beds'.'Year Date Key'
+	toColumn: Date.'Date Key'
+
+relationship bsc_manual_values_branch_key
+	fromColumn: 'BSC Manual Values'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bsc_manual_values_bsc_kpi_key
+	fromColumn: 'BSC Manual Values'.'BSC KPI Key'
+	toColumn: 'BSC KPI'.'BSC KPI Key'
+
+relationship bsc_manual_values_month_date_key
+	fromColumn: 'BSC Manual Values'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship bsc_targets_branch_key
+	fromColumn: 'BSC Targets'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bsc_targets_bsc_kpi_key
+	fromColumn: 'BSC Targets'.'BSC KPI Key'
+	toColumn: 'BSC KPI'.'BSC KPI Key'
+
+relationship bsc_targets_month_date_key
+	fromColumn: 'BSC Targets'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship bsc_weights_branch_key
+	fromColumn: 'BSC Weights'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bsc_weights_bsc_kpi_key
+	fromColumn: 'BSC Weights'.'BSC KPI Key'
+	toColumn: 'BSC KPI'.'BSC KPI Key'
+
 relationship budget_branch_key
 	fromColumn: Budget.'Branch Key'
 	toColumn: Branch.'Branch Key'
@@ -484,6 +532,14 @@ relationship gl_balances_period_end_date_key
 relationship gl_balances_period_key
 	fromColumn: 'GL Balances'.'Period Key'
 	toColumn: 'GL Period'.'Period Key'
+
+relationship gl_fs_monthly_branch_key
+	fromColumn: 'GL FS Monthly'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship gl_fs_monthly_month_date_key
+	fromColumn: 'GL FS Monthly'.'Month Date Key'
+	toColumn: Date.'Date Key'
 
 relationship gl_journal_lines_accounting_date_key
 	fromColumn: 'GL Journal Lines'.'Accounting Date Key'
@@ -840,6 +896,19 @@ relationship purchase_lines_supplier_key
 	fromColumn: 'Purchase Lines'.'Supplier Key'
 	toColumn: Supplier.'Supplier Key'
 
+relationship requisitions_approved_date_key
+	isActive: false
+	fromColumn: Requisitions.'Approved Date Key'
+	toColumn: Date.'Date Key'
+
+relationship requisitions_branch_key
+	fromColumn: Requisitions.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship requisitions_filled_date_key
+	fromColumn: Requisitions.'Filled Date Key'
+	toColumn: Date.'Date Key'
+
 relationship revenue_adjustments_adjustment_date_key
 	fromColumn: 'Revenue Adjustments'.'Adjustment Date Key'
 	toColumn: Date.'Date Key'
@@ -1107,3 +1176,19 @@ relationship worker_movements_staff_key
 relationship worker_movements_worker_action_key
 	fromColumn: 'Worker Movements'.'Worker Action Key'
 	toColumn: 'Worker Action'.'Worker Action Key'
+
+relationship workforce_monthly_branch_key
+	fromColumn: 'Workforce Monthly'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship workforce_monthly_employee_key
+	fromColumn: 'Workforce Monthly'.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship workforce_monthly_month_date_key
+	fromColumn: 'Workforce Monthly'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship workforce_monthly_staff_key
+	fromColumn: 'Workforce Monthly'.'Staff Key'
+	toColumn: Staff.'Staff Key'

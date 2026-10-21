@@ -252,6 +252,11 @@ table Admissions
 		summarizeBy: none
 		sourceColumn: is_dama
 
+	column 'Is Referral Policy'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_referral_policy
+
 	partition Admissions = m
 		source =
 				let

@@ -38,6 +38,11 @@ table 'Booked Doctor'
 		summarizeBy: none
 		sourceColumn: unified_specialty
 
+	column 'Is High Value Specialty'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_high_value_specialty
+
 	partition 'Booked Doctor' = m
 		source =
 				let

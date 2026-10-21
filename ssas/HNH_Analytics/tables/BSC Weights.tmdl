@@ -1,0 +1,36 @@
+/// Weight of each active KPI inside its pillar, per hospital.
+table 'BSC Weights'
+
+	column 'BSC KPI Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: bsc_kpi_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column Weight
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: weight
+
+	partition 'BSC Weights' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_bsc_weight")
+				in
+				    Source
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_bsc_weight

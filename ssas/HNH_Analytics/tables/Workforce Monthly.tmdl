@@ -1,0 +1,102 @@
+/// Heads, part-time doctors and resignations per hospital, month end and person, by the scorecard rules.
+table 'Workforce Monthly'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	column 'Person ID'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: person_id
+
+	column 'Row Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: row_type
+
+	column 'Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: staff_key
+
+	column 'Employee Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: employee_key
+
+	column Headcount
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: headcount
+
+	column FTE
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: fte
+
+	column 'Is Doctor'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_doctor
+
+	column 'Is Medical'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_medical
+
+	column 'Is Saudi'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: is_saudi
+
+	column Resignations
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: resignations
+
+	column 'Data Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: data_source
+
+	partition 'Workforce Monthly' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_bsc_workforce_monthly")
+				in
+				    Source
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_bsc_workforce_monthly

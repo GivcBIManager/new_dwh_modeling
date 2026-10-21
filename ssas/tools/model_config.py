@@ -86,10 +86,22 @@ TABLES = [
     Table("ssas_fact_absence", "Absences", "fact", "One absence entry."),
     Table("ssas_fact_absence_daily", "Absence Days", "fact", "One counted absence day per employee."),
     Table("ssas_agg_staff_productivity_monthly", "Staff Productivity", "fact", "Monthly encounters, revenue and payroll per linked doctor or nurse; pay access only."),
+    # Balanced scorecard (bsc ssas spec 6.3): settings from the BI manager's config tables, and the facts its KPIs read.
+    Table("ssas_dim_bsc_kpi", "BSC KPI", "dim", "Balanced-scorecard KPIs with their objective, pillar, thresholds and corporate weight."),
+    Table("ssas_dim_bsc_parameter", "BSC Parameters", "dim", "Scorecard parameters (clinic hours per day, patients per hour, ancillary target share)."),
+    Table("ssas_fact_bsc_target_monthly", "BSC Targets", "fact", "Fixed KPI targets per hospital and month."),
+    Table("ssas_fact_bsc_weight", "BSC Weights", "fact", "Weight of each active KPI inside its pillar, per hospital."),
+    Table("ssas_fact_bsc_manual_value", "BSC Manual Values", "fact", "Monthly KPI values entered by the BI manager."),
+    Table("ssas_fact_bsc_budgeted_fte", "BSC Budgeted FTE", "fact", "Budgeted FTE per hospital and year (job vacancy rate)."),
+    Table("ssas_fact_bsc_licensed_beds", "BSC Licensed Beds", "fact", "Licensed beds per hospital and year (activated bed rate)."),
+    Table("ssas_fact_gl_fs_monthly", "GL FS Monthly", "fact", "Monthly GL balances per hospital and account, Oasis before each branch's Fusion cutover and Fusion after it."),
+    Table("ssas_fact_bsc_workforce_monthly", "Workforce Monthly", "fact", "Heads, part-time doctors and resignations per hospital, month end and person, by the scorecard rules."),
+    Table("ssas_fact_recruiting_requisition", "Requisitions", "fact", "Approved Oracle Recruiting requisitions of the hospitals."),
 ]
 
 DIM_KEYS = {
     "branch_key": ("Branch", "branch_key"),
+    "bsc_kpi_key": ("BSC KPI", "bsc_kpi_key"),
     "patient_key": ("Patient", "patient_key"),
     "care_type_key": ("Care Type", "care_type_key"),
     "service_key": ("Service", "service_key"),
@@ -184,6 +196,9 @@ ACTIVE_DATE = {
     "Worker Movements": "action_date_key", "Payroll": "month_date_key",
     "Leave Balances": "accrual_period_date_key", "Absences": "start_date_key", "Absence Days": "date_key",
     "Staff Productivity": "month_date_key",
+    "BSC Targets": "month_date_key", "BSC Manual Values": "month_date_key", "BSC Budgeted FTE": "year_date_key",
+    "BSC Licensed Beds": "year_date_key", "GL FS Monthly": "month_date_key", "Workforce Monthly": "month_date_key",
+    "Requisitions": "filled_date_key",
 }
 
 ACTIVE_TIME = {
@@ -217,6 +232,9 @@ SORT_BY = {
     ("ssas_dim_fs_line", "fs_category"): "category_sort",
     ("ssas_dim_fs_line", "fs_caption"): "caption_sort",
     ("ssas_dim_fs_line", "fs_line"): "line_sort",
+    ("ssas_dim_bsc_kpi", "kpi_name"): "display_order",
+    ("ssas_dim_bsc_kpi", "pillar"): "pillar_order",
+    ("ssas_dim_bsc_kpi", "objective_title"): "objective_order",
 }
 
 # Spec 7. Each perspective gets its facts, every dimension they reach, and Time Calculation.
@@ -233,8 +251,14 @@ PERSPECTIVES = {
     "Supply Chain": ["Stock Movements", "Stock Monthly", "Patient Consumption", "Purchase Lines", "Goods Receipts"],
     "Patient Experience": ["Survey Responses", "Survey Answers"],
     "Patient Details": ["Encounters", "Admissions", "Episodes", "Invoices"],
+    "Balanced Scorecard": ["BSC Targets", "BSC Weights", "BSC Manual Values", "BSC Budgeted FTE", "BSC Licensed Beds",
+                           "GL FS Monthly", "Workforce Monthly", "Requisitions", "Charge Lines", "Encounters",
+                           "Admissions", "Episodes", "Bed Occupancy", "Clinic Capacity", "Claim Lines", "Pre-auth Lines",
+                           "Invoices", "Survey Answers", "Income Statement", "Targets"],
 }
-PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"], "Workforce": ["Employee Details"]}
+PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"], "Workforce": ["Employee Details"],
+                     "Balanced Scorecard": ["BSC Parameters"]}
 # Measures live in _Measures with display folder "<domain>\<topic>" (decision P26). A perspective shows the measures of
 # its own domain plus Diagnostics; these override that (None = every measure).
-PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"]}
+PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"],
+                               "Balanced Scorecard": ["Balanced Scorecard"]}

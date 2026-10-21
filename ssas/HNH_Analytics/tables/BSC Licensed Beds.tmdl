@@ -1,0 +1,36 @@
+/// Licensed beds per hospital and year (activated bed rate).
+table 'BSC Licensed Beds'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Year Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: year_date_key
+
+	column 'Licensed Beds'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: licensed_beds
+
+	partition 'BSC Licensed Beds' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_bsc_licensed_beds")
+				in
+				    Source
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_bsc_licensed_beds

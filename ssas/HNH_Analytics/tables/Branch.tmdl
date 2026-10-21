@@ -47,6 +47,16 @@ table Branch
 		summarizeBy: none
 		sourceColumn: pg_branch_code
 
+	column 'BSC Category'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: bsc_category
+
+	column 'Is Hospital'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_hospital
+
 	partition Branch = m
 		source =
 				let

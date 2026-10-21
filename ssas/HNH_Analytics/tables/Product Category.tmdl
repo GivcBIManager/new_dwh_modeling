@@ -45,6 +45,11 @@ table 'Product Category'
 		summarizeBy: none
 		sourceColumn: is_medication_category
 
+	column 'Is BSC Ancillary'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_bsc_ancillary
+
 	partition 'Product Category' = m
 		source =
 				let

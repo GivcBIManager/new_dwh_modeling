@@ -1,0 +1,193 @@
+/// Balanced-scorecard KPIs with their objective, pillar, thresholds and corporate weight.
+table 'BSC KPI'
+
+	hierarchy 'Pillar Objective KPI'
+
+		level Pillar
+			column: Pillar
+
+		level Objective
+			column: 'Objective Title'
+
+		level KPI
+			column: 'KPI Name'
+
+	column 'BSC KPI Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: bsc_kpi_key
+
+	column 'KPI Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: kpi_code
+
+	column 'KPI Num'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: kpi_num
+
+	column 'KPI Name'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Display Order'
+		sourceColumn: kpi_name
+
+	column 'Short Label'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: short_label
+
+	column Pillar
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Pillar Order'
+		sourceColumn: pillar
+
+	column 'Pillar Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: pillar_order
+
+	column 'Pillar Weight'
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: pillar_weight
+
+	column 'Pillar Question'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: pillar_question
+
+	column 'Objective Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: objective_code
+
+	column 'Objective Title'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Objective Order'
+		sourceColumn: objective_title
+
+	column 'Objective Question'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: objective_question
+
+	column 'Objective Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: objective_order
+
+	column 'KPI Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: kpi_type
+
+	column Direction
+		dataType: string
+		summarizeBy: none
+		sourceColumn: direction
+
+	column 'Value Format'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: value_format
+
+	column 'Chart Hint'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: chart_hint
+
+	column 'Display Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: display_order
+
+	column Definition
+		dataType: string
+		summarizeBy: none
+		sourceColumn: definition
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	column 'Target Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: target_source
+
+	column 'Value Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: value_source
+
+	column 'Detail Page'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: detail_page
+
+	column Owner
+		dataType: string
+		summarizeBy: none
+		sourceColumn: owner
+
+	column 'Co Owners'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: co_owners
+
+	column 'Score Base'
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: score_base
+
+	column 'Score Slope'
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: score_slope
+
+	column 'Good From'
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: good_from
+
+	column 'Watch From'
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: watch_from
+
+	column 'Corporate Weight'
+		dataType: double
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: corporate_weight
+
+	column 'Is Active'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_active
+
+	partition 'BSC KPI' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_bsc_kpi")
+				in
+				    Source
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_bsc_kpi

@@ -13,7 +13,7 @@ import model_config as cfg  # noqa: E402
 SSAS = Path(__file__).resolve().parents[1]
 MODEL = SSAS / "HNH_Analytics"
 DOMAINS = {"Patient Flow", "Revenue Cycle", "Claims & Pre-auth", "Finance", "Workforce", "Supply Chain",
-           "Patient Experience", t.DIAGNOSTICS}
+           "Patient Experience", "Balanced Scorecard", t.DIAGNOSTICS}
 MEASURES_TEXT = (MODEL / "tables" / f"{t.MEASURE_TABLE}.tmdl").read_text(encoding="utf-8")
 MEASURES = t.measures(MEASURES_TEXT)
 NAMES = {m.name for m in MEASURES}
@@ -113,3 +113,12 @@ def test_measure_guards_are_current():
     import measure_guards
     rels, kinds = measure_guards.model_inputs(MODEL)
     assert measure_guards.render(MEASURES_TEXT, rels, kinds) == MEASURES_TEXT, "run python ssas/tools/measure_guards.py"
+
+
+def test_bsc_tables_generated():
+    kpi = (MODEL / "tables" / "BSC KPI.tmdl").read_text(encoding="utf-8")
+    assert "column 'KPI Code'" in kpi
+    assert "hierarchy 'Pillar Objective KPI'" in kpi
+    rel = (MODEL / "relationships.tmdl").read_text(encoding="utf-8")
+    assert "fromColumn: 'BSC Targets'.'BSC KPI Key'" in rel and "toColumn: 'BSC KPI'.'BSC KPI Key'" in rel
+    assert (MODEL / "perspectives" / "Balanced Scorecard.tmdl").exists()

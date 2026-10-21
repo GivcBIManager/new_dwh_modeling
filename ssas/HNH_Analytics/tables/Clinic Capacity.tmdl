@@ -96,6 +96,14 @@ table 'Clinic Capacity'
 		summarizeBy: none
 		sourceColumn: scheduled_minutes
 
+	column 'BSC Capacity Slots'
+		dataType: double
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: bsc_capacity_slots
+
 	partition 'Clinic Capacity template' = m
 		source =
 				let

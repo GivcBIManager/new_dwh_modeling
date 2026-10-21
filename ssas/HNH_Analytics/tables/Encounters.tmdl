@@ -235,6 +235,11 @@ table Encounters
 		summarizeBy: none
 		sourceColumn: booking_lead_days
 
+	column 'Is Referral Policy'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_referral_policy
+
 	partition 'Encounters template' = m
 		source =
 				let

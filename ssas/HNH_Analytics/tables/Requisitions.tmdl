@@ -1,0 +1,57 @@
+/// Approved Oracle Recruiting requisitions of the hospitals.
+table Requisitions
+
+	column 'Requisition ID'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: requisition_id
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Approved Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: approved_date_key
+
+	column 'Filled Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: filled_date_key
+
+	column 'Number To Hire'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: number_to_hire
+
+	column 'Days To Fill'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: days_to_fill
+
+	partition Requisitions = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_recruiting_requisition")
+				in
+				    Source
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_recruiting_requisition

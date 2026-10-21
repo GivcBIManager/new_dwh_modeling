@@ -13,6 +13,13 @@ ref table 'Admission Treating Doctor'
 ref table Admissions
 ref table Anaesthetist
 ref table 'Appointment Outcome'
+ref table 'BSC Budgeted FTE'
+ref table 'BSC KPI'
+ref table 'BSC Licensed Beds'
+ref table 'BSC Manual Values'
+ref table 'BSC Parameters'
+ref table 'BSC Targets'
+ref table 'BSC Weights'
 ref table Bed
 ref table 'Bed Occupancy'
 ref table 'Booked Doctor'
@@ -39,6 +46,7 @@ ref table Episodes
 ref table 'FS Line'
 ref table 'GL Account'
 ref table 'GL Balances'
+ref table 'GL FS Monthly'
 ref table 'GL Journal Lines'
 ref table 'GL Period'
 ref table 'Goods Receipts'
@@ -66,6 +74,7 @@ ref table 'Pre-auth Outcome'
 ref table 'Procedure Type'
 ref table 'Product Category'
 ref table 'Purchase Lines'
+ref table Requisitions
 ref table 'Revenue Adjustments'
 ref table Service
 ref table Staff
@@ -85,6 +94,7 @@ ref table 'Time Calculation'
 ref table 'User Access'
 ref table 'Worker Action'
 ref table 'Worker Movements'
+ref table 'Workforce Monthly'
 ref table _Measures
 
 ref role 'HNH Admins'
@@ -99,3 +109,4 @@ ref perspective Workforce
 ref perspective 'Supply Chain'
 ref perspective 'Patient Experience'
 ref perspective 'Patient Details'
+ref perspective 'Balanced Scorecard'
