@@ -49,12 +49,12 @@ function setup(allow = true, mode: "overview" | "board" = "board") {
 const tileOf = (root: HTMLElement, key: number) => root.querySelector(`.tile[data-key="${key}"]`) as HTMLElement;
 
 describe("tooltipItems", () => {
-    it("lists the eight items in order with formatted values", () => {
+    it("lists the nine items in order with formatted values", () => {
         const r = { name: "Revenue", objectiveTitle: "Grow", actual: 0.42, target: 0.4, variance: 0.05, score: 87.4, stateWord: "On track", owner: "CFO", manual: false, valueFormat: "pct" } as KpiRow;
         const items = tooltipItems(r);
-        expect(items.map(i => i.displayName)).toEqual(["Objective title", "Actual", "Target", "Variance", "Score", "State", "Owner", "Source"]);
-        expect(items.map(i => i.value)).toEqual(["Grow", "42.0%", "40.0%", "+5.0%", "87", "On track", "CFO", "Measure"]);
-        expect(tooltipItems({ ...r, manual: true, owner: "", actual: null } as KpiRow).map(i => i.value)).toEqual(["Grow", "–", "40.0%", "+5.0%", "87", "On track", "–", "Manual entry"]);
+        expect(items.map(i => i.displayName)).toEqual(["KPI", "Objective title", "Actual", "Target", "Variance", "Score", "State", "Owner", "Source"]);
+        expect(items.map(i => i.value)).toEqual(["Revenue", "Grow", "42.0%", "40.0%", "+5.0%", "87", "On track", "CFO", "Measure"]);
+        expect(tooltipItems({ ...r, manual: true, owner: "", actual: null } as KpiRow).map(i => i.value)).toEqual(["Revenue", "Grow", "–", "40.0%", "+5.0%", "87", "On track", "–", "Manual entry"]);
     });
 });
 
@@ -98,7 +98,7 @@ describe("wire", () => {
         expect(arg.identities).toEqual([ids.get("0:")]);
         expect(arg.coordinates).toEqual([10, 20]);
         expect(arg.isTouchEvent).toBe(false);
-        expect(arg.dataItems.length).toBe(8);
+        expect(arg.dataItems.length).toBe(9);
         tileOf(root, 0).dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
         expect(calls[1].fn).toBe("hide");
     });
@@ -135,5 +135,21 @@ describe("wire", () => {
         off();
         root.firstElementChild!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(f.calls).toEqual([]);
+    });
+    it("removes dimmed after a clear on empty space", async () => {
+        const { root } = setup();
+        tileOf(root, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        await Promise.resolve(); await Promise.resolve();
+        root.querySelector(".grid")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        await Promise.resolve(); await Promise.resolve();
+        expect(root.querySelectorAll(".dimmed, .selected").length).toBe(0);
+    });
+    it("does not hide the tooltip when the pointer moves inside the same tile", () => {
+        const { root, calls } = setup();
+        const t = tileOf(root, 0);
+        t.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: t.querySelector("h4") }));
+        expect(calls).toEqual([]);
+        t.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: tileOf(root, 1) }));
+        expect(calls.map(c => c.fn)).toEqual(["hide"]);
     });
 });

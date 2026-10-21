@@ -130,3 +130,22 @@
 .hnh-bsc.hc .chip,.hnh-bsc.hc .var,.hnh-bsc.hc .cmp td{color:var(--hc-fg);border:1px solid var(--hc-fg)}
 .hnh-bsc.hc .strip i{background:var(--hc-bg);border:2px solid var(--hc-fg)}
 .hnh-bsc.hc .strip i.bad{background:var(--hc-fg)}
+
+/* SVG colours live here so high contrast can replace them */
+.gauge-track{stroke:#E4EBF3}
+.spark-target{stroke:#0A1E32}
+.spark-line{stroke:#32A4E5}
+.spark-dot{fill:#1478BE}
+.mark-shape{fill:url(#hnh-mk)}
+.mk-a{stop-color:#fff}.mk-b{stop-color:#DDEFFA}
+.ribbon-shape{fill:#fff}
+.hnh-bsc.hc .gauge-track{stroke:var(--hc-bg);stroke-dasharray:none}
+.hnh-bsc.hc .gauge{outline:1px dashed var(--hc-fg)}
+.hnh-bsc.hc .spark-target{stroke:var(--hc-fg)}
+.hnh-bsc.hc .spark-line{stroke:var(--hc-sel)}
+.hnh-bsc.hc .spark-dot{fill:var(--hc-sel)}
+.hnh-bsc.hc .mark-shape,.hnh-bsc.hc .ribbon-shape{fill:var(--hc-fg)}
+.hnh-bsc.hc .strip i.warn{background:linear-gradient(90deg,var(--hc-fg) 50%,var(--hc-bg) 50%)}
+.hnh-bsc.hc .strip i.nodata{background:var(--hc-bg);border-style:dashed}
+.hnh-bsc.hc .selected{outline-color:var(--hc-sel)}
+.cmp th[data-branch]:focus-visible{outline:3px solid var(--blue)}

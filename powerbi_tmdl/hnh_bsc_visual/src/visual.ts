@@ -31,15 +31,23 @@ export class Visual implements IVisual {
     private ids = new Map<string, ISelectionId>();
     private vm: ViewModel | null = null;
     private mode: Mode = "overview";
-    private ui: UiState = readOptions(undefined).ui;
+    private setUi: UiState = readOptions(undefined).ui;
+    private pick: { pillar: string | null; focusBranch: string | null } = { pillar: null, focusBranch: null };
     private interactive = true;
 
-    constructor(options: VisualConstructorOptions) {
+    constructor(options: VisualConstructorOptions, private read: typeof readOptions = readOptions) {
         this.root = options.element;
         this.host = options.host;
         this.selectionManager = options.host.createSelectionManager();
         this.selectionManager.registerOnSelectCallback(() => this.refreshSelection());
         this.root.addEventListener("click", e => this.onInternalClick(e));
+        this.root.addEventListener("keydown", e => {
+            if ((e.key !== "Enter" && e.key !== " ") || !(e.target instanceof Element)) return;
+            const th = e.target.closest("th[data-branch]") as HTMLElement | null;
+            if (!th || th !== e.target) return;
+            e.preventDefault();
+            this.pickFrom(th);
+        });
     }
 
     public update(options: VisualUpdateOptions): void {
@@ -47,15 +55,22 @@ export class Visual implements IVisual {
         events.renderingStarted(options);
         try {
             const dv = options.dataViews && options.dataViews[0];
-            const opt = readOptions(dv);
-            // A changed pillar or hospital choice from the settings wins; internal clicks keep their pick until then.
+            const opt = this.read(dv);
+            // A changed setting wins over an earlier tab or hospital click.
+            if (opt.ui.pillar !== this.setUi.pillar) this.pick.pillar = null;
+            if (opt.ui.focusBranch !== this.setUi.focusBranch) this.pick.focusBranch = null;
+            this.setUi = opt.ui;
             this.mode = opt.mode;
-            this.ui = { ...opt.ui, pillar: this.ui.pillar ?? opt.ui.pillar, focusBranch: this.ui.focusBranch ?? opt.ui.focusBranch };
             this.vm = parseDataView(dv as DataView);
+            if (this.pick.pillar !== null && !this.vm.pillars.some(p => p.name === this.pick.pillar)) this.pick.pillar = null;
+            if (this.pick.focusBranch !== null && !this.vm.branches.includes(this.pick.focusBranch)) this.pick.focusBranch = null;
             this.ids = this.buildIds(dv, this.vm);
             this.render();
             events.renderingFinished(options);
         } catch (error) {
+            this.unwire();
+            this.vm = null;
+            this.ids = new Map();
             this.root.replaceChildren();
             events.renderingFailed(options, error instanceof Error ? error.message : String(error));
         }
@@ -66,7 +81,8 @@ export class Visual implements IVisual {
         this.unwire();
         this.interactive = this.host.hostCapabilities?.allowInteractions !== false;
         this.applyPalette();
-        renderView(this.root, this.vm, this.mode, this.ui);
+        const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, focusBranch: this.pick.focusBranch ?? this.setUi.focusBranch };
+        renderView(this.root, this.vm, this.mode, ui);
         this.root.classList.toggle("hc", !!this.host.colorPalette?.isHighContrast);
         const rows = this.vm.pillars.flatMap(p => p.kpis);
         this.unwire = wire(this.root, rows, this.ids, {
@@ -92,9 +108,13 @@ export class Visual implements IVisual {
     private onInternalClick(e: MouseEvent): void {
         if (!this.interactive || !this.vm || !(e.target instanceof Element)) return;
         const hit = e.target.closest(INTERNAL_SELECTOR) as HTMLElement | null;
-        if (!hit) return;
-        if (hit.dataset.pillar !== undefined) this.ui = { ...this.ui, pillar: hit.dataset.pillar };
-        else if (hit.dataset.branch !== undefined) this.ui = { ...this.ui, focusBranch: hit.dataset.branch };
+        if (hit) this.pickFrom(hit);
+    }
+
+    private pickFrom(hit: HTMLElement): void {
+        if (!this.interactive || !this.vm) return;
+        if (hit.dataset.pillar !== undefined) this.pick.pillar = hit.dataset.pillar;
+        else if (hit.dataset.branch !== undefined) this.pick.focusBranch = hit.dataset.branch;
         this.render();
     }
 

@@ -30,6 +30,7 @@ export function tooltipItems(row: KpiRow): VisualTooltipDataItem[] {
     const has = (v: number | null) => v !== null && v !== undefined && Number.isFinite(v);
     const item = (displayName: string, value: string): VisualTooltipDataItem => ({ displayName, value });
     return [
+        item("KPI", row.name || DASH),
         item("Objective title", row.objectiveTitle || DASH),
         item("Actual", has(row.actual) ? formatValue(row.actual, row.valueFormat) : DASH),
         item("Target", has(row.target) ? formatValue(row.target, row.valueFormat) : DASH),
@@ -119,7 +120,11 @@ export function wire(root: HTMLElement, rows: KpiRow[], ids: Map<string, ISelect
         if (!row || !id) { host.tooltipService.hide({ immediately: false, isTouchEvent: false }); return; }
         host.tooltipService.show({ dataItems: tooltipItems(row), identities: [id], coordinates: [e.clientX, e.clientY], isTouchEvent: false });
     };
-    const onLeave = () => host.tooltipService.hide({ immediately: false, isTouchEvent: false });
+    const onLeave = (e: MouseEvent) => {
+        const from = cellOf(e.target);
+        if (from && e.relatedTarget instanceof Node && from.contains(e.relatedTarget)) return;
+        host.tooltipService.hide({ immediately: false, isTouchEvent: false });
+    };
 
     root.addEventListener("click", onClick);
     root.addEventListener("contextmenu", onContext);

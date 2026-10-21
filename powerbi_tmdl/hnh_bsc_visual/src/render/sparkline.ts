@@ -30,8 +30,8 @@ export function sparkPath(values: (number | null)[], target: (number | null)[], 
 export function sparkline(values: (number | null)[], target: (number | null)[], w: number, h: number): SVGSVGElement {
     const s = svg("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, "aria-hidden": "true", class: "spark" });
     const p = sparkPath(values, target, w, h);
-    if (p.targetLine) s.appendChild(svg("path", { d: p.targetLine, fill: "none", stroke: "#0A1E32", "stroke-dasharray": "3 3", "stroke-width": 1, class: "spark-target" }));
-    if (p.line) s.appendChild(svg("path", { d: p.line, fill: "none", stroke: "#32A4E5", "stroke-width": 2, class: "spark-line" }));
-    if (p.last) s.appendChild(svg("circle", { cx: p.last.x.toFixed(1), cy: p.last.y.toFixed(1), r: 3.5, fill: "#1478BE" }));
+    if (p.targetLine) s.appendChild(svg("path", { d: p.targetLine, fill: "none", "stroke-dasharray": "3 3", "stroke-width": 1, class: "spark-target" }));
+    if (p.line) s.appendChild(svg("path", { d: p.line, fill: "none", "stroke-width": 2, class: "spark-line" }));
+    if (p.last) s.appendChild(svg("circle", { cx: p.last.x.toFixed(1), cy: p.last.y.toFixed(1), r: 3.5, class: "spark-dot" }));
     return s;
 }

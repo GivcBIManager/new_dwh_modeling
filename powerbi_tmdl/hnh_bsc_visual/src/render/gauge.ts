@@ -13,7 +13,7 @@ export function gauge(score: number | null, size: number, good: number, label: s
         width: size, height: mid + 28, viewBox: `0 0 ${size} ${mid + 28}`, role: "img", class: "gauge",
         "aria-label": has ? `${label}: ${shown} out of 100` : `${label}: no data`,
     });
-    s.appendChild(svg("path", { d: arc, fill: "none", stroke: "#E4EBF3", "stroke-width": 22, "stroke-linecap": "round", class: "gauge-track" }));
+    s.appendChild(svg("path", { d: arc, fill: "none", "stroke-width": 22, "stroke-linecap": "round", class: "gauge-track" }));
     s.appendChild(svg("path", {
         d: arc, fill: "none", stroke: col, "stroke-width": 22, "stroke-linecap": "round", class: "gauge-arc",
         "stroke-dasharray": c.toFixed(2), "stroke-dashoffset": (c * (1 - pct)).toFixed(2),

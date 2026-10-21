@@ -24,7 +24,7 @@ export function comparison(vm: ViewModel, focus: string | null): HTMLElement {
         return el("span", { class: b === f ? "focus" : "" }, [`${b} `, el("b", {}, [num(s) ? String(Math.round(s)) : "–"])]);
     }));
 
-    const head = el("tr", {}, [el("th", {}, ["KPI"]), ...order.map(b => el("th", { class: b === f ? "focus" : "", "data-branch": b }, [b])), el("th", { class: "peer" }, ["Peer median"])]);
+    const head = el("tr", {}, [el("th", {}, ["KPI"]), ...order.map(b => el("th", { class: b === f ? "focus" : "", "data-branch": b, tabindex: 0 }, [b])), el("th", { class: "peer" }, ["Peer median"])]);
     const body = el("tbody");
     const every = vm.pillars.flatMap(p => p.kpis);
     for (const k of every.filter(r => r.seriesIndex === 0)) {
