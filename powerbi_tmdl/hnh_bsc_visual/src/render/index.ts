@@ -30,7 +30,7 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
     if (ui.showHeader) root.appendChild(header(vm, title, subtitle));
 
     const body = mode === "overview" ? overview(vm)
-        : mode === "board" ? board(vm, ui.pillar)
+        : mode === "board" ? board(vm, ui.pillar, !ui.showHeader)
         : mode === "owner" ? owner(vm)
         : comparison(vm, ui.focusBranch);
     root.appendChild(el("div", { class: "view" }, [body]));

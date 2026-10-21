@@ -18,8 +18,10 @@ export function header(vm: ViewModel, title: string, subtitle: string): HTMLElem
         svg("path", { fill: "#fff", d: "M600 0H430c-40 30-40 82 0 112h170z" }),
         svg("path", { fill: "#fff", d: "M410 0H300c-28 30-28 82 0 112h110c-40-30-40-82 0-112z", opacity: 0.6 }),
     ]);
-    const parts = vm.label.split("|").map(s => s.trim()).filter(Boolean);
-    const ctx = el("div", { class: "ctx" }, [el("b", {}, [parts[0] ?? ""]), parts.slice(1).join(" · ")]);
+    const sep = vm.label.indexOf(" · ");
+    const who = sep < 0 ? vm.label : vm.label.slice(0, sep);
+    const period = sep < 0 ? "" : vm.label.slice(sep + 3);
+    const ctx = el("div", { class: "ctx" }, [el("b", {}, [who]), period ? el("span", { class: "period" }, [period]) : null]);
     return el("div", { class: "band" }, [
         mark,
         el("div", {}, [el("h1", {}, [title]), el("div", { class: "sub" }, [subtitle])]),

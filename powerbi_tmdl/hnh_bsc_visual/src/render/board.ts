@@ -14,11 +14,11 @@ export function tabs(vm: ViewModel, current: string, question: string): HTMLElem
     for (const p of vm.pillars) {
         bar.appendChild(el("button", { type: "button", role: "tab", "aria-selected": String(p.name === current), "data-pillar": p.name }, [p.name]));
     }
-    bar.appendChild(el("span", { class: "q" }, [question]));
+    if (question) bar.appendChild(el("span", { class: "q" }, [question]));
     return bar;
 }
 
-export function board(vm: ViewModel, wanted: string | null): HTMLElement {
+export function board(vm: ViewModel, wanted: string | null, questionInTabs = false): HTMLElement {
     const p = boardPillar(vm, wanted);
     const rows = firstRows(p);
     const groups = new Map<string, KpiRow[]>();
@@ -32,5 +32,5 @@ export function board(vm: ViewModel, wanted: string | null): HTMLElement {
         grid.appendChild(el("div", { class: "sec" }, [`${g[0].objectiveCode} · ${g[0].objectiveTitle}`, el("span", {}, [`${g.length} KPIs`])]));
         for (const r of g) grid.appendChild(tile(r));
     }
-    return el("div", { class: "board" }, [tabs(vm, p.name, p.question), grid]);
+    return el("div", { class: "board" }, [tabs(vm, p.name, questionInTabs ? p.question : ""), grid]);
 }

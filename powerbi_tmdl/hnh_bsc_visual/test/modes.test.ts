@@ -62,7 +62,36 @@ describe("overview", () => {
     });
 });
 
+describe("header label", () => {
+    const withLabel = (label: string) => {
+        const vm = parseDataView(makeDataView(rows.map(r => ({ ...r, selectionLabel: label }))));
+        const root = mount();
+        renderView(root, vm, "overview", ui());
+        return root.querySelector(".band .ctx")!;
+    };
+    it("splits on the first middle dot: hospitals bold, period below", () => {
+        const ctx = withLabel("Corporate · Jul 2026 – Sep 2026");
+        expect(ctx.querySelector("b")!.textContent).toBe("Corporate");
+        expect(ctx.querySelector(".period")!.textContent).toBe("Jul 2026 – Sep 2026");
+    });
+    it("puts a label without the separator wholly in the bold line", () => {
+        const ctx = withLabel("Corporate");
+        expect(ctx.querySelector("b")!.textContent).toBe("Corporate");
+        expect(ctx.querySelector(".period")).toBeNull();
+    });
+});
+
 describe("board", () => {
+    it("shows the pillar question once: in the header when shown, in the tab bar when hidden", () => {
+        const vm = parseDataView(makeDataView(rows));
+        const a = mount();
+        renderView(a, vm, "board", ui());
+        expect(a.querySelector(".tabs .q")).toBeNull();
+        expect(a.querySelector(".band .sub")!.textContent).toBe("Financial question?");
+        const b = mount();
+        renderView(b, vm, "board", ui({ showHeader: false }));
+        expect(b.querySelector(".tabs .q")!.textContent).toBe("Financial question?");
+    });
     it("lists objectives as sections with primaries first, and tabs for every pillar", () => {
         const root = mount();
         renderView(root, parseDataView(makeDataView(rows)), "board", ui());
