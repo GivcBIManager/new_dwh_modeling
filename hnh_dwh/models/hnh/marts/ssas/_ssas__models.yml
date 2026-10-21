@@ -1520,6 +1520,18 @@ models:
         data_type: "Int64"
       - name: data_source
         data_type: "String"
+      - name: hr_department_key
+        data_type: "Int64"
+      - name: job_key
+        data_type: "Int64"
+      - name: grade_key
+        data_type: "Int64"
+      - name: position_key
+        data_type: "Int64"
+      - name: location_key
+        data_type: "Int64"
+      - name: worker_action_key
+        data_type: "Int64"
   - name: ssas_fact_budget_monthly
     config:
       contract: {enforced: true}

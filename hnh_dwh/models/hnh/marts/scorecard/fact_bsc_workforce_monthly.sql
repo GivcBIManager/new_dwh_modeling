@@ -29,12 +29,13 @@ paid as (
 people as (
     select h.branch_key as branch_key, toStartOfMonth(h.month_end) as period, toString(h.employee_key) as person_id,
            h.staff_key as staff_key, h.employee_key as employee_key, h.fte as fte, toUInt8(h.is_saudi) as saudi,
-           'fusion' as source_
+           'fusion' as source_, h.hr_department_key as hr_department_key, h.job_key as job_key, h.grade_key as grade_key,
+           h.position_key as position_key, h.location_key as location_key
     from {{ ref('fact_headcount_monthly') }} as h
     where h.is_contingent = 0 and h.headcount > 0 and toStartOfMonth(h.month_end) >= fusion_start_
     union all
     select pd.branch_key, pd.period, concat('paid-', toString(pd.paid_person_key)), pd.paid_staff_key, toInt64(-1),
-           toFloat64(1), toUInt8(ifNull(ps.is_saudi, 0)), 'oasis'
+           toFloat64(1), toUInt8(ifNull(ps.is_saudi, 0)), 'oasis', toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1)
     from paid as pd
     left join staff as ps on ps.staff_key = pd.paid_staff_key
     where pd.period < fusion_start_
@@ -50,7 +51,12 @@ heads as (
         max(toUInt8(ifNull(s.category = 'DOCTORS', 0)))              as doctor_,
         max(toUInt8(ifNull(s.classification in ('NURSE', 'DOC'), 0))) as medical_,
         max(ifNull(p.saudi, 0))                                       as saudi_,
-        any(p.source_)                                                as source__
+        any(p.source_)                                                as source__,
+        any(p.hr_department_key)                                      as hr_department_key_,
+        any(p.job_key)                                                as job_key_,
+        any(p.grade_key)                                              as grade_key_,
+        any(p.position_key)                                           as position_key_,
+        any(p.location_key)                                           as location_key_
     from people as p
     left join staff as s on s.staff_key = p.staff_key
     group by branch_key, period, person_id
@@ -78,14 +84,16 @@ part_time as (
 resignations as (
     select branch_key, toDate(toStartOfMonth(termination_date)) as period,
            concat('staff-', toString(staff_key)) as person_id, staff_key as staff_key_, toInt64(-1) as employee_key_,
-           toUInt8(count()) as resigned, 'oasis' as source__
+           toUInt8(count()) as resigned, 'oasis' as source__, toInt64(-1) as hr_department_key_, toInt64(-1) as job_key_,
+           toInt64(-1) as grade_key_, toInt64(-1) as position_key_, toInt64(-1) as location_key_, toInt64(-1) as worker_action_key_
     from staff
     where termination_reason = 'Resignation' and termination_date is not null
       and (branch_key between 1 and 5 or toDate(toStartOfMonth(termination_date)) < fusion_start_)
     group by branch_key, period, staff_key
     union all
     select branch_key, toStartOfMonth(YYYYMMDDToDate(toUInt32(action_date_key))) as period,
-           concat('emp-', toString(employee_key)), any(staff_key), employee_key, toUInt8(count()), 'fusion'
+           concat('emp-', toString(employee_key)), any(staff_key), employee_key, toUInt8(count()), 'fusion',
+           any(hr_department_key), any(job_key), any(grade_key), any(position_key), any(location_key), any(worker_action_key)
     from {{ ref('hnh_fact_worker_movement') }}
     where is_voluntary_leaver = 1 and branch_key between 6 and 8
       and toStartOfMonth(YYYYMMDDToDate(toUInt32(action_date_key))) >= fusion_start_
@@ -94,15 +102,19 @@ resignations as (
 all_rows as (
     select branch_key, period, person_id, 'head' as row_type, staff_key_ as staff_key, employee_key_ as employee_key,
            toUInt8(1) as headcount, toFloat64(fte_) as fte, doctor_ as is_doctor, medical_ as is_medical,
-           saudi_ as is_saudi, toUInt8(0) as resignations, source__ as data_source
+           saudi_ as is_saudi, toUInt8(0) as resignations, source__ as data_source, hr_department_key_ as hr_department_key,
+           job_key_ as job_key, grade_key_ as grade_key, position_key_ as position_key, location_key_ as location_key,
+           toInt64(-1) as worker_action_key
     from heads
     union all
     select branch_key, period, concat('pt-', toString(staff_key)), 'pt_doctor', staff_key, toInt64(-1),
-           toUInt8(1), toFloat64(0.5), toUInt8(1), toUInt8(1), toUInt8(0), toUInt8(0), 'oasis'
+           toUInt8(1), toFloat64(0.5), toUInt8(1), toUInt8(1), toUInt8(0), toUInt8(0), 'oasis',
+           toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1)
     from part_time
     union all
     select branch_key, period, person_id, 'resignation', staff_key_, employee_key_,
-           toUInt8(0), toFloat64(0), toUInt8(0), toUInt8(0), toUInt8(0), resigned, source__
+           toUInt8(0), toFloat64(0), toUInt8(0), toUInt8(0), toUInt8(0), resigned, source__,
+           hr_department_key_, job_key_, grade_key_, position_key_, location_key_, worker_action_key_
     from resignations
 )
 
@@ -119,7 +131,15 @@ select
     is_medical                                                as is_medical,
     is_saudi                                                  as is_saudi,
     resignations                                              as resignations,
-    data_source                                               as data_source
+    data_source                                               as data_source,
+    -- HR attributes of the person (Fusion heads and leavers), -1 for Oasis, paid and part-time rows, so the workforce
+    -- measures built on this fact stay sliceable by HR department, job, grade, position, location and action
+    toInt64(ifNull(hr_department_key, -1))                    as hr_department_key,
+    toInt64(ifNull(job_key, -1))                              as job_key,
+    toInt64(ifNull(grade_key, -1))                            as grade_key,
+    toInt64(ifNull(position_key, -1))                         as position_key,
+    toInt64(ifNull(location_key, -1))                         as location_key,
+    toInt64(ifNull(worker_action_key, -1))                    as worker_action_key
 from all_rows
 where branch_key between 1 and 8 and period >= from_date_ and period < toStartOfMonth(today_)
 {{ hnh_settings() }}

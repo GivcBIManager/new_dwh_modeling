@@ -90,10 +90,22 @@ perspective 'Balanced Scorecard'
 	perspectiveTable 'GL FS Monthly'
 		includeAll
 
+	perspectiveTable Grade
+		includeAll
+
+	perspectiveTable 'HR Department'
+		includeAll
+
 	perspectiveTable 'Income Statement'
 		includeAll
 
 	perspectiveTable Invoices
+		includeAll
+
+	perspectiveTable Job
+		includeAll
+
+	perspectiveTable Location
 		includeAll
 
 	perspectiveTable 'NPHIES Reason'
@@ -103,6 +115,9 @@ perspective 'Balanced Scorecard'
 		includeAll
 
 	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Position
 		includeAll
 
 	perspectiveTable 'Pre-auth Lines'
@@ -136,6 +151,9 @@ perspective 'Balanced Scorecard'
 		includeAll
 
 	perspectiveTable Time
+		includeAll
+
+	perspectiveTable 'Worker Action'
 		includeAll
 
 	perspectiveTable 'Workforce Monthly'

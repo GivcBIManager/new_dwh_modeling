@@ -1185,10 +1185,34 @@ relationship workforce_monthly_employee_key
 	fromColumn: 'Workforce Monthly'.'Employee Key'
 	toColumn: Employee.'Employee Key'
 
+relationship workforce_monthly_grade_key
+	fromColumn: 'Workforce Monthly'.'Grade Key'
+	toColumn: Grade.'Grade Key'
+
+relationship workforce_monthly_hr_department_key
+	fromColumn: 'Workforce Monthly'.'HR Department Key'
+	toColumn: 'HR Department'.'HR Department Key'
+
+relationship workforce_monthly_job_key
+	fromColumn: 'Workforce Monthly'.'Job Key'
+	toColumn: Job.'Job Key'
+
+relationship workforce_monthly_location_key
+	fromColumn: 'Workforce Monthly'.'Location Key'
+	toColumn: Location.'Location Key'
+
 relationship workforce_monthly_month_date_key
 	fromColumn: 'Workforce Monthly'.'Month Date Key'
 	toColumn: Date.'Date Key'
 
+relationship workforce_monthly_position_key
+	fromColumn: 'Workforce Monthly'.'Position Key'
+	toColumn: Position.'Position Key'
+
 relationship workforce_monthly_staff_key
 	fromColumn: 'Workforce Monthly'.'Staff Key'
 	toColumn: Staff.'Staff Key'
+
+relationship workforce_monthly_worker_action_key
+	fromColumn: 'Workforce Monthly'.'Worker Action Key'
+	toColumn: 'Worker Action'.'Worker Action Key'

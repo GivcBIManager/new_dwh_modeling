@@ -83,7 +83,9 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(b) as branch_key, toDate(m) as month_end, toInt64(e) as employee_key, toInt64(s) as staff_key,
-                 toUInt8(1) as headcount, toFloat64(1) as fte, toUInt8(c) as is_contingent, toUInt8(e in (101, 103, 104)) as is_saudi
+                 toUInt8(1) as headcount, toFloat64(1) as fte, toUInt8(c) as is_contingent, toUInt8(e in (101, 103, 104)) as is_saudi,
+                 toInt64(e + 800) as hr_department_key, toInt64(10) as job_key, toInt64(20) as grade_key, toInt64(30) as position_key,
+                 toInt64(40) as location_key
           from values('b UInt8, m String, e UInt32, s Int64, c UInt8',
               (1, '2026-09-30', 101, 11, 0), (1, '2026-09-30', 102, -1, 0), (1, '2026-09-30', 103, 13, 0),
               (1, '2026-09-30', 104, -1, 1), (1, '2026-10-31', 101, 11, 0))
@@ -106,20 +108,23 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(b) as branch_key, toInt32(d) as action_date_key, toUInt8(v) as is_voluntary_leaver,
-                 toInt64(e) as employee_key, toInt64(-1) as staff_key
+                 toInt64(e) as employee_key, toInt64(-1) as staff_key, toInt64(906) as hr_department_key, toInt64(11) as job_key,
+                 toInt64(21) as grade_key, toInt64(31) as position_key, toInt64(41) as location_key, toInt64(7) as worker_action_key
           from values('b UInt8, d UInt32, v UInt8, e UInt32', (6, 20260920, 1, 701), (6, 20260921, 0, 702), (2, 20260920, 1, 703))
     expect:
       format: sql
       rows: |
         select toUInt8(b) as branch_key, toInt32(m) as month_date_key, p as person_id, t as row_type, toInt64(s) as staff_key,
                toInt64(e) as employee_key, toUInt8(h) as headcount, toFloat64(f) as fte, toUInt8(d) as is_doctor,
-               toUInt8(md) as is_medical, toUInt8(sa) as is_saudi, toUInt8(r) as resignations, ds as data_source
-        from values('b UInt8, m Int32, p String, t String, s Int64, e Int64, h UInt8, f Float64, d UInt8, md UInt8, sa UInt8, r UInt8, ds String',
-            (1, 20251231, 'paid-501', 'head', 21, -1, 1, 1, 1, 1, 1, 0, 'oasis'),
-            (1, 20260930, '101', 'head', 11, 101, 1, 1, 0, 1, 1, 0, 'fusion'),
-            (1, 20260930, '102', 'head', -1, 102, 1, 1, 0, 0, 0, 0, 'fusion'),
-            (1, 20260930, '103', 'head', 13, 103, 1, 1, 1, 1, 1, 0, 'fusion'),
-            (1, 20260930, 'pt-14', 'pt_doctor', 14, -1, 1, 0.5, 1, 1, 0, 0, 'oasis'),
-            (2, 20260930, 'staff-31', 'resignation', 31, -1, 0, 0, 0, 0, 0, 1, 'oasis'),
-            (6, 20251231, 'staff-33', 'resignation', 33, -1, 0, 0, 0, 0, 0, 1, 'oasis'),
-            (6, 20260930, 'emp-701', 'resignation', -1, 701, 0, 0, 0, 0, 0, 1, 'fusion'))
+               toUInt8(md) as is_medical, toUInt8(sa) as is_saudi, toUInt8(r) as resignations, ds as data_source,
+               toInt64(hd) as hr_department_key, toInt64(j) as job_key, toInt64(g) as grade_key, toInt64(po) as position_key,
+               toInt64(lo) as location_key, toInt64(wa) as worker_action_key
+        from values('b UInt8, m Int32, p String, t String, s Int64, e Int64, h UInt8, f Float64, d UInt8, md UInt8, sa UInt8, r UInt8, ds String, hd Int64, j Int64, g Int64, po Int64, lo Int64, wa Int64',
+            (1, 20251231, 'paid-501', 'head', 21, -1, 1, 1, 1, 1, 1, 0, 'oasis', -1, -1, -1, -1, -1, -1),
+            (1, 20260930, '101', 'head', 11, 101, 1, 1, 0, 1, 1, 0, 'fusion', 901, 10, 20, 30, 40, -1),
+            (1, 20260930, '102', 'head', -1, 102, 1, 1, 0, 0, 0, 0, 'fusion', 902, 10, 20, 30, 40, -1),
+            (1, 20260930, '103', 'head', 13, 103, 1, 1, 1, 1, 1, 0, 'fusion', 903, 10, 20, 30, 40, -1),
+            (1, 20260930, 'pt-14', 'pt_doctor', 14, -1, 1, 0.5, 1, 1, 0, 0, 'oasis', -1, -1, -1, -1, -1, -1),
+            (2, 20260930, 'staff-31', 'resignation', 31, -1, 0, 0, 0, 0, 0, 1, 'oasis', -1, -1, -1, -1, -1, -1),
+            (6, 20251231, 'staff-33', 'resignation', 33, -1, 0, 0, 0, 0, 0, 1, 'oasis', -1, -1, -1, -1, -1, -1),
+            (6, 20260930, 'emp-701', 'resignation', -1, 701, 0, 0, 0, 0, 0, 1, 'fusion', 906, 11, 21, 31, 41, 7))

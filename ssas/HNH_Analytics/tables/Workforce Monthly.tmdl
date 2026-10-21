@@ -91,6 +91,54 @@ table 'Workforce Monthly'
 		summarizeBy: none
 		sourceColumn: data_source
 
+	column 'HR Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_department_key
+
+	column 'Job Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: job_key
+
+	column 'Grade Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: grade_key
+
+	column 'Position Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: position_key
+
+	column 'Location Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: location_key
+
+	column 'Worker Action Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: worker_action_key
+
 	partition 'Workforce Monthly' = m
 		source =
 				let
