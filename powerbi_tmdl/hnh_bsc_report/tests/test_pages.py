@@ -1,12 +1,13 @@
 """The scorecard pages and KPI detail: roles, payloads, filters, layout, and a build against the synthetic template."""
 import json
+from pathlib import Path
 
 import pytest
 
 from fields import unknown_fields
 from layout import page_section
 from model import col, meas
-from pages import ATTRIBUTE_ROLES, PAGES
+from pages import ATTRIBUTE_ROLES, PAGES, back_button, label_text, select_all_selection
 
 # The visual README's field-well table (powerbi_tmdl/hnh_bsc_visual/README.md): role -> 'BSC KPI' column.
 README_ROLES = {
@@ -181,3 +182,58 @@ def test_pages_build_against_the_synthetic_template(pbix_path):
     detail = sections[7]
     assert json.loads(detail["config"]).get("visibility") == 1
     assert "BSC Detail Page" in json.dumps(detail["visualContainers"])
+
+
+IS_HOSPITAL = col("Branch", "Is Hospital")
+CAPABILITIES = Path(__file__).resolve().parents[2] / "hnh_bsc_visual" / "capabilities.json"
+
+
+def test_role_names_come_from_the_visual_capabilities():
+    roles = [r["name"] for r in json.loads(CAPABILITIES.read_text(encoding="utf-8-sig"))["dataRoles"]]
+    assert roles == list(README_ROLES) + ["branch", "payload", "selectionLabel"]
+    for display in SCORECARD:
+        assert set(hnh(by_display(display)).roles) <= set(roles)
+
+
+def test_helpers_write_literal_values():
+    sel = select_all_selection()["selection"][0]["properties"]
+    assert (lit(sel["singleSelect"]), lit(sel["selectAllCheckboxEnabled"])) == ("false", "true")
+    txt = label_text("Hi")["text"][0]["properties"]
+    assert (lit(txt["show"]), lit(txt["text"])) == ("true", "'Hi'")
+    link = back_button().props["visualLink"][0]["properties"]
+    assert (lit(link["show"]), lit(link["type"])) == ("true", "'Back'")
+
+
+def test_nav_buttons_assert_link_type_and_show():
+    for v in by_display("BSC").visuals:
+        if v.sample == "buttonNavigate":
+            link = v.props["visualLink"][0]["properties"]
+            assert (lit(link["show"]), lit(link["type"])) == ("true", "'PageNavigation'")
+
+
+def test_kpi_detail_header_back_and_navigation():
+    page = by_display("KPI detail")
+    backs = [v for v in page.visuals if v.sample == "buttonNavigate"
+             and lit(v.props["visualLink"][0]["properties"]["type"]) == "'Back'"]
+    assert len(backs) == 1 and backs[0].x < min(v.x for v in page.visuals if v.y < 110 and v is not backs[0])
+    navs = [v for v in page.visuals if v.sample == "buttonNavigate" and v not in backs]
+    assert [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in navs] == \
+        [f"'{p.name}'" for p in PAGES[:7]]
+    slicers = [v for v in page.visuals if v.sample.startswith("slicer")]
+    scorecard = [v for v in by_display("BSC").visuals if v.sample.startswith("slicer")]
+    assert [(v.sample, v.roles) for v in slicers] == [(v.sample, v.roles) for v in scorecard]
+    assert [f.field for f in slicers[0].filters] == [IS_HOSPITAL]
+    assert max(v.x + v.w for v in slicers) < min(v.x for v in navs)
+    assert backs[0].x + backs[0].w < min(v.x for v in slicers)
+
+
+def test_kpi_detail_matrix_is_the_drill_source():
+    page = by_display("KPI detail")
+    (m,) = [v for v in page.visuals if v.sample == "matrix"]
+    assert m.roles == {"Rows": [col("Branch", "Branch Name")], "Columns": [col("Date", "Year Month")],
+                       "Values": [meas("BSC Actual")]}
+    assert [(f.field, f.op, f.values) for f in m.filters] == [(IS_HOSPITAL, "in", ["Yes"])]
+    assert m.title == "Select a hospital and month, then Open detail"
+    (b,) = [v for v in page.visuals if v.sample == "buttonDrill"]
+    assert m.y <= b.y and b.y + b.h <= m.y + m.h and b.x >= m.x + m.w
+    assert {v.sample for v in page.visuals} >= {"lineChart", "barChart"}

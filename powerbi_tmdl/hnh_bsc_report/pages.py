@@ -1,6 +1,7 @@
 """The report's pages: seven scorecard pages, the hidden KPI detail drill-through page, then the family pages.
 
-`PAGES` is the list `build.py` writes. Task 6 fills `FAMILY_PAGES` (they follow KPI detail, in that order).
+`PAGES` is the list `build.py` writes. Task 6 fills `FAMILY_PAGES` (they follow KPI detail, in that order) and can
+reuse `back_button`, `label_text`, `select_all_selection`, `_slicers` and `_nav_buttons`.
 Canvas 1920 x 1080: header row y 0-110 (slicers left, page buttons right), content below.
 """
 from __future__ import annotations
@@ -27,6 +28,22 @@ def _lit(value: str | bool) -> dict:
     return {"expr": {"Literal": {"Value": v}}}
 
 
+def label_text(text: str) -> dict:
+    """The button label object (one place to correct the property names against the real template)."""
+    return {"text": [{"properties": {"show": _lit(True), "text": _lit(text)}}]}
+
+
+def select_all_selection() -> dict:
+    """Slicer selection: multi-select with a "Select all" entry (one place to correct the property names)."""
+    return {"selection": [{"properties": {"singleSelect": _lit(False), "selectAllCheckboxEnabled": _lit(True)}}]}
+
+
+def back_button(x: float = 16, y: float = 35, w: float = 104, h: float = 50) -> Visual:
+    """A button whose action is Back; for every page reached by drill-through or a link."""
+    return Visual("buttonNavigate", x, y, w, h, props={
+        "visualLink": [{"properties": {"show": _lit(True), "type": _lit("Back")}}], **label_text("Back")})
+
+
 def _hospitals() -> Filter:
     return Filter(IS_HOSPITAL, "in", ["Yes"])
 
@@ -45,14 +62,18 @@ _SCORECARD = [
 ]
 
 
-def _slicers() -> list[Visual]:
-    selection = {"selection": [{"properties": {"singleSelect": _lit(False), "selectAllCheckboxEnabled": _lit(True)}}]}
+def _slicers(x0: float = 16, shrink: float = 0) -> list[Visual]:
+    """The four header slicers from x0; `shrink` narrows them to make room for a Back button."""
+    w = [300 - shrink, 220 - shrink / 2, 360 - shrink, 220 - shrink / 2]
+    xs = [x0]
+    for width in w[:-1]:
+        xs.append(xs[-1] + width + 10)
     return [
-        Visual("slicerDropdown", 16, 20, 300, 80, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
-               props=selection),
-        Visual("slicerDropdown", 326, 20, 220, 80, roles={"Values": [col("Branch", "BSC Category")]}),
-        Visual("slicerRelativeDate", 556, 20, 360, 80, roles={"Values": [col("Date", "Date")]}),
-        Visual("slicerDropdown", 926, 20, 220, 80, roles={"Values": [col("Time Calculation", "Time Calculation")]}),
+        Visual("slicerDropdown", xs[0], 20, w[0], 80, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
+               props=select_all_selection()),
+        Visual("slicerDropdown", xs[1], 20, w[1], 80, roles={"Values": [col("Branch", "BSC Category")]}),
+        Visual("slicerRelativeDate", xs[2], 20, w[2], 80, roles={"Values": [col("Date", "Date")]}),
+        Visual("slicerDropdown", xs[3], 20, w[3], 80, roles={"Values": [col("Time Calculation", "Time Calculation")]}),
     ]
 
 
@@ -62,7 +83,7 @@ def _nav_buttons() -> list[Visual]:
         out.append(Visual("buttonNavigate", 1156 + 108 * i, 35, 104, 50, props={
             "visualLink": [{"properties": {"show": _lit(True), "type": _lit("PageNavigation"),
                                            "navigationSection": _lit(name)}}],
-            "text": [{"properties": {"show": _lit(True), "text": _lit(display)}}]}))
+            **label_text(display)}))
     return out
 
 
@@ -86,26 +107,32 @@ SCORECARD_PAGES: list[Page] = [_scorecard_page(*row) for row in _SCORECARD]
 # ---- KPI detail ---------------------------------------------------------------------------------------------------
 
 def _kpi_detail() -> Page:
+    """Drill-through target (KPI Code, keep all filters). Header: Back, the four slicers (synced by field with the
+    scorecard pages), the seven page buttons. The "Open detail" button drills on the matrix's cell selection
+    (Branch Name x Year Month) with keep-all-filters; the matrix is the drill source and sits beside the button."""
     cards = ["BSC Actual", "BSC Target", "BSC Score", "BSC State", "BSC Numerator", "BSC Denominator"]
-    visuals = _slicers()
+    visuals = [back_button()] + _slicers(130, shrink=40) + _nav_buttons()
     visuals += [Visual("card", 16 + 310 * i, 120, 300, 130, roles={"Values": [meas(m)]})
                 for i, m in enumerate(cards)]
     visuals += [
-        Visual("lineChart", 16, 270, 940, 380, roles={"Category": [YEAR_MONTH],
+        Visual("lineChart", 16, 270, 940, 300, roles={"Category": [YEAR_MONTH],
                                                       "Y": [meas("BSC Actual"), meas("BSC Target")]},
                sort=YEAR_MONTH, sort_dir="asc"),
-        Visual("barChart", 976, 270, 928, 380, roles={"Category": [BRANCH_NAME], "Y": [meas("BSC Actual")]},
+        Visual("barChart", 976, 270, 928, 300, roles={"Category": [BRANCH_NAME], "Y": [meas("BSC Actual")]},
                filters=[_hospitals()], sort=meas("BSC Actual"), sort_dir="desc"),
-        Visual("multiRowCard", 16, 670, 940, 300,
+        Visual("multiRowCard", 16, 590, 940, 370,
                roles={"Values": [col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"), col("BSC KPI", "Owner"),
                                  col("BSC KPI", "Co Owners"), meas("BSC Target Basis"), meas("BSC KPI Weight")]}),
-        Visual("card", 976, 670, 928, 150, roles={"Values": [meas("BSC Manual Note")]},
-               filters=[Filter(meas("BSC Manual Note"), "notblank")]),
-        Visual("buttonDrill", 976, 840, 220, 50, props={
+        Visual("matrix", 976, 590, 700, 210, title="Select a hospital and month, then Open detail",
+               roles={"Rows": [BRANCH_NAME], "Columns": [YEAR_MONTH], "Values": [meas("BSC Actual")]},
+               filters=[_hospitals()]),
+        Visual("buttonDrill", 1690, 590, 214, 50, props={
             "visualLink": [{"properties": {"show": _lit(True), "type": _lit("Drillthrough"), "drillthroughSection": {
                 "expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}},
                                      "Property": "BSC Detail Page"}}}}}],
-            "text": [{"properties": {"show": _lit(True), "text": _lit("Open detail")}}]}),
+            **label_text("Open detail")}),
+        Visual("card", 976, 810, 928, 150, roles={"Values": [meas("BSC Manual Note")]},
+               filters=[Filter(meas("BSC Manual Note"), "notblank")]),
     ]
     return Page("kpi_detail", "KPI detail", visuals, drill_fields=[col("BSC KPI", "KPI Code")], hidden=True)
 
