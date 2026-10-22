@@ -105,9 +105,13 @@ export function buildRows(branches: string[] | null): FixtureRow[] {
 }
 
 const params = new URLSearchParams(location.search);
-const mode = params.get("mode") ?? "overview";
+const shot = params.get("mode") ?? "overview";
+/** "overview-scores" is the landing page as bound in the report: [BSC Visual Payload Scores], no trends. */
+const mode = shot === "overview-scores" ? "overview" : shot;
 const branches = mode === "comparison" ? ["Hospital A", "Hospital B", "Head Office", "Hospital C"] : null;
-const dv = makeDataView(buildRows(branches), branches ? { branches } : {});
+const built = buildRows(branches);
+if (shot === "overview-scores") for (const r of built) r.payload = scoresOnly(r.payload as string);
+const dv = makeDataView(built, branches ? { branches } : {});
 (dv.metadata as unknown as { objects: unknown }).objects = { scorecard: { mode } };
 
 const selection = { select: () => Promise.resolve([]), clear: () => Promise.resolve({}), showContextMenu: () => undefined, getSelectionIds: () => [], registerOnSelectCallback: () => undefined };

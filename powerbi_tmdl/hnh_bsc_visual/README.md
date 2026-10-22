@@ -24,12 +24,12 @@ Power BI Desktop for Report Server: Home, then the Visualizations pane "..." men
 
 ## Field wells
 
-The model is `HNH_Analytics` (perspective `Balanced Scorecard`). Every page binds the same wells, except the Payload on the Hospital Comparison page:
+The model is `HNH_Analytics` (perspective `Balanced Scorecard`). Every page binds the same wells, except the Payload (see the table):
 
 | Well | Field |
 |---|---|
 | the 21 attribute roles (KPI Code, KPI Name, Short Label, Pillar, Pillar Order, Pillar Weight, Pillar Question, Objective Code, Objective Title, Objective Order, KPI Type, Direction, Value Format, Display Order, Status, Value Source, Owner, Score Base, Score Slope, Good From, Watch From) | the matching `'BSC KPI'` columns |
-| Payload | `[BSC Visual Payload]`; on the Hospital Comparison page `[BSC Visual Payload Scores]` (same first six fields, no monthly trends, so KPI × hospital stays fast) |
+| Payload | `[BSC Visual Payload]` on the pillar board and owner pages; `[BSC Visual Payload Scores]` on the landing (Overview) and Hospital Comparison pages. The scores payload has the same first six fields and no monthly trends, which keeps those pages fast for non-admin (row-level-security) users; without trends the overview shows no pillar trend and the tiles no sparklines. |
 | Selection label | `[BSC Selection Label]` |
 | Branch (comparison mode only; the well Power BI shows as "Branch", it takes one hospital per series) | `'Branch'[Branch Name]` |
 
@@ -37,9 +37,9 @@ Then, per page, set Format pane > Scorecard > View:
 
 | Page | View | Also |
 |---|---|---|
-| BSC landing | Overview | |
-| Financial, Customer, Internal Process, Learning & Growth | Pillar board | page filter on `'BSC KPI'[Pillar]` |
-| Owner view | Owner view | |
+| BSC landing | Overview | Payload `[BSC Visual Payload Scores]` |
+| Financial, Customer, Internal Process, Learning & Growth | Pillar board | Payload `[BSC Visual Payload]`; page filter on `'BSC KPI'[Pillar]` |
+| Owner view | Owner view | Payload `[BSC Visual Payload]` |
 | Hospital Comparison | Hospital comparison | Payload `[BSC Visual Payload Scores]`; visual-level filter `'Branch'[Is Hospital]` is `Yes`; slicer on `'Branch'[BSC Category]` |
 
 The drill-through page (KPI Detail) takes `'BSC KPI'[KPI Code]` as its drill-through field.

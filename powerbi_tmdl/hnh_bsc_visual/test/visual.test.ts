@@ -182,4 +182,33 @@ describe("Visual", () => {
         expect(events.at(-1)).toBe("failed:x");
         expect(element.children.length).toBe(0);
     });
+    describe("scores-only payload (the landing page binds [BSC Visual Payload Scores])", () => {
+        const scoresOnly = (p: string) => p.split("|").slice(0, 6).join("|") + "|||";
+        const rows = (): FixtureRow[] => [mk("F1", "Financial", 1), mk("C1", "Customer", 2)].map(r => ({ ...r, payload: scoresOnly(r.payload as string) }));
+        const withTrends = (): FixtureRow[] => [mk("F1", "Financial", 1), mk("C1", "Customer", 2)].map(r => ({ ...r,
+            payload: payload({ actual: 0.5, target: 0.5, variance: 0, score: 90, state: "On track", weight: 1, trend: [0.4, 0.5], targetTrend: [0.5, 0.5], scoreTrend: [80, 90] }) }));
+        const view = (mode: Mode): Reader => () => ({ mode, ui: { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false } });
+
+        it("the overview pillar card has no trend block, caption or sparkline", () => {
+            const { visual, element } = setup({ read: view("overview") });
+            visual.update(opts(makeDataView(rows())));
+            expect(element.querySelectorAll(".pillar").length).toBe(2);
+            expect(element.textContent).not.toContain("Pillar score, by month");
+            expect(element.querySelectorAll(".pillar svg.spark, .pillar .sparkbox").length).toBe(0);
+            expect(element.textContent).toContain("Every KPI in this pillar");
+        });
+        it("the overview keeps the trend block when the payload carries trends", () => {
+            const { visual, element } = setup({ read: view("overview") });
+            visual.update(opts(makeDataView(withTrends())));
+            expect(element.textContent).toContain("Pillar score, by month");
+        });
+        it("board tiles have no sparkline area but keep value, target and score", () => {
+            const { visual, element } = setup({ read: view("board") });
+            visual.update(opts(makeDataView(rows())));
+            const t = element.querySelector(".tile")!;
+            expect(element.querySelectorAll(".tile .sparkbox, .tile svg.spark").length).toBe(0);
+            expect(t.textContent).toContain("50.0%");
+            expect(t.textContent).toContain("Score 90");
+        });
+    });
 });
