@@ -42,13 +42,19 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
   board, owner pages) and `BSC Visual Payload Scores` (hospital comparison page). The dispatchers and the measures that
   inline them (`BSC Variance %`, `BSC Score`, `BSC State` and both payloads) each hold the KPI list twice: a
   `ROW ( "@<CODE>", [<measure>], … )` table and a `SWITCH ( Code, "<CODE>", MAXX ( …, [@<CODE>] ), … )` lookup.
+  `BSC Visual Payload` has a third list, `ADDCOLUMNS ( VALUES ( 'Date'[Year Month] ), … )`, that evaluates its 24 trend
+  months in one go, and its lists call `[_Unguarded <measure>]`: hidden copies of the KPI and budget measures without
+  their inner guards (the payload's own guard covers their facts), which `tools/measure_guards.py` writes for every
+  `_Unguarded` name a measure references. Both make the overview faster for users with row-level security, whose
+  patient-linked queries are never served from the cache.
   `tools/gen_bsc_kpi_lists.py` writes all of them from its `KPIS` and `BUDGETS` lists. To add a KPI:
   1. Add its row to the catalogue (`default.map_bsc_kpi`, `docs/bsc_config.md`).
   2. Add its measure (`BSC <name>`, folder `Balanced Scorecard\<pillar>`) and, for a budget target, its
      `BSC Target <name>` measure (folder `Balanced Scorecard\Targets`).
   3. Add `("<CODE>", "<measure>")` to `KPIS` in `tools/gen_bsc_kpi_lists.py` (and to `BUDGETS` for a budget target),
      then run `python ssas/tools/gen_bsc_kpi_lists.py`.
-  4. Run `python ssas/tools/measure_guards.py`, then `python ssas/tools/sync_perspectives.py`.
+  4. Run `python ssas/tools/measure_guards.py` (it also writes the payload's `_Unguarded` copy of the new measure),
+     then `python ssas/tools/sync_perspectives.py`.
   5. Add a check for the new measure in `tests/measures/balanced_scorecard.json`.
   6. Run `python -m pytest ssas/tools`; `test_bsc_kpi_lists_agree` fails when a list is missing the KPI, and
      `test_gen_bsc_kpi_lists.py` when the generator was not run. Then deploy.

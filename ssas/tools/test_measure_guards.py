@@ -119,3 +119,47 @@ def test_guard_names_stay_within_100_characters():
     assert long_name.startswith("_Guard 12 facts")
     assert long_name == g.guard_name(set(facts), {"BSC KPI"})
     assert long_name != g.guard_name(facts, set())
+
+
+# A measure that calls the unguarded bodies of two guarded measures (scorecard speed, bsc visual plan Task 10).
+WITH_TWINS = MEASURES.replace(
+    "\tcolumn Measure\n",
+    "\t/// Pay per visit from the bodies.\n"
+    "\tmeasure 'Fast Pay per Visit' = DIVIDE ( [_Unguarded Payroll Cost], [_Unguarded Visits] )\n"
+    "\t\tformatString: #,0\n"
+    "\t\tdisplayFolder: Workforce\\Payroll\n"
+    "\n"
+    "\tcolumn Measure\n")
+
+
+def test_measure_facts_follow_unguarded_twins_to_the_measure_they_copy():
+    facts = g.measure_facts(WITH_TWINS, KINDS)
+    assert facts["Fast Pay per Visit"] == {"Payroll", "Encounters"}
+
+
+def test_render_adds_a_hidden_unguarded_twin_for_each_referenced_body():
+    rels = g.parse_relationships(RELATIONSHIPS)
+    once = g.render(WITH_TWINS, rels, KINDS)
+    assert g.render(once, rels, KINDS) == once
+    assert ("\tmeasure '_Unguarded Visits' =\n\t\t\tVAR x = COUNTROWS ( Encounters )\n\t\t\tRETURN x\n"
+            "\t\tformatString: General\n\t\tisHidden\n\t\tdisplayFolder: Diagnostics\\Unguarded\n") in once
+    assert "\tmeasure '_Unguarded Payroll Cost' =\n\t\t\tSUM ( Payroll[Cost Amount] )\n\t\tformatString: General\n" in once
+    assert "'_Unguarded Pay per Visit'" not in once
+    import hnh_tmdl as t
+    measures = {m.name: m for m in t.measures(once)}
+    assert measures["_Unguarded Visits"].description
+    assert "__Wrong" not in measures["_Unguarded Visits"].expression
+    assert "VAR __Wrong = [_Guard Encounters + Payroll]" in measures["Fast Pay per Visit"].expression
+
+
+def test_unguarded_twins_follow_the_measure_they_copy_and_strip_away():
+    rels = g.parse_relationships(RELATIONSHIPS)
+    once = g.render(WITH_TWINS, rels, KINDS)
+    edited = once.replace("\t\t\t\tRETURN x\n", "\t\t\t\tRETURN x + 1\n")
+    assert edited.count("RETURN x + 1") == 1
+    again = g.render(edited, rels, KINDS)
+    assert "\tmeasure '_Unguarded Visits' =\n\t\t\tVAR x = COUNTROWS ( Encounters )\n\t\t\tRETURN x + 1\n" in again
+    import hnh_tmdl as t
+    assert [m.name for m in t.measures(g.strip_guards(once))] == [m.name for m in t.measures(WITH_TWINS)]
+    unused = once.replace("DIVIDE ( [_Unguarded Payroll Cost], [_Unguarded Visits] )", "DIVIDE ( [_Unguarded Visits], 2 )")
+    assert "'_Unguarded Payroll Cost'" not in g.render(unused, rels, KINDS)

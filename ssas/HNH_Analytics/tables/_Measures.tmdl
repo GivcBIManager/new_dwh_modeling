@@ -4512,62 +4512,63 @@ table _Measures
 						CROSSJOIN ( FILTER ( Periods, [@Period] <> 2 ), SELECTCOLUMNS ( VALUES ( Branch[Branch Key] ), "@Branch", Branch[Branch Key] ) ),
 						CROSSJOIN ( ROW ( "@Period", 2 ), SELECTCOLUMNS ( ALL ( Branch[Branch Key] ), "@Branch", Branch[Branch Key] ) )
 					)
-				VAR Measured =
+				-- the KPI measures' bodies (their guards are covered by this measure's): the selection (0), its prior year (1) and all time (2), one evaluation per period
+				VAR MeasuredPeriods =
 					GENERATE (
-						Periods,
+						FILTER ( Periods, [@Period] IN { 0, 1, 2 } ),
 						VAR P = [@Period]
 						RETURN
 							CALCULATETABLE (
 								ROW (
-									"@FIN_NET_REVENUE", [BSC Net Revenue],
-									"@FIN_REVENUE_GROWTH", [BSC Net Revenue],
-									"@FIN_EBITDA_MARGIN", [BSC EBITDA Margin],
-									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
-									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
-									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
-									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
-									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
-									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
-									"@FIN_EBITDA_PER_BED", [BSC EBITDA per Bed],
-									"@FIN_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
-									"@FIN_EBITDA_PER_DOCTOR", [BSC EBITDA per Doctor],
-									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Multi-Specialty Revenue Share],
-									"@CUS_PAYER_MIX", [BSC Payer Mix],
-									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
-									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
-									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
-									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
-									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
-									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
-									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
-									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
-									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
-									"@INT_ALOS", [BSC ALOS (days)],
-									"@INT_OP_TO_IP", [BSC OP to IP Conversion],
-									"@INT_PATIENT_VOLUME", [BSC Patient Volume],
-									"@INT_ER_GROWTH", [BSC ER Growth],
-									"@INT_DOCTOR_UTILIZATION", [BSC OP Doctor Utilization],
-									"@INT_ACTIVATED_BEDS", [BSC Activated Beds],
-									"@INT_HIGH_VALUE_REVENUE", [BSC High-Value Revenue Share],
-									"@INT_HIGH_VALUE_CENSUS", [BSC High-Value Census],
-									"@INT_OP_REVENUE_PER_EPISODE", [BSC OP Revenue per Episode],
-									"@INT_ANCILLARY_UTILIZATION", [BSC Ancillary Utilization],
-									"@INT_REVENUE_LEAKAGE", [BSC Revenue Leakage],
-									"@INT_CLAIM_INITIAL_REJECTION", [BSC Claim Initial Rejection],
-									"@INT_ORDER_NOT_DONE", [BSC Order Not Done],
-									"@INT_APPROVAL_TAT", [BSC Approval TAT (min)],
-									"@INT_COST_BUDGET_VARIANCE", [BSC Cost Budget Variance],
-									"@INT_GA_RATIO", [BSC G&A Ratio],
-									"@INT_READMISSION_30D", [BSC Readmission 30d],
-									"@INT_READMISSION_48H_CRITICAL", [BSC Readmission 48h Critical],
-									"@INT_EXTERNAL_REFERRALS", [BSC External Referrals],
-									"@LRN_TURNOVER", [BSC Turnover],
-									"@LRN_REVENUE_PER_FTE", [BSC Revenue per FTE],
-									"@LRN_STAFF_TO_BED", [BSC Staff to Bed],
-									"@LRN_SAUDIZATION", [BSC Saudization],
-									"@LRN_VACANCY_RATE", [BSC Vacancy Rate],
-									"@LRN_TIME_TO_FILL", [BSC Time to Fill (days)],
-									"@LRN_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor]
+									"@FIN_NET_REVENUE", [_Unguarded BSC Net Revenue],
+									"@FIN_REVENUE_GROWTH", [_Unguarded BSC Net Revenue],
+									"@FIN_EBITDA_MARGIN", [_Unguarded BSC EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [_Unguarded BSC Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [_Unguarded BSC Consumables Ratio],
+									"@FIN_DAYS_IN_AR", [_Unguarded BSC Days in AR (days)],
+									"@FIN_DAYS_INVENTORY", [_Unguarded BSC Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [_Unguarded BSC Revenue per Bed],
+									"@FIN_RETURN_ON_ASSETS", [_Unguarded BSC Return on Assets],
+									"@FIN_EBITDA_PER_BED", [_Unguarded BSC EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [_Unguarded BSC Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [_Unguarded BSC EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [_Unguarded BSC Multi-Specialty Revenue Share],
+									"@CUS_PAYER_MIX", [_Unguarded BSC Payer Mix],
+									"@CUS_PATIENT_SATISFACTION", [_Unguarded BSC Patient Satisfaction],
+									"@CUS_PATIENT_RETENTION", [_Unguarded BSC Patient Retention],
+									"@CUS_NEW_PATIENTS", [_Unguarded BSC New Patient Acquisition],
+									"@CUS_OP_WAIT", [_Unguarded BSC OP Waiting Time (min)],
+									"@CUS_NON_MOH_SHARE", [_Unguarded BSC Non-MoH Revenue Share],
+									"@CUS_PAYER_VOLUME", [_Unguarded BSC Payer Volume],
+									"@CUS_ACQUISITION_COST", [_Unguarded BSC Patient Acquisition Cost],
+									"@INT_BED_OCCUPANCY", [_Unguarded BSC Bed Occupancy],
+									"@INT_OP_UTILIZATION", [_Unguarded BSC Clinic Utilization],
+									"@INT_ALOS", [_Unguarded BSC ALOS (days)],
+									"@INT_OP_TO_IP", [_Unguarded BSC OP to IP Conversion],
+									"@INT_PATIENT_VOLUME", [_Unguarded BSC Patient Volume],
+									"@INT_ER_GROWTH", [_Unguarded BSC ER Growth],
+									"@INT_DOCTOR_UTILIZATION", [_Unguarded BSC OP Doctor Utilization],
+									"@INT_ACTIVATED_BEDS", [_Unguarded BSC Activated Beds],
+									"@INT_HIGH_VALUE_REVENUE", [_Unguarded BSC High-Value Revenue Share],
+									"@INT_HIGH_VALUE_CENSUS", [_Unguarded BSC High-Value Census],
+									"@INT_OP_REVENUE_PER_EPISODE", [_Unguarded BSC OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [_Unguarded BSC Ancillary Utilization],
+									"@INT_REVENUE_LEAKAGE", [_Unguarded BSC Revenue Leakage],
+									"@INT_CLAIM_INITIAL_REJECTION", [_Unguarded BSC Claim Initial Rejection],
+									"@INT_ORDER_NOT_DONE", [_Unguarded BSC Order Not Done],
+									"@INT_APPROVAL_TAT", [_Unguarded BSC Approval TAT (min)],
+									"@INT_COST_BUDGET_VARIANCE", [_Unguarded BSC Cost Budget Variance],
+									"@INT_GA_RATIO", [_Unguarded BSC G&A Ratio],
+									"@INT_READMISSION_30D", [_Unguarded BSC Readmission 30d],
+									"@INT_READMISSION_48H_CRITICAL", [_Unguarded BSC Readmission 48h Critical],
+									"@INT_EXTERNAL_REFERRALS", [_Unguarded BSC External Referrals],
+									"@LRN_TURNOVER", [_Unguarded BSC Turnover],
+									"@LRN_REVENUE_PER_FTE", [_Unguarded BSC Revenue per FTE],
+									"@LRN_STAFF_TO_BED", [_Unguarded BSC Staff to Bed],
+									"@LRN_SAUDIZATION", [_Unguarded BSC Saudization],
+									"@LRN_VACANCY_RATE", [_Unguarded BSC Vacancy Rate],
+									"@LRN_TIME_TO_FILL", [_Unguarded BSC Time to Fill (days)],
+									"@LRN_CLINICAL_TO_DOCTOR", [_Unguarded BSC Clinical to Doctor]
 								),
 								REMOVEFILTERS ( 'Date' ),
 								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
@@ -4577,6 +4578,70 @@ table _Measures
 								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 							)
 					)
+				-- the 12 trend months and their prior-year months: 24 different months, each period's dates inside its own month, so one
+				-- evaluation grouped by Year Month gives every month its own value (one storage engine query per measure, not 24)
+				VAR MeasuredMonths =
+					CALCULATETABLE (
+						ADDCOLUMNS (
+							VALUES ( 'Date'[Year Month] ),
+							"@FIN_NET_REVENUE", [_Unguarded BSC Net Revenue],
+							"@FIN_REVENUE_GROWTH", [_Unguarded BSC Net Revenue],
+							"@FIN_EBITDA_MARGIN", [_Unguarded BSC EBITDA Margin],
+							"@FIN_COST_TO_REVENUE", [_Unguarded BSC Cost to Revenue],
+							"@FIN_CONSUMABLES_RATIO", [_Unguarded BSC Consumables Ratio],
+							"@FIN_DAYS_IN_AR", [_Unguarded BSC Days in AR (days)],
+							"@FIN_DAYS_INVENTORY", [_Unguarded BSC Days Inventory (days)],
+							"@FIN_REVENUE_PER_BED", [_Unguarded BSC Revenue per Bed],
+							"@FIN_RETURN_ON_ASSETS", [_Unguarded BSC Return on Assets],
+							"@FIN_EBITDA_PER_BED", [_Unguarded BSC EBITDA per Bed],
+							"@FIN_REVENUE_PER_DOCTOR", [_Unguarded BSC Revenue per Doctor],
+							"@FIN_EBITDA_PER_DOCTOR", [_Unguarded BSC EBITDA per Doctor],
+							"@CUS_MULTI_SPECIALTY_SHARE", [_Unguarded BSC Multi-Specialty Revenue Share],
+							"@CUS_PAYER_MIX", [_Unguarded BSC Payer Mix],
+							"@CUS_PATIENT_SATISFACTION", [_Unguarded BSC Patient Satisfaction],
+							"@CUS_PATIENT_RETENTION", [_Unguarded BSC Patient Retention],
+							"@CUS_NEW_PATIENTS", [_Unguarded BSC New Patient Acquisition],
+							"@CUS_OP_WAIT", [_Unguarded BSC OP Waiting Time (min)],
+							"@CUS_NON_MOH_SHARE", [_Unguarded BSC Non-MoH Revenue Share],
+							"@CUS_PAYER_VOLUME", [_Unguarded BSC Payer Volume],
+							"@CUS_ACQUISITION_COST", [_Unguarded BSC Patient Acquisition Cost],
+							"@INT_BED_OCCUPANCY", [_Unguarded BSC Bed Occupancy],
+							"@INT_OP_UTILIZATION", [_Unguarded BSC Clinic Utilization],
+							"@INT_ALOS", [_Unguarded BSC ALOS (days)],
+							"@INT_OP_TO_IP", [_Unguarded BSC OP to IP Conversion],
+							"@INT_PATIENT_VOLUME", [_Unguarded BSC Patient Volume],
+							"@INT_ER_GROWTH", [_Unguarded BSC ER Growth],
+							"@INT_DOCTOR_UTILIZATION", [_Unguarded BSC OP Doctor Utilization],
+							"@INT_ACTIVATED_BEDS", [_Unguarded BSC Activated Beds],
+							"@INT_HIGH_VALUE_REVENUE", [_Unguarded BSC High-Value Revenue Share],
+							"@INT_HIGH_VALUE_CENSUS", [_Unguarded BSC High-Value Census],
+							"@INT_OP_REVENUE_PER_EPISODE", [_Unguarded BSC OP Revenue per Episode],
+							"@INT_ANCILLARY_UTILIZATION", [_Unguarded BSC Ancillary Utilization],
+							"@INT_REVENUE_LEAKAGE", [_Unguarded BSC Revenue Leakage],
+							"@INT_CLAIM_INITIAL_REJECTION", [_Unguarded BSC Claim Initial Rejection],
+							"@INT_ORDER_NOT_DONE", [_Unguarded BSC Order Not Done],
+							"@INT_APPROVAL_TAT", [_Unguarded BSC Approval TAT (min)],
+							"@INT_COST_BUDGET_VARIANCE", [_Unguarded BSC Cost Budget Variance],
+							"@INT_GA_RATIO", [_Unguarded BSC G&A Ratio],
+							"@INT_READMISSION_30D", [_Unguarded BSC Readmission 30d],
+							"@INT_READMISSION_48H_CRITICAL", [_Unguarded BSC Readmission 48h Critical],
+							"@INT_EXTERNAL_REFERRALS", [_Unguarded BSC External Referrals],
+							"@LRN_TURNOVER", [_Unguarded BSC Turnover],
+							"@LRN_REVENUE_PER_FTE", [_Unguarded BSC Revenue per FTE],
+							"@LRN_STAFF_TO_BED", [_Unguarded BSC Staff to Bed],
+							"@LRN_SAUDIZATION", [_Unguarded BSC Saudization],
+							"@LRN_VACANCY_RATE", [_Unguarded BSC Vacancy Rate],
+							"@LRN_TIME_TO_FILL", [_Unguarded BSC Time to Fill (days)],
+							"@LRN_CLINICAL_TO_DOCTOR", [_Unguarded BSC Clinical to Doctor]
+						),
+						REMOVEFILTERS ( 'Date' ),
+						TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, NOT ( [@Period] IN { 0, 1, 2 } ) ), "@Date", [@Date] ), 'Date'[Date] ),
+						REMOVEFILTERS ( Branch ),
+						TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodBranches, NOT ( [@Period] IN { 0, 1, 2 } ) ), "@Branch", [@Branch] ), Branch[Branch Key] ),
+						REMOVEFILTERS ( 'BSC KPI' ),
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+				VAR Measured = UNION ( MeasuredPeriods, MeasuredMonths )
 				VAR Actuals =
 					ADDCOLUMNS (
 						Periods,
@@ -4588,7 +4653,7 @@ table _Measures
 									TRUE (),
 									Skipped, BLANK (),
 									ValueSource = "manual", CALCULATE (
-										[BSC Manual Value],
+										[_Unguarded BSC Manual Value],
 										REMOVEFILTERS ( 'Date' ),
 										TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
 										REMOVEFILTERS ( Branch ),
@@ -4658,27 +4723,27 @@ table _Measures
 						RETURN
 							CALCULATETABLE (
 								ROW (
-									"@FIN_NET_REVENUE", [BSC Target Net Revenue],
-									"@FIN_EBITDA_MARGIN", [BSC Target EBITDA Margin],
-									"@FIN_COST_TO_REVENUE", [BSC Target Cost to Revenue],
-									"@FIN_CONSUMABLES_RATIO", [BSC Target Consumables Ratio],
-									"@FIN_DAYS_INVENTORY", [BSC Target Days Inventory (days)],
-									"@FIN_REVENUE_PER_BED", [BSC Target Revenue per Bed],
-									"@FIN_EBITDA_PER_BED", [BSC Target EBITDA per Bed],
-									"@FIN_REVENUE_PER_DOCTOR", [BSC Target Revenue per Doctor],
-									"@FIN_EBITDA_PER_DOCTOR", [BSC Target EBITDA per Doctor],
-									"@CUS_MULTI_SPECIALTY_SHARE", [BSC Target Multi-Specialty Share],
-									"@CUS_PAYER_MIX", [BSC Target Payer Mix],
-									"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
-									"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
-									"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
-									"@INT_OP_TO_IP", [BSC Target OP to IP],
-									"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
-									"@INT_ER_GROWTH", [BSC Target ER Growth],
-									"@INT_OP_REVENUE_PER_EPISODE", [BSC Target OP Revenue per Episode],
-									"@INT_ANCILLARY_UTILIZATION", [BSC Target Ancillary Utilization],
-									"@INT_GA_RATIO", [BSC Target G&A Ratio],
-									"@LRN_REVENUE_PER_FTE", [BSC Target Revenue per FTE]
+									"@FIN_NET_REVENUE", [_Unguarded BSC Target Net Revenue],
+									"@FIN_EBITDA_MARGIN", [_Unguarded BSC Target EBITDA Margin],
+									"@FIN_COST_TO_REVENUE", [_Unguarded BSC Target Cost to Revenue],
+									"@FIN_CONSUMABLES_RATIO", [_Unguarded BSC Target Consumables Ratio],
+									"@FIN_DAYS_INVENTORY", [_Unguarded BSC Target Days Inventory (days)],
+									"@FIN_REVENUE_PER_BED", [_Unguarded BSC Target Revenue per Bed],
+									"@FIN_EBITDA_PER_BED", [_Unguarded BSC Target EBITDA per Bed],
+									"@FIN_REVENUE_PER_DOCTOR", [_Unguarded BSC Target Revenue per Doctor],
+									"@FIN_EBITDA_PER_DOCTOR", [_Unguarded BSC Target EBITDA per Doctor],
+									"@CUS_MULTI_SPECIALTY_SHARE", [_Unguarded BSC Target Multi-Specialty Share],
+									"@CUS_PAYER_MIX", [_Unguarded BSC Target Payer Mix],
+									"@CUS_NON_MOH_SHARE", [_Unguarded BSC Target Non-MoH Share],
+									"@CUS_PAYER_VOLUME", [_Unguarded BSC Target Payer Volume],
+									"@INT_OP_UTILIZATION", [_Unguarded BSC Target Clinic Utilization],
+									"@INT_OP_TO_IP", [_Unguarded BSC Target OP to IP],
+									"@INT_PATIENT_VOLUME", [_Unguarded BSC Target Patient Volume],
+									"@INT_ER_GROWTH", [_Unguarded BSC Target ER Growth],
+									"@INT_OP_REVENUE_PER_EPISODE", [_Unguarded BSC Target OP Revenue per Episode],
+									"@INT_ANCILLARY_UTILIZATION", [_Unguarded BSC Target Ancillary Utilization],
+									"@INT_GA_RATIO", [_Unguarded BSC Target G&A Ratio],
+									"@LRN_REVENUE_PER_FTE", [_Unguarded BSC Target Revenue per FTE]
 								),
 								REMOVEFILTERS ( 'Date' ),
 								TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ),
@@ -4696,7 +4761,7 @@ table _Measures
 								SWITCH (
 									TRUE (),
 									Skipped, BLANK (),
-									TargetSource = "fixed", CALCULATE ( [BSC Fixed Target], REMOVEFILTERS ( 'Date' ), TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
+									TargetSource = "fixed", CALCULATE ( [_Unguarded BSC Fixed Target], REMOVEFILTERS ( 'Date' ), TREATAS ( SELECTCOLUMNS ( FILTER ( PeriodDates, [@Period] = P ), "@Date", [@Date] ), 'Date'[Date] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ),
 									TargetSource = "prior_year", MAXX ( FILTER ( Actuals, [@Period] = IF ( P = 0, 1, P - 100 ) ), [@Actual] ),
 									TargetSource = "budget",
 										SWITCH (
@@ -4759,7 +4824,7 @@ table _Measures
 						ISBLANK ( Rating ), "No target",
 						Rating
 					)
-				VAR WeightValue = [BSC KPI Weight]
+				VAR WeightValue = [_Unguarded BSC KPI Weight]
 				VAR MonthScores = FILTER ( Scores, [@Period] <> 0 )
 				RETURN
 					IF ( ISNUMBER ( A ), FORMAT ( A, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( T ), FORMAT ( T, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( V ), FORMAT ( V, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( S ), FORMAT ( S, "0.############", "en-US" ) )
@@ -11094,6 +11159,562 @@ table _Measures
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Guards
+
+	/// The expression of BSC ALOS (days) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC ALOS (days)' =
+			CALCULATE (
+				AVERAGE ( Admissions[LOS Days] ),
+				Admissions[Is Countable] = "Yes",
+				Admissions[Is LTC] = "No",
+				USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] )
+			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Activated Beds without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Activated Beds' =
+			DIVIDE ( [BSC Available Beds], [BSC Licensed Beds] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Ancillary Utilization without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Ancillary Utilization' =
+			DIVIDE (
+				CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP", 'Product Category'[Is BSC Ancillary] = "Yes" ),
+				CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" )
+			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Approval TAT (min) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Approval TAT (min)' =
+			[Sent to Response Avg (min)]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Bed Occupancy without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Bed Occupancy' =
+			[Bed Occupancy %]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Claim Initial Rejection without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Claim Initial Rejection' =
+			DIVIDE ( [Claims Rejected], [Claims Submitted] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Clinic Utilization without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Clinic Utilization' =
+			DIVIDE ( [OP Visits], [BSC Clinic Capacity] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Clinical to Doctor without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Clinical to Doctor' =
+			DIVIDE ( [BSC Average Medical], [BSC Average Doctors] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Consumables Ratio without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Consumables Ratio' =
+			DIVIDE ( [BSC GL Consumables], [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Cost Budget Variance without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Cost Budget Variance' =
+			DIVIDE ( [BSC GL Opex] - [BSC Budget Opex], [BSC Budget Opex] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Cost to Revenue without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Cost to Revenue' =
+			DIVIDE ( [BSC GL Net Revenue] - [BSC GL EBITDA], [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Days Inventory (days) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Days Inventory (days)' =
+			DIVIDE ( [BSC GL Inventory Average] * [BSC Days in Period], [BSC GL COGS] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Days in AR (days) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Days in AR (days)' =
+			DIVIDE ( [BSC GL AR Average] * [BSC Days in Period], [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC EBITDA Margin without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC EBITDA Margin' =
+			DIVIDE ( [BSC GL EBITDA], [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC EBITDA per Bed without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC EBITDA per Bed' =
+			DIVIDE ( [BSC GL EBITDA], [BSC Available Beds] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC EBITDA per Doctor without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC EBITDA per Doctor' =
+			DIVIDE ( [BSC GL EBITDA], [BSC Average Doctors] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC ER Growth without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC ER Growth' =
+			VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR PriorYear = CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( Past ) )
+			RETURN IF ( NOT ISBLANK ( PriorYear ), DIVIDE ( [ER Visits], PriorYear ) - 1 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC External Referrals without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC External Referrals' =
+			CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" ) + CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Fixed Target without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Fixed Target' =
+			VAR TargetValue = AVERAGE ( 'BSC Targets'[Target Value] )
+			VAR Months = DISTINCTCOUNT ( 'BSC Targets'[Month Date Key] )
+			RETURN IF ( MAX ( 'BSC Targets'[Scale With Months] ) = 1, TargetValue * Months / 12, TargetValue )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC G&A Ratio without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC G&A Ratio' =
+			DIVIDE ( [BSC GL G&A], [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC High-Value Census without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC High-Value Census' =
+			DIVIDE (
+				CALCULATE ( [Census], 'Booked Doctor'[Is High Value Specialty] = "Yes" )
+					+ CALCULATE ( [Admissions], Staff[Is High Value Specialty] = "Yes" ),
+				[Census]
+			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC High-Value Revenue Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC High-Value Revenue Share' =
+			DIVIDE ( CALCULATE ( [Revenue], Staff[Is High Value Specialty] = "Yes" ), [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC KPI Weight without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC KPI Weight' =
+			IF ( HASONEVALUE ( Branch[Branch Key] ), SUM ( 'BSC Weights'[Weight] ), SUM ( 'BSC KPI'[Corporate Weight] ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Manual Value without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Manual Value' =
+			VAR Num = SUM ( 'BSC Manual Values'[Numerator] )
+			VAR Den = SUM ( 'BSC Manual Values'[Denominator] )
+			RETURN IF ( Den = 0 && NOT ISBLANK ( Num ), DIVIDE ( Num, CALCULATE ( [Census], REMOVEFILTERS ( 'BSC KPI' ) ) ), DIVIDE ( Num, Den ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Multi-Specialty Revenue Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Multi-Specialty Revenue Share' =
+			DIVIDE (
+				CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" )
+					+ CALCULATE ( [Revenue], 'Care Type'[Care Type] = "IP", 'Charge Lines'[Is LTC] = "No" ),
+				[BSC GL Net Revenue]
+			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Net Revenue without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Net Revenue' =
+			[BSC GL Net Revenue]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC New Patient Acquisition without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC New Patient Acquisition' =
+			DIVIDE ( CALCULATE ( COUNTROWS ( Encounters ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ), [OP Visits] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Non-MoH Revenue Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Non-MoH Revenue Share' =
+			DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ), [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC OP Doctor Utilization without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC OP Doctor Utilization' =
+			DIVIDE ( [OP Visits], SUM ( 'Clinic Capacity'[BSC Capacity Slots] ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC OP Revenue per Episode without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC OP Revenue per Episode' =
+			DIVIDE ( CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" ), CALCULATE ( [Episodes], 'Care Type'[Care Type] = "OP" ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC OP Waiting Time (min) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC OP Waiting Time (min)' =
+			CALCULATE ( AVERAGE ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC OP to IP Conversion without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC OP to IP Conversion' =
+			DIVIDE ( [Admissions], [OP Visits] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Order Not Done without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Order Not Done' =
+			[Unutilised Approval Rate %]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Patient Acquisition Cost without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Patient Acquisition Cost' =
+			DIVIDE ( [BSC GL Marketing], CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Patient Retention without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Patient Retention' =
+			VAR Patients = CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" )
+			VAR Returning = CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No", Encounters[Is Returning] = "Yes" )
+			RETURN DIVIDE ( Returning, Patients )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Patient Satisfaction without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Patient Satisfaction' =
+			VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
+			VAR Net = CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
+			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Patient Volume without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Patient Volume' =
+			[OP Visits] + [ER Visits] + [Admissions]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Payer Mix without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Payer Mix' =
+			DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Category] = "Insurance" ), [BSC GL Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Payer Volume without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Payer Volume' =
+			CALCULATE ( [Census], Payer[Category] = "Insurance" )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Readmission 30d without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Readmission 30d' =
+			DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Readmission 30d] = "Yes" ), [Discharges] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Readmission 48h Critical without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Readmission 48h Critical' =
+			DIVIDE ( [ICU Readmissions 48h], CALCULATE ( [Discharges], Bed[Is Critical] = "Yes" ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Return on Assets without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Return on Assets' =
+			DIVIDE ( [BSC GL Income], [BSC GL Assets Opening] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Revenue Leakage without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Revenue Leakage' =
+			VAR Base = CALCULATE ( SUM ( Invoices[Net Amount] ), Payer[Category] IN { "Insurance", "Government" }, 'Claim Status'[Submission Channel] <> "Manual" )
+			VAR NotSubmitted = CALCULATE ( SUM ( Invoices[Net Amount] ), Payer[Category] IN { "Insurance", "Government" }, 'Claim Status'[Submission Channel] <> "Manual", 'Claim Status'[Is Submitted] = "No" )
+			RETURN DIVIDE ( NotSubmitted, Base )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Revenue per Bed without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Revenue per Bed' =
+			DIVIDE ( [BSC GL Net Revenue], [BSC Available Beds] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Revenue per Doctor without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Revenue per Doctor' =
+			DIVIDE ( [BSC GL Net Revenue], [BSC Average Doctors] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Revenue per FTE without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Revenue per FTE' =
+			DIVIDE ( [BSC GL Net Revenue], [BSC Average FTE] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Saudization without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Saudization' =
+			VAR Saudi =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = [BSC Last Workforce Month]
+					RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head", 'Workforce Monthly'[Is Saudi] = 1 ) )
+				)
+			VAR Heads =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = [BSC Last Workforce Month]
+					RETURN IF ( NOT ISBLANK ( LastMonth ), CALCULATE ( SUM ( 'Workforce Monthly'[Headcount] ), REMOVEFILTERS ( 'Date' ), 'Workforce Monthly'[Month Date Key] = LastMonth, 'Workforce Monthly'[Row Type] = "head" ) )
+				)
+			RETURN DIVIDE ( Saudi, Heads )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Staff to Bed without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Staff to Bed' =
+			DIVIDE ( [BSC Average FTE], [BSC Available Beds] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Ancillary Utilization without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Ancillary Utilization' =
+			IF ( NOT ISBLANK ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ) ), MAX ( 'BSC Parameters'[Ancillary Target Share] ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Clinic Utilization without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Clinic Utilization' =
+			DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "OP" ), [BSC Clinic Capacity] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Consumables Ratio without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Consumables Ratio' =
+			DIVIDE ( [BSC Budget Consumables], [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Cost to Revenue without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Cost to Revenue' =
+			DIVIDE ( [BSC Budget Net Revenue] - [BSC Budget EBITDA], [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Days Inventory (days) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Days Inventory (days)' =
+			DIVIDE ( [BSC GL Inventory Average] * [BSC Days in Period], [BSC Budget Consumables] + [BSC Budget Medicines] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target EBITDA Margin without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target EBITDA Margin' =
+			DIVIDE ( [BSC Budget EBITDA], [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target EBITDA per Bed without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target EBITDA per Bed' =
+			DIVIDE ( [BSC Budget EBITDA], [BSC Available Beds] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target EBITDA per Doctor without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target EBITDA per Doctor' =
+			DIVIDE ( [BSC Budget EBITDA], [BSC Average Doctors] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target ER Growth without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target ER Growth' =
+			VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR PriorYear = CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( Past ) )
+			RETURN IF ( NOT ISBLANK ( PriorYear ), DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "ER" ), PriorYear ) - 1 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target G&A Ratio without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target G&A Ratio' =
+			DIVIDE ( [BSC Budget G&A], [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Multi-Specialty Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Multi-Specialty Share' =
+			DIVIDE ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ) + CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "IP", Targets[Stay Type] <> "LTC" ), [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Net Revenue without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Net Revenue' =
+			[BSC Budget Net Revenue]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Non-MoH Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Non-MoH Share' =
+			DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] <> "Government" ), [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target OP Revenue per Episode without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target OP Revenue per Episode' =
+			DIVIDE ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ), CALCULATE ( [Target Episodes], 'Care Type'[Care Type] = "OP" ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target OP to IP without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target OP to IP' =
+			DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] = "OP" ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Patient Volume without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Patient Volume' =
+			CALCULATE ( [Target Census], 'Care Type'[Care Type] IN { "OP", "ER", "IP" } )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Payer Mix without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Payer Mix' =
+			DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] = "Insurance" ), [BSC Budget Net Revenue] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Payer Volume without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Payer Volume' =
+			CALCULATE ( [Target Census], Targets[Creditor] = "Insurance" )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Revenue per Bed without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Revenue per Bed' =
+			DIVIDE ( [BSC Budget Net Revenue], [BSC Available Beds] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Revenue per Doctor without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Revenue per Doctor' =
+			DIVIDE ( [BSC Budget Net Revenue], [BSC Average Doctors] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Target Revenue per FTE without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Revenue per FTE' =
+			DIVIDE ( [BSC Budget Net Revenue], [BSC Average FTE] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Time to Fill (days) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Time to Fill (days)' =
+			AVERAGE ( Requisitions[Days To Fill] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Turnover without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Turnover' =
+			DIVIDE ( SUM ( 'Workforce Monthly'[Resignations] ), [BSC Average Headcount] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Vacancy Rate without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Vacancy Rate' =
+			VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR LastKey = YEAR ( PeriodEnd ) * 10000 + MONTH ( PeriodEnd ) * 100 + DAY ( PeriodEnd )
+			VAR Openings =
+				CALCULATE (
+					SUM ( Requisitions[Number To Hire] ),
+					REMOVEFILTERS ( 'Date' ),
+					Requisitions[Approved Date Key] <= LastKey,
+					FILTER ( ALL ( Requisitions[Filled Date Key] ), ISBLANK ( Requisitions[Filled Date Key] ) || Requisitions[Filled Date Key] > LastKey )
+				)
+			VAR Budgeted = CALCULATE ( SUM ( 'BSC Budgeted FTE'[Budgeted FTE] ), REMOVEFILTERS ( 'Date' ), 'Date'[Year] = YEAR ( PeriodEnd ) )
+			RETURN IF ( NOT ISBLANK ( PeriodEnd ), DIVIDE ( Openings, Budgeted ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
 
 	column Measure
 		dataType: string

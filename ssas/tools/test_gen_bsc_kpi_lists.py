@@ -54,3 +54,39 @@ def test_every_list_holding_measure_is_rewritten():
     names = {name for name, _ in blocks}
     assert names == {"BSC Actual", "BSC Target", "BSC Variance %", "BSC Score", "BSC State", "BSC Visual Payload",
                      "BSC Visual Payload Scores"}
+
+
+TWIN_SAMPLE = """\tmeasure 'Y' =
+\t\t\tVAR Measured =
+\t\t\t\tCALCULATETABLE (
+\t\t\t\t\tROW (
+\t\t\t\t\t\t"@OLD", [_Unguarded BSC Old]
+\t\t\t\t\t),
+\t\t\t\t\tPast
+\t\t\t\t)
+\t\t\tVAR MeasuredMonths =
+\t\t\t\tCALCULATETABLE (
+\t\t\t\t\tADDCOLUMNS (
+\t\t\t\t\t\tVALUES ( 'Date'[Year Month] ),
+\t\t\t\t\t\t"@OLD", [_Unguarded BSC Old]
+\t\t\t\t\t),
+\t\t\t\t\tPast
+\t\t\t\t)
+\t\t\tVAR Budgeted =
+\t\t\t\tCALCULATETABLE (
+\t\t\t\t\tROW (
+\t\t\t\t\t\t"@OLD", [_Unguarded BSC Target Old]
+\t\t\t\t\t),
+\t\t\t\t\tPast
+\t\t\t\t)
+\t\t\tRETURN 1
+"""
+
+
+def test_render_keeps_unguarded_twins_and_rewrites_the_monthly_list():
+    out = g.render(TWIN_SAMPLE, kpis=[("A", "BSC A"), ("B", "BSC B")], budgets=[("A", "BSC Target A")])
+    assert out.count('\t\t\t\t\t\t"@A", [_Unguarded BSC A],\n\t\t\t\t\t\t"@B", [_Unguarded BSC B]\n\t\t\t\t\t),') == 2
+    assert "\t\t\t\t\tADDCOLUMNS (\n\t\t\t\t\t\tVALUES ( 'Date'[Year Month] ),\n\t\t\t\t\t\t\"@A\", [_Unguarded BSC A]," in out
+    assert '\t\t\t\t\t\t"@A", [_Unguarded BSC Target A]\n\t\t\t\t\t),' in out
+    assert "OLD" not in out
+    assert [kind for _, kind in g.list_blocks(TWIN_SAMPLE)] == ["ROW kpi", "ADDCOLUMNS kpi", "ROW budget"]

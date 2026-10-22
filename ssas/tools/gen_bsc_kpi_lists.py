@@ -4,7 +4,9 @@ BSC Actual, BSC Target and the measures that inline them (BSC Variance %, BSC Sc
 BSC Visual Payload Scores) read every KPI measure in one ROW ( "@<CODE>", [<measure>], ... ) table and pick the KPI in
 context with SWITCH ( Code, "<CODE>", MAXX ( <table>, [@<CODE>] ), ..., BLANK () ). This tool rewrites every such ROW
 list and SWITCH lookup from KPIS (the KPI measures) and BUDGETS (the budget targets), keeping each block's indentation
-and lookup table. To add a KPI, add its line below and run the tool, then measure_guards.py and sync_perspectives.py.
+and lookup table. BSC Visual Payload also has an ADDCOLUMNS ( VALUES ( 'Date'[Year Month] ), "@<CODE>", ... ) list
+for its trend months, and its lists call [_Unguarded <measure>] (the twins measure_guards.py writes); a list keeps that
+form. To add a KPI, add its line below and run the tool, then measure_guards.py and sync_perspectives.py.
 
 Usage: python ssas/tools/gen_bsc_kpi_lists.py [--check]   (--check: exit 1 when the file is not current)
 """
@@ -92,17 +94,29 @@ BUDGETS = [
     ("LRN_REVENUE_PER_FTE", "BSC Target Revenue per FTE"),
 ]
 
-# ROW ( then "@<CODE>", [<measure>] lines one tab deeper, up to the ) at the ROW's indentation. A list of budget
-# targets when every measure is a "BSC Target ..." measure.
-ROW_RE = re.compile(r'(?m)^(\t*)ROW \(\n((?:\1\t"@[^"]+", \[[^\]]+\],?\n)+)(?=\1\))')
+# ROW ( or ADDCOLUMNS ( VALUES ( 'Date'[Year Month] ), (BSC Visual Payload's months, Task 10), then "@<CODE>",
+# [<measure>] lines one tab deeper, up to the ) at the opening line's indentation. A list of budget targets when every
+# measure is a "BSC Target ..." measure. A list that calls unguarded twins ([_Unguarded <measure>], written by
+# measure_guards.py) keeps calling them.
+ROW_RE = re.compile(r"(?m)^(\t*)(ROW \(\n|ADDCOLUMNS \(\n\1\tVALUES \( 'Date'\[Year Month\] \),\n)"
+                    r'((?:\1\t"@[^"]+", \[[^\]]+\],?\n)+)(?=\1\))')
+TWIN_PREFIX = "_Unguarded "
 # Code, then "<CODE>", MAXX ( <table>, [@<CODE>] ), lines up to BLANK (). Budget targets when <table> says Budget.
 SWITCH_RE = re.compile(r'(?m)^(\t*)Code,\n((?:\1"[^"]+", MAXX \( (\w+), \[@[^\]]+\] \),\n)+)(?=\1BLANK \(\))')
 MEASURE_RE = re.compile(r"(?m)^\tmeasure (?:'((?:[^']|'')+)'|(\S+))")
 
 
+def _row_measures(block: str) -> list:
+    return re.findall(r'"@[^"]+", \[([^\]]+)\]', block)
+
+
 def _row_kind(block: str) -> str:
-    measures = re.findall(r'"@[^"]+", \[([^\]]+)\]', block)
+    measures = [m[len(TWIN_PREFIX):] if m.startswith(TWIN_PREFIX) else m for m in _row_measures(block)]
     return "budget" if all(m.startswith("BSC Target ") for m in measures) else "kpi"
+
+
+def _row_prefix(block: str) -> str:
+    return TWIN_PREFIX if all(m.startswith(TWIN_PREFIX) for m in _row_measures(block)) else ""
 
 
 def _switch_kind(table: str) -> str:
@@ -116,7 +130,7 @@ def _measure_at(text: str, pos: int) -> str:
 
 def list_blocks(text: str) -> list:
     """(measure name, "ROW kpi" | "ROW budget" | "SWITCH kpi" | "SWITCH budget") of every KPI list in the text."""
-    found = [(m.start(), "ROW " + _row_kind(m.group(2))) for m in ROW_RE.finditer(text)]
+    found = [(m.start(), m.group(2).split(" ")[0] + " " + _row_kind(m.group(3))) for m in ROW_RE.finditer(text)]
     found += [(m.start(), "SWITCH " + _switch_kind(m.group(3))) for m in SWITCH_RE.finditer(text)]
     return [(_measure_at(text, pos), kind) for pos, kind in sorted(found)]
 
@@ -124,9 +138,10 @@ def list_blocks(text: str) -> list:
 def render(text: str, kpis: list = KPIS, budgets: list = BUDGETS) -> str:
     """The text with every ROW list and SWITCH lookup rewritten from the KPI lists."""
     def row(m):
-        lines = budgets if _row_kind(m.group(2)) == "budget" else kpis
-        entries = ",\n".join(f'{m.group(1)}\t"@{code}", [{measure}]' for code, measure in lines)
-        return f"{m.group(1)}ROW (\n{entries}\n"
+        lines = budgets if _row_kind(m.group(3)) == "budget" else kpis
+        prefix = _row_prefix(m.group(3))
+        entries = ",\n".join(f'{m.group(1)}\t"@{code}", [{prefix}{measure}]' for code, measure in lines)
+        return f"{m.group(1)}{m.group(2)}{entries}\n"
 
     def switch(m):
         tabs, table = m.group(1), m.group(3)

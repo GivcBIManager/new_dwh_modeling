@@ -118,31 +118,39 @@ def test_measure_guards_are_current():
 
 # The scorecard measures that hold the KPI dispatch lists (bsc visual plan, Task 9): (ROW lists of KPI measures, ROW
 # lists of budget targets) and as many SWITCH ( Code, "<CODE>", MAXX ( <table>, [@<CODE>] ), ... ) lookups of each.
+# BSC Visual Payload has a second KPI list, ADDCOLUMNS ( VALUES ( 'Date'[Year Month] ), ... ), for its 24 months, and
+# its lists call the measures' unguarded twins (Task 10); its lookups read the union of both KPI tables.
 BSC_KPI_LISTS = {"BSC Actual": (1, 0), "BSC Target": (0, 1), "BSC Variance %": (1, 1), "BSC Score": (1, 1),
-                 "BSC State": (1, 1), "BSC Visual Payload": (1, 1), "BSC Visual Payload Scores": (1, 1)}
+                 "BSC State": (1, 1), "BSC Visual Payload": (2, 1), "BSC Visual Payload Scores": (1, 1)}
+BSC_LOOKUPS = {"BSC Visual Payload": 2}
 BSC_MEASURE_KPIS, BSC_BUDGET_KPIS = len(gen_bsc_kpi_lists.KPIS), len(gen_bsc_kpi_lists.BUDGETS)  # 49, 21
+TWIN = "_Unguarded "
 
 
 def bsc_kpi_list_problems(measures) -> list:
     """Differences between the KPI ROW lists and SWITCH lookups of the BSC_KPI_LISTS measures (empty when they agree).
-    A code missing from one list would fall to the SWITCH's BLANK () in that measure only."""
+    A code missing from one list would fall to the SWITCH's BLANK () in that measure only. An unguarded twin counts
+    as the measure it copies."""
     import re
-    row_re = re.compile(r'ROW \(\n((?:[ \t]*"@[^"]+", \[[^\]]+\],?\n)+)[ \t]*\)')
+    row_re = re.compile(r"(?:ROW \(\n|ADDCOLUMNS \(\n[ \t]*VALUES \( 'Date'\[Year Month\] \),\n)"
+                        r'((?:[ \t]*"@[^"]+", \[[^\]]+\],?\n)+)[ \t]*\)')
     switch_re = re.compile(r'SWITCH \(\n[ \t]*Code,\n((?:[ \t]*"[^"]+", MAXX \( \w+, \[@[^\]]+\] \),\n)+)[ \t]*BLANK \(\)')
     problems, rows, switches = [], {"measure": [], "budget": []}, {"measure": [], "budget": []}
     for name, (want_measure, want_budget) in BSC_KPI_LISTS.items():
         text = measures[name].expression
         found = {"measure": [], "budget": []}
         for block in row_re.findall(text):
-            pairs = frozenset(re.findall(r'"@([^"]+)", \[([^\]]+)\]', block))
+            pairs = frozenset((code, measure[len(TWIN):] if measure.startswith(TWIN) else measure)
+                              for code, measure in re.findall(r'"@([^"]+)", \[([^\]]+)\]', block))
             found["budget" if all(m.startswith("BSC Target ") for _, m in pairs) else "measure"].append(pairs)
         for kind, want in (("measure", want_measure), ("budget", want_budget)):
             if len(found[kind]) != want:
                 problems.append(f"{name}: {len(found[kind])} {kind} ROW lists, expected {want}")
             rows[kind] += [(name, pairs) for pairs in found[kind]]
         lookups = [re.findall(r'"([^"]+)", MAXX \( (\w+), \[@([^\]]+)\] \)', block) for block in switch_re.findall(text)]
-        if len(lookups) != want_measure + want_budget:
-            problems.append(f"{name}: {len(lookups)} SWITCH ( Code, ... ) lookups, expected {want_measure + want_budget}")
+        want_lookups = BSC_LOOKUPS.get(name, want_measure + want_budget)
+        if len(lookups) != want_lookups:
+            problems.append(f"{name}: {len(lookups)} SWITCH ( Code, ... ) lookups, expected {want_lookups}")
         for entries in lookups:
             problems += [f"{name}: {code} reads [@{column}]" for code, _, column in entries if code != column]
             if len({table for _, table, _ in entries}) != 1:
@@ -165,6 +173,33 @@ def bsc_kpi_list_problems(measures) -> list:
 
 def test_bsc_kpi_lists_agree():
     assert bsc_kpi_list_problems({m.name: m for m in MEASURES}) == []
+
+
+def test_speed_entries_reference_existing_measures_and_keep_the_agreed_limits():
+    """ssas/tests/performance.json, run by test.ps1 -Stage Performance as the non-admin BI user. Limits agreed with the
+    user (2026-10-22): Executive cold 4 s; the scorecard overview stays at 10 s cold / 3 s warm."""
+    entries = json.loads((SSAS / "tests" / "performance.json").read_text(encoding="utf-8"))
+    assert {e["name"]: unknown_references(e["dax"]) for e in entries if unknown_references(e["dax"])} == {}
+    limits = {e["name"].split(":")[0]: (e.get("cold_limit", 3), e.get("warm_limit", 1)) for e in entries}
+    assert limits["Executive"] == (4, 1)
+    assert limits["Scorecard"] == (10, 3)
+    assert limits["Scorecard comparison"] == (15, 6)
+
+
+def test_bsc_visual_payload_reads_unguarded_twins_and_batches_its_months():
+    """Scorecard overview speed for row-level-security users (bsc visual plan, Task 10): the payload's own guard covers
+    every fact, so it calls the KPI and budget measures' bodies without their inner guards, and it evaluates the 12 trend
+    months and their prior-year months in one ADDCOLUMNS over 'Date'[Year Month] instead of one evaluation per month."""
+    import re
+    text = {m.name: m for m in MEASURES}["BSC Visual Payload"].expression
+    called = t.dax_references(text)[1]
+    sources = {m for _, m in gen_bsc_kpi_lists.KPIS} | {m for _, m in gen_bsc_kpi_lists.BUDGETS} | {
+        "BSC Manual Value", "BSC Fixed Target", "BSC KPI Weight"}
+    assert sorted(called & sources) == []
+    assert sorted(sources - {n[len(TWIN):] for n in called if n.startswith(TWIN)}) == []
+    assert sorted(n for n in called if n.startswith(TWIN) and n not in NAMES) == []
+    assert len(re.findall(r"ADDCOLUMNS \(\n\t*VALUES \( 'Date'\[Year Month\] \),\n", text)) == 1
+    assert "[@Period] IN { 0, 1, 2 }" in text
 
 
 def test_bsc_tables_generated():

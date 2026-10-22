@@ -1,5 +1,6 @@
 [
   {"name": "Executive: revenue, visits and admissions by branch, one month",
+   "cold_limit": 4,
    "dax": "EVALUATE SUMMARIZECOLUMNS ( Branch[Branch Name], TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Revenue\", [Revenue], \"OP Visits\", [OP Visits], \"Admissions\", [Admissions] )"},
   {"name": "Revenue cycle: revenue YTD by payer category",
    "dax": "EVALUATE SUMMARIZECOLUMNS ( Payer[Category], TREATAS ( { 202608 }, 'Date'[Year Month] ), TREATAS ( { \"YTD\" }, 'Time Calculation'[Time Calculation] ), \"Revenue YTD\", [Revenue] )"},
