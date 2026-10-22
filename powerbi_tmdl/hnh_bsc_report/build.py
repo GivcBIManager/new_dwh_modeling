@@ -15,10 +15,12 @@ sys.path.insert(0, str(HERE))
 
 from layout import page_section, show_all_on_branch  # noqa: E402
 from model import Page  # noqa: E402
-from pbix import SAMPLES_PAGE, check_upload_rules, read_pbix, samples, set_database, write_pbix  # noqa: E402
+from pbix import (SAMPLES_PAGE, check_upload_rules, read_pbix, samples, set_database, set_server,  # noqa: E402
+                  write_pbix)
 
 DRILL_SAMPLE_PAGE = "Drill sample"
 TEMPLATE = HERE / "template" / "hnh_bsc_template.pbix"
+SERVER = "HNHANALYTICSSRV\\REPORTSERVERDB"
 
 
 def _check_unique(pages: list[Page]) -> None:
@@ -28,9 +30,22 @@ def _check_unique(pages: list[Page]) -> None:
             raise ValueError(f"duplicate {what}: {', '.join(dups)}")
 
 
-def build(template: Path, pages: list[Page], database: str, out: Path) -> None:
+def _drop_bookmarks(marks: list, sections: set) -> list:
+    """Bookmarks (and bookmark groups' children) whose page is still in the report."""
+    out = []
+    for m in marks:
+        if isinstance(m.get("children"), list):
+            kids = _drop_bookmarks(m["children"], sections)
+            if kids:
+                out.append({**m, "children": kids})
+        elif (m.get("explorationState") or {}).get("activeSection") in sections:
+            out.append(m)
+    return out
+
+
+def build(template: Path, pages: list[Page], database: str, out: Path, server: str = SERVER) -> None:
     """Read the template, write `pages` (in order) in place of its `Samples` and `Drill sample` pages, point the live
-    connection at `database`, write `out` and raise if it breaks the Report Server upload rules."""
+    connection at `server` / `database`, write `out` and raise if it breaks the Report Server upload rules."""
     _check_unique(pages)
     p = read_pbix(template)
     smp = samples(p)
@@ -51,6 +66,8 @@ def build(template: Path, pages: list[Page], database: str, out: Path) -> None:
         layout.pop("pods", None)  # only the template pages' bindings were there
     cfg = json.loads(layout.get("config") or "{}")
     cfg["activeSectionIndex"] = 0
+    if "bookmarks" in cfg:  # bookmarks on the template pages would point at pages that are gone
+        cfg["bookmarks"] = _drop_bookmarks(cfg["bookmarks"], {s["name"] for s in new_sections})
     layout["config"] = json.dumps(cfg, separators=(",", ":"), ensure_ascii=False)
 
     names = [json.loads(vc["config"]).get("name") for s in new_sections for vc in s["visualContainers"]]
@@ -61,6 +78,7 @@ def build(template: Path, pages: list[Page], database: str, out: Path) -> None:
     if bad:
         raise ValueError("'show items with no data' on a Branch field: " + "; ".join(bad))
 
+    set_server(p, server)
     set_database(p, database)
     write_pbix(p, out)
     problems = check_upload_rules(out)
@@ -72,6 +90,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--template", type=Path, default=TEMPLATE)
     ap.add_argument("--database", required=True, help="HNH_Analytics_Test while testing, HNH_Analytics for release")
+    ap.add_argument("--server", default=SERVER, help=f"SSAS server for the live connection (default {SERVER})")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args(argv)
     try:
@@ -86,12 +105,12 @@ def main(argv=None) -> int:
         return 1
     args.out.parent.mkdir(parents=True, exist_ok=True)
     try:
-        build(args.template, PAGES, args.database, args.out)
+        build(args.template, PAGES, args.database, args.out, args.server)
     except (ValueError, OSError) as e:
         print(f"build failed: {e}")
         return 1
     problems = check_upload_rules(args.out)
-    print(f"wrote {args.out} ({len(PAGES)} pages, database {args.database})")
+    print(f"wrote {args.out} ({len(PAGES)} pages, server {args.server}, database {args.database})")
     print("check_upload_rules: " + ("passed" if not problems else "; ".join(problems)))
     return 1 if problems else 0
 

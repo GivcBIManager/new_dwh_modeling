@@ -10,13 +10,15 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from decimal import Decimal
 
 from model import Field, Filter, Page, Visual
 
-SYNC_GROUP = "bsc"
+SYNC_PREFIX = "bsc "  # sync group per field: "bsc Branch.Branch Name"
 PAGE_WIDTH, PAGE_HEIGHT = 1920, 1080
-DESCENDING = 2  # OrderBy Direction: 1 ascending, 2 descending
-# singleVisual keys the generator sets itself; any other key that names a sample field is dropped.
+DIRECTION = {"asc": 1, "desc": 2}  # OrderBy Direction
+DESCENDING = DIRECTION["desc"]
+# singleVisual keys the generator sets itself; any other key that names a field no longer bound is dropped.
 _OWN_KEYS = {"visualType", "projections", "prototypeQuery", "objects", "vcObjects", "syncGroup", "columnProperties",
              "showAllRoles", "hasDefaultSort", "drillFilterOtherVisuals"}
 
@@ -33,7 +35,8 @@ def _dump(obj) -> str:
 # ---- expressions -------------------------------------------------------------------------------------------------
 
 def lit(value) -> dict:
-    """A query literal: 'text' (quotes doubled), 12L, 1.5D, true / false, null."""
+    """A query literal: 'text' (quotes doubled), 12L, 1.5D (plain decimal, never an exponent), true / false,
+    null."""
     if value is None:
         v = "null"
     elif isinstance(value, bool):
@@ -41,7 +44,10 @@ def lit(value) -> dict:
     elif isinstance(value, int):
         v = f"{value}L"
     elif isinstance(value, float):
-        v = f"{value!r}D"
+        d = format(Decimal(repr(value)), "f")
+        if "." in d:
+            d = d.rstrip("0").rstrip(".")
+        v = f"{d}D"
     else:
         v = "'" + str(value).replace("'", "''") + "'"
     return {"Literal": {"Value": v}}
@@ -83,17 +89,25 @@ def _from(al: dict[str, str]) -> list[dict]:
 # ---- filters (standard format; see LAYOUT_FORMAT.md) -------------------------------------------------------------
 
 def filter_json(name: str, flt: Filter) -> dict:
-    """A user filter for a visual's or a page's `filters` list. A column: Categorical In (what the filter pane writes
-    for ticked values). A measure: Advanced, `is` = the value."""
+    """A user filter for a visual's or a page's `filters` list. A column `in` / `eq`: Categorical In (what the filter
+    pane writes for ticked values). A measure `eq`: Advanced, is the value. `notblank` (column or measure):
+    Advanced, Not (is blank), the filter pane's "is not blank"."""
     f = flt.field
     values = list(flt.values) if isinstance(flt.values, (list, tuple, set)) else [flt.values]
-    if flt.op not in ("in", "eq") or (flt.op == "eq" and len(values) != 1) or not values:
-        raise ValueError(f"filter on {f}: op must be 'in' (values) or 'eq' (one value), got {flt.op} {values}")
+    if flt.op == "notblank":
+        if values:
+            raise ValueError(f"filter on {f}: notblank takes no values, got {values}")
+    elif flt.op not in ("in", "eq") or (flt.op == "eq" and len(values) != 1) or not values:
+        raise ValueError(f"filter on {f}: op must be 'in' (values), 'eq' (one value) or 'notblank', "
+                         f"got {flt.op} {values}")
     al = aliases([f.table])
     src = source_expr(f, al[f.table])
-    if f.kind == "measure":
+    if flt.op == "notblank":
+        cond = {"Not": {"Expression": {"Comparison": {"ComparisonKind": 0, "Left": src, "Right": lit(None)}}}}
+        ftype = "Advanced"
+    elif f.kind == "measure":
         if flt.op != "eq":
-            raise ValueError(f"filter on {f}: a measure filter takes 'eq'")
+            raise ValueError(f"filter on {f}: a measure filter takes 'eq' or 'notblank'")
         cond, ftype = {"Comparison": {"ComparisonKind": 0, "Left": src, "Right": lit(values[0])}}, "Advanced"
     else:
         cond, ftype = {"In": {"Expressions": [src], "Values": [[lit(v)] for v in values]}}, "Categorical"
@@ -157,59 +171,97 @@ def drill_through(layout: dict, sample: dict, page: Page) -> tuple[list[dict], d
         prm.update(name="Param_" + name, boundFilter=name, fieldExpr=field_expr(f))
         new_params.append(prm)
     binding["parameters"] = _dump(new_params) if isinstance(raw, str) else new_params
+    binding["name"] = stable_id(page.name, "pod")
     if pods:
-        binding.update(name=stable_id(page.name, "pod"), boundSection=page.name)
+        binding["boundSection"] = page.name
         return new_filters, cfg, [binding]
     return new_filters, cfg, []
 
 
 # ---- rebinding one visual ----------------------------------------------------------------------------------------
 
-def _names(obj, found: dict | None = None) -> dict:
-    """{"entities", "sources", "props", "strings"} named anywhere inside `obj`."""
-    found = found if found is not None else {"entities": set(), "sources": set(), "props": set(), "strings": set()}
+def _field_refs(obj) -> set[tuple[str, str]]:
+    """(table, field) of every field named inside `obj`: by table (`SourceRef.Entity`) or through an alias of a
+    `From` list inside `obj` (a slicer's selection filter); hierarchy levels as (table, level)."""
+    alias: dict[str, str] = {}
+    refs: set[tuple[str, str]] = set()
+
+    def froms(o):
+        if isinstance(o, dict):
+            for f in o.get("From") or []:
+                if isinstance(f, dict) and isinstance(f.get("Entity"), str):
+                    alias[f.get("Name")] = f["Entity"]
+            for v in o.values():
+                froms(v)
+        elif isinstance(o, list):
+            for v in o:
+                froms(v)
+
+    def walk(o):
+        if isinstance(o, dict):
+            prop = o.get("Property") if isinstance(o.get("Property"), str) else o.get("Level")
+            if isinstance(prop, str) and isinstance(o.get("Expression"), dict):
+                expr = o["Expression"]
+                if "Level" in o and isinstance(expr.get("Hierarchy"), dict):
+                    expr = expr["Hierarchy"].get("Expression") or {}
+                ref = expr.get("SourceRef") or {}
+                entity = ref.get("Entity") or alias.get(ref.get("Source"))
+                if entity:
+                    refs.add((entity, prop))
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    froms(obj)
+    walk(obj)
+    return refs
+
+
+def _strings(obj, out: set | None = None) -> set:
+    out = set() if out is None else out
     if isinstance(obj, dict):
-        if isinstance(obj.get("Entity"), str):
-            found["entities"].add(obj["Entity"])
-        if isinstance(obj.get("Source"), str):
-            found["sources"].add(obj["Source"])
-        for k in ("Property", "Level"):
-            if isinstance(obj.get(k), str):
-                found["props"].add(obj[k])
         for v in obj.values():
-            _names(v, found)
+            _strings(v, out)
     elif isinstance(obj, list):
         for v in obj:
-            _names(v, found)
+            _strings(v, out)
     elif isinstance(obj, str):
-        found["strings"].add(obj)
-    return found
-
-
-def _sample_fields(sv: dict) -> list[tuple[str, str, str]]:
-    """(entity, property, queryRef) of every field the sample's query selects."""
-    q = sv.get("prototypeQuery") or {}
-    entity_of = {f.get("Name"): f.get("Entity") for f in q.get("From", [])}
-    out = []
-    for s in q.get("Select", []):
-        n = _names({k: v for k, v in s.items() if k not in ("Name", "NativeReferenceName")})
-        entity = next((entity_of[a] for a in sorted(n["sources"]) if a in entity_of), None)
-        out.append((entity, next(iter(sorted(n["props"])), None), s.get("Name")))
+        out.add(obj)
     return out
 
 
-def _stale(entry, gone: list[tuple[str, str, str]]) -> bool:
-    """True when `entry` names one of the sample's fields the new binding no longer has."""
-    if not gone:
-        return False
-    n = _names(entry)
-    return any((e in n["entities"] and p in n["props"]) or ref in n["strings"] for e, p, ref in gone)
+def _foreign(obj, allowed: set, gone_refs: set) -> bool:
+    """True when `obj` names a field the new binding does not have: any field reference outside `allowed`, or a
+    sample queryRef no longer bound (e.g. `selector.metadata`)."""
+    return bool(_field_refs(obj) - allowed) or bool(gone_refs & _strings(obj))
 
 
-def _scrub(objects: dict, gone) -> dict:
+def _scrub(objects: dict, allowed: set, gone_refs: set) -> dict:
+    """Format objects without field-based rules on fields the visual no longer has: such a property is removed
+    (static formatting in the same entry stays); an entry whose selector names such a field, or that held only such
+    properties, is removed."""
     out = {}
     for name, entries in objects.items():
-        kept = [e for e in entries if not _stale(e, gone)] if isinstance(entries, list) else entries
+        if not isinstance(entries, list):
+            out[name] = entries
+            continue
+        kept = []
+        for e in entries:
+            if not isinstance(e, dict):
+                kept.append(e)
+                continue
+            if _foreign(e.get("selector"), allowed, gone_refs):
+                continue
+            e = dict(e)
+            props = e.get("properties")
+            if isinstance(props, dict):
+                clean = {k: v for k, v in props.items() if not _foreign(v, allowed, gone_refs)}
+                if props and not clean:
+                    continue
+                e["properties"] = clean
+            kept.append(e)
         if kept:
             out[name] = kept
     return out
@@ -260,8 +312,13 @@ def rebind(sample: dict, visual: Visual, page: Page, index: int) -> dict:
         fields += [f for f in fs if f not in fields]
     if visual.sort and visual.sort not in fields:
         raise ValueError(f"page {page.display}: sort field {visual.sort} is not one of the {visual.sample}'s fields")
-    new = {(f.table, f.name) for f in fields}
-    gone = [g for g in _sample_fields(sv) if (g[0], g[1]) not in new]
+    if visual.sort_dir not in DIRECTION:
+        raise ValueError(f"page {page.display}: sort_dir must be 'desc' or 'asc', got {visual.sort_dir!r}")
+    if visual.top_n and visual.top_n[0].kind != "measure":
+        raise ValueError(f"page {page.display}: top N ranks by a measure, got {visual.top_n[0]}")
+    allowed = {(f.table, f.name) for f in fields}
+    old_refs = {s.get("Name") for s in (sv.get("prototypeQuery") or {}).get("Select", [])}
+    gone_refs = {r for r in old_refs if isinstance(r, str)} - {f.ref for f in fields}
 
     # projections and query
     old_proj = sv.pop("projections", {}) or {}
@@ -274,6 +331,8 @@ def rebind(sample: dict, visual: Visual, page: Page, index: int) -> dict:
             for i, f in enumerate(fs):
                 base = (old_proj.get(role) or [])[i:i + 1]
                 extra = {k: v for k, v in (base[0] if base else {}).items() if k not in ("queryRef", "showAll")}
+                if sv.get("visualType") == "pivotTable" and role == "Rows":
+                    extra["active"] = True  # every row level expanded
                 items.append({"queryRef": f.ref, **extra})
             proj[role] = items
         sv["projections"] = proj
@@ -282,7 +341,8 @@ def rebind(sample: dict, visual: Visual, page: Page, index: int) -> dict:
              "Select": [{**source_expr(f, al[f.table]), "Name": f.ref, "NativeReferenceName": f.name}
                         for f in fields]}
         if visual.sort:
-            q["OrderBy"] = [{"Direction": DESCENDING, "Expression": source_expr(visual.sort, al[visual.sort.table])}]
+            q["OrderBy"] = [{"Direction": DIRECTION[visual.sort_dir],
+                             "Expression": source_expr(visual.sort, al[visual.sort.table])}]
             sv.pop("hasDefaultSort", None)
         sv["prototypeQuery"] = q
     elif visual.sort or visual.top_n:
@@ -292,16 +352,19 @@ def rebind(sample: dict, visual: Visual, page: Page, index: int) -> dict:
     if cp:
         sv["columnProperties"] = cp
     for key in [k for k in sv if k not in _OWN_KEYS]:
-        if _stale(sv[key], gone):
+        if _foreign(sv[key], allowed, gone_refs):
             del sv[key]
     for key in ("objects", "vcObjects"):
         if key in sv:
-            sv[key] = _scrub(sv[key], gone)
+            sv[key] = _scrub(sv[key], allowed, gone_refs)
 
     _set_title(sv, visual.title)
     merge_props(sv, visual.props)
-    if "slicer" in str(sv.get("visualType", "")).lower():
-        sv["syncGroup"] = {"groupName": SYNC_GROUP, "fieldChanges": True, "filterChanges": True}
+    if "slicer" in str(sv.get("visualType", "")).lower() and fields:
+        # one group per field: the same slicer syncs across pages, different slicers never sync with each other
+        sv["syncGroup"] = {"groupName": SYNC_PREFIX + fields[0].ref, "fieldChanges": True, "filterChanges": True}
+    else:
+        sv.pop("syncGroup", None)
 
     # visual-level filters: the visual's own, then top N
     flts = [filter_json(stable_id(page.name, index, "filter", j), f) for j, f in enumerate(visual.filters)]

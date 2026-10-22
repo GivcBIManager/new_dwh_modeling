@@ -2,7 +2,7 @@
 
 A Python generator writes the pages of the Balanced Scorecard report into a legacy `.pbix`. The generator starts from a template that you save once in Power BI Desktop for Report Server (May 2026). Generated files go to `dist/` (git-ignored).
 
-Code: `pbix.py` reads and writes the pbix (`read_pbix`, `write_pbix`, `check_upload_rules`, `set_database`, `samples`). `model.py` defines the pages (`Page`, `Visual`, `Filter`, `col`, `meas`). `layout.py` clones and rebinds the sample visuals. `fields.py` (`unknown_fields`) checks every field against the `Balanced Scorecard` perspective. `build.py` is the CLI: `python powerbi_tmdl/hnh_bsc_report/build.py --database HNH_Analytics_Test --out "powerbi_tmdl/hnh_bsc_report/dist/HNH Balanced Scorecard.pbix"`. It prints the upload-rule check and exits 1 on any problem. Test with `python -m pytest powerbi_tmdl/hnh_bsc_report/tests -q`.
+Code: `pbix.py` reads and writes the pbix (`read_pbix`, `write_pbix`, `check_upload_rules`, `set_database`, `samples`). `model.py` defines the pages (`Page`, `Visual`, `Filter`, `col`, `meas`). `layout.py` clones and rebinds the sample visuals. `fields.py` (`unknown_fields`) checks every field against the `Balanced Scorecard` perspective. `build.py` is the CLI: `python powerbi_tmdl/hnh_bsc_report/build.py --database HNH_Analytics_Test --out "powerbi_tmdl/hnh_bsc_report/dist/HNH Balanced Scorecard.pbix"`. It sets the connection's Data Source to `--server` (default `HNHANALYTICSSRV\REPORTSERVERDB`; Desktop keeps `localhost\reportserverdb` as typed). It prints the upload-rule check and exits 1 on any problem. Test with `python -m pytest powerbi_tmdl/hnh_bsc_report/tests -q`.
 
 ## Make the template
 
@@ -11,7 +11,7 @@ Use Power BI Desktop for Report Server (May 2026), not the normal Desktop.
 1. New report. Get data > Analysis Services. Server `HNHANALYTICSSRV\REPORTSERVERDB`, database `HNH_Analytics_Test`, choose **Connect live**. In the cube / perspective list choose the perspective **Balanced Scorecard**.
 2. Import the visual: Visualizations pane > ... > Import a visual from a file > `C:\HNH\visual\hnh_bsc_visual_1.0.0.0.pbiviz`.
 3. Apply the brand theme: View > Themes > Browse for themes > `theme/hnh_bsc_theme.json` (in this folder).
-4. Rename the first page to `Samples`. Build the 12 visuals below on it, each with any fields. Set each one's **title text** to the key shown (for example `sample:card`) and make the title visible (Format > General > Title > On) - or, for a visual without a title option, set the **Alt text** (Format > General > Alt text) to the key. The generator finds the visuals by this title.
+4. Rename the first page to `Samples`. Build the 12 visuals below on it, each with any fields. Set each one's **title text** to the key shown (for example `sample:card`) and make the title visible (Format > General > Title > On) - or, for a visual without a title option, set the **Alt text** (Format > General > Alt text) to the key. The generator finds the visuals by this title. Samples carry no field-based formatting (no conditional formatting or fx rules). The generator removes any rule on a field the new visual does not bind, so it would be lost anyway. The one exception is `sample:buttonDrill`'s destination measure, which the generator removes and the page code sets again.
 
    | Title text | Visual |
    |---|---|

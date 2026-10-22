@@ -235,3 +235,33 @@ def test_check_layout_not_json(make_pbix):
     parts["Report/Layout"] = "{oops".encode("utf-16-le")
     msgs = check_upload_rules(make_pbix(parts))
     assert any("JSON" in m for m in msgs)
+
+
+def test_set_server_rewrites_data_source_only(make_pbix):
+    from pbix import set_server
+    parts = good_parts()
+    conn = json.loads(parts["Connections"])
+    c = conn["Connections"][0]
+    # The form Desktop for Report Server wrote on this server (powerbi_tmdl/test isual.pbix).
+    c["ConnectionString"] = ('Data Source=localhost\\reportserverdb;Initial Catalog=HNH_Analytics_Test;'
+                             'Cube="Balanced Scorecard"')
+    c["Server"] = "localhost\\reportserverdb"
+    c["Other"] = "keep"
+    parts["Connections"] = json.dumps(conn).encode()
+    p = read_pbix(make_pbix(parts))
+    set_server(p, "HNHANALYTICSSRV\\REPORTSERVERDB")
+    c = p.connection["Connections"][0]
+    assert c["ConnectionString"] == ('Data Source=HNHANALYTICSSRV\\REPORTSERVERDB;Initial Catalog=HNH_Analytics_Test;'
+                                     'Cube="Balanced Scorecard"')
+    assert c["Server"] == "HNHANALYTICSSRV\\REPORTSERVERDB"
+    assert c["Other"] == "keep" and c["PbiModelVirtualServerName"] == "sobe_wowvirtualserver"
+
+
+def test_set_server_raises_without_data_source(make_pbix):
+    from pbix import set_server
+    parts = good_parts()
+    conn = json.loads(parts["Connections"])
+    conn["Connections"][0]["ConnectionString"] = "Initial Catalog=x"
+    parts["Connections"] = json.dumps(conn).encode()
+    with pytest.raises(ValueError, match="Data Source"):
+        set_server(read_pbix(make_pbix(parts)), "S")

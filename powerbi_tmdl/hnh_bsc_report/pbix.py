@@ -137,6 +137,31 @@ def set_database(pbix: Pbix, name: str) -> None:
         raise ValueError("no catalog / database found in any Connections ConnectionString")
 
 
+_SERVER = re.compile(r"(?i)(\bData Source\s*=\s*)([^;]*)")
+
+
+def set_server(pbix: Pbix, name: str) -> None:
+    """Point a live connection at another server (Data Source). Desktop for Report Server writes the server as the
+    user typed it (`localhost\\reportserverdb` on this machine); a file opened elsewhere needs the real host name.
+    Other fields (Server, DataSource) are rewritten only when they still equal the old Data Source."""
+    if not pbix.connection:
+        raise ValueError("pbix has no Connections part (not a live-connection file)")
+    changed = 0
+    for c in pbix.connection.get("Connections", []):
+        cs = c.get("ConnectionString")
+        m = _SERVER.search(cs) if isinstance(cs, str) else None
+        if not m:
+            continue
+        old = m.group(2).strip()
+        c["ConnectionString"] = _SERVER.sub(lambda mm: mm.group(1) + name, cs)
+        changed += 1
+        for key in ("Server", "DataSource", "Data Source"):
+            if c.get(key) == old:
+                c[key] = name
+    if not changed:
+        raise ValueError("no Data Source found in any Connections ConnectionString")
+
+
 def _key_of(config: dict) -> str | None:
     """The sample key: title text, else Alt text (vcObjects.general[0].properties.altText)."""
     vco = config.get("singleVisual", {}).get("vcObjects", {})

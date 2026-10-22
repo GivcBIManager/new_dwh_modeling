@@ -34,17 +34,19 @@ def meas(name: str, table: str = MEASURE_TABLE) -> Field:
 
 @dataclass
 class Filter:
-    """`in`: any of `values`; `eq`: the one value. A measure takes `eq` only (an Advanced filter)."""
+    """`in`: any of `values`; `eq`: the one value; `notblank`: is not blank (no values). A measure takes `eq` or
+    `notblank` (Advanced filters)."""
     field: Field
-    op: Literal["in", "eq"]
-    values: list
+    op: Literal["in", "eq", "notblank"]
+    values: list = field(default_factory=list)
 
 
 @dataclass
 class Visual:
     """One visual: a clone of the template visual titled `sample:<sample>`, rebound to `roles`.
 
-    `top_n` = (the measure to rank by, N): keeps the top N of the visual's first column. `sort` sorts descending.
+    `top_n` = (the measure to rank by, N): keeps the top N of the visual's first column. `sort` (one of the visual's
+    fields) sorts `sort_dir`: "desc" (default) or "asc" (time axes).
     `props` merges into the visual's format objects (`singleVisual.objects`, or `vcObjects` when the sample holds
     that object there, as Desktop does for a button's `visualLink`).
     """
@@ -59,6 +61,7 @@ class Visual:
     top_n: tuple[Field, int] | None = None
     sort: Field | None = None
     props: dict = field(default_factory=dict)
+    sort_dir: Literal["desc", "asc"] = "desc"
 
 
 @dataclass

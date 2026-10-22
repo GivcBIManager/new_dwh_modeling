@@ -268,8 +268,12 @@ def test_every_slicer_joins_sync_group(pbix_path, tmp_path):
     p = run(tmp_path, pbix_path, [Page("a", "A", slicers), Page("b", "B", list(slicers))])
     found = [cfg["singleVisual"] for _, _, cfg in containers(p.layout) if cfg["singleVisual"]["visualType"] == "slicer"]
     assert len(found) == 4
+    groups = [sv["syncGroup"] for sv in found]
+    assert groups[0] == groups[2] == {"groupName": "bsc Branch.Branch Name", "fieldChanges": True,
+                                      "filterChanges": True}  # the same slicer on two pages syncs
+    assert groups[1] == groups[3] == {"groupName": "bsc Date.Date", "fieldChanges": True, "filterChanges": True}
+    assert groups[0] != groups[1]  # different slicers never sync with each other
     for sv in found:
-        assert sv["syncGroup"] == {"groupName": "bsc", "fieldChanges": True, "filterChanges": True}
         assert sv["projections"]["Values"][0]["active"] is True
 
 
@@ -392,3 +396,141 @@ def test_title_none_hides_a_title_the_sample_did_not_set(make_pbix, tmp_path):
     (_, _, cfg), = containers(p.layout)
     assert cfg["singleVisual"]["vcObjects"]["title"] == [{"properties": {"show": {"expr": {"Literal": {
         "Value": "false"}}}}}]
+
+
+# ---- fix round 1 -------------------------------------------------------------------------------------------------
+
+def test_page_binding_names_differ_per_drill_page(make_pbix, tmp_path):
+    template = make_pbix(good_parts(build_layout(drill="pageBinding")))
+    p = run(tmp_path, template, [Page("a", "A", [], drill_fields=[BRANCH]), Page("b", "B", [], drill_fields=[BRANCH])])
+    names = [json.loads(s["config"])["pageBinding"]["name"] for s in p.layout["sections"]]
+    assert names[0] != names[1] and "Pod" not in names
+
+
+def _with_card_objects(objects):
+    lay = build_layout()
+    vc = lay["sections"][0]["visualContainers"][0]  # sample:card
+    cfg = json.loads(vc["config"])
+    cfg["singleVisual"]["objects"] = objects
+    vc["config"] = json.dumps(cfg)
+    return lay
+
+
+RULE = {"expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}}, "Property": "Colour Rule"}}}
+SIZE = {"expr": {"Literal": {"Value": "12D"}}}
+
+
+def test_field_based_formatting_on_a_field_not_bound_is_dropped(make_pbix, tmp_path):
+    lay = _with_card_objects({
+        "labels": [{"properties": {"color": {"solid": {"color": RULE}}, "fontSize": SIZE}}],
+        "rule": [{"properties": {"fill": {"solid": {"color": RULE}}}}],
+        "dataPoint": [{"properties": {"fill": SIZE}, "selector": {"data": [{"scopeId": {"Comparison": {
+            "ComparisonKind": 0, "Left": {"Column": {"Expression": {"SourceRef": {"Entity": "Payer"}},
+                                                     "Property": "Category"}},
+            "Right": {"Literal": {"Value": "'Cash'"}}}}}]}}]})
+    p = run(tmp_path, make_pbix(good_parts(lay)), [Page("a", "A", [
+        Visual("card", 0, 0, 50, 50, roles={"Values": [REVENUE]}, title=None)])])
+    (_, _, cfg), = containers(p.layout)
+    objects = cfg["singleVisual"]["objects"]
+    assert objects == {"labels": [{"properties": {"fontSize": SIZE}}]}  # static formatting stays
+    assert "Colour Rule" not in json.dumps(p.layout) and "Payer" not in json.dumps(p.layout)
+
+
+def test_field_based_formatting_on_a_bound_field_is_kept(make_pbix, tmp_path):
+    lay = _with_card_objects({"labels": [{"properties": {"color": {"solid": {"color": RULE}}}}]})
+    p = run(tmp_path, make_pbix(good_parts(lay)), [Page("a", "A", [
+        Visual("card", 0, 0, 50, 50, roles={"Values": [REVENUE, meas("Colour Rule")]}, title=None)])])
+    (_, _, cfg), = containers(p.layout)
+    assert cfg["singleVisual"]["objects"]["labels"][0]["properties"]["color"]["solid"]["color"] == RULE
+
+
+def test_drill_button_destination_stripped_then_set_by_props(pbix_path, tmp_path):
+    dest = {"visualLink": [{"properties": {"drillthroughSection": {"expr": {"Measure": {
+        "Expression": {"SourceRef": {"Entity": "_Measures"}}, "Property": "BSC Detail Page 2"}}}}}]}
+    p = run(tmp_path, pbix_path, [Page("a", "A", [
+        Visual("buttonDrill", 0, 0, 50, 50, title="Open detail"),
+        Visual("buttonDrill", 0, 0, 50, 50, title="Open detail", props=dest)])])
+    (_, _, c1), (_, _, c2) = containers(p.layout)
+    link1 = c1["singleVisual"]["vcObjects"]["visualLink"][0]["properties"]
+    assert "drillthroughSection" not in link1 and link1["type"]["expr"]["Literal"]["Value"] == "'Drillthrough'"
+    link2 = c2["singleVisual"]["vcObjects"]["visualLink"][0]["properties"]
+    assert link2["drillthroughSection"] == dest["visualLink"][0]["properties"]["drillthroughSection"]
+
+
+def test_top_n_by_must_be_a_measure(pbix_path, tmp_path):
+    with pytest.raises(ValueError, match="top N"):
+        build(pbix_path, [bar_page(top_n=(DEPT, 5))], "X", tmp_path / "o.pbix")
+
+
+def test_sort_ascending_for_time_axes(pbix_path, tmp_path):
+    v = Visual("lineChart", 0, 0, 50, 50, roles={"Category": [YEAR_MONTH], "Y": [REVENUE]}, title=None,
+               sort=YEAR_MONTH, sort_dir="asc")
+    p = run(tmp_path, pbix_path, [Page("a", "A", [v])])
+    (_, _, cfg), = containers(p.layout)
+    assert cfg["singleVisual"]["prototypeQuery"]["OrderBy"] == [{"Direction": 1, "Expression": {"Column": {
+        "Expression": {"SourceRef": {"Source": "d"}}, "Property": "Year Month"}}}]
+    with pytest.raises(ValueError, match="sort_dir"):
+        build(pbix_path, [bar_page(sort=REVENUE, sort_dir="down")], "X", tmp_path / "o.pbix")
+
+
+def test_float_literals_are_plain_decimals():
+    from layout import lit
+    assert lit(1.5) == {"Literal": {"Value": "1.5D"}}
+    assert lit(1e-7) == {"Literal": {"Value": "0.0000001D"}}
+    assert lit(1e20) == {"Literal": {"Value": "100000000000000000000D"}}
+    assert lit(2.0) == {"Literal": {"Value": "2D"}}
+
+
+def test_bookmarks_on_template_pages_dropped(make_pbix, tmp_path):
+    lay = build_layout()
+    cfg = json.loads(lay["config"])
+    cfg["bookmarks"] = [
+        {"name": "bm1", "displayName": "Samples view", "explorationState": {"activeSection": "ReportSection1"}},
+        {"name": "grp", "displayName": "Group", "children": [
+            {"name": "bm2", "explorationState": {"activeSection": "ReportSection2"}},
+            {"name": "bm3", "explorationState": {"activeSection": "a"}}]},
+        {"name": "grp2", "children": [{"name": "bm4", "explorationState": {"activeSection": "ReportSection1"}}]},
+        {"name": "bm5", "explorationState": {"activeSection": "a"}}]
+    lay["config"] = json.dumps(cfg)
+    p = run(tmp_path, make_pbix(good_parts(lay)), [Page("a", "A", [])])
+    marks = json.loads(p.layout["config"])["bookmarks"]
+    assert [m["name"] for m in marks] == ["grp", "bm5"]
+    assert [c["name"] for c in marks[0]["children"]] == ["bm3"]
+
+
+def test_notblank_filter(pbix_path, tmp_path):
+    note = meas("BSC Manual Note")
+    v = Visual("card", 0, 0, 50, 50, roles={"Values": [note]}, title=None,
+               filters=[Filter(note, "notblank", []), Filter(BRANCH, "notblank", [])])
+    p = run(tmp_path, pbix_path, [Page("a", "A", [v])])
+    vc, _ = only_visual(p.layout, "A")
+    f1, f2 = json.loads(vc["filters"])
+    assert f1["type"] == f2["type"] == "Advanced"
+    assert f1["filter"]["Where"] == [{"Condition": {"Not": {"Expression": {"Comparison": {
+        "ComparisonKind": 0,
+        "Left": {"Measure": {"Expression": {"SourceRef": {"Source": "_"}}, "Property": "BSC Manual Note"}},
+        "Right": {"Literal": {"Value": "null"}}}}}}}]
+    assert f2["filter"]["Where"][0]["Condition"]["Not"]["Expression"]["Comparison"]["Left"] == {
+        "Column": {"Expression": {"SourceRef": {"Source": "b"}}, "Property": "Branch Name"}}
+    with pytest.raises(ValueError, match="notblank"):
+        build(pbix_path, [Page("a", "A", [], filters=[Filter(note, "notblank", ["x"])])], "X", tmp_path / "o.pbix")
+
+
+def test_matrix_row_levels_all_expanded(pbix_path, tmp_path):
+    v = Visual("matrix", 0, 0, 50, 50, roles={"Rows": [col("FS Line", "FS Caption"), col("FS Line", "FS Line")],
+                                              "Values": [meas("IS Actual")]}, title=None)
+    p = run(tmp_path, pbix_path, [Page("a", "A", [v])])
+    (_, _, cfg), = containers(p.layout)
+    rows = cfg["singleVisual"]["projections"]["Rows"]
+    assert rows == [{"queryRef": "FS Line.FS Caption", "active": True}, {"queryRef": "FS Line.FS Line", "active": True}]
+    assert cfg["singleVisual"]["projections"]["Values"] == [{"queryRef": "_Measures.IS Actual"}]
+
+
+def test_server_switched(pbix_path, tmp_path):
+    out = tmp_path / "o.pbix"
+    build(pbix_path, [Page("a", "A", [])], "HNH_Analytics", out, server="OTHERSRV\\INST")
+    cs = read_pbix(out).connection["Connections"][0]["ConnectionString"]
+    assert cs.startswith("Data Source=OTHERSRV\\INST;Initial Catalog=HNH_Analytics;")
+    build(pbix_path, [Page("a", "A", [])], "HNH_Analytics", out)
+    cs = read_pbix(out).connection["Connections"][0]["ConnectionString"]
+    assert cs.startswith("Data Source=HNHANALYTICSSRV\\REPORTSERVERDB;")
