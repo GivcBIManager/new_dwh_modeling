@@ -3,6 +3,9 @@
 /powerbi_tmdl/*
 # the scorecard visual's source is part of the project
 !/powerbi_tmdl/hnh_bsc_visual/
+# the scorecard report generator; its output is rebuilt
+!/powerbi_tmdl/hnh_bsc_report/
+/powerbi_tmdl/hnh_bsc_report/dist/
 
 # Data exports. Includes static_mappings/_BI_USERS_.csv (contains passwords)
 # and static_mappings/budget_data.csv (260 MB).
