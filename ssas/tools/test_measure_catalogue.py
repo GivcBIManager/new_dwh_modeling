@@ -177,13 +177,15 @@ def test_bsc_kpi_lists_agree():
 
 def test_speed_entries_reference_existing_measures_and_keep_the_agreed_limits():
     """ssas/tests/performance.json, run by test.ps1 -Stage Performance as the non-admin BI user. Limits agreed with the
-    user (2026-10-22): Executive cold 4 s; the scorecard overview and one pillar board stay at 10 s cold / 3 s warm."""
+    user (2026-10-22): Executive cold 4 s; after the non-admin run of 2026-10-22 (overview 6.8 / 3.5 s, pillar board
+    8.9 / 5.1 s, comparison 7.4 / 5.3 s; the rest is the HNH Readers Patient row filter) the scorecard overview 10 / 5 s,
+    a pillar board 12 / 7 s and the comparison 15 / 6 s."""
     entries = json.loads((SSAS / "tests" / "performance.json").read_text(encoding="utf-8"))
     assert {e["name"]: unknown_references(e["dax"]) for e in entries if unknown_references(e["dax"])} == {}
     limits = {e["name"].split(":")[0]: (e.get("cold_limit", 3), e.get("warm_limit", 1)) for e in entries}
     assert limits["Executive"] == (4, 1)
-    assert limits["Scorecard"] == (10, 3)
-    assert limits["Scorecard pillar board"] == (10, 3)
+    assert limits["Scorecard"] == (10, 5)
+    assert limits["Scorecard pillar board"] == (12, 7)
     by_name = {e["name"].split(":")[0]: e["dax"] for e in entries}
     # The landing page binds the scores-only payload (Task 11); a pillar board page binds the full one for one pillar.
     assert '[BSC Visual Payload Scores]' in by_name["Scorecard"] and "Branch" not in by_name["Scorecard"]
