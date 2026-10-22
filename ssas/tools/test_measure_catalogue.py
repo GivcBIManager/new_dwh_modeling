@@ -213,6 +213,11 @@ def test_speed_entries_reference_existing_measures_and_keep_the_agreed_limits():
     assert '[BSC Visual Payload]' in by_name["Scorecard pillar board"] and "'BSC KPI'[Pillar] )" in by_name["Scorecard pillar board"]
     assert '"Internal Process"' in by_name["Scorecard pillar board"]
     assert limits["Scorecard comparison"] == (15, 6)
+    # The report's KPI detail page (line chart + hospital matrix for one KPI) and a drilled-in family page (Task 7).
+    assert limits["Scorecard KPI detail"] == (10, 5) and limits["Scorecard family page"] == (10, 5)
+    assert "TREATAS ( { \"FIN_NET_REVENUE\" }, 'BSC KPI'[KPI Code] )" in by_name["Scorecard KPI detail"]
+    assert "Branch[Is Hospital]" in by_name["Scorecard KPI detail"] and "[BSC Target]" in by_name["Scorecard KPI detail"]
+    assert "Branch[Branch Key]" in by_name["Scorecard family page"] and "202608" in by_name["Scorecard family page"]
 
 
 def test_bsc_visual_payload_reads_unguarded_twins_and_batches_its_months():

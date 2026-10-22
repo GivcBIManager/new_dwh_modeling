@@ -38,6 +38,40 @@ Use Power BI Desktop for Report Server (May 2026), not the normal Desktop.
 
 `set_database` and the synthetic test fixture are modelled on how Desktop writes an Analysis Services live connection: a `Connections` JSON part whose `ConnectionString` holds `Data Source=...;Initial Catalog=...;Cube=...`, plus `PbiModelDatabaseName`. No real live-connection file was available when this was written, so the field names and the part encoding are assumptions. After the template exists, open it (`read_pbix(...).connection`), confirm which fields hold the database name, and fix `set_database` and `tests/conftest.py` if they differ. `set_database` changes only the catalog / database fields it finds, leaves Data Source and unknown fields untouched, and raises if it finds none. `Connections` is rewritten only when it was changed; otherwise its bytes are kept.
 
+## Build
+
+Run from the repository root. For testing, point the report at the test database:
+
+`python powerbi_tmdl/hnh_bsc_report/build.py --database HNH_Analytics_Test --out "powerbi_tmdl/hnh_bsc_report/dist/HNH Balanced Scorecard.pbix"`
+
+Options: `--template` (default `template/hnh_bsc_template.pbix`), `--database`, `--server` (default `HNHANALYTICSSRV\REPORTSERVERDB`), `--out`. The output goes to `dist/` (git-ignored). The command prints the upload-rule check and exits 1 on any problem; an empty check is the expected result. Copy the file to `C:\HNHeport\` so it survives a clean checkout.
+
+## Open and check in Desktop for Report Server
+
+Open the built file in Power BI Desktop for Report Server (May 2026), not the normal Desktop. Check:
+
+1. Every page opens without a field error (a red "can't display" visual means a field is missing from the `Balanced Scorecard` perspective).
+2. Sign in as a one-hospital user (a non-admin member of `HNH_BI_Users` restricted to one hospital; an SSAS administrator bypasses row filters). The scorecard, the comparison and a KPI detail page show only that hospital.
+3. Drill through from a parked KPI (a KPI whose status is not live) to the KPI detail page: the page opens, the cards show the parked state without an error, and the Back button returns.
+4. Open the detail of a manual KPI: the manual note card shows the note, and Numerator / Denominator stay blank without an error.
+5. Select a hospital and month in the matrix on the KPI detail page, press Open detail, and check each of the seven family pages for a KPI of that family: filters carry over (keep all filters). A family page with no data for the selection shows empty visuals, not errors.
+6. Export a scorecard page and a KPI detail page to PDF (File > Export) and check the custom visual and the text render.
+
+## Save and upload
+
+1. Save the report from Desktop for Report Server (File > Save), so Desktop rewrites the file in its own format.
+2. Check the saved file against the upload rules in `powerbi_tmdl/Hayat BSC Deliverable/Notes/05 Report Server.md` (the zip checks).
+3. Upload to the Report Server folder the user chooses (Upload in the web portal).
+4. A live connection to SSAS needs no stored credentials: the viewer's Windows identity flows to SSAS, which applies the row filters. Custom visuals must be allowed on the server so the HNH Balanced Scorecard visual loads.
+
+## Switch to production
+
+After the production SSAS deploy of `HNH_Analytics`: rebuild with `--database HNH_Analytics`, open the result, run the checks above, save, and upload over the earlier report.
+
+## Re-run after a change
+
+After a change to `pages.py`, the measures or the visual: run `python -m pytest powerbi_tmdl/hnh_bsc_report/tests -q`, rebuild, reopen, save and upload again. After a change to the template, redo the template check above.
+
 ## Layout format notes
 
 See [LAYOUT_FORMAT.md](LAYOUT_FORMAT.md).
