@@ -87,13 +87,28 @@ perspective 'Balanced Scorecard'
 	perspectiveTable Episodes
 		includeAll
 
+	perspectiveTable 'FS Line'
+		includeAll
+
+	perspectiveTable 'GL Account'
+		includeAll
+
 	perspectiveTable 'GL FS Monthly'
+		includeAll
+
+	perspectiveTable 'GL Journal Lines'
+		includeAll
+
+	perspectiveTable 'GL Period'
 		includeAll
 
 	perspectiveTable Grade
 		includeAll
 
 	perspectiveTable 'HR Department'
+		includeAll
+
+	perspectiveTable Headcount
 		includeAll
 
 	perspectiveTable 'Income Statement'
@@ -109,6 +124,9 @@ perspective 'Balanced Scorecard'
 		includeAll
 
 	perspectiveTable 'NPHIES Reason'
+		includeAll
+
+	perspectiveTable 'Order Lines'
 		includeAll
 
 	perspectiveTable Patient
@@ -144,6 +162,9 @@ perspective 'Balanced Scorecard'
 	perspectiveTable 'Survey Question'
 		includeAll
 
+	perspectiveTable 'Survey Responses'
+		includeAll
+
 	perspectiveTable 'Survey Service'
 		includeAll
 
@@ -156,6 +177,9 @@ perspective 'Balanced Scorecard'
 	perspectiveTable 'Worker Action'
 		includeAll
 
+	perspectiveTable 'Worker Movements'
+		includeAll
+
 	perspectiveTable 'Workforce Monthly'
 		includeAll
 
@@ -163,6 +187,20 @@ perspective 'Balanced Scorecard'
 		includeAll
 
 	perspectiveTable _Measures
+		perspectiveMeasure '% Detractors'
+		perspectiveMeasure '% Passives'
+		perspectiveMeasure '% Promoters'
+		perspectiveMeasure 'ALOS (days)'
+		perspectiveMeasure Admissions
+		perspectiveMeasure 'Advance Approved Amount'
+		perspectiveMeasure 'Advance Authorisations'
+		perspectiveMeasure 'All Invitations'
+		perspectiveMeasure 'Answer Completeness %'
+		perspectiveMeasure 'Approved First Time %'
+		perspectiveMeasure 'Average ER LOS (min)'
+		perspectiveMeasure 'Average FTE'
+		perspectiveMeasure 'Average Headcount'
+		perspectiveMeasure 'Average Wait (min)'
 		perspectiveMeasure 'BSC ALOS (days)'
 		perspectiveMeasure 'BSC Activated Beds'
 		perspectiveMeasure 'BSC Actual'
@@ -191,6 +229,7 @@ perspective 'Balanced Scorecard'
 		perspectiveMeasure 'BSC Days in AR (days)'
 		perspectiveMeasure 'BSC Days in Period'
 		perspectiveMeasure 'BSC Denominator'
+		perspectiveMeasure 'BSC Detail Page'
 		perspectiveMeasure 'BSC EBITDA Margin'
 		perspectiveMeasure 'BSC EBITDA per Bed'
 		perspectiveMeasure 'BSC EBITDA per Doctor'
@@ -214,6 +253,7 @@ perspective 'Balanced Scorecard'
 		perspectiveMeasure 'BSC KPI Weight'
 		perspectiveMeasure 'BSC Last Workforce Month'
 		perspectiveMeasure 'BSC Licensed Beds'
+		perspectiveMeasure 'BSC Manual Note'
 		perspectiveMeasure 'BSC Manual Value'
 		perspectiveMeasure 'BSC Multi-Specialty Revenue Share'
 		perspectiveMeasure 'BSC Net Revenue'
@@ -248,6 +288,7 @@ perspective 'Balanced Scorecard'
 		perspectiveMeasure 'BSC Status'
 		perspectiveMeasure 'BSC Target'
 		perspectiveMeasure 'BSC Target Ancillary Utilization'
+		perspectiveMeasure 'BSC Target Basis'
 		perspectiveMeasure 'BSC Target Clinic Utilization'
 		perspectiveMeasure 'BSC Target Consumables Ratio'
 		perspectiveMeasure 'BSC Target Cost to Revenue'
@@ -275,7 +316,157 @@ perspective 'Balanced Scorecard'
 		perspectiveMeasure 'BSC Variance %'
 		perspectiveMeasure 'BSC Visual Payload'
 		perspectiveMeasure 'BSC Visual Payload Scores'
+		perspectiveMeasure 'Bed Occupancy %'
+		perspectiveMeasure 'Bed Turnover'
+		perspectiveMeasure 'Billed Amount'
+		perspectiveMeasure 'Billed Manual'
+		perspectiveMeasure 'Billed Not Submitted'
+		perspectiveMeasure 'Billed Statements'
+		perspectiveMeasure 'Billed Submitted to NPHIES'
+		perspectiveMeasure 'Budget Variance'
+		perspectiveMeasure 'Budget Variance %'
+		perspectiveMeasure 'Cancellation Rate %'
+		perspectiveMeasure 'Cancelled Charges'
+		perspectiveMeasure 'Cash Revenue'
+		perspectiveMeasure Census
+		perspectiveMeasure 'Claim Rejection Rate %'
+		perspectiveMeasure 'Claimable Revenue'
+		perspectiveMeasure 'Claimed Amount'
+		perspectiveMeasure 'Claims Approved'
+		perspectiveMeasure 'Claims Rejected'
+		perspectiveMeasure 'Claims Submitted'
+		perspectiveMeasure 'Clinic Utilisation %'
+		perspectiveMeasure 'Completion Rate %'
+		perspectiveMeasure 'Conversion Rate %'
+		perspectiveMeasure 'Current Leave Balance (days)'
+		perspectiveMeasure 'Current Leave Liability'
 		perspectiveMeasure 'Current User'
+		perspectiveMeasure 'Delivered Without Approval'
+		perspectiveMeasure 'Delivered Without Approval Amount'
+		perspectiveMeasure Discharges
+		perspectiveMeasure 'Doctor Attribution %'
+		perspectiveMeasure EBITDA
+		perspectiveMeasure 'EBITDA Margin %'
+		perspectiveMeasure 'ER Visits'
+		perspectiveMeasure 'Early Fee'
+		perspectiveMeasure 'Encounter Link %'
+		perspectiveMeasure Episodes
+		perspectiveMeasure FTE
+		perspectiveMeasure 'First-pass Rejection Rate %'
+		perspectiveMeasure 'GL Closing Balance'
+		perspectiveMeasure 'GL Closing Balance (incl. Unposted)'
+		perspectiveMeasure 'GL Movement'
+		perspectiveMeasure 'GL Movement (incl. Unposted)'
+		perspectiveMeasure 'GL Movement Trend'
+		perspectiveMeasure 'GL Movement Trend (incl. Unposted)'
+		perspectiveMeasure 'Gross Charges'
+		perspectiveMeasure 'Gross Pay'
+		perspectiveMeasure 'Gross Pay (Open Payroll)'
+		perspectiveMeasure 'Gross Profit'
+		perspectiveMeasure Headcount
+		perspectiveMeasure Hires
+		perspectiveMeasure 'Hospital NPS (5-point)'
+		perspectiveMeasure 'ICU Readmissions 48h'
+		perspectiveMeasure 'IS Actual'
+		perspectiveMeasure 'IS Actual (excl. Opening)'
+		perspectiveMeasure 'IS Actual (incl. Unposted)'
+		perspectiveMeasure 'IS Budget'
+		perspectiveMeasure 'IS Budget (Comparable)'
+		perspectiveMeasure Invitations
+		perspectiveMeasure 'Leak Rate %'
+		perspectiveMeasure 'Leave Balance (days)'
+		perspectiveMeasure 'Leave Liability'
+		perspectiveMeasure Leavers
+		perspectiveMeasure 'Line Discount'
+		perspectiveMeasure 'Lost Lines'
+		perspectiveMeasure 'Lost Value'
+		perspectiveMeasure 'Median Days Visit to Answer'
+		perspectiveMeasure 'Median Days to Pay'
+		perspectiveMeasure 'Median Days to Payment'
+		perspectiveMeasure 'Median Wait (min)'
+		perspectiveMeasure 'Medication Revenue'
+		perspectiveMeasure 'NPHIES Fee'
+		perspectiveMeasure 'NPS (5-point)'
+		perspectiveMeasure 'NPS Answers'
+		perspectiveMeasure 'Net Profit'
+		perspectiveMeasure 'Net Revenue After Adjustments'
+		perspectiveMeasure 'New Patients'
+		perspectiveMeasure 'No-show Rate %'
+		perspectiveMeasure 'OP Visits'
+		perspectiveMeasure 'On-time Payment Rate %'
+		perspectiveMeasure 'Open Payables'
+		perspectiveMeasure 'Order Cancellation Rate %'
+		perspectiveMeasure 'Order Lines'
+		perspectiveMeasure 'Order to Delivery Median (min)'
+		perspectiveMeasure 'Overdue Payables'
+		perspectiveMeasure 'Overtime Share %'
+		perspectiveMeasure 'Package Content Value'
+		perspectiveMeasure 'Partially Delivered Lines'
+		perspectiveMeasure 'Patient Collections'
+		perspectiveMeasure 'Patient Refunds'
+		perspectiveMeasure 'Patient Share Revenue'
+		perspectiveMeasure 'Payer Advances'
+		perspectiveMeasure 'Payroll Cost'
+		perspectiveMeasure 'Payroll Cost per FTE'
+		perspectiveMeasure 'Payroll Cost per Visit'
+		perspectiveMeasure 'Pending Adjudication'
+		perspectiveMeasure 'Physician NPS (5-point)'
+		perspectiveMeasure 'Post-invoice Discount'
+		perspectiveMeasure 'Pre-auth Approval Rate %'
+		perspectiveMeasure 'Pre-auth Lost Revenue'
+		perspectiveMeasure 'Pre-auth Rejected Lines'
+		perspectiveMeasure 'Pre-auth Rejected Revenue'
+		perspectiveMeasure 'Pre-auth Rejection Rate %'
+		perspectiveMeasure 'Pre-auth Requests'
+		perspectiveMeasure 'Pre-auth Resubmission Rate %'
+		perspectiveMeasure 'Pre-auth Services'
+		perspectiveMeasure 'Pre-auth Transfer Rate %'
+		perspectiveMeasure 'Profit for the Year'
+		perspectiveMeasure 'Profit for the Year (incl. Unposted)'
+		perspectiveMeasure 'Readmission Rate 30d %'
+		perspectiveMeasure Remitted
+		perspectiveMeasure 'Repeat Invitation Rate %'
+		perspectiveMeasure 'Request to Sent Avg (min)'
+		perspectiveMeasure 'Request to Sent Median (min)'
+		perspectiveMeasure 'Response Rate %'
+		perspectiveMeasure 'Resubmission Recovery'
+		perspectiveMeasure 'Returning Patients'
+		perspectiveMeasure Revenue
+		perspectiveMeasure 'Revenue by Episode Payer'
+		perspectiveMeasure 'Revenue per Payroll SAR'
+		perspectiveMeasure 'SMS Reach %'
+		perspectiveMeasure 'Saudisation Rate %'
+		perspectiveMeasure 'Sent to Response Avg (min)'
+		perspectiveMeasure 'Sent to Response Median (min)'
+		perspectiveMeasure 'Share of Total Lost %'
+		perspectiveMeasure 'Sick Days'
+		perspectiveMeasure 'Sick Leave Rate %'
+		perspectiveMeasure 'Supplier Spend'
+		perspectiveMeasure 'TB Closing Balance'
+		perspectiveMeasure 'TB Credit'
+		perspectiveMeasure 'TB Debit'
+		perspectiveMeasure 'TB Net Movement'
+		perspectiveMeasure 'TB Opening Balance'
+		perspectiveMeasure 'Target ALOS (days)'
+		perspectiveMeasure 'Target Census'
+		perspectiveMeasure 'Target Cost per Episode'
+		perspectiveMeasure 'Target Episodes'
+		perspectiveMeasure 'Target Revenue'
+		perspectiveMeasure 'Theatre Volume'
+		perspectiveMeasure 'Total Turnaround Avg (min)'
+		perspectiveMeasure 'Total Turnaround Median (min)'
+		perspectiveMeasure 'Total Wait (min)'
+		perspectiveMeasure 'Turnover Rate %'
+		perspectiveMeasure 'Unbilled Amount'
+		perspectiveMeasure 'Unique Patients'
+		perspectiveMeasure 'Unit Fulfilment Rate %'
+		perspectiveMeasure 'Unutilised Approval Rate %'
+		perspectiveMeasure 'Unutilised Approvals'
+		perspectiveMeasure VAT
+		perspectiveMeasure 'Verified Billed Amount'
+		perspectiveMeasure 'Visits per FTE'
+		perspectiveMeasure 'Voluntary Leavers'
+		perspectiveMeasure 'Voluntary Turnover Rate %'
 		perspectiveMeasure '_Guard 12 facts #8b9401c7'
 		perspectiveMeasure '_Guard 16 facts #e3203857'
 		perspectiveMeasure '_Guard 17 facts #3ba24bc3'
@@ -294,6 +485,7 @@ perspective 'Balanced Scorecard'
 		perspectiveMeasure '_Guard BSC Licensed Beds'
 		perspectiveMeasure '_Guard BSC Licensed Beds + Bed Occupancy'
 		perspectiveMeasure '_Guard BSC Manual Values + Encounters | BSC KPI'
+		perspectiveMeasure '_Guard BSC Manual Values | BSC KPI'
 		perspectiveMeasure '_Guard BSC Targets'
 		perspectiveMeasure '_Guard BSC Weights | BSC KPI'
 		perspectiveMeasure '_Guard Bed Occupancy'

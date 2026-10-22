@@ -254,11 +254,14 @@ PERSPECTIVES = {
     "Balanced Scorecard": ["BSC Targets", "BSC Weights", "BSC Manual Values", "BSC Budgeted FTE", "BSC Licensed Beds",
                            "GL FS Monthly", "Workforce Monthly", "Requisitions", "Charge Lines", "Encounters",
                            "Admissions", "Episodes", "Bed Occupancy", "Clinic Capacity", "Claim Lines", "Pre-auth Lines",
-                           "Invoices", "Survey Answers", "Income Statement", "Targets"],
+                           "Invoices", "Survey Answers", "Income Statement", "Targets",
+                           # the family detail pages of the report (bsc report plan, Task 6)
+                           "Order Lines", "GL Journal Lines", "Headcount", "Worker Movements", "Survey Responses"],
 }
 PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"], "Workforce": ["Employee Details"],
                      "Balanced Scorecard": ["BSC Parameters"]}
 # Measures live in _Measures with display folder "<domain>\<topic>" (decision P26). A perspective shows the measures of
 # its own domain plus Diagnostics; these override that (None = every measure).
 PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"],
-                               "Balanced Scorecard": ["Balanced Scorecard"]}
+                               "Balanced Scorecard": ["Balanced Scorecard", "Revenue Cycle", "Claims & Pre-auth", "Finance",
+                                                      "Patient Flow", "Workforce", "Patient Experience"]}
