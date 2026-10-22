@@ -44,7 +44,7 @@ Run from the repository root. For testing, point the report at the test database
 
 `python powerbi_tmdl/hnh_bsc_report/build.py --database HNH_Analytics_Test --out "powerbi_tmdl/hnh_bsc_report/dist/HNH Balanced Scorecard.pbix"`
 
-Options: `--template` (default `template/hnh_bsc_template.pbix`), `--database`, `--server` (default `HNHANALYTICSSRV\REPORTSERVERDB`), `--out`. The output goes to `dist/` (git-ignored). The command prints the upload-rule check and exits 1 on any problem; an empty check is the expected result. Copy the file to `C:\HNHeport\` so it survives a clean checkout.
+Options: `--template` (default `template/hnh_bsc_template.pbix`), `--database`, `--server` (default `HNHANALYTICSSRV\REPORTSERVERDB`), `--out`. The output goes to `dist/` (git-ignored). The command prints the upload-rule check and exits 1 on any problem; an empty check is the expected result. Copy the file to `C:\HNH\report\` so it survives a clean checkout.
 
 ## Open and check in Desktop for Report Server
 
