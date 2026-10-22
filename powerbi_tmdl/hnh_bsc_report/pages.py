@@ -6,7 +6,7 @@ Canvas 1920 x 1080: header row y 0-110 (slicers left, page buttons right), conte
 """
 from __future__ import annotations
 
-from model import Filter, Page, Visual, col, meas
+from model import Field, Filter, Page, Visual, col, meas
 
 # Roles of the HNH visual (capabilities.json) -> 'BSC KPI' column, as the visual README's field-well table.
 ATTRIBUTE_ROLES = {
@@ -139,7 +139,82 @@ def _kpi_detail() -> Page:
 
 KPI_DETAIL: Page = _kpi_detail()
 
-# Task 6 appends the family pages here.
-FAMILY_PAGES: list[Page] = []
+# ---- family detail pages --------------------------------------------------------------------------------------------
+
+def _bar(measure: str, by: Field, n: int | None = None) -> dict:
+    return {"sample": "barChart", "roles": {"Category": [by], "Y": [meas(measure)]},
+            "sort": meas(measure), "top_n": (meas(measure), n) if n else None}
+
+
+def _table(by: Field, measures: list[str], n: int | None = None, rank: str | None = None) -> dict:
+    return {"sample": "table", "roles": {"Values": [by] + [meas(m) for m in measures]},
+            "top_n": (meas(rank or measures[0]), n) if n else None}
+
+
+def _matrix(rows: list[Field], measures: list[str]) -> dict:
+    return {"sample": "matrix", "roles": {"Rows": rows, "Values": [meas(m) for m in measures]}}
+
+
+def title_text(text: str) -> dict:
+    """The text box content (one place to correct the property names against the real template)."""
+    return {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": text}]}]}}]}
+
+
+def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) -> Page:
+    """Drill-through page: Back, a title, a card of the filtered hospital and month, the measure cards, then a
+    2-column grid of charts. No slicers: filters arrive by drill-through with keep-all-filters."""
+    visuals = [back_button(),
+               Visual("textbox", 130, 25, 1000, 70, props=title_text(display)),
+               Visual("multiRowCard", 1300, 10, 604, 95, roles={"Values": [BRANCH_NAME, YEAR_MONTH]})]
+    gap = 10
+    w = (1888 - gap * (len(cards) - 1)) / len(cards)
+    visuals += [Visual("card", 16 + (w + gap) * i, 130, w, 110, roles={"Values": [meas(m)]})
+                for i, m in enumerate(cards)]
+    for i, c in enumerate(charts):
+        visuals.append(Visual(c["sample"], 16 + 958 * (i % 2), 260 + 400 * (i // 2), 930, 390, roles=c["roles"],
+                              sort=c.get("sort"), top_n=c.get("top_n")))
+    return Page(name, display, visuals, drill_fields=[BRANCH_NAME, YEAR_MONTH], hidden=True)
+
+
+_DEPT = col("Department", "Department Name")
+_PAYER_CAT = col("Payer", "Category")
+
+FAMILY_PAGES: list[Page] = [
+    _family_page("fam_revenue", "Revenue detail",
+                 ["Revenue", "Gross Charges", "Line Discount", "Claimable Revenue"],
+                 [_bar("Revenue", _DEPT, 15), _bar("Revenue", col("Product Category", "High Level Department")),
+                  _bar("Revenue", _PAYER_CAT), _table(col("Staff", "Staff Name"), ["Revenue"], 20)]),
+    _family_page("fam_finance", "Finance detail",
+                 ["EBITDA", "EBITDA Margin %", "Net Profit", "Budget Variance %"],
+                 [_matrix([col("FS Line", "FS Caption"), col("FS Line", "FS Line")],
+                          ["IS Actual", "IS Budget", "Budget Variance"]),
+                  _bar("GL Movement", col("GL Account", "Natural Account Name"), 15)]),
+    _family_page("fam_volume", "Patient volume detail",
+                 ["OP Visits", "ER Visits", "Admissions", "New Patients", "Returning Patients"],
+                 [_bar("OP Visits", _DEPT, 15), _bar("Census", _PAYER_CAT), _bar("Average Wait (min)", _DEPT, 15)]),
+    _family_page("fam_beds", "Beds & clinical detail",
+                 ["Bed Occupancy %", "ALOS (days)", "Readmission Rate 30d %", "ICU Readmissions 48h",
+                  "Bed Turnover"],
+                 [_bar("Bed Occupancy %", col("Bed", "Current Ward")), _bar("ALOS (days)", _DEPT, 15),
+                  _table(col("Discharge Outcome", "Outcome Group"), ["Discharges"])]),
+    _family_page("fam_revenue_cycle", "Revenue cycle detail",
+                 ["Claim Rejection Rate %", "First-pass Rejection Rate %", "Pre-auth Approval Rate %", "Leak Rate %",
+                  "Billed Not Submitted"],
+                 [_bar("Claims Rejected", col("NPHIES Reason", "Reason"), 15),
+                  _bar("Claimed Amount", col("Payer", "Purchaser Name"), 15),
+                  _table(col("Claim Status", "Submission Status"), ["Billed Amount"]),
+                  _bar("Lost Value", _DEPT, 15)]),
+    _family_page("fam_workforce", "Workforce detail",
+                 ["Headcount", "FTE", "Saudisation Rate %", "Turnover Rate %", "Hires"],
+                 [_bar("Headcount", col("HR Department", "Department Name"), 15),
+                  _bar("Headcount", col("Job", "Job Name"), 15),
+                  _bar("Headcount", col("Employee", "Nationality"), 10)]),
+    _family_page("fam_experience", "Patient experience detail",
+                 ["Hospital NPS (5-point)", "Physician NPS (5-point)", "NPS Answers", "Response Rate %"],
+                 [_bar("NPS (5-point)", col("Survey Question", "Domain En")),
+                  _bar("NPS (5-point)", _DEPT, 15),
+                  _table(col("Survey Question", "Question En"), ["% Promoters", "% Passives", "% Detractors"], 20,
+                         rank="NPS Answers")]),
+]
 
 PAGES: list[Page] = SCORECARD_PAGES + [KPI_DETAIL] + FAMILY_PAGES

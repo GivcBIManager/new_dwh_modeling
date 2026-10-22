@@ -237,3 +237,118 @@ def test_kpi_detail_matrix_is_the_drill_source():
     (b,) = [v for v in page.visuals if v.sample == "buttonDrill"]
     assert m.y <= b.y and b.y + b.h <= m.y + m.h and b.x >= m.x + m.w
     assert {v.sample for v in page.visuals} >= {"lineChart", "barChart"}
+
+
+FAMILY = ["Revenue detail", "Finance detail", "Patient volume detail", "Beds & clinical detail",
+          "Revenue cycle detail", "Workforce detail", "Patient experience detail"]
+FAMILY_NAMES = ["fam_revenue", "fam_finance", "fam_volume", "fam_beds", "fam_revenue_cycle", "fam_workforce",
+                "fam_experience"]
+
+
+def test_family_pages_names_order_and_hidden():
+    import pages
+    assert [p.display for p in pages.FAMILY_PAGES] == FAMILY
+    assert [p.name for p in pages.FAMILY_PAGES] == FAMILY_NAMES
+    assert all(p.hidden for p in pages.FAMILY_PAGES)
+    assert PAGES[8:] == pages.FAMILY_PAGES
+
+
+def test_family_display_names_match_bsc_detail_page_measure():
+    root = Path(__file__).resolve().parents[3]
+    texts = [f.read_text(encoding="utf-8-sig") for f in root.rglob("*.tmdl")]
+    text = "".join(t for t in texts if "BSC Detail Page" in t)
+    assert text, "BSC Detail Page measure not found"
+    for d in FAMILY:
+        assert f'"{d}"' in text, d
+
+
+@pytest.mark.parametrize("display", FAMILY)
+def test_family_drill_fields_header_and_no_slicers(display):
+    page = by_display(display)
+    assert page.drill_fields == [col("Branch", "Branch Name"), col("Date", "Year Month")]
+    assert not [v for v in page.visuals if v.sample.startswith("slicer")]
+    backs = [v for v in page.visuals if v.sample == "buttonNavigate"]
+    assert len(backs) == 1 and lit(backs[0].props["visualLink"][0]["properties"]["type"]) == "'Back'"
+    (mrc,) = [v for v in page.visuals if v.sample == "multiRowCard"]
+    assert mrc.roles["Values"] == [col("Branch", "Branch Name"), col("Date", "Year Month")]
+    assert [v for v in page.visuals if v.sample == "textbox"]
+
+
+def _spec(page):
+    cards = [v.roles["Values"][0].name for v in page.visuals if v.sample == "card"]
+    charts = [(v.sample, v.roles, v.sort, v.top_n) for v in page.visuals if v.sample in ("barChart", "table", "matrix")]
+    return cards, charts
+
+
+def test_family_cards_and_charts():
+    D, P, m = col("Department", "Department Name"), col("Payer", "Category"), meas
+    exp = {
+        "Revenue detail": (["Revenue", "Gross Charges", "Line Discount", "Claimable Revenue"], [
+            ("barChart", {"Category": [D], "Y": [m("Revenue")]}, m("Revenue"), (m("Revenue"), 15)),
+            ("barChart", {"Category": [col("Product Category", "High Level Department")], "Y": [m("Revenue")]},
+             m("Revenue"), None),
+            ("barChart", {"Category": [P], "Y": [m("Revenue")]}, m("Revenue"), None),
+            ("table", {"Values": [col("Staff", "Staff Name"), m("Revenue")]}, None, (m("Revenue"), 20))]),
+        "Finance detail": (["EBITDA", "EBITDA Margin %", "Net Profit", "Budget Variance %"], [
+            ("matrix", {"Rows": [col("FS Line", "FS Caption"), col("FS Line", "FS Line")],
+                        "Values": [m("IS Actual"), m("IS Budget"), m("Budget Variance")]}, None, None),
+            ("barChart", {"Category": [col("GL Account", "Natural Account Name")], "Y": [m("GL Movement")]},
+             m("GL Movement"), (m("GL Movement"), 15))]),
+        "Patient volume detail": (["OP Visits", "ER Visits", "Admissions", "New Patients", "Returning Patients"], [
+            ("barChart", {"Category": [D], "Y": [m("OP Visits")]}, m("OP Visits"), (m("OP Visits"), 15)),
+            ("barChart", {"Category": [P], "Y": [m("Census")]}, m("Census"), None),
+            ("barChart", {"Category": [D], "Y": [m("Average Wait (min)")]}, m("Average Wait (min)"),
+             (m("Average Wait (min)"), 15))]),
+        "Beds & clinical detail": (["Bed Occupancy %", "ALOS (days)", "Readmission Rate 30d %",
+                                    "ICU Readmissions 48h", "Bed Turnover"], [
+            ("barChart", {"Category": [col("Bed", "Current Ward")], "Y": [m("Bed Occupancy %")]},
+             m("Bed Occupancy %"), None),
+            ("barChart", {"Category": [D], "Y": [m("ALOS (days)")]}, m("ALOS (days)"), (m("ALOS (days)"), 15)),
+            ("table", {"Values": [col("Discharge Outcome", "Outcome Group"), m("Discharges")]}, None, None)]),
+        "Revenue cycle detail": (["Claim Rejection Rate %", "First-pass Rejection Rate %",
+                                  "Pre-auth Approval Rate %", "Leak Rate %", "Billed Not Submitted"], [
+            ("barChart", {"Category": [col("NPHIES Reason", "Reason")], "Y": [m("Claims Rejected")]},
+             m("Claims Rejected"), (m("Claims Rejected"), 15)),
+            ("barChart", {"Category": [col("Payer", "Purchaser Name")], "Y": [m("Claimed Amount")]},
+             m("Claimed Amount"), (m("Claimed Amount"), 15)),
+            ("table", {"Values": [col("Claim Status", "Submission Status"), m("Billed Amount")]}, None, None),
+            ("barChart", {"Category": [D], "Y": [m("Lost Value")]}, m("Lost Value"), (m("Lost Value"), 15))]),
+        "Workforce detail": (["Headcount", "FTE", "Saudisation Rate %", "Turnover Rate %", "Hires"], [
+            ("barChart", {"Category": [col("HR Department", "Department Name")], "Y": [m("Headcount")]},
+             m("Headcount"), (m("Headcount"), 15)),
+            ("barChart", {"Category": [col("Job", "Job Name")], "Y": [m("Headcount")]}, m("Headcount"),
+             (m("Headcount"), 15)),
+            ("barChart", {"Category": [col("Employee", "Nationality")], "Y": [m("Headcount")]}, m("Headcount"),
+             (m("Headcount"), 10))]),
+        "Patient experience detail": (["Hospital NPS (5-point)", "Physician NPS (5-point)", "NPS Answers",
+                                       "Response Rate %"], [
+            ("barChart", {"Category": [col("Survey Question", "Domain En")], "Y": [m("NPS (5-point)")]},
+             m("NPS (5-point)"), None),
+            ("barChart", {"Category": [D], "Y": [m("NPS (5-point)")]}, m("NPS (5-point)"),
+             (m("NPS (5-point)"), 15)),
+            ("table", {"Values": [col("Survey Question", "Question En"), m("% Promoters"), m("% Passives"),
+                                  m("% Detractors")]}, None, (m("NPS Answers"), 20))]),
+    }
+    for display, (cards, charts) in exp.items():
+        assert _spec(by_display(display)) == (cards, charts), display
+
+
+def test_family_bar_top_n_ranks_by_the_bars_measure():
+    for p in PAGES[8:]:
+        for v in p.visuals:
+            if v.sample == "barChart" and v.top_n:
+                assert v.top_n[0] == v.roles["Y"][0] == v.sort
+
+
+def test_family_pages_build_against_the_synthetic_template(pbix_path):
+    from pbix import read_pbix, samples
+    p = read_pbix(pbix_path)
+    smp = samples(p)
+    lay = p.layout
+    base, drill = lay["sections"][0], lay["sections"][1]
+    for i, page in enumerate(PAGES):
+        if i < 8:
+            continue
+        section, _ = page_section(page, i, smp, lay, drill, base)
+        assert len(section["visualContainers"]) == len(page.visuals)
+        assert json.loads(section["config"]).get("visibility") == 1
