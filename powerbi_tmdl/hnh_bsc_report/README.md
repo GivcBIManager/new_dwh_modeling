@@ -2,7 +2,7 @@
 
 A Python generator writes the pages of the Balanced Scorecard report into a legacy `.pbix`. The generator starts from a template that you save once in Power BI Desktop for Report Server (May 2026). Generated files go to `dist/` (git-ignored).
 
-Code: `pbix.py` reads and writes the pbix (`read_pbix`, `write_pbix`, `check_upload_rules`, `set_database`, `samples`). Test with `python -m pytest powerbi_tmdl/hnh_bsc_report/tests -q`.
+Code: `pbix.py` reads and writes the pbix (`read_pbix`, `write_pbix`, `check_upload_rules`, `set_database`, `samples`). `model.py` defines the pages (`Page`, `Visual`, `Filter`, `col`, `meas`). `layout.py` clones and rebinds the sample visuals. `fields.py` (`unknown_fields`) checks every field against the `Balanced Scorecard` perspective. `build.py` is the CLI: `python powerbi_tmdl/hnh_bsc_report/build.py --database HNH_Analytics_Test --out "powerbi_tmdl/hnh_bsc_report/dist/HNH Balanced Scorecard.pbix"`. It prints the upload-rule check and exits 1 on any problem. Test with `python -m pytest powerbi_tmdl/hnh_bsc_report/tests -q`.
 
 ## Make the template
 
