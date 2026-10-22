@@ -8,11 +8,18 @@ and lookup table. BSC Visual Payload also has an ADDCOLUMNS ( VALUES ( 'Date'[Ye
 for its trend months, and its lists call [_Unguarded <measure>] (the twins measure_guards.py writes); a list keeps that
 form. To add a KPI, add its line below and run the tool, then measure_guards.py and sync_perspectives.py.
 
+BSC Numerator and BSC Denominator (report plan, Task 2) are written whole from bsc_kpi_parts.PARTS: one
+SWITCH ( Code, "<CODE>", <part>, ..., BLANK () ) evaluated in the filter context BSC Actual gives the KPI measures.
+
 Usage: python ssas/tools/gen_bsc_kpi_lists.py [--check]   (--check: exit 1 when the file is not current)
 """
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from bsc_kpi_parts import PARTS  # noqa: E402
 
 MEASURES_FILE = Path(__file__).resolve().parents[1] / "HNH_Analytics" / "tables" / "_Measures.tmdl"
 
@@ -135,8 +142,96 @@ def list_blocks(text: str) -> list:
     return [(_measure_at(text, pos), kind) for pos, kind in sorted(found)]
 
 
-def render(text: str, kpis: list = KPIS, budgets: list = BUDGETS) -> str:
-    """The text with every ROW list and SWITCH lookup rewritten from the KPI lists."""
+# The measures written whole from PARTS: (name, which part, the manual KPIs' part). A measure_guards.py wrapper stays.
+PARTS_MEASURES = [
+    ("BSC Numerator", 0, "CALCULATE ( SUM ( 'BSC Manual Values'[Numerator] ), Past, "
+                         "KEEPFILTERS ( Branch[Is Hospital] = \"Yes\" ) )"),
+    ("BSC Denominator", 1, "CALCULATE (\n"
+                           "\tVAR Num = SUM ( 'BSC Manual Values'[Numerator] )\n"
+                           "\tVAR Den = SUM ( 'BSC Manual Values'[Denominator] )\n"
+                           "\t-- a denominator of 0 divides by outpatient and ER visits, as in BSC Manual Value\n"
+                           "\tRETURN IF ( Den = 0 && NOT ISBLANK ( Num ), "
+                           "CALCULATE ( [Census], REMOVEFILTERS ( 'BSC KPI' ) ), Den ),\n"
+                           "\tPast,\n"
+                           "\tKEEPFILTERS ( Branch[Is Hospital] = \"Yes\" )\n"
+                           ")"),
+]
+BODY_START = "\t\t\tVAR __Value = ( -- measure body\n"
+BODY_END = "\t\t\t) -- end of measure body\n"
+
+
+def _entry(tabs: str, label: str, dax: str) -> list:
+    """'<label>, <dax>,' on one line, or '<label>,' then the DAX lines one tab deeper."""
+    lines = dax.split("\n")
+    if len(lines) == 1:
+        return [f"{tabs}{label}, {dax},"]
+    return [f"{tabs}{label},"] + [f"{tabs}\t{line}" for line in lines[:-1]] + [f"{tabs}\t{lines[-1]},"]
+
+
+def parts_body(which: int, manual: str, parts: dict, tabs: str) -> str:
+    """Body of BSC Numerator (which = 0) or BSC Denominator (which = 1) at indentation `tabs`."""
+    word = ("numerator", "denominator")[which]
+    lines = [
+        "VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )",
+        "VAR KpiState = SELECTEDVALUE ( 'BSC KPI'[Status] )",
+        "VAR Source = SELECTEDVALUE ( 'BSC KPI'[Value Source] )",
+        "VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )",
+        f"-- the KPI's {word} (tools/bsc_kpi_parts.py) in the filter context BSC Actual gives the KPI's measure",
+        "RETURN",
+        "\tSWITCH (",
+        "\t\tTRUE (),",
+        "\t\tISBLANK ( Code ) || KpiState = \"parked\", BLANK (),",
+    ]
+    lines += _entry("\t\t", 'Source = "manual"', manual)
+    lines += ["\t\tCALCULATE (", "\t\t\tSWITCH (", "\t\t\t\tCode,"]
+    for code, part in parts.items():
+        if part[which]:
+            lines += _entry("\t\t\t\t", f'"{code}"', part[which])
+    lines += ["\t\t\t\tBLANK ()", "\t\t\t),", "\t\t\tPast,", "\t\t\tREMOVEFILTERS ( 'BSC KPI' ),",
+              "\t\t\tKEEPFILTERS ( Branch[Is Hospital] = \"Yes\" )", "\t\t)", "\t)"]
+    return "".join(f"{tabs}{line}\n" for line in lines)
+
+
+def _body_span(text: str, name: str):
+    """(start, end, indentation) of the measure's body: inside its measure_guards.py wrapper, or its three-tab
+    expression lines when it has none; None when the measure is missing."""
+    declaration = f"\tmeasure '{name}' =\n"
+    at = text.find(declaration)
+    if at < 0:
+        return None
+    start = at + len(declaration)
+    if text.startswith(BODY_START, start):
+        start += len(BODY_START)
+        return start, text.index(BODY_END, start), "\t\t\t\t"
+    end = start
+    while text.startswith("\t\t\t", end):
+        end = text.index("\n", end) + 1
+    return start, end, "\t\t\t"
+
+
+def render_parts(text: str, parts: dict = PARTS) -> str:
+    """The text with the bodies of BSC Numerator and BSC Denominator written from the parts."""
+    for name, which, manual in PARTS_MEASURES:
+        span = _body_span(text, name)
+        if span:
+            start, end, tabs = span
+            text = text[:start] + parts_body(which, manual, parts, tabs) + text[end:]
+    return text
+
+
+def parts_blocks(text: str) -> list:
+    """(measure name, KPI codes of its parts lookup) of BSC Numerator and BSC Denominator, when present."""
+    found = []
+    for name, _, _ in PARTS_MEASURES:
+        span = _body_span(text, name)
+        if span:
+            lookup = re.search(r"SWITCH \(\n(\t*)Code,\n(.*?)\n\1BLANK \(\)", text[span[0]:span[1]], re.S)
+            found.append((name, re.findall(rf'(?m)^{lookup.group(1)}"([^"]+)",', lookup.group(2)) if lookup else []))
+    return found
+
+def render(text: str, kpis: list = KPIS, budgets: list = BUDGETS, parts: dict = PARTS) -> str:
+    """The text with every ROW list and SWITCH lookup rewritten from the KPI lists, and the parts measures from the
+    parts."""
     def row(m):
         lines = budgets if _row_kind(m.group(3)) == "budget" else kpis
         prefix = _row_prefix(m.group(3))
@@ -148,7 +243,7 @@ def render(text: str, kpis: list = KPIS, budgets: list = BUDGETS) -> str:
         lines = budgets if _switch_kind(table) == "budget" else kpis
         return f"{tabs}Code,\n" + "".join(f'{tabs}"{code}", MAXX ( {table}, [@{code}] ),\n' for code, _ in lines)
 
-    return SWITCH_RE.sub(switch, ROW_RE.sub(row, text))
+    return render_parts(SWITCH_RE.sub(switch, ROW_RE.sub(row, text)), parts)
 
 
 def main() -> int:
@@ -161,7 +256,8 @@ def main() -> int:
         return 0
     if new != text:
         MEASURES_FILE.write_text(new, encoding="utf-8", newline="\n")
-    print(f"{len(list_blocks(new))} KPI lists in {MEASURES_FILE.name}: {len(KPIS)} KPIs, {len(BUDGETS)} budget targets")
+    print(f"{len(list_blocks(new))} KPI lists in {MEASURES_FILE.name}: {len(KPIS)} KPIs, {len(BUDGETS)} budget targets; "
+          f"{len(parts_blocks(new))} parts measures: {len(PARTS)} KPIs with parts")
     return 0
 
 

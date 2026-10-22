@@ -90,3 +90,43 @@ def test_render_keeps_unguarded_twins_and_rewrites_the_monthly_list():
     assert '\t\t\t\t\t\t"@A", [_Unguarded BSC Target A]\n\t\t\t\t\t),' in out
     assert "OLD" not in out
     assert [kind for _, kind in g.list_blocks(TWIN_SAMPLE)] == ["ROW kpi", "ADDCOLUMNS kpi", "ROW budget"]
+
+
+# BSC Numerator / BSC Denominator (report plan, Task 2): their bodies are written from bsc_kpi_parts.PARTS.
+PARTS_SAMPLE = """\tmeasure 'BSC Numerator' =
+\t\t\tVAR __Value = ( -- measure body
+\t\t\t\tBLANK ()
+\t\t\t) -- end of measure body
+\t\t\tVAR __Wrong = [_Guard x]
+\t\t\tRETURN IF ( __Wrong = "", __Value, "x" & __Wrong )
+\t\tdisplayFolder: Balanced Scorecard\\Scoring
+
+\tmeasure 'BSC Denominator' =
+\t\t\tBLANK ()
+\t\tdisplayFolder: Balanced Scorecard\\Scoring
+"""
+PARTS = {"A": ("[N A]", "[D A]", "ratio"), "B": ("SUMX (\n\tVALUES ( T[c] ),\n\t[N B]\n)", "", "value"),
+         "G": ("[N G]", "[D G]", "growth")}
+
+
+def test_committed_numerator_and_denominator_are_current():
+    assert g.render(TEXT) == TEXT
+    assert {name for name, _ in g.parts_blocks(TEXT)} == {"BSC Numerator", "BSC Denominator"}
+
+
+def test_render_writes_numerator_and_denominator_from_the_parts():
+    out = g.render(PARTS_SAMPLE, kpis=[], budgets=[], parts=PARTS)
+    num, den = out.split("\tmeasure 'BSC Denominator' =")
+    # wrapped body one tab deeper than an unwrapped one; the guard lines stay
+    assert '\t\t\t\t\t\t\t\t"A", [N A],\n' in num and '\t\t\t\t\t\t\t\t"G", [N G],\n' in num
+    assert '\t\t\t\t\t\t\t\t"B",\n\t\t\t\t\t\t\t\t\tSUMX (\n\t\t\t\t\t\t\t\t\t\tVALUES ( T[c] ),\n' in num
+    assert "VAR __Wrong = [_Guard x]" in num and "\t\t\t\t\t)\n\t\t\t) -- end of measure body" in num
+    assert "SUM ( 'BSC Manual Values'[Numerator] )" in num
+    assert '\t\t\t\t\t\t\t"A", [D A],\n' in den and '"G", [D G],' in den and '"B"' not in den
+    assert "SUM ( 'BSC Manual Values'[Denominator] )" in den and "[Census]" in den
+    for body in (num, den):
+        assert "ISBLANK ( Code ) || KpiState = \"parked\", BLANK ()" in body
+        assert "REMOVEFILTERS ( 'BSC KPI' )" in body and "KEEPFILTERS ( Branch[Is Hospital] = \"Yes\" )" in body
+        assert "KEEPFILTERS ( 'Date'[Date] <= TODAY () )" in body
+    assert g.render(out, kpis=[], budgets=[], parts=PARTS) == out
+    assert [codes for _, codes in g.parts_blocks(out)] == [["A", "B", "G"], ["A", "G"]]

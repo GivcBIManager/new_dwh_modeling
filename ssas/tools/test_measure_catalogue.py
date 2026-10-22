@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hnh_tmdl as t  # noqa: E402
 import model_config as cfg  # noqa: E402
 import gen_bsc_kpi_lists  # noqa: E402
+import bsc_kpi_parts  # noqa: E402
 
 SSAS = Path(__file__).resolve().parents[1]
 MODEL = SSAS / "HNH_Analytics"
@@ -168,6 +169,26 @@ def bsc_kpi_list_problems(measures) -> list:
         for name, found_codes in switches[kind]:
             if found_codes != codes:
                 problems.append(f"{name}: {kind} lookup differs: {sorted(found_codes ^ codes)}")
+    # BSC Numerator / BSC Denominator (report plan, Task 2): one SWITCH ( Code, "<CODE>", <part>, ... ) of the KPIs in
+    # bsc_kpi_parts.PARTS (the denominator without the value KPIs), every code a KPI of the dispatch lists.
+    kpi_codes = frozenset(code for code, _ in rows["measure"][0][1]) if rows["measure"] else frozenset()
+    parts = bsc_kpi_parts.PARTS
+    for name, want in (("BSC Numerator", set(parts)),
+                       ("BSC Denominator", {code for code, (_, _, kind) in parts.items() if kind != "value"})):
+        if name not in measures:
+            problems.append(f"{name}: missing")
+            continue
+        lookups = [re.findall(rf'(?m)^{indent}"([^"]+)",', block) for indent, block in
+                   re.findall(r"SWITCH \(\n([ \t]*)Code,\n(.*?)\n\1BLANK \(\)", measures[name].expression, re.S)]
+        if len(lookups) != 1:
+            problems.append(f"{name}: {len(lookups)} SWITCH ( Code, ... ) lookups, expected 1")
+            continue
+        if len(set(lookups[0])) != len(lookups[0]):
+            problems.append(f"{name}: a code is listed twice")
+        if set(lookups[0]) != want:
+            problems.append(f"{name}: parts lookup differs from bsc_kpi_parts: {sorted(set(lookups[0]) ^ want)}")
+        if set(lookups[0]) - kpi_codes:
+            problems.append(f"{name}: not a dispatched KPI: {sorted(set(lookups[0]) - kpi_codes)}")
     return problems
 
 

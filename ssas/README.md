@@ -52,12 +52,26 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
   2. Add its measure (`BSC <name>`, folder `Balanced Scorecard\<pillar>`) and, for a budget target, its
      `BSC Target <name>` measure (folder `Balanced Scorecard\Targets`).
   3. Add `("<CODE>", "<measure>")` to `KPIS` in `tools/gen_bsc_kpi_lists.py` (and to `BUDGETS` for a budget target),
-     then run `python ssas/tools/gen_bsc_kpi_lists.py`.
+     and the KPI's numerator and denominator to `PARTS` in `tools/bsc_kpi_parts.py` (or, when its actual is not a
+     ratio, growth or value, a reason to `NO_PARTS` and to the list below), then run
+     `python ssas/tools/gen_bsc_kpi_lists.py`. A growth, value or no-parts KPI also goes into the `c IN { … }` lists
+     of the two `BSC Numerator and BSC Denominator rebuild BSC Actual` checks.
   4. Run `python ssas/tools/measure_guards.py` (it also writes the payload's `_Unguarded` copy of the new measure),
      then `python ssas/tools/sync_perspectives.py`.
   5. Add a check for the new measure in `tests/measures/balanced_scorecard.json`.
   6. Run `python -m pytest ssas/tools`; `test_bsc_kpi_lists_agree` fails when a list is missing the KPI, and
      `test_gen_bsc_kpi_lists.py` when the generator was not run. Then deploy.
+- **Numerator and denominator** of the KPI in context (KPI Detail page): `BSC Numerator` and `BSC Denominator`
+  (folder `Balanced Scorecard\Scoring`), written whole by `tools/gen_bsc_kpi_lists.py` from `PARTS` in
+  `tools/bsc_kpi_parts.py`. They evaluate the KPI's parts in the filter context `BSC Actual` gives its measure (days
+  up to today, hospitals only), blank for a parked KPI; a manual KPI's parts are the summed `BSC Manual Values`
+  numerator and denominator (a denominator of 0 is outpatient + ER visits). `BSC Actual` is numerator ÷ denominator
+  (ratio), numerator ÷ denominator − 1 (growth: `INT_ER_GROWTH`) or the numerator alone (value: `FIN_NET_REVENUE`,
+  `FIN_REVENUE_GROWTH`, whose actual is the revenue, `CUS_PAYER_VOLUME`, `INT_PATIENT_VOLUME`,
+  `INT_EXTERNAL_REFERRALS`; no denominator). An average (`CUS_OP_WAIT`, `INT_ALOS`, `INT_APPROVAL_TAT`,
+  `LRN_TIME_TO_FILL`) is the sum over the count of the same column. KPIs without parts (blank numerator and
+  denominator):
+  - `CUS_PATIENT_SATISFACTION`: an NPS score, (promoters − detractors) ÷ answers × 100, not a plain ratio.
 - **Settings** (catalogue, targets, weights, thresholds, owners, categories, parameters, manual values) are rows in the
   ClickHouse `default.map_bsc_*` tables, edited by the BI manager (`docs/bsc_config.md`). They reach the model through
   the nightly build and `process.ps1 -Mode Daily`; no deploy is needed.
