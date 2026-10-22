@@ -27,6 +27,7 @@ class Pbix:
     connection: dict | None = None
     _conn_original: dict | None = field(default=None, repr=False)
     _conn_encoding: str = field(default="utf-8", repr=False)
+    _infos: dict = field(default_factory=dict, repr=False)
 
 
 def _decode_json(raw: bytes) -> tuple[dict, str]:
@@ -36,7 +37,7 @@ def _decode_json(raw: bytes) -> tuple[dict, str]:
     if raw[:2] == b"\xfe\xff":
         return json.loads(raw[2:].decode("utf-16-be")), "utf-16-le"
     if raw[:3] == b"\xef\xbb\xbf":
-        return json.loads(raw[3:].decode("utf-8")), "utf-8"
+        return json.loads(raw[3:].decode("utf-8")), "utf-8-sig"
     if len(raw) > 1 and raw[1:2] == b"\x00":
         return json.loads(raw.decode("utf-16-le")), "utf-16-le"
     return json.loads(raw.decode("utf-8")), "utf-8"
@@ -48,7 +49,8 @@ def _dump(obj: dict) -> str:
 
 def read_pbix(path) -> Pbix:
     with zipfile.ZipFile(path) as z:
-        parts = {i.filename: z.read(i.filename) for i in z.infolist() if not i.is_dir()}
+        infos = {i.filename: i for i in z.infolist() if not i.is_dir()}
+        parts = {n: z.read(n) for n in infos}
     if LAYOUT not in parts:
         raise ValueError(f"{path}: no {LAYOUT} part")
     layout, _ = _decode_json(parts[LAYOUT])
@@ -57,7 +59,7 @@ def read_pbix(path) -> Pbix:
     if CONNECTIONS in parts:
         conn, enc = _decode_json(parts[CONNECTIONS])
         conn_original = json.loads(json.dumps(conn))
-    return Pbix(parts, layout, conn, conn_original, enc)
+    return Pbix(parts, layout, conn, conn_original, enc, infos)
 
 
 def write_pbix(pbix: Pbix, path) -> None:
@@ -67,13 +69,25 @@ def write_pbix(pbix: Pbix, path) -> None:
         out[CONNECTIONS] = _dump(pbix.connection).encode(pbix._conn_encoding)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
         for name, data in out.items():
-            z.writestr(name, data)
+            old = pbix._infos.get(name)
+            if old is None:
+                z.writestr(name, data)
+                continue
+            zi = zipfile.ZipInfo(old.filename, old.date_time)
+            zi.compress_type = old.compress_type
+            zi.external_attr = old.external_attr
+            zi.create_system = old.create_system
+            z.writestr(zi, data)
 
 
 def check_upload_rules(path) -> list[str]:
     """Rules from Notes/05 Report Server.md. Empty list means the file passes."""
     problems: list[str] = []
-    with zipfile.ZipFile(path) as z:
+    try:
+        z = zipfile.ZipFile(path)
+    except (zipfile.BadZipFile, OSError) as e:
+        return [f"not a readable zip file ({e})"]
+    with z:
         names = z.namelist()
         norm = [n.replace("\\", "/") for n in names]
         if LAYOUT not in norm:
@@ -88,34 +102,54 @@ def check_upload_rules(path) -> list[str]:
             problems.append("Report/Layout starts with a byte-order mark (Desktop reports the file as corrupt)")
         elif raw[:2] != b"\x7b\x00":
             problems.append("Report/Layout is not UTF-16 LE starting with '{'")
+        else:
+            try:
+                json.loads(raw.decode("utf-16-le"))
+            except ValueError as e:
+                problems.append(f"Report/Layout is not valid JSON ({e})")
     return problems
 
 
+_CATALOG = re.compile(r"(?i)(\b(?:Initial Catalog|Database|Catalog)\s*=\s*)([^;]*)")
+
+
 def set_database(pbix: Pbix, name: str) -> None:
-    """Point a live connection at another database; Data Source and every other field stay as they are."""
+    """Point a live connection at another database; Data Source and every other field stay as they are.
+
+    The catalog is rewritten in ConnectionString. Other fields (PbiModelDatabaseName ...) are rewritten
+    only when they still equal the old catalog.
+    """
     if not pbix.connection:
         raise ValueError("pbix has no Connections part (not a live-connection file)")
-    pat = re.compile(r"(?i)(\b(?:Initial Catalog|Database|Catalog)\s*=\s*)[^;]*")
     changed = 0
     for c in pbix.connection.get("Connections", []):
         cs = c.get("ConnectionString")
-        if isinstance(cs, str) and pat.search(cs):
-            c["ConnectionString"] = pat.sub(lambda m: m.group(1) + name, cs)
-            changed += 1
+        m = _CATALOG.search(cs) if isinstance(cs, str) else None
+        if not m:
+            continue
+        old = m.group(2).strip()
+        c["ConnectionString"] = _CATALOG.sub(lambda mm: mm.group(1) + name, cs)
+        changed += 1
         for key in ("PbiModelDatabaseName", "InitialCatalog", "Database", "Catalog"):
-            if isinstance(c.get(key), str):
+            if c.get(key) == old:
                 c[key] = name
-                changed += 1
     if not changed:
-        raise ValueError("no catalog / database field found in Connections")
+        raise ValueError("no catalog / database found in any Connections ConnectionString")
 
 
-def _title(config: dict) -> str | None:
-    try:
-        v = config["singleVisual"]["vcObjects"]["title"][0]["properties"]["text"]["expr"]["Literal"]["Value"]
-    except (KeyError, IndexError, TypeError):
-        return None
-    return v[1:-1] if isinstance(v, str) and len(v) >= 2 and v[0] == v[-1] == "'" else None
+def _key_of(config: dict) -> str | None:
+    """The sample key: title text, else Alt text (vcObjects.general[0].properties.altText)."""
+    vco = config.get("singleVisual", {}).get("vcObjects", {})
+    for obj, prop in (("title", "text"), ("general", "altText")):
+        try:
+            v = vco[obj][0]["properties"][prop]["expr"]["Literal"]["Value"]
+        except (KeyError, IndexError, TypeError):
+            continue
+        if isinstance(v, str) and len(v) >= 2 and v[0] == v[-1] == "'":
+            t = v[1:-1].strip()
+            if t.startswith("sample:"):
+                return t
+    return None
 
 
 def samples(pbix: Pbix) -> dict[str, dict]:
@@ -124,10 +158,16 @@ def samples(pbix: Pbix) -> dict[str, dict]:
     if page is None:
         raise ValueError(f"template has no page named '{SAMPLES_PAGE}'")
     found: dict[str, dict] = {}
+    dups: list[str] = []
     for vc in page.get("visualContainers", []):
-        t = _title(json.loads(vc["config"]))
-        if t and t.startswith("sample:"):
-            found[t[len("sample:"):]] = vc
+        t = _key_of(json.loads(vc["config"]))
+        if t:
+            k = t[len("sample:"):]
+            if k in found:
+                dups.append(f"sample:{k}")
+            found[k] = vc
+    if dups:
+        raise ValueError("duplicate sample visuals: " + ", ".join(sorted(set(dups))))
     missing = [k for k in SAMPLE_KEYS if k not in found]
     if missing:
         raise ValueError("template is missing sample visuals: " + ", ".join(f"sample:{k}" for k in missing))

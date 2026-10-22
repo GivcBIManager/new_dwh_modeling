@@ -11,7 +11,7 @@ Use Power BI Desktop for Report Server (May 2026), not the normal Desktop.
 1. New report. Get data > Analysis Services. Server `HNHANALYTICSSRV\REPORTSERVERDB`, database `HNH_Analytics_Test`, choose **Connect live**. In the cube / perspective list choose the perspective **Balanced Scorecard**.
 2. Import the visual: Visualizations pane > ... > Import a visual from a file > `C:\HNH\visual\hnh_bsc_visual_1.0.0.0.pbiviz`.
 3. Apply the brand theme: View > Themes > Browse for themes > `theme/hnh_bsc_theme.json` (in this folder).
-4. Rename the first page to `Samples`. Build the 12 visuals below on it, each with any fields. Set each one's **title text** to the key shown (for example `sample:card`) and make the title visible (Format > General > Title > On). The generator finds the visuals by this title.
+4. Rename the first page to `Samples`. Build the 12 visuals below on it, each with any fields. Set each one's **title text** to the key shown (for example `sample:card`) and make the title visible (Format > General > Title > On) - or, for a visual without a title option, set the **Alt text** (Format > General > Alt text) to the key. The generator finds the visuals by this title.
 
    | Title text | Visual |
    |---|---|
@@ -40,4 +40,4 @@ Use Power BI Desktop for Report Server (May 2026), not the normal Desktop.
 
 ## Layout format notes
 
-See `.superpowers/sdd/2026-10-22-bsc-report/task-1-report.md`.
+See [LAYOUT_FORMAT.md](LAYOUT_FORMAT.md).

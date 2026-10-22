@@ -1,3 +1,4 @@
+BOM = bytes([0xEF, 0xBB, 0xBF])
 import json
 import zipfile
 
@@ -130,3 +131,107 @@ def test_samples_no_samples_page(make_pbix):
     lay["sections"][0]["displayName"] = "Other"
     with pytest.raises(ValueError, match="Samples"):
         samples(read_pbix(make_pbix(good_parts(lay))))
+
+
+def infos_of(path):
+    with zipfile.ZipFile(path) as z:
+        return {i.filename: (i.compress_type, i.date_time, i.external_attr) for i in z.infolist()}
+
+
+def test_round_trip_keeps_zip_entry_metadata(pbix_path, tmp_path):
+    p = read_pbix(pbix_path)
+    set_database(p, "Other")  # re-encodes Connections too
+    out = tmp_path / "o.pbix"
+    write_pbix(p, out)
+    a, b = infos_of(pbix_path), infos_of(out)
+    assert a == b
+    assert a["DataModel"][0] == zipfile.ZIP_STORED
+    assert a["Report/Layout"][0] == zipfile.ZIP_DEFLATED
+
+
+def test_round_trip_arabic_and_non_bmp(pbix_path, tmp_path):
+    out = tmp_path / "o.pbix"
+    write_pbix(read_pbix(pbix_path), out)
+    vc = samples(read_pbix(out))["textbox"]
+    run = json.loads(vc["config"])["singleVisual"]["objects"]["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]
+    assert run["value"] == "".join(chr(c) for c in (0x645, 0x631, 0x62D, 0x628, 0x627, 0x20, 0x1F600))
+
+
+def test_set_database_leaves_unrelated_model_name(make_pbix):
+    parts = good_parts()
+    conn = json.loads(parts["Connections"])
+    conn["Connections"][0]["PbiModelDatabaseName"] = "some-guid"
+    parts["Connections"] = json.dumps(conn).encode()
+    p = read_pbix(make_pbix(parts))
+    set_database(p, "HNH_Analytics")
+    c = p.connection["Connections"][0]
+    assert c["PbiModelDatabaseName"] == "some-guid"
+    assert "Initial Catalog=HNH_Analytics;" in c["ConnectionString"]
+
+
+def test_set_database_raises_without_catalog(make_pbix):
+    parts = good_parts()
+    conn = json.loads(parts["Connections"])
+    conn["Connections"][0]["ConnectionString"] = "Data Source=srv;Cube=x"
+    parts["Connections"] = json.dumps(conn).encode()
+    p = read_pbix(make_pbix(parts))
+    with pytest.raises(ValueError, match="catalog"):
+        set_database(p, "X")
+    assert p.connection["Connections"][0]["PbiModelDatabaseName"] == "HNH_Analytics_Test"
+
+
+def _set_key(layout, idx, mode, key):
+    vc = layout["sections"][0]["visualContainers"][idx]
+    cfg = json.loads(vc["config"])
+    vco = cfg["singleVisual"]["vcObjects"]
+    lit = {"expr": {"Literal": {"Value": f"'{key}'"}}}
+    vco.pop("title")
+    if mode == "alt":
+        vco["general"] = [{"properties": {"altText": lit}}]
+    else:
+        vco["title"] = [{"properties": {"text": lit}}]
+    vc["config"] = json.dumps(cfg)
+
+
+def test_samples_accepts_alt_text(make_pbix):
+    lay = build_layout()
+    _set_key(lay, 0, "alt", "sample:card")
+    assert "card" in samples(read_pbix(make_pbix(good_parts(lay))))
+
+
+def test_samples_strips_titles(make_pbix):
+    lay = build_layout()
+    _set_key(lay, 0, "title", "  sample:card ")
+    assert "card" in samples(read_pbix(make_pbix(good_parts(lay))))
+
+
+def test_samples_duplicate_key_raises(make_pbix):
+    lay = build_layout()
+    _set_key(lay, 1, "alt", "sample:card")
+    with pytest.raises(ValueError, match="duplicate.*card"):
+        samples(read_pbix(make_pbix(good_parts(lay))))
+
+
+def test_connections_utf8_bom_kept(make_pbix, tmp_path):
+    parts = good_parts()
+    parts["Connections"] = BOM + parts["Connections"]
+    p = read_pbix(make_pbix(parts))
+    set_database(p, "Z")
+    out = tmp_path / "o.pbix"
+    write_pbix(p, out)
+    raw = parts_of(out)["Connections"]
+    assert raw[:3] == BOM and raw[3:4] == b"{"
+
+
+def test_check_not_a_zip(tmp_path):
+    f = tmp_path / "bad.pbix"
+    f.write_bytes(b"not a zip")
+    msgs = check_upload_rules(f)
+    assert len(msgs) == 1 and "zip" in msgs[0]
+
+
+def test_check_layout_not_json(make_pbix):
+    parts = good_parts()
+    parts["Report/Layout"] = "{oops".encode("utf-16-le")
+    msgs = check_upload_rules(make_pbix(parts))
+    assert any("JSON" in m for m in msgs)

@@ -70,7 +70,7 @@ def container(key, i):
                                                             "Expression": {"SourceRef": {"Entity": "BSC KPI"}},
                                                             "Property": "BSC Detail Page"}}}}}]}
     elif key == "textbox":
-        sv["objects"] = {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": "x"}]}]}}]}
+        sv["objects"] = {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": "مرحبا 😀"}]}]}}]}
     sv["vcObjects"] = {"title": [{"properties": {"show": lit("true"), "text": lit(f"'sample:{key}'")}}]}
     name = f"{i:020x}"
     cfg = {"name": name,
@@ -117,10 +117,17 @@ CONNECTIONS = {
 }
 
 
+STORED = {"DataModel"}
+DATE_TIME = (2026, 5, 1, 12, 30, 10)
+
+
 def write_zip(path, parts):
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        for n, b in parts.items():
-            z.writestr(n, b)
+        for i, (n, b) in enumerate(parts.items()):
+            zi = zipfile.ZipInfo(n, (2026, 5, 1, 12, 30, 10 + i))
+            zi.compress_type = zipfile.ZIP_STORED if n in STORED else zipfile.ZIP_DEFLATED
+            zi.external_attr = 0o600 << 16
+            z.writestr(zi, b)
 
 
 def good_parts(layout=None, bom=False):
@@ -133,6 +140,7 @@ def good_parts(layout=None, bom=False):
         "[Content_Types].xml": b'\xef\xbb\xbf<?xml version="1.0" encoding="utf-8"?><Types/>',
         "Connections": json.dumps(CONNECTIONS, separators=(",", ":")).encode("utf-8"),
         "Report/Layout": lb,
+        "DataModel": b"fake stored model" * 10,
         "Report/CustomVisuals/hnh/package.json": b'{"x":1}',
         "Settings": b"\x00\x01binary\xff",
     }
