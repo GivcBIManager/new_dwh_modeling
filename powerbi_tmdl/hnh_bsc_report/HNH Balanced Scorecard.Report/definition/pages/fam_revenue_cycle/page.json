@@ -1,0 +1,79 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "fam_revenue_cycle",
+  "displayName": "Revenue cycle detail",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "5f174613c09901d5d8f9",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "Param_87ba1bcec0b8695a4a11",
+        "boundFilter": "87ba1bcec0b8695a4a11",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        }
+      },
+      {
+        "name": "Param_b4bc48f01260eda8fa82",
+        "boundFilter": "b4bc48f01260eda8fa82",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Year Month"
+          }
+        }
+      }
+    ],
+    "acceptsFilterContext": "Default"
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "87ba1bcec0b8695a4a11",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "b4bc48f01260eda8fa82",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Year Month"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

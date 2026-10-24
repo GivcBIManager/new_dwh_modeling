@@ -88,10 +88,15 @@ def build(template: Path, pages: list[Page], database: str, out: Path, server: s
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--template", type=Path, default=TEMPLATE)
-    ap.add_argument("--database", required=True, help="HNH_Analytics_Test while testing, HNH_Analytics for release")
+    ap.add_argument("--format", choices=("pbip", "pbix"), default="pbip",
+                    help="pbip: the Power BI project (default); pbix: the legacy template route (fallback)")
+    ap.add_argument("--template", type=Path, default=TEMPLATE, help="pbix only")
+    ap.add_argument("--database", default="HNH_Analytics_Test",
+                    help="HNH_Analytics_Test while testing (default), HNH_Analytics for release")
     ap.add_argument("--server", default=SERVER, help=f"SSAS server for the live connection (default {SERVER})")
-    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--out", type=Path,
+                    help=f"pbip: the folder for the project (default {HERE}); pbix: the .pbix file (required)")
+    ap.add_argument("--pbiviz", type=Path, help="pbip only: the HNH visual package (default: hnh_bsc_visual/dist)")
     args = ap.parse_args(argv)
     try:
         from pages import PAGES
@@ -103,6 +108,11 @@ def main(argv=None) -> int:
     if unknown:
         print("fields not in the Balanced Scorecard perspective: " + ", ".join(unknown))
         return 1
+    if args.format == "pbip":
+        return _main_pbip(args, PAGES)
+    if args.out is None:
+        print("--format pbix needs --out <file.pbix>")
+        return 1
     args.out.parent.mkdir(parents=True, exist_ok=True)
     try:
         build(args.template, PAGES, args.database, args.out, args.server)
@@ -113,6 +123,37 @@ def main(argv=None) -> int:
     print(f"wrote {args.out} ({len(PAGES)} pages, server {args.server}, database {args.database})")
     print("check_upload_rules: " + ("passed" if not problems else "; ".join(problems)))
     return 1 if problems else 0
+
+
+def _main_pbip(args, pages: list[Page]) -> int:
+    from pbir import write_pbip
+    import pbir_check
+    out = args.out or HERE
+    try:
+        pbip = write_pbip(pages, out, args.database, args.server, pbiviz=args.pbiviz)
+    except (ValueError, OSError) as e:
+        print(f"build failed: {e}")
+        return 1
+    print(f"wrote {pbip} ({len(pages)} pages, server {args.server}, database {args.database})")
+    if not pbir_check.desktop_installed():
+        print("Power BI Desktop not installed here: schema and project-reader checks skipped")
+        return 0
+    import tempfile
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            problems = pbir_check.validate_report(pbip.with_suffix(".Report"), pbir_check.extract_schemas(tmp))
+        opened = pbir_check.desktop_open(pbip)
+    except (RuntimeError, OSError) as e:
+        print(f"checks against Power BI Desktop failed to run: {e}")
+        return 1
+    print("report schemas: " + ("passed" if not problems else f"{len(problems)} problems"))
+    for p in problems[:20]:
+        print("  " + p)
+    ok = "FAIL" not in opened and "issue:" not in opened
+    print("Desktop project reader: " + ("opened" if ok else "problems"))
+    if not ok:
+        print(opened)
+    return 0 if ok and not problems else 1
 
 
 if __name__ == "__main__":

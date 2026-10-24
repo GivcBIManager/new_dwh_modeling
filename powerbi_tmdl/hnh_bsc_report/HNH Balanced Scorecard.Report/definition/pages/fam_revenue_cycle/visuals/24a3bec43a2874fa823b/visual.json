@@ -1,0 +1,67 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "24a3bec43a2874fa823b",
+  "position": {
+    "x": 16,
+    "y": 660,
+    "z": 10000,
+    "height": 390,
+    "width": 930,
+    "tabOrder": 10000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Claim Status"
+                    }
+                  },
+                  "Property": "Submission Status"
+                }
+              },
+              "queryRef": "Claim Status.Submission Status",
+              "nativeQueryRef": "Submission Status"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Billed Amount"
+                }
+              },
+              "queryRef": "_Measures.Billed Amount",
+              "nativeQueryRef": "Billed Amount"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

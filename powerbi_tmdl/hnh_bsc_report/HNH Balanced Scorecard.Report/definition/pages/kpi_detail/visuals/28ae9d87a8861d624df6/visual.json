@@ -1,0 +1,123 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "28ae9d87a8861d624df6",
+  "position": {
+    "x": 16,
+    "y": 590,
+    "z": 20000,
+    "height": 370,
+    "width": 940,
+    "tabOrder": 20000
+  },
+  "visual": {
+    "visualType": "multiRowCard",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "KPI Name"
+                }
+              },
+              "queryRef": "BSC KPI.KPI Name",
+              "nativeQueryRef": "KPI Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "Definition"
+                }
+              },
+              "queryRef": "BSC KPI.Definition",
+              "nativeQueryRef": "Definition"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "Owner"
+                }
+              },
+              "queryRef": "BSC KPI.Owner",
+              "nativeQueryRef": "Owner"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "Co Owners"
+                }
+              },
+              "queryRef": "BSC KPI.Co Owners",
+              "nativeQueryRef": "Co Owners"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "BSC Target Basis"
+                }
+              },
+              "queryRef": "_Measures.BSC Target Basis",
+              "nativeQueryRef": "BSC Target Basis"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "BSC KPI Weight"
+                }
+              },
+              "queryRef": "_Measures.BSC KPI Weight",
+              "nativeQueryRef": "BSC KPI Weight"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

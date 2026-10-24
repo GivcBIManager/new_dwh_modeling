@@ -1,0 +1,50 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "kpi_detail",
+  "displayName": "KPI detail",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "a1b2f6d0f65a8f5fc12e",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "Param_7431cc738d9ea1004850",
+        "boundFilter": "7431cc738d9ea1004850",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "BSC KPI"
+              }
+            },
+            "Property": "KPI Code"
+          }
+        }
+      }
+    ],
+    "acceptsFilterContext": "Default"
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "7431cc738d9ea1004850",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "BSC KPI"
+              }
+            },
+            "Property": "KPI Code"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

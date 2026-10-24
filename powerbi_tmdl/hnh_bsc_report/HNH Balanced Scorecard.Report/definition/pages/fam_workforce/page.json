@@ -1,0 +1,79 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "fam_workforce",
+  "displayName": "Workforce detail",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "4d280fd484be20712626",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "Param_167d96f41c04875188e8",
+        "boundFilter": "167d96f41c04875188e8",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        }
+      },
+      {
+        "name": "Param_5861726ea22220ec685c",
+        "boundFilter": "5861726ea22220ec685c",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Year Month"
+          }
+        }
+      }
+    ],
+    "acceptsFilterContext": "Default"
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "167d96f41c04875188e8",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "5861726ea22220ec685c",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Year Month"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

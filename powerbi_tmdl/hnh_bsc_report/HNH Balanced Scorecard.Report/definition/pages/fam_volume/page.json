@@ -1,0 +1,79 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "fam_volume",
+  "displayName": "Patient volume detail",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "1159c7471c05976ae047",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "Param_84b9614a8a1e1a688b1e",
+        "boundFilter": "84b9614a8a1e1a688b1e",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        }
+      },
+      {
+        "name": "Param_099b7c472d20359c185e",
+        "boundFilter": "099b7c472d20359c185e",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Year Month"
+          }
+        }
+      }
+    ],
+    "acceptsFilterContext": "Default"
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "84b9614a8a1e1a688b1e",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "099b7c472d20359c185e",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Year Month"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

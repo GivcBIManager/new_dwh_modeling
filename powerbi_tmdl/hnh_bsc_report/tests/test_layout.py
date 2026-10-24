@@ -370,11 +370,12 @@ def test_cli_writes_and_prints_upload_check(pbix_path, tmp_path, monkeypatch, ca
     pages.PAGES = [Page("a", "A", [Visual("card", 0, 0, 50, 50, roles={"Values": [meas("BSC Actual")]}, title="x")])]
     monkeypatch.setitem(__import__("sys").modules, "pages", pages)
     out = tmp_path / "dist" / "r.pbix"
-    assert build_mod.main(["--template", str(pbix_path), "--database", "HNH_Analytics_Test", "--out", str(out)]) == 0
+    assert build_mod.main(["--format", "pbix", "--template", str(pbix_path), "--database", "HNH_Analytics_Test",
+                          "--out", str(out)]) == 0
     assert "check_upload_rules: passed" in capsys.readouterr().out
     assert out.exists()
     pages.PAGES = [Page("a", "A", [Visual("card", 0, 0, 50, 50, roles={"Values": [meas("Nope")]}, title="x")])]
-    assert build_mod.main(["--template", str(pbix_path), "--database", "X", "--out", str(out)]) == 1
+    assert build_mod.main(["--format", "pbix", "--template", str(pbix_path), "--database", "X", "--out", str(out)]) == 1
     assert "[Nope]" in capsys.readouterr().out
 
 
