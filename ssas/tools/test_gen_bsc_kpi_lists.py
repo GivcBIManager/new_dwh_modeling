@@ -103,6 +103,7 @@ PARTS_SAMPLE = """\tmeasure 'BSC Numerator' =
 
 \tmeasure 'BSC Denominator' =
 \t\t\tBLANK ()
+\t\tformatString: #,0.00
 \t\tdisplayFolder: Balanced Scorecard\\Scoring
 """
 PARTS = {"A": ("[N A]", "[D A]", "ratio"), "B": ("SUMX (\n\tVALUES ( T[c] ),\n\t[N B]\n)", "", "value"),
@@ -130,3 +131,15 @@ def test_render_writes_numerator_and_denominator_from_the_parts():
         assert "KEEPFILTERS ( 'Date'[Date] <= TODAY () )" in body
     assert g.render(out, kpis=[], budgets=[], parts=PARTS) == out
     assert [codes for _, codes in g.parts_blocks(out)] == [["A", "B", "G"], ["A", "G"]]
+
+
+def test_numerator_and_denominator_format():
+    """Up to two decimals, none shown for whole numbers (#,0.##): a count numerator reads 1,234, a ratio's 12.5."""
+    out = g.render(PARTS_SAMPLE, kpis=[], budgets=[], parts=PARTS)
+    num, den = out.split("\tmeasure 'BSC Denominator' =")
+    for body in (num, den):
+        assert body.count("\t\tformatString: #,0.##\n") == 1 and "#,0.00" not in body
+        assert "\t\tformatString: #,0.##\n\t\tdisplayFolder: Balanced Scorecard\\Scoring" in body
+    for name in ("BSC Numerator", "BSC Denominator"):
+        block = TEXT.split(f"\tmeasure '{name}' =\n", 1)[1].split("\n\tmeasure ", 1)[0]
+        assert "\t\tformatString: #,0.##\n" in block, name

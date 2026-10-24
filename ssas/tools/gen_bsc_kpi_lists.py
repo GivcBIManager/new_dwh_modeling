@@ -156,6 +156,7 @@ PARTS_MEASURES = [
                            "\tKEEPFILTERS ( Branch[Is Hospital] = \"Yes\" )\n"
                            ")"),
 ]
+PARTS_FORMAT = "#,0.##"  # up to two decimals, none for whole numbers (a count reads 1,234, a ratio's part 12.5)
 BODY_START = "\t\t\tVAR __Value = ( -- measure body\n"
 BODY_END = "\t\t\t) -- end of measure body\n"
 
@@ -209,13 +210,34 @@ def _body_span(text: str, name: str):
     return start, end, "\t\t\t"
 
 
+def _set_format(text: str, name: str, fmt: str) -> str:
+    """The text with the measure's formatString property set to `fmt`: an existing formatString line is replaced,
+    else one is written as the first property, after the expression lines."""
+    declaration = f"\tmeasure '{name}' =\n"
+    at = text.find(declaration)
+    if at < 0:
+        return text
+    pos = at + len(declaration)
+    while text.startswith("\t\t\t", pos) or (text.startswith("\n", pos) and text.startswith("\t\t\t", pos + 1)):
+        pos = text.index("\n", pos) + 1  # the expression lines (and blank lines between them)
+    first = pos
+    while text.startswith("\t\t", pos) and not text.startswith("\t\t\t", pos):
+        end = text.index("\n", pos) + 1
+        if text.startswith("\t\tformatString:", pos):
+            return text[:pos] + f"\t\tformatString: {fmt}\n" + text[end:]
+        pos = end
+    return text[:first] + f"\t\tformatString: {fmt}\n" + text[first:]
+
+
 def render_parts(text: str, parts: dict = PARTS) -> str:
-    """The text with the bodies of BSC Numerator and BSC Denominator written from the parts."""
+    """The text with the bodies of BSC Numerator and BSC Denominator written from the parts, formatted
+    PARTS_FORMAT."""
     for name, which, manual in PARTS_MEASURES:
         span = _body_span(text, name)
         if span:
             start, end, tabs = span
             text = text[:start] + parts_body(which, manual, parts, tabs) + text[end:]
+            text = _set_format(text, name, PARTS_FORMAT)
     return text
 
 

@@ -3682,7 +3682,7 @@ table _Measures
 			) -- end of measure body
 			VAR __Wrong = [_Guard 12 facts #8b9401c7]
 			RETURN IF ( __Wrong = "", __Value, """BSC Numerator"" can't be analysed by " & __Wrong )
-		formatString: #,0.00
+		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
@@ -3774,7 +3774,7 @@ table _Measures
 			) -- end of measure body
 			VAR __Wrong = [_Guard 16 facts #e3203857]
 			RETURN IF ( __Wrong = "", __Value, """BSC Denominator"" can't be analysed by " & __Wrong )
-		formatString: #,0.00
+		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
