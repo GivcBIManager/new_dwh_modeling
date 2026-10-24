@@ -1,6 +1,13 @@
-"""Write the Balanced Scorecard report from the template.
+"""Write the Balanced Scorecard report: a Power BI project (default) or the legacy pbix from the template (fallback).
 
-    python powerbi_tmdl/hnh_bsc_report/build.py --database HNH_Analytics_Test \
+Default, --format pbip: the project in this folder (HNH Balanced Scorecard.pbip, .Report/, .SemanticModel/),
+then the checks against Power BI Desktop (pbir_check.py):
+
+    python powerbi_tmdl/hnh_bsc_report/build.py [--database HNH_Analytics_Test]
+
+Fallback, --format pbix: a legacy pbix written from the template (README, appendix "Fallback"):
+
+    python powerbi_tmdl/hnh_bsc_report/build.py --format pbix --database HNH_Analytics_Test \
         --out "powerbi_tmdl/hnh_bsc_report/dist/HNH Balanced Scorecard.pbix"
 """
 from __future__ import annotations

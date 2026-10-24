@@ -381,7 +381,8 @@ def write_pbip(pages: list[Page], out_dir, database: str, server: str = SERVER, 
                pbiviz: Path | None = None) -> Path:
     """Write the project into `out_dir` and return the .pbip path. The report's generated folders (`definition`,
     `StaticResources`, `CustomVisuals`) are replaced, so pages that are gone do not linger; every other file is
-    overwritten. Desktop's local state (`.pbi` folders, git-ignored) is kept."""
+    overwritten, except `.gitignore`, which is written only when missing. Desktop's local state (`.pbi` folders,
+    git-ignored) is kept."""
     out = Path(out_dir)
     files = project_files(pages, database, server, perspective, pbiviz)  # everything checked before writing
     rep = out / f"{REPORT_NAME}.Report"
@@ -390,6 +391,8 @@ def write_pbip(pages: list[Page], out_dir, database: str, server: str = SERVER, 
             shutil.rmtree(d)
     for rel, data in files.items():
         path = out / rel
+        if rel == ".gitignore" and path.exists():
+            continue  # the folder's own .gitignore (Desktop may extend it) is kept
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
     return out / f"{REPORT_NAME}.pbip"

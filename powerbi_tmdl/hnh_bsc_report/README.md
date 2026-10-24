@@ -16,7 +16,7 @@ The defaults are `--format pbip`, `--database HNH_Analytics_Test` and `--server 
 
 Use the normal Power BI Desktop (2.158, installed on this server). Desktop for Report Server comes in at step 4.
 
-1. Open `powerbi_tmdl/hnh_bsc_report/HNH Balanced Scorecard.pbip`. If Desktop asks for the preview feature "Store reports using enhanced metadata format (PBIR)", turn it on (File > Options > Preview features) and open the file again. Sign in to `HNHANALYTICSSRV\REPORTSERVERDB` with your Windows account if asked. The report connects live to the `Balanced Scorecard` perspective of `HNH_Analytics_Test`.
+1. Open `powerbi_tmdl/hnh_bsc_report/HNH Balanced Scorecard.pbip`. If Desktop refuses the file or asks for a preview feature, go to File > Options and settings > Options > Preview features. Turn on both **Power BI Project (.pbip) save option** and **Store reports using enhanced metadata format (PBIR)**, restart Desktop, and open the file again. Sign in to `HNHANALYTICSSRV\REPORTSERVERDB` with your Windows account if asked. The report connects live to the `Balanced Scorecard` perspective of `HNH_Analytics_Test`.
 2. Check the pages:
    1. Every page opens without a field error. A red "can't display" visual means a field is missing from the `Balanced Scorecard` perspective.
    2. The scorecard pages show the HNH Balanced Scorecard visual in the right mode (overview, board, owner, comparison). The header slicers (hospital, BSC category, date "this year", time calculation) keep their selection from page to page. The page buttons switch pages.

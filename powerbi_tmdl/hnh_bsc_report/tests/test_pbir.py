@@ -247,7 +247,10 @@ def test_projection_field_shape(project):
     assert all(r.get("active") for r in matrix["visual"]["query"]["queryState"]["Rows"]["projections"])
     assert lit(matrix["visual"]["visualContainerObjects"]["title"][0]["properties"]["text"]) == \
         "'Select a hospital and month, then Open detail'"
-    assert lit(line["visual"]["visualContainerObjects"]["title"][0]["properties"]["show"]) == "false"
+    assert lit(line["visual"]["visualContainerObjects"]["title"][0]["properties"]["text"]) == \
+        "'Actual vs target by month'"
+    card = vs[[v.sample for v in kpi.visuals].index("card")]
+    assert lit(card["visual"]["visualContainerObjects"]["title"][0]["properties"]["show"]) == "false"  # untitled
 
 
 def test_top_n_and_visual_filters(project):
@@ -456,3 +459,54 @@ def test_cli_default_writes_the_project(tmp_path, monkeypatch, capsys):
     assert build_mod.main(["--out", str(tmp_path / "p"), "--pbiviz", str(pbiviz)]) == 1
     assert "[Nope]" in capsys.readouterr().out
     assert build_mod.main(["--format", "pbix"]) == 1
+
+
+def test_drill_page_charts_show_their_titles(project):
+    for p in PAGES[7:]:
+        for v, j in zip(p.visuals, visuals(project, p)):
+            if v.sample in ("lineChart", "barChart", "table", "matrix"):
+                t = j["visual"]["visualContainerObjects"]["title"][0]["properties"]
+                assert lit(t["show"]) == "true" and lit(t["text"]) == "'" + v.title.replace("'", "''") + "'"
+
+
+def test_button_style_lands_in_objects(project):
+    kpi = next(p for p in PAGES if p.name == "kpi_detail")
+    for v, j in zip(kpi.visuals, visuals(project, kpi)):
+        if v.sample in ("buttonNavigate", "buttonDrill"):
+            objs = j["visual"]["objects"]
+            assert {"fill", "outline", "text"} <= set(objs)
+            assert "fill" not in j["visual"]["visualContainerObjects"]
+
+
+def test_gitignore_written_only_when_missing(tmp_path):
+    pbiviz = make_pbiviz(tmp_path / "v.pbiviz")
+    out = tmp_path / "o"
+    write_pbip([Page("a", "A", [])], out, "X", SERVER, pbiviz=pbiviz)
+    assert b"localSettings.json" in (out / ".gitignore").read_bytes()
+    (out / ".gitignore").write_bytes(b"mine\n")
+    write_pbip([Page("a", "A", [])], out, "X", SERVER, pbiviz=pbiviz)
+    assert (out / ".gitignore").read_bytes() == b"mine\n"
+
+
+def test_committed_project_is_current():
+    """The project in the repository equals a fresh build for HNH_Analytics_Test: rebuild and commit after a change
+    to pages.py, the theme or the writer. CR/LF is ignored (git may check text files out either way). Without the
+    packaged visual in hnh_bsc_visual/dist, the stand-in package is used and CustomVisuals is not compared."""
+    import tempfile
+    from pbir import VISUAL_DIST, project_files
+    real = sorted(VISUAL_DIST.glob("hnhBscVisual*.pbiviz"))
+    with tempfile.TemporaryDirectory() as tmp:
+        pbiviz = real[-1] if real else make_pbiviz(Path(tmp) / "v.pbiviz")
+        files = project_files(PAGES, "HNH_Analytics_Test", pbiviz=pbiviz)
+    skip = () if real else (f"{REPORT_NAME}.Report/CustomVisuals/",)
+    expected = {k: v for k, v in files.items() if not k.startswith(skip) and k != ".gitignore"}
+    roots = [HERE / f"{REPORT_NAME}.Report", HERE / f"{REPORT_NAME}.SemanticModel"]
+    committed = {f.relative_to(HERE).as_posix(): f.read_bytes() for r in roots for f in r.rglob("*")
+                 if f.is_file() and "/.pbi/" not in f.relative_to(HERE).as_posix() + "/"
+                 and not f.relative_to(HERE).as_posix().startswith(skip)}
+    committed[f"{REPORT_NAME}.pbip"] = (HERE / f"{REPORT_NAME}.pbip").read_bytes()
+
+    def norm(d):
+        return {k: v.replace(b"\r\n", b"\n") for k, v in d.items()}
+    stale = sorted(set(norm(expected).items()) ^ set(norm(committed).items()))
+    assert not stale, "project out of date; run build.py and commit: " + ", ".join(sorted({k for k, _ in stale})[:10])

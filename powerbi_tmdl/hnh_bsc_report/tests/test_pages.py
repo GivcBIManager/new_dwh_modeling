@@ -352,3 +352,59 @@ def test_family_pages_build_against_the_synthetic_template(pbix_path):
         section, _ = page_section(page, i, smp, lay, drill, base)
         assert len(section["visualContainers"]) == len(page.visuals)
         assert json.loads(section["config"]).get("visibility") == 1
+
+
+CHART_TITLES = {
+    "KPI detail": ["Actual vs target by month", "Actual by hospital",
+                   "Select a hospital and month, then Open detail"],
+    "Revenue detail": ["Revenue by department (top 15)", "Revenue by product category", "Revenue by payer category",
+                       "Top 20 doctors by revenue"],
+    "Finance detail": ["Income statement: actual vs budget", "GL movement by account (top 15)"],
+    "Patient volume detail": ["OP visits by department (top 15)", "Census by payer category",
+                              "Average wait by department (top 15)"],
+    "Beds & clinical detail": ["Bed occupancy by ward", "ALOS by department (top 15)", "Discharges by outcome"],
+    "Revenue cycle detail": ["Rejected claims by NPHIES reason (top 15)", "Claimed amount by payer (top 15)",
+                             "Billed amount by submission status", "Lost value by department (top 15)"],
+    "Workforce detail": ["Headcount by department (top 15)", "Headcount by job (top 15)",
+                         "Headcount by nationality (top 10)"],
+    "Patient experience detail": ["NPS by domain", "NPS by department (top 15)",
+                                  "Promoters, passives and detractors by question (top 20)"],
+}
+CHARTS = {"lineChart", "barChart", "table", "matrix"}
+
+
+def test_drill_page_charts_have_titles():
+    for display, titles in CHART_TITLES.items():
+        charts = [v for v in by_display(display).visuals if v.sample in CHARTS]
+        assert [v.title for v in charts] == titles, display
+    for p in PAGES[7:]:
+        assert all(v.title for v in p.visuals if v.sample in CHARTS), p.display
+
+
+def _style(v):
+    """(fill colour or None, outline shown, text colour) of a button. As the handover's buttons: `show` in an entry
+    without a selector, colours in the default state's entry (selector id "default")."""
+    def entry(obj, selector):
+        return next((e["properties"] for e in v.props.get(obj, []) if e.get("selector") == selector), {})
+    default = {"id": "default"}
+    fill, outline, text = entry("fill", default), entry("outline", default), entry("text", default)
+    assert "show" not in fill and "show" not in outline
+    colour = (lambda p, k: p[k]["solid"]["color"]["expr"]["Literal"]["Value"] if k in p else None)
+    return (colour(fill, "fillColor") if lit(entry("fill", None)["show"]) == "true" else None,
+            lit(entry("outline", None)["show"]), colour(text, "fontColor"))
+
+
+def test_buttons_have_a_visible_style():
+    from pages import button_style
+    for p in PAGES:
+        for v in p.visuals:
+            if v.sample not in ("buttonNavigate", "buttonDrill"):
+                continue
+            back = lit(v.props["visualLink"][0]["properties"]["type"]) == "'Back'"
+            if back:
+                assert _style(v) == (None, "true", "'#1478BE'")
+            else:
+                assert _style(v) == ("'#13ACE3'", "false", "'#FFFFFF'")
+            # the label entry (no selector) is still there
+            assert lit(next(e for e in v.props["text"] if "selector" not in e)["properties"]["text"])
+    assert set(button_style("primary")) == set(button_style("outline")) == {"fill", "outline", "text"}
