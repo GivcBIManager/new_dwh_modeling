@@ -67,13 +67,15 @@ class Visual:
 @dataclass
 class Page:
     """`name` is the page's internal name (navigation targets it), `display` the tab name users see. A page with
-    `drill_fields` is a drill-through page with "keep all filters" as on the template's `Drill sample` page."""
+    `drill_fields` is a drill-through page; `keep_filters` is its "keep all filters": on, every filter of the source
+    page arrives; off, only the drill fields' values do (the family pages, Review Focus 4)."""
     name: str
     display: str
     visuals: list[Visual]
     filters: list[Filter] = field(default_factory=list)
     drill_fields: list[Field] | None = None
     hidden: bool = False
+    keep_filters: bool = True
 
 
 def page_fields(page: Page) -> list[Field]:

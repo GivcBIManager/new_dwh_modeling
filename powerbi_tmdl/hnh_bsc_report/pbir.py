@@ -12,6 +12,7 @@ one function here: `live_connection`, `custom_visual`, `relative_date_slicer`, `
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import uuid
 import zipfile
@@ -112,12 +113,26 @@ def live_connection(server: str, database: str, perspective: str = PERSPECTIVE) 
 
 # ---- the HNH visual ------------------------------------------------------------------------------------------------
 
-def find_pbiviz() -> Path:
-    found = sorted(VISUAL_DIST.glob("hnhBscVisual*.pbiviz"))
+def _pbiviz_version(path: Path) -> tuple[int, ...] | None:
+    """The version `pbiviz package` writes into the file name (`hnhBscVisual<guid>.1.2.0.0.pbiviz`), or None."""
+    m = re.search(r"\.(\d+(?:\.\d+)*)\.pbiviz$", path.name)
+    return tuple(int(x) for x in m.group(1).split(".")) if m else None
+
+
+def find_pbiviz(dist: Path = VISUAL_DIST) -> Path:
+    """The packaged HNH visual in `dist`: the only one, or the highest version (compared as numbers, 1.10 > 1.9).
+    Several packages without a version in the name, or two of the same version, need --pbiviz."""
+    found = sorted(Path(dist).glob("hnhBscVisual*.pbiviz"))
     if not found:
-        raise FileNotFoundError(f"no packaged HNH visual (*.pbiviz) in {VISUAL_DIST}: run `npm run package` in "
+        raise FileNotFoundError(f"no packaged HNH visual (*.pbiviz) in {dist}: run `npm run package` in "
                                 "powerbi_tmdl/hnh_bsc_visual, or pass the .pbiviz path")
-    return found[-1]
+    if len(found) == 1:
+        return found[0]
+    versions = [_pbiviz_version(f) for f in found]
+    if None in versions or versions.count(max(versions)) > 1:
+        raise ValueError(f"several HNH visual packages in {dist} ({', '.join(f.name for f in found)}) and no single "
+                         "highest version in their names: pass the one to use with --pbiviz")
+    return found[versions.index(max(versions))]
 
 
 def custom_visual(pbiviz: Path) -> tuple[str, dict[str, bytes], dict]:
@@ -190,9 +205,10 @@ def filter_entry(name: str, flt: Filter) -> dict:
 
 
 def drill_binding(page: Page) -> tuple[dict, list[dict]]:
-    """(pageBinding, drill filters) for a drill-through page with "keep all filters" (acceptsFilterContext Default:
-    "flows filter context" in page schema 2.1.0). One parameter and one filter per drill field, named as the legacy
-    writer names them. Standard PBIR (page schema); no Desktop-written drill-through page on this server."""
+    """(pageBinding, drill filters) for a drill-through page. `page.keep_filters` is "keep all filters":
+    acceptsFilterContext Default ("flows filter context" in page schema 2.1.0) when on, None when off (only the drill
+    fields arrive). One parameter and one filter per drill field, named as the legacy writer names them. Standard
+    PBIR (page schema); no Desktop-written drill-through page on this server."""
     fields = page.drill_fields or []
     if any(f.kind != "column" for f in fields):
         raise ValueError(f"page {page.display}: drill-through fields must be columns")
@@ -202,7 +218,7 @@ def drill_binding(page: Page) -> tuple[dict, list[dict]]:
         filters.append({"name": name, "field": field_expr(f), "type": "Categorical", "howCreated": "Drillthrough"})
         params.append({"name": "Param_" + name, "boundFilter": name, "fieldExpr": field_expr(f)})
     binding = {"name": stable_id(page.name, "pod"), "type": "Drillthrough", "parameters": params,
-               "acceptsFilterContext": "Default"}
+               "acceptsFilterContext": "Default" if page.keep_filters else "None"}
     return binding, filters
 
 

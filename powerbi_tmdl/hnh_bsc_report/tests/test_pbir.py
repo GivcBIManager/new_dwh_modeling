@@ -195,7 +195,9 @@ def test_drill_through_pages(project):
             continue
         assert pj["type"] == "Drillthrough"
         b = pj["pageBinding"]
-        assert b["type"] == "Drillthrough" and b["acceptsFilterContext"] == "Default"  # keep all filters
+        # Default = keep all filters (KPI detail); None = only the drill fields pass (family pages, Review Focus 4)
+        assert b["type"] == "Drillthrough"
+        assert b["acceptsFilterContext"] == ("Default" if p.keep_filters else "None"), p.display
         filters = {f["name"]: f for f in pj["filterConfig"]["filters"]}
         assert [prm["fieldExpr"]["Column"]["Property"] for prm in b["parameters"]] == [f.name for f in p.drill_fields]
         for prm in b["parameters"]:
@@ -205,6 +207,20 @@ def test_drill_through_pages(project):
             assert prm["name"] == "Param_" + prm["boundFilter"]
     names = [page_json(project, p.name)["pageBinding"]["name"] for p in PAGES if p.drill_fields]
     assert len(names) == len(set(names))
+
+
+def test_family_pages_do_not_accept_filter_context(project):
+    """KPI detail keeps all filters; a family page takes only its drill fields (Branch Name, Year Month Name) and
+    filters hospitals itself, so the 'BSC KPI' drill filter never reaches the domain measures' guards."""
+    accepts = {p.display: page_json(project, p.name)["pageBinding"]["acceptsFilterContext"]
+               for p in PAGES if p.drill_fields}
+    assert accepts.pop("KPI detail") == "Default"
+    assert len(accepts) == 7 and set(accepts.values()) == {"None"}
+    pj = page_json(project, "fam_revenue")
+    flts = pj["filterConfig"]["filters"]
+    assert [f["howCreated"] for f in flts] == ["Drillthrough", "Drillthrough", "User"]
+    assert [f["field"]["Column"]["Property"] for f in flts] == ["Branch Name", "Year Month Name", "Is Hospital"]
+    assert flts[2]["filter"]["Where"][0]["Condition"]["In"]["Values"] == [[{"Literal": {"Value": "'Yes'"}}]]
 
 
 # ---- visuals --------------------------------------------------------------------------------------------------------
@@ -237,8 +253,9 @@ def test_projection_field_shape(project):
     vs = visuals(project, kpi)
     line = vs[[v.sample for v in kpi.visuals].index("lineChart")]
     cat, = line["visual"]["query"]["queryState"]["Category"]["projections"]
-    assert cat == {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Date"}}, "Property": "Year Month"}},
-                   "queryRef": "Date.Year Month", "nativeQueryRef": "Year Month", "active": True}
+    assert cat == {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Date"}},
+                                        "Property": "Year Month Name"}},
+                   "queryRef": "Date.Year Month Name", "nativeQueryRef": "Year Month Name", "active": True}
     y = line["visual"]["query"]["queryState"]["Y"]["projections"][0]
     assert y["field"] == {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}}, "Property": "BSC Actual"}}
     assert "active" not in y
@@ -394,6 +411,24 @@ def test_errors(tmp_path):
         write_pbip([Page("a", "A", [])], tmp_path / "o", "X", SERVER, pbiviz=tmp_path / "missing.pbiviz")
 
 
+def test_find_pbiviz_takes_the_highest_version(tmp_path):
+    from pbir import find_pbiviz
+    for v in ("1.0.0.0", "1.10.0.0", "1.9.3.0"):
+        make_pbiviz(tmp_path / f"hnhBscVisual{GUID}.{v}.pbiviz")
+    assert find_pbiviz(tmp_path).name == f"hnhBscVisual{GUID}.1.10.0.0.pbiviz"  # not 1.9.3.0, the last by name
+
+
+def test_find_pbiviz_needs_a_choice_when_versions_are_unclear(tmp_path):
+    from pbir import find_pbiviz
+    with pytest.raises(FileNotFoundError, match="npm run package"):
+        find_pbiviz(tmp_path)
+    make_pbiviz(tmp_path / "hnhBscVisual.pbiviz")
+    assert find_pbiviz(tmp_path).name == "hnhBscVisual.pbiviz"  # one package: taken
+    make_pbiviz(tmp_path / f"hnhBscVisual{GUID}.1.0.0.0.pbiviz")
+    with pytest.raises(ValueError, match="--pbiviz"):
+        find_pbiviz(tmp_path)
+
+
 def test_measure_filter_eq(tmp_path):
     pbiviz = make_pbiviz(tmp_path / "v.pbiviz")
     v = Visual("card", 0, 0, 1, 1, roles={"Values": [meas("A")]}, filters=[Filter(meas("A"), "eq", [1])])
@@ -493,10 +528,10 @@ def test_committed_project_is_current():
     to pages.py, the theme or the writer. CR/LF is ignored (git may check text files out either way). Without the
     packaged visual in hnh_bsc_visual/dist, the stand-in package is used and CustomVisuals is not compared."""
     import tempfile
-    from pbir import VISUAL_DIST, project_files
+    from pbir import VISUAL_DIST, find_pbiviz, project_files
     real = sorted(VISUAL_DIST.glob("hnhBscVisual*.pbiviz"))
     with tempfile.TemporaryDirectory() as tmp:
-        pbiviz = real[-1] if real else make_pbiviz(Path(tmp) / "v.pbiviz")
+        pbiviz = find_pbiviz() if real else make_pbiviz(Path(tmp) / "v.pbiviz")
         files = project_files(PAGES, "HNH_Analytics_Test", pbiviz=pbiviz)
     skip = () if real else (f"{REPORT_NAME}.Report/CustomVisuals/",)
     expected = {k: v for k, v in files.items() if not k.startswith(skip) and k != ".gitignore"}

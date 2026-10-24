@@ -20,7 +20,7 @@ ATTRIBUTE_ROLES = {
 
 BRANCH_NAME = col("Branch", "Branch Name")
 IS_HOSPITAL = col("Branch", "Is Hospital")
-YEAR_MONTH = col("Date", "Year Month")
+YEAR_MONTH_NAME = col("Date", "Year Month Name")  # "Aug 2026", sorted by 'Date'[Year Month]: shown and drilled on
 
 
 def _lit(value: str | bool) -> dict:
@@ -146,30 +146,32 @@ SCORECARD_PAGES: list[Page] = [_scorecard_page(*row) for row in _SCORECARD]
 def _kpi_detail() -> Page:
     """Drill-through target (KPI Code, keep all filters). Header: Back, the four slicers (synced by field with the
     scorecard pages), the seven page buttons. The "Open detail" button drills on the matrix's cell selection
-    (Branch Name x Year Month) with keep-all-filters; the matrix is the drill source and sits beside the button."""
+    (Branch Name x Year Month Name, the family pages' drill fields); the matrix is the drill source and sits beside
+    the button. The manual-entry note is a multi-row card: with its not-blank filter it renders empty for a measure
+    KPI, where a card would show "(Blank)"."""
     cards = ["BSC Actual", "BSC Target", "BSC Score", "BSC State", "BSC Numerator", "BSC Denominator"]
     visuals = [back_button()] + _slicers(130, shrink=40) + _nav_buttons()
     visuals += [Visual("card", 16 + 310 * i, 120, 300, 130, roles={"Values": [meas(m)]})
                 for i, m in enumerate(cards)]
     visuals += [
-        Visual("lineChart", 16, 270, 940, 300, roles={"Category": [YEAR_MONTH],
+        Visual("lineChart", 16, 270, 940, 300, roles={"Category": [YEAR_MONTH_NAME],
                                                       "Y": [meas("BSC Actual"), meas("BSC Target")]},
-               title="Actual vs target by month", sort=YEAR_MONTH, sort_dir="asc"),
+               title="Actual vs target by month", sort=YEAR_MONTH_NAME, sort_dir="asc"),
         Visual("barChart", 976, 270, 928, 300, roles={"Category": [BRANCH_NAME], "Y": [meas("BSC Actual")]},
                title="Actual by hospital", filters=[_hospitals()], sort=meas("BSC Actual"), sort_dir="desc"),
         Visual("multiRowCard", 16, 590, 940, 370,
                roles={"Values": [col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"), col("BSC KPI", "Owner"),
                                  col("BSC KPI", "Co Owners"), meas("BSC Target Basis"), meas("BSC KPI Weight")]}),
         Visual("matrix", 976, 590, 700, 210, title="Select a hospital and month, then Open detail",
-               roles={"Rows": [BRANCH_NAME], "Columns": [YEAR_MONTH], "Values": [meas("BSC Actual")]},
+               roles={"Rows": [BRANCH_NAME], "Columns": [YEAR_MONTH_NAME], "Values": [meas("BSC Actual")]},
                filters=[_hospitals()]),
         Visual("buttonDrill", 1690, 590, 214, 50, props=button_props(
             {"type": _lit("Drillthrough"), "drillthroughSection": {
                 "expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}},
                                      "Property": "BSC Detail Page"}}}},
             "Open detail", "primary")),
-        Visual("card", 976, 810, 928, 150, roles={"Values": [meas("BSC Manual Note")]},
-               filters=[Filter(meas("BSC Manual Note"), "notblank")]),
+        Visual("multiRowCard", 976, 810, 928, 150, roles={"Values": [meas("BSC Manual Note")]},
+               title="Manual entry note", filters=[Filter(meas("BSC Manual Note"), "notblank")]),
     ]
     return Page("kpi_detail", "KPI detail", visuals, drill_fields=[col("BSC KPI", "KPI Code")], hidden=True)
 
@@ -186,8 +188,12 @@ def _bar(title: str, measure: str, by: Field, n: int | None = None) -> dict:
 
 
 def _table(title: str, by: Field, measures: list[str], n: int | None = None, rank: str | None = None) -> dict:
-    return {"sample": "table", "title": title, "roles": {"Values": [by] + [meas(m) for m in measures]},
-            "top_n": (meas(rank or measures[0]), n) if n else None}
+    """A table sorted descending by its ranking measure (`rank`, else the first measure), which the top N also ranks
+    by; a `rank` measure not among `measures` is added as the last column (a visual sorts only by its own fields)."""
+    ranking = rank or measures[0]
+    shown = measures + ([ranking] if ranking not in measures else [])
+    return {"sample": "table", "title": title, "roles": {"Values": [by] + [meas(m) for m in shown]},
+            "sort": meas(ranking), "top_n": (meas(ranking), n) if n else None}
 
 
 def _matrix(title: str, rows: list[Field], measures: list[str]) -> dict:
@@ -201,10 +207,12 @@ def title_text(text: str) -> dict:
 
 def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) -> Page:
     """Drill-through page: Back, a title, a card of the filtered hospital and month, the measure cards, then a
-    2-column grid of charts. No slicers: filters arrive by drill-through with keep-all-filters."""
+    2-column grid of charts. No slicers. Keep all filters is off: only the drill fields (Branch Name, Year Month
+    Name) arrive, never KPI detail's 'BSC KPI' drill filter or pillar filter, which every domain measure's guard
+    rejects ("... can't be analysed by "BSC KPI""); the page filters hospitals itself (Review Focus 4)."""
     visuals = [back_button(),
                Visual("textbox", 130, 25, 1000, 70, props=title_text(display)),
-               Visual("multiRowCard", 1300, 10, 604, 95, roles={"Values": [BRANCH_NAME, YEAR_MONTH]})]
+               Visual("multiRowCard", 1300, 10, 604, 95, roles={"Values": [BRANCH_NAME, YEAR_MONTH_NAME]})]
     gap = 10
     w = (1888 - gap * (len(cards) - 1)) / len(cards)
     visuals += [Visual("card", 16 + (w + gap) * i, 130, w, 110, roles={"Values": [meas(m)]})
@@ -212,7 +220,8 @@ def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) 
     for i, c in enumerate(charts):
         visuals.append(Visual(c["sample"], 16 + 958 * (i % 2), 260 + 400 * (i // 2), 930, 390, roles=c["roles"],
                               title=c["title"], sort=c.get("sort"), top_n=c.get("top_n")))
-    return Page(name, display, visuals, drill_fields=[BRANCH_NAME, YEAR_MONTH], hidden=True)
+    return Page(name, display, visuals, filters=[_hospitals()], drill_fields=[BRANCH_NAME, YEAR_MONTH_NAME],
+                hidden=True, keep_filters=False)
 
 
 _DEPT = col("Department", "Department Name")

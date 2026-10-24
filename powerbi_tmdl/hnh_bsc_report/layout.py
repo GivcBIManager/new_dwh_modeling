@@ -136,9 +136,10 @@ def top_n_json(name: str, column: Field, by: Field, n: int) -> dict:
 
 def drill_through(layout: dict, sample: dict, page: Page) -> tuple[list[dict], dict, list[dict]]:
     """(drill filters for the page, page config, pods) for a drill-through page, cloned from the template's
-    `Drill sample` page so its settings (keep all filters) carry over. The binding is read from a root `pods` entry
-    bound to that page or from the page config's `pageBinding`; its parameters and the drill filters they name are
-    rewritten for `page.drill_fields`. Not confirmed by a real file: check against the real template."""
+    `Drill sample` page so its settings (keep all filters) carry over; a page with `keep_filters` off gets it turned
+    off (`keep_filters_off`). The binding is read from a root `pods` entry bound to that page or from the page
+    config's `pageBinding`; its parameters and the drill filters they name are rewritten for `page.drill_fields`. Not
+    confirmed by a real file: check against the real template."""
     fields = page.drill_fields or []
     if any(f.kind != "column" for f in fields):
         raise ValueError(f"page {page.display}: drill-through fields must be columns")
@@ -172,10 +173,24 @@ def drill_through(layout: dict, sample: dict, page: Page) -> tuple[list[dict], d
         new_params.append(prm)
     binding["parameters"] = _dump(new_params) if isinstance(raw, str) else new_params
     binding["name"] = stable_id(page.name, "pod")
+    if not page.keep_filters:
+        keep_filters_off(binding, in_config=bool(pods))
     if pods:
         binding["boundSection"] = page.name
         return new_filters, cfg, [binding]
     return new_filters, cfg, []
+
+
+def keep_filters_off(binding: dict, in_config: bool) -> None:
+    """Turn "keep all filters" off in a cloned binding (only the drill fields arrive): acceptsFilterContext "None",
+    PBIR's name for it, in a pod's `config` JSON string (`in_config`) or on a pageBinding itself. Not confirmed by a
+    real file: check against a Desktop-saved drill page with keep all filters off."""
+    if in_config:
+        cfg = json.loads(binding.get("config") or "{}")
+        cfg["acceptsFilterContext"] = "None"
+        binding["config"] = _dump(cfg)
+    else:
+        binding["acceptsFilterContext"] = "None"
 
 
 # ---- rebinding one visual ----------------------------------------------------------------------------------------

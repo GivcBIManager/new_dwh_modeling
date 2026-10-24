@@ -70,9 +70,40 @@
               },
               "queryRef": "_Measures.% Detractors",
               "nativeQueryRef": "% Detractors"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "NPS Answers"
+                }
+              },
+              "queryRef": "_Measures.NPS Answers",
+              "nativeQueryRef": "NPS Answers"
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "NPS Answers"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
       }
     },
     "visualContainerObjects": {

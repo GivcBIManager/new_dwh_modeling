@@ -207,6 +207,29 @@ def test_drill_keeps_template_keep_all_filters_setting(make_pbix, tmp_path):
     assert json.loads(p.layout["pods"][0]["config"]) == {"acceptsFilterContext": "Default"}
 
 
+@pytest.mark.parametrize("where", ["pods", "pageBinding"])
+def test_drill_page_without_keep_filters_turns_it_off(make_pbix, tmp_path, where):
+    """A page with keep_filters=False (the family pages) gets the cloned binding with keep all filters off
+    (acceptsFilterContext None, PBIR's name); a page that keeps filters keeps the template's setting."""
+    lay = build_layout(drill=where)
+    if where == "pods":
+        lay["pods"][0]["config"] = json.dumps({"acceptsFilterContext": "Default"})
+    else:
+        cfg = json.loads(lay["sections"][1]["config"])
+        cfg["pageBinding"]["acceptsFilterContext"] = "Default"
+        lay["sections"][1]["config"] = json.dumps(cfg)
+    pages = [Page("keep", "Keep", [], drill_fields=[BRANCH]),
+             Page("only", "Only", [], drill_fields=[BRANCH, YEAR_MONTH], keep_filters=False)]
+    p = run(tmp_path, make_pbix(good_parts(lay)), pages)
+    if where == "pods":
+        cfgs = {x["boundSection"]: json.loads(x["config"]) for x in p.layout["pods"]}
+        assert cfgs == {"keep": {"acceptsFilterContext": "Default"}, "only": {"acceptsFilterContext": "None"}}
+    else:
+        binding = {s["name"]: json.loads(s["config"])["pageBinding"] for s in p.layout["sections"]}
+        assert binding["keep"]["acceptsFilterContext"] == "Default"
+        assert binding["only"]["acceptsFilterContext"] == "None"
+
+
 def test_drill_needs_a_template_binding(make_pbix, tmp_path):
     lay = build_layout()
     del lay["pods"]
