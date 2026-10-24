@@ -6,6 +6,8 @@
 
 **Architecture:** The user makes one small template `.pbix` in Power BI Desktop for Report Server (live connection, the HNH visual imported, the brand theme applied, one sample of each native visual type). A tested Python generator in `powerbi_tmdl/hnh_bsc_report/` reads the template, clones and rebinds the samples into every page defined in `pages.py`, and writes the report's `Report/Layout` (legacy format, UTF-16 without BOM, the form the handover's own report used). SSAS gains `BSC Numerator` / `BSC Denominator`, three small detail helpers, and the domain measures and tables the detail pages need in the perspective.
 
+**Amendment 2026-10-25 (user decision): the generator writes a PBIP project, no template.** Task 10 adds a PBIR writer that turns the same `PAGES` (Tasks 5–6) into `powerbi_tmdl/hnh_bsc_report/HNH Balanced Scorecard.pbip` + `HNH Balanced Scorecard.Report/` (definition.pbir with a live connection to the perspective, `definition/` pages and visuals, the theme and the HNH visual as resources). The user opens it in Power BI Desktop (2.158), checks it, saves it as `.pbix`, opens and saves that in Desktop for Report Server (the handover's route, Notes/05), runs `check_upload_rules`, and uploads. Task 1 Step 5 (template) and Task 7 Step 1 (template build) are replaced by Task 10; the legacy Layout writer (`layout.py`, `build.py`) stays as the documented fallback until a Desktop-for-Report-Server-saved file passes the upload checks, then is removed.
+
 **Tech Stack:** Python 3.12 (stdlib `zipfile`, `json`), pytest; SSAS TMDL with the existing generators (`ssas/tools/gen_bsc_kpi_lists.py`, `measure_guards.py`, `sync_perspectives.py`, `generate.py`); Power BI Desktop for Report Server May 2026 (2.154) and Report Server 1.26.9637 (the user's steps).
 
 **Spec:** `docs/superpowers/specs/2026-10-20-hnh-bsc-ssas-perspective-analysis.md` sections 6.3–6.5, 7 (phase 4), 9; handover upload rules `powerbi_tmdl/Hayat BSC Deliverable/Notes/05 Report Server.md`; visual field wells `powerbi_tmdl/hnh_bsc_visual/README.md`.
@@ -143,3 +145,17 @@ Every family page: drill fields `Branch[Branch Name]` and `'Date'[Year Month]`, 
 
 - [ ] The user opens `C:\HNH\report\HNH Balanced Scorecard.pbix` in Desktop for Report Server, checks every page as a non-admin top-management login (Review Focus 1–4: one-hospital user, a parked KPI's drill-through, a manual KPI's detail, a family page without data), saves it, uploads it to a test folder and repeats the checks in the browser, including PDF export. Defects go back to Tasks 4–6.
 - [ ] After the production SSAS deploy (its own approval, `deploy.ps1 -Stage All`), rebuild with `--database HNH_Analytics`, open and save in Desktop for Report Server, upload to the folder the user chooses. The handover report stays until the switch (spec phase 6).
+
+### Task 10: PBIP writer (amendment 2026-10-25)
+
+**Files:**
+- Create: `powerbi_tmdl/hnh_bsc_report/pbir.py` (writer), `powerbi_tmdl/hnh_bsc_report/tests/test_pbir.py`; output `powerbi_tmdl/hnh_bsc_report/HNH Balanced Scorecard.pbip` and `HNH Balanced Scorecard.Report/` (committed: it is source the user opens)
+- Modify: `build.py` (new default command `--format pbip`; the legacy `--format pbix` path kept as fallback), `README.md` (open the PBIP, check, Save As .pbix, open and save in Desktop for Report Server, `check_upload_rules`, upload)
+
+**Interfaces:**
+- Consumes: `PAGES`, `Field`, `Visual`, `Page`, `Filter`, `unknown_fields` (Tasks 4–6); the visual kinds in `Visual.sample` (card, multiRowCard, table, matrix, barChart, lineChart, slicerDropdown, slicerRelativeDate, textbox, buttonNavigate, buttonDrill, hnhVisual).
+- Produces: `write_pbip(pages, out_dir, database, server, perspective="Balanced Scorecard") -> Path` writing the PBIR project; real format references: `powerbi_tmdl/Hayat BSC Deliverable/00_Full Access/Hayat_BSC_Full_RS.Report` (Desktop-written PBIR: report 3.3.0, page and visual JSON, resource packages) and `powerbi_tmdl/test isual.pbix` (`Connections`: the exact live-connection string Desktop for Report Server writes); the HNH visual from `powerbi_tmdl/hnh_bsc_visual/dist/*.pbiviz`; the theme `theme/hnh_bsc_theme.json` as a registered custom theme.
+
+- [ ] **Step 1: Write the failing tests:** the project tree (`.pbip`, `definition.pbir` with a live connection to `server`/`database`/perspective, `definition/report.json` with the custom theme and the HNH visual registered, `pages/pages.json` in `PAGES` order, one `page.json` per page with display name, 1920 × 1080, hidden flag, page filters, drill-through binding with keep-all-filters on drill pages, one `visual.json` per visual with position, visual type, roles → projections, sort, top N, visual filters, slicer sync groups per field, button actions, the HNH visual's mode); every JSON file carries its `$schema` like the handover's; no field outside the perspective; deterministic output (two writes are byte-identical).
+- [ ] **Step 2–4:** run (FAIL), implement, run (PASS). Write the project with `--database HNH_Analytics_Test`. Commit.
+- [ ] **Step 5 (user):** open `HNH Balanced Scorecard.pbip` in Power BI Desktop; every page renders; then the README's Save As .pbix → Desktop for Report Server → save → `check_upload_rules` → upload to a test folder. Defects go back to this task.
