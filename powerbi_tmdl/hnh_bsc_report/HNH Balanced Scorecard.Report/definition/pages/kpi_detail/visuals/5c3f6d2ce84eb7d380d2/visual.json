@@ -2,58 +2,56 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5c3f6d2ce84eb7d380d2",
   "position": {
-    "x": 1690,
-    "y": 590,
+    "x": 976,
+    "y": 810,
     "z": 22000,
-    "height": 50,
-    "width": 214,
+    "height": 150,
+    "width": 928,
     "tabOrder": 22000
   },
   "visual": {
-    "visualType": "actionButton",
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "KPI Name"
+                }
+              },
+              "queryRef": "BSC KPI.KPI Name",
+              "nativeQueryRef": "KPI Name"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "BSC Manual Note"
+                }
+              },
+              "queryRef": "_Measures.BSC Manual Note",
+              "nativeQueryRef": "BSC Manual Note"
+            }
+          ]
+        }
+      }
+    },
     "objects": {
-      "text": [
+      "values": [
         {
           "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Open detail'"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        }
-      ],
-      "fill": [
-        {
-          "properties": {
-            "show": {
+            "wordWrap": {
               "expr": {
                 "Literal": {
                   "Value": "true"
@@ -61,40 +59,15 @@
               }
             }
           }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#13ACE3'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
         }
       ],
-      "outline": [
+      "columnHeaders": [
         {
           "properties": {
-            "show": {
+            "wordWrap": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             }
@@ -109,39 +82,14 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualLink": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
                   "Value": "true"
                 }
               }
             },
-            "type": {
+            "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Drillthrough'"
-                }
-              }
-            },
-            "drillthroughSection": {
-              "expr": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC Detail Page"
+                  "Value": "'Manual entry note'"
                 }
               }
             }

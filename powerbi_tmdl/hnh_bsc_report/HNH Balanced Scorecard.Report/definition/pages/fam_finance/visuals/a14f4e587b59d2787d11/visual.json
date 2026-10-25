@@ -20,29 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "FS Line"
+                      "Entity": "Budget Line"
                     }
                   },
-                  "Property": "FS Caption"
+                  "Property": "Budget Line Name"
                 }
               },
-              "queryRef": "FS Line.FS Caption",
-              "nativeQueryRef": "FS Caption",
-              "active": true
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "FS Line"
-                    }
-                  },
-                  "Property": "FS Line"
-                }
-              },
-              "queryRef": "FS Line.FS Line",
-              "nativeQueryRef": "FS Line",
+              "queryRef": "Budget Line.Budget Line Name",
+              "nativeQueryRef": "Budget Line Name",
               "active": true
             }
           ]

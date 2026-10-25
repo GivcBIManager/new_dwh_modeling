@@ -28,9 +28,16 @@ def _lit(value: str | bool) -> dict:
     return {"expr": {"Literal": {"Value": v}}}
 
 
+DEFAULT_STATE, DISABLED_STATE = {"id": "default"}, {"id": "disabled"}
+
+
 def label_text(text: str) -> dict:
-    """The button label object (one place to correct the property names against the real template)."""
-    return {"text": [{"properties": {"show": _lit(True), "text": _lit(text)}}]}
+    """The button label object, as Power BI Desktop 2.158's actionButton reads it (BasicShapeVisual bundle): `show`
+    from the entry without a selector, the label per button state (default, hover, selected = press, disabled), so in
+    the default state's entry (selector id "default"); the other states fall back to it. A label in an entry without
+    a selector is never read: the button renders blank."""
+    return {"text": [{"properties": {"show": _lit(True)}},
+                     {"properties": {"text": _lit(text)}, "selector": DEFAULT_STATE}]}
 
 
 def select_all_selection() -> dict:
@@ -39,6 +46,7 @@ def select_all_selection() -> dict:
 
 
 BUTTON_BLUE, BUTTON_BLUE_DARK, WHITE = "#13ACE3", "#1478BE", "#FFFFFF"
+BUTTON_DISABLED_FILL, BUTTON_DISABLED_TEXT = "#DCE9F2", "#1478BE"  # Open detail before a cell is selected
 
 
 def _num(value: float) -> dict:
@@ -52,30 +60,47 @@ def _colour(hex_colour: str) -> dict:
 def button_style(kind: str) -> dict:
     """The one place for button looks. As the handover's buttons write them: `show` in an entry without a selector,
     colours in the default state's entry (selector id "default"). "primary" (page navigation, Open detail):
-    brand-blue fill, white text, no outline. "outline" (Back): no fill, blue-dark outline and text."""
-    default = {"id": "default"}
+    brand-blue fill, white text, no outline; disabled (Open detail until a matrix cell is selected; Desktop's default
+    is a light grey fill with grey text): pale blue fill, blue-dark text. "outline" (Back): no fill, blue-dark
+    outline and text."""
+    default = DEFAULT_STATE
     if kind == "primary":
         fill = [{"properties": {"show": _lit(True)}},
-                {"properties": {"fillColor": _colour(BUTTON_BLUE), "transparency": _num(0)}, "selector": default}]
+                {"properties": {"fillColor": _colour(BUTTON_BLUE), "transparency": _num(0)}, "selector": default},
+                {"properties": {"fillColor": _colour(BUTTON_DISABLED_FILL), "transparency": _num(0)},
+                 "selector": DISABLED_STATE}]
         outline = [{"properties": {"show": _lit(False)}}]
-        text = WHITE
+        text = [{"properties": {"fontColor": _colour(WHITE)}, "selector": default},
+                {"properties": {"fontColor": _colour(BUTTON_DISABLED_TEXT)}, "selector": DISABLED_STATE}]
     elif kind == "outline":
         fill = [{"properties": {"show": _lit(False)}}]
         outline = [{"properties": {"show": _lit(True)}},
                    {"properties": {"lineColor": _colour(BUTTON_BLUE_DARK), "weight": _num(1),
                                    "transparency": _num(0)}, "selector": default}]
-        text = BUTTON_BLUE_DARK
+        text = [{"properties": {"fontColor": _colour(BUTTON_BLUE_DARK)}, "selector": default}]
     else:
         raise ValueError(f"button style must be 'primary' or 'outline', got {kind!r}")
-    return {"fill": fill, "outline": outline,
-            "text": [{"properties": {"fontColor": _colour(text)}, "selector": default}]}
+    return {"fill": fill, "outline": outline, "text": text}
+
+
+def _by_selector(*entry_lists: list[dict]) -> list[dict]:
+    """Format object entries merged into one entry per selector (first-seen order)."""
+    out: list[dict] = []
+    for entries in entry_lists:
+        for e in entries:
+            match = next((x for x in out if x.get("selector") == e.get("selector")), None)
+            if match is None:
+                out.append({**e, "properties": dict(e["properties"])})
+            else:
+                match["properties"].update(e["properties"])
+    return out
 
 
 def button_props(link: dict, label: str, kind: str) -> dict:
     """A button's format objects: the action (`visualLink` properties besides show), the label and the style."""
     style = button_style(kind)
     return {"visualLink": [{"properties": {"show": _lit(True), **link}}],
-            "text": label_text(label)["text"] + style.pop("text"), **style}
+            "text": _by_selector(label_text(label)["text"], style.pop("text")), **style}
 
 
 def back_button(x: float = 16, y: float = 35, w: float = 104, h: float = 50) -> Visual:
@@ -101,25 +126,28 @@ _SCORECARD = [
 ]
 
 
-def _slicers(x0: float = 16, shrink: float = 0) -> list[Visual]:
-    """The four header slicers from x0; `shrink` narrows them to make room for a Back button."""
-    w = [300 - shrink, 220 - shrink / 2, 360 - shrink, 220 - shrink / 2]
-    xs = [x0]
-    for width in w[:-1]:
-        xs.append(xs[-1] + width + 10)
+NAV_X = 1156  # the first page button
+
+
+def _slicers(x0: float = 16, right: float = NAV_X - 10) -> list[Visual]:
+    """The three header slicers (Branch, BSC Category, Date) spread between x0 and `right` in the ratio 3 : 2 : 4.
+    No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but not to the target."""
+    gap, weights = 10, [3, 2, 4]
+    unit = (right - x0 - gap * (len(weights) - 1)) / sum(weights)
+    w = [unit * k for k in weights]
+    xs = [x0, x0 + w[0] + gap, x0 + w[0] + w[1] + 2 * gap]
     return [
         Visual("slicerDropdown", xs[0], 20, w[0], 80, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
                props=select_all_selection()),
         Visual("slicerDropdown", xs[1], 20, w[1], 80, roles={"Values": [col("Branch", "BSC Category")]}),
         Visual("slicerRelativeDate", xs[2], 20, w[2], 80, roles={"Values": [col("Date", "Date")]}),
-        Visual("slicerDropdown", xs[3], 20, w[3], 80, roles={"Values": [col("Time Calculation", "Time Calculation")]}),
     ]
 
 
 def _nav_buttons() -> list[Visual]:
     out = []
     for i, (name, display, *_rest) in enumerate(_SCORECARD):
-        out.append(Visual("buttonNavigate", 1156 + 108 * i, 35, 104, 50, props=button_props(
+        out.append(Visual("buttonNavigate", NAV_X + 108 * i, 35, 104, 50, props=button_props(
             {"type": _lit("PageNavigation"), "navigationSection": _lit(name)}, display, "primary")))
     return out
 
@@ -143,14 +171,21 @@ SCORECARD_PAGES: list[Page] = [_scorecard_page(*row) for row in _SCORECARD]
 
 # ---- KPI detail ---------------------------------------------------------------------------------------------------
 
+def word_wrap() -> dict:
+    """A table's text wrap for values and column headers (tableEx `values.wordWrap`, `columnHeaders.wordWrap`)."""
+    return {"values": [{"properties": {"wordWrap": _lit(True)}}],
+            "columnHeaders": [{"properties": {"wordWrap": _lit(True)}}]}
+
+
 def _kpi_detail() -> Page:
     """Drill-through target (KPI Code, keep all filters). Header: Back, the four slicers (synced by field with the
     scorecard pages), the seven page buttons. The "Open detail" button drills on the matrix's cell selection
     (Branch Name x Year Month Name, the family pages' drill fields); the matrix is the drill source and sits beside
-    the button. The manual-entry note is a multi-row card: with its not-blank filter it renders empty for a measure
-    KPI, where a card would show "(Blank)"."""
+    the button. The KPI information and the manual-entry note are tables: a table wraps long text (Definition) where
+    a multi-row card truncates it, and drops the rows whose measures are all blank, so a measure KPI shows an empty
+    note table where a card showed "(Blank)"."""
     cards = ["BSC Actual", "BSC Target", "BSC Score", "BSC State", "BSC Numerator", "BSC Denominator"]
-    visuals = [back_button()] + _slicers(130, shrink=40) + _nav_buttons()
+    visuals = [back_button()] + _slicers(130) + _nav_buttons()
     visuals += [Visual("card", 16 + 310 * i, 120, 300, 130, roles={"Values": [meas(m)]})
                 for i, m in enumerate(cards)]
     visuals += [
@@ -159,9 +194,10 @@ def _kpi_detail() -> Page:
                title="Actual vs target by month", sort=YEAR_MONTH_NAME, sort_dir="asc"),
         Visual("barChart", 976, 270, 928, 300, roles={"Category": [BRANCH_NAME], "Y": [meas("BSC Actual")]},
                title="Actual by hospital", filters=[_hospitals()], sort=meas("BSC Actual"), sort_dir="desc"),
-        Visual("multiRowCard", 16, 590, 940, 370,
+        Visual("table", 16, 590, 940, 370, title="About this KPI",
                roles={"Values": [col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"), col("BSC KPI", "Owner"),
-                                 col("BSC KPI", "Co Owners"), meas("BSC Target Basis"), meas("BSC KPI Weight")]}),
+                                 col("BSC KPI", "Co Owners"), meas("BSC Target Basis"), meas("BSC KPI Weight")]},
+               props=word_wrap()),
         Visual("matrix", 976, 590, 700, 210, title="Select a hospital and month, then Open detail",
                roles={"Rows": [BRANCH_NAME], "Columns": [YEAR_MONTH_NAME], "Values": [meas("BSC Actual")]},
                filters=[_hospitals()]),
@@ -170,8 +206,8 @@ def _kpi_detail() -> Page:
                 "expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}},
                                      "Property": "BSC Detail Page"}}}},
             "Open detail", "primary")),
-        Visual("multiRowCard", 976, 810, 928, 150, roles={"Values": [meas("BSC Manual Note")]},
-               title="Manual entry note", filters=[Filter(meas("BSC Manual Note"), "notblank")]),
+        Visual("table", 976, 810, 928, 150, title="Manual entry note",
+               roles={"Values": [col("BSC KPI", "KPI Name"), meas("BSC Manual Note")]}, props=word_wrap()),
     ]
     return Page("kpi_detail", "KPI detail", visuals, drill_fields=[col("BSC KPI", "KPI Code")], hidden=True)
 
@@ -182,9 +218,18 @@ KPI_DETAIL: Page = _kpi_detail()
 
 # Each chart, table and matrix takes a title: a label of this repo (not title-cased), shown on the visual.
 
-def _bar(title: str, measure: str, by: Field, n: int | None = None) -> dict:
+def _bar(title: str, measure: str, by: Field, n: int | None = None, rank: str | None = None,
+         props: dict | None = None) -> dict:
+    """A bar chart sorted descending by its measure; the top N ranks by `rank` (default the bar's measure)."""
     return {"sample": "barChart", "title": title, "roles": {"Category": [by], "Y": [meas(measure)]},
-            "sort": meas(measure), "top_n": (meas(measure), n) if n else None}
+            "sort": meas(measure), "top_n": (meas(rank or measure), n) if n else None, "props": props or {}}
+
+
+def labels_not_axis() -> dict:
+    """Bar chart: no value axis, data labels on. For [NPS (5-point)], whose format string prints "insufficient
+    sample" (fewer than 30 answers) along the value axis."""
+    return {"valueAxis": [{"properties": {"show": _lit(False)}}],
+            "labels": [{"properties": {"show": _lit(True)}}]}
 
 
 def _table(title: str, by: Field, measures: list[str], n: int | None = None, rank: str | None = None) -> dict:
@@ -201,8 +246,10 @@ def _matrix(title: str, rows: list[Field], measures: list[str]) -> dict:
 
 
 def title_text(text: str) -> dict:
-    """The text box content (one place to correct the property names against the real template)."""
-    return {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": text}]}]}}]}
+    """The text box content: one paragraph, one text run in Segoe UI 20pt bold (the run's `textStyle` with CSS
+    values, as Desktop's text box reads it: fontFamily, fontSize, fontWeight)."""
+    style = {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
+    return {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": text, "textStyle": style}]}]}}]}
 
 
 def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) -> Page:
@@ -219,7 +266,8 @@ def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) 
                 for i, m in enumerate(cards)]
     for i, c in enumerate(charts):
         visuals.append(Visual(c["sample"], 16 + 958 * (i % 2), 260 + 400 * (i // 2), 930, 390, roles=c["roles"],
-                              title=c["title"], sort=c.get("sort"), top_n=c.get("top_n")))
+                              title=c["title"], sort=c.get("sort"), top_n=c.get("top_n"),
+                              props=c.get("props") or {}))
     return Page(name, display, visuals, filters=[_hospitals()], drill_fields=[BRANCH_NAME, YEAR_MONTH_NAME],
                 hidden=True, keep_filters=False)
 
@@ -236,8 +284,7 @@ FAMILY_PAGES: list[Page] = [
                   _table("Top 20 doctors by revenue", col("Staff", "Staff Name"), ["Revenue"], 20)]),
     _family_page("fam_finance", "Finance detail",
                  ["EBITDA", "EBITDA Margin %", "Net Profit", "Budget Variance %"],
-                 [_matrix("Income statement: actual vs budget",
-                          [col("FS Line", "FS Caption"), col("FS Line", "FS Line")],
+                 [_matrix("Income statement: actual vs budget", [col("Budget Line", "Budget Line Name")],
                           ["IS Actual", "IS Budget", "Budget Variance"]),
                   _bar("GL movement by account (top 15)", "GL Movement", col("GL Account", "Natural Account Name"),
                        15)]),
@@ -268,8 +315,10 @@ FAMILY_PAGES: list[Page] = [
                   _bar("Headcount by nationality (top 10)", "Headcount", col("Employee", "Nationality"), 10)]),
     _family_page("fam_experience", "Patient experience detail",
                  ["Hospital NPS (5-point)", "Physician NPS (5-point)", "NPS Answers", "Response Rate %"],
-                 [_bar("NPS by domain", "NPS (5-point)", col("Survey Question", "Domain En")),
-                  _bar("NPS by department (top 15)", "NPS (5-point)", _DEPT, 15),
+                 [_bar("NPS by domain", "NPS (5-point)", col("Survey Question", "Domain En"),
+                       props=labels_not_axis()),
+                  _bar("NPS by department (15 with most answers)", "NPS (5-point)", _DEPT, 15, rank="NPS Answers",
+                       props=labels_not_axis()),
                   _table("Promoters, passives and detractors by question (top 20)",
                          col("Survey Question", "Question En"), ["% Promoters", "% Passives", "% Detractors"], 20,
                          rank="NPS Answers")]),

@@ -95,8 +95,7 @@ def test_header_slicers_and_navigation(display):
     assert [(v.sample, v.roles["Values"]) for v in slicers] == [
         ("slicerDropdown", [col("Branch", "Branch Name")]),
         ("slicerDropdown", [col("Branch", "BSC Category")]),
-        ("slicerRelativeDate", [col("Date", "Date")]),
-        ("slicerDropdown", [col("Time Calculation", "Time Calculation")])]
+        ("slicerRelativeDate", [col("Date", "Date")])]
     (flt,) = slicers[0].filters
     assert (flt.field, flt.op, flt.values) == (col("Branch", "Is Hospital"), "in", ["Yes"])
     sel = slicers[0].props["selection"][0]["properties"]
@@ -107,16 +106,24 @@ def test_header_slicers_and_navigation(display):
     assert targets == [f"'{p.name}'" for p in PAGES[:7]]
 
 
+def test_no_page_binds_time_calculation():
+    """Controller ruling: no Time Calculation slicer. Its items applied to [BSC Actual] but not to the target, so the
+    page opened on "MTD" compared a month-to-date actual with a full-year target."""
+    for p in PAGES:
+        assert all(f.table != "Time Calculation" for f in page_fields(p)), p.display
+
+
 def test_kpi_detail_page():
     page = by_display("KPI detail")
     assert page.drill_fields == [col("BSC KPI", "KPI Code")]
     by = {}
     for v in page.visuals:
         by.setdefault(v.sample, []).append(v)
-    (mrc,) = [v for v in by["multiRowCard"] if col("BSC KPI", "KPI Name") in v.roles["Values"]]
-    assert mrc.roles["Values"] == [col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"),
-                                   col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners"),
-                                   meas("BSC Target Basis"), meas("BSC KPI Weight")]
+    assert "multiRowCard" not in by
+    (about,) = [v for v in by["table"] if v.title == "About this KPI"]
+    assert about.roles == {"Values": [col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"),
+                                      col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners"),
+                                      meas("BSC Target Basis"), meas("BSC KPI Weight")]}
     cards = [v.roles["Values"] for v in by["card"]]
     assert cards == [[meas(m)] for m in ("BSC Actual", "BSC Target", "BSC Score", "BSC State", "BSC Numerator",
                                          "BSC Denominator")]
@@ -146,10 +153,22 @@ def test_review_focus_3_note_card():
              if note_field in [f for fs in v.roles.values() for f in fs] + [f.field for f in v.filters]]
     assert [d for d, _ in users] == ["KPI detail"]
     ((_, note),) = users
-    # a multi-row card: with the not-blank filter it renders empty for a measure KPI (a card shows "(Blank)")
-    assert note.sample == "multiRowCard" and note.roles == {"Values": [note_field]}
+    # a table of KPI name and note: a table drops the rows whose measures are all blank, so a measure KPI shows an
+    # empty table (the multi-row card showed "(Blank)"); no not-blank filter
+    assert note.sample == "table" and note.roles == {"Values": [col("BSC KPI", "KPI Name"), note_field]}
     assert note.title == "Manual entry note"
-    assert [(f.field, f.op) for f in note.filters] == [(note_field, "notblank")]
+    assert note.filters == []
+
+
+def _obj(v, name, selector=None):
+    """The properties of format object `name`'s entry with `selector` (None: the entry without a selector)."""
+    return next((e["properties"] for e in v.props.get(name, []) if e.get("selector") == selector), {})
+
+
+def test_kpi_information_table_wraps_text():
+    (about,) = [v for v in by_display("KPI detail").visuals if v.title == "About this KPI"]
+    assert lit(_obj(about, "values")["wordWrap"]) == "true"
+    assert lit(_obj(about, "columnHeaders")["wordWrap"]) == "true"
 
 
 def test_no_overlaps_and_inside_the_canvas():
@@ -204,8 +223,12 @@ def test_role_names_come_from_the_visual_capabilities():
 def test_helpers_write_literal_values():
     sel = select_all_selection()["selection"][0]["properties"]
     assert (lit(sel["singleSelect"]), lit(sel["selectAllCheckboxEnabled"])) == ("false", "true")
-    txt = label_text("Hi")["text"][0]["properties"]
-    assert (lit(txt["show"]), lit(txt["text"])) == ("true", "'Hi'")
+    txt = label_text("Hi")["text"]
+    # Desktop's actionButton reads `show` from the entry without a selector and the label per state: the default
+    # state's entry (selector id "default") holds it; hover, press and disabled fall back to it
+    assert [lit(e["properties"]["show"]) for e in txt if "selector" not in e] == ["true"]
+    assert [lit(e["properties"]["text"]) for e in txt if e.get("selector") == {"id": "default"}] == ["'Hi'"]
+    assert all("text" not in e["properties"] for e in txt if "selector" not in e)
     link = back_button().props["visualLink"][0]["properties"]
     assert (lit(link["show"]), lit(link["type"])) == ("true", "'Back'")
 
@@ -340,7 +363,7 @@ def test_family_cards_and_charts():
             ("barChart", {"Category": [P], "Y": [m("Revenue")]}, m("Revenue"), None),
             ("table", {"Values": [col("Staff", "Staff Name"), m("Revenue")]}, m("Revenue"), (m("Revenue"), 20))]),
         "Finance detail": (["EBITDA", "EBITDA Margin %", "Net Profit", "Budget Variance %"], [
-            ("matrix", {"Rows": [col("FS Line", "FS Caption"), col("FS Line", "FS Line")],
+            ("matrix", {"Rows": [col("Budget Line", "Budget Line Name")],
                         "Values": [m("IS Actual"), m("IS Budget"), m("Budget Variance")]}, None, None),
             ("barChart", {"Category": [col("GL Account", "Natural Account Name")], "Y": [m("GL Movement")]},
              m("GL Movement"), (m("GL Movement"), 15))]),
@@ -377,7 +400,7 @@ def test_family_cards_and_charts():
             ("barChart", {"Category": [col("Survey Question", "Domain En")], "Y": [m("NPS (5-point)")]},
              m("NPS (5-point)"), None),
             ("barChart", {"Category": [D], "Y": [m("NPS (5-point)")]}, m("NPS (5-point)"),
-             (m("NPS (5-point)"), 15)),
+             (m("NPS Answers"), 15)),
             ("table", {"Values": [col("Survey Question", "Question En"), m("% Promoters"), m("% Passives"),
                                   m("% Detractors"), m("NPS Answers")]}, m("NPS Answers"), (m("NPS Answers"), 20))]),
     }
@@ -399,10 +422,33 @@ def test_family_tables_sort_by_their_ranking_measure():
 
 
 def test_family_bar_top_n_ranks_by_the_bars_measure():
+    """Except NPS by department: the 15 departments with most answers (ranked by NPS, departments with a few answers
+    won), bars sorted by NPS."""
     for p in PAGES[8:]:
         for v in p.visuals:
             if v.sample == "barChart" and v.top_n:
-                assert v.top_n[0] == v.roles["Y"][0] == v.sort
+                assert v.roles["Y"][0] == v.sort, v.title
+                expected = meas("NPS Answers") if v.title == "NPS by department (15 with most answers)" else v.sort
+                assert v.top_n[0] == expected, v.title
+
+
+def test_nps_charts_hide_the_value_axis_and_show_data_labels():
+    """[NPS (5-point)]'s format string prints "insufficient sample" along the value axis: hide the axis, show the
+    values as data labels."""
+    nps = [v for v in by_display("Patient experience detail").visuals
+           if v.sample == "barChart" and v.roles["Y"] == [meas("NPS (5-point)")]]
+    assert len(nps) == 2
+    for v in nps:
+        assert lit(_obj(v, "valueAxis")["show"]) == "false", v.title
+        assert lit(_obj(v, "labels")["show"]) == "true", v.title
+
+
+@pytest.mark.parametrize("display", FAMILY)
+def test_family_title_is_20pt_bold(display):
+    (tb,) = [v for v in by_display(display).visuals if v.sample == "textbox"]
+    (run,) = tb.props["general"][0]["properties"]["paragraphs"][0]["textRuns"]
+    assert run["value"] == display
+    assert run["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
 
 
 def test_family_pages_build_against_the_synthetic_template(pbix_path):
@@ -420,8 +466,8 @@ def test_family_pages_build_against_the_synthetic_template(pbix_path):
 
 
 CHART_TITLES = {
-    "KPI detail": ["Actual vs target by month", "Actual by hospital",
-                   "Select a hospital and month, then Open detail"],
+    "KPI detail": ["Actual vs target by month", "Actual by hospital", "About this KPI",
+                   "Select a hospital and month, then Open detail", "Manual entry note"],
     "Revenue detail": ["Revenue by department (top 15)", "Revenue by product category", "Revenue by payer category",
                        "Top 20 doctors by revenue"],
     "Finance detail": ["Income statement: actual vs budget", "GL movement by account (top 15)"],
@@ -432,7 +478,7 @@ CHART_TITLES = {
                              "Billed amount by submission status", "Lost value by department (top 15)"],
     "Workforce detail": ["Headcount by department (top 15)", "Headcount by job (top 15)",
                          "Headcount by nationality (top 10)"],
-    "Patient experience detail": ["NPS by domain", "NPS by department (top 15)",
+    "Patient experience detail": ["NPS by domain", "NPS by department (15 with most answers)",
                                   "Promoters, passives and detractors by question (top 20)"],
 }
 CHARTS = {"lineChart", "barChart", "table", "matrix"}
@@ -470,6 +516,22 @@ def test_buttons_have_a_visible_style():
                 assert _style(v) == (None, "true", "'#1478BE'")
             else:
                 assert _style(v) == ("'#13ACE3'", "false", "'#FFFFFF'")
-            # the label entry (no selector) is still there
-            assert lit(next(e for e in v.props["text"] if "selector" not in e)["properties"]["text"])
+            # the label: `show` without a selector, the text in the default state's entry; one entry per selector
+            assert lit(_obj(v, "text")["show"]) == "true"
+            assert lit(_obj(v, "text", {"id": "default"})["text"])
+            for obj, entries in v.props.items():
+                sels = [json.dumps(e.get("selector"), sort_keys=True) for e in entries]
+                assert len(sels) == len(set(sels)), (obj, sels)
     assert set(button_style("primary")) == set(button_style("outline")) == {"fill", "outline", "text"}
+
+
+def test_open_detail_button_is_readable_when_disabled():
+    """Open detail is disabled until a matrix cell is selected; Desktop's disabled default is a light grey fill with
+    grey text. The disabled state gets its own fill and text colour; the label falls back to the default state's."""
+    (btn,) = [v for v in by_display("KPI detail").visuals if v.sample == "buttonDrill"]
+    disabled = {"id": "disabled"}
+    colour = (lambda p, k: p[k]["solid"]["color"]["expr"]["Literal"]["Value"])
+    fill, text = _obj(btn, "fill", disabled), _obj(btn, "text", disabled)
+    assert colour(fill, "fillColor") != colour(text, "fontColor")
+    assert lit(fill["transparency"]) == "0D"
+    assert lit(_obj(btn, "text", {"id": "default"})["text"]) == "'Open detail'"

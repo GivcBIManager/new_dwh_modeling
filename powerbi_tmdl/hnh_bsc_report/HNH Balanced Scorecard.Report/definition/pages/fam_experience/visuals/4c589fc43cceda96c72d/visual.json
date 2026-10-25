@@ -69,6 +69,34 @@
         ]
       }
     },
+    "objects": {
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
     "visualContainerObjects": {
       "title": [
         {
@@ -83,7 +111,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'NPS by department (top 15)'"
+                  "Value": "'NPS by department (15 with most answers)'"
                 }
               }
             }
@@ -152,7 +180,7 @@
                                 "Source": "_"
                               }
                             },
-                            "Property": "NPS (5-point)"
+                            "Property": "NPS Answers"
                           }
                         }
                       }

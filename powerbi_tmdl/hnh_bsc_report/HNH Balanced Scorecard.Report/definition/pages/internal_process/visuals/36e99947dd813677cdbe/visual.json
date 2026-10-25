@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "36e99947dd813677cdbe",
   "position": {
-    "x": 1696,
+    "x": 1804,
     "y": 35,
     "z": 9000,
     "height": 50,
@@ -21,18 +21,18 @@
                   "Value": "true"
                 }
               }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Owner view'"
-                }
-              }
             }
           }
         },
         {
           "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Hospital comparison'"
+                }
+              }
+            },
             "fontColor": {
               "solid": {
                 "color": {
@@ -47,6 +47,24 @@
           },
           "selector": {
             "id": "default"
+          }
+        },
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "disabled"
           }
         }
       ],
@@ -85,6 +103,31 @@
           },
           "selector": {
             "id": "default"
+          }
+        },
+        {
+          "properties": {
+            "fillColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE9F2'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "disabled"
           }
         }
       ],
@@ -136,7 +179,7 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'owner_view'"
+                  "Value": "'hospital_comparison'"
                 }
               }
             }

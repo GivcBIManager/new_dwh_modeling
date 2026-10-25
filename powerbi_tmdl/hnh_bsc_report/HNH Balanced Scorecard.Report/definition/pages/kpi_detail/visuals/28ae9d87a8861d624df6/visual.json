@@ -2,75 +2,56 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "28ae9d87a8861d624df6",
   "position": {
-    "x": 16,
+    "x": 976,
     "y": 590,
     "z": 20000,
-    "height": 370,
-    "width": 940,
+    "height": 210,
+    "width": 700,
     "tabOrder": 20000
   },
   "visual": {
-    "visualType": "multiRowCard",
+    "visualType": "pivotTable",
     "query": {
       "queryState": {
-        "Values": {
+        "Rows": {
           "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "BSC KPI"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "KPI Name"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "BSC KPI.KPI Name",
-              "nativeQueryRef": "KPI Name"
-            },
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
+              "active": true
+            }
+          ]
+        },
+        "Columns": {
+          "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "BSC KPI"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Definition"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "BSC KPI.Definition",
-              "nativeQueryRef": "Definition"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Owner"
-                }
-              },
-              "queryRef": "BSC KPI.Owner",
-              "nativeQueryRef": "Owner"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Co Owners"
-                }
-              },
-              "queryRef": "BSC KPI.Co Owners",
-              "nativeQueryRef": "Co Owners"
-            },
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name"
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
             {
               "field": {
                 "Measure": {
@@ -79,25 +60,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Target Basis"
+                  "Property": "BSC Actual"
                 }
               },
-              "queryRef": "_Measures.BSC Target Basis",
-              "nativeQueryRef": "BSC Target Basis"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC KPI Weight"
-                }
-              },
-              "queryRef": "_Measures.BSC KPI Weight",
-              "nativeQueryRef": "BSC KPI Weight"
+              "queryRef": "_Measures.BSC Actual",
+              "nativeQueryRef": "BSC Actual"
             }
           ]
         }
@@ -110,7 +77,14 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Select a hospital and month, then Open detail'"
                 }
               }
             }
@@ -119,5 +93,63 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "e2fd774e35329df157d0",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Is Hospital"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "b",
+              "Entity": "Branch",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "b"
+                          }
+                        },
+                        "Property": "Is Hospital"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

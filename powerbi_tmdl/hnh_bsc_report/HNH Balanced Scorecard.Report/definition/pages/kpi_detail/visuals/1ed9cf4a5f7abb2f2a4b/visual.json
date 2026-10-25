@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "1ed9cf4a5f7abb2f2a4b",
   "position": {
-    "x": 16,
+    "x": 976,
     "y": 270,
     "z": 18000,
     "height": 300,
-    "width": 940,
+    "width": 928,
     "tabOrder": 18000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "Year Month Name"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name",
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
               "active": true
             }
           ]
@@ -47,20 +47,6 @@
               },
               "queryRef": "_Measures.BSC Actual",
               "nativeQueryRef": "BSC Actual"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC Target"
-                }
-              },
-              "queryRef": "_Measures.BSC Target",
-              "nativeQueryRef": "BSC Target"
             }
           ]
         }
@@ -69,16 +55,16 @@
         "sort": [
           {
             "field": {
-              "Column": {
+              "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "Date"
+                    "Entity": "_Measures"
                   }
                 },
-                "Property": "Year Month Name"
+                "Property": "BSC Actual"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -97,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Actual vs target by month'"
+                  "Value": "'Actual by hospital'"
                 }
               }
             }
@@ -106,5 +92,63 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "6142b7ce0de3694c4ec8",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Is Hospital"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "b",
+              "Entity": "Branch",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "b"
+                          }
+                        },
+                        "Property": "Is Hospital"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

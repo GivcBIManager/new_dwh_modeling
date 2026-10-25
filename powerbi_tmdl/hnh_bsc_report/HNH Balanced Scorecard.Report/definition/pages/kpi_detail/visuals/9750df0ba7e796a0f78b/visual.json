@@ -2,105 +2,36 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "9750df0ba7e796a0f78b",
   "position": {
-    "x": 1804,
-    "y": 35,
+    "x": 16,
+    "y": 120,
     "z": 11000,
-    "height": 50,
-    "width": 104,
+    "height": 130,
+    "width": 300,
     "tabOrder": 11000
   },
   "visual": {
-    "visualType": "actionButton",
-    "objects": {
-      "text": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Hospital comparison'"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
                     }
-                  }
+                  },
+                  "Property": "BSC Actual"
                 }
-              }
+              },
+              "queryRef": "_Measures.BSC Actual",
+              "nativeQueryRef": "BSC Actual"
             }
-          },
-          "selector": {
-            "id": "default"
-          }
+          ]
         }
-      ],
-      "fill": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#13ACE3'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        }
-      ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ]
+      }
     },
     "visualContainerObjects": {
       "title": [
@@ -110,33 +41,6 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualLink": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "type": {
-              "expr": {
-                "Literal": {
-                  "Value": "'PageNavigation'"
-                }
-              }
-            },
-            "navigationSection": {
-              "expr": {
-                "Literal": {
-                  "Value": "'hospital_comparison'"
                 }
               }
             }

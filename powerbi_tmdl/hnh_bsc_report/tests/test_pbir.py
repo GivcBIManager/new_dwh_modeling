@@ -282,15 +282,40 @@ def test_top_n_and_visual_filters(project):
     assert vs[i]["visual"]["query"]["sortDefinition"]["sort"][0]["direction"] == "Descending"
     kpi = next(p for p in PAGES if p.name == "kpi_detail")
     vs = visuals(project, kpi)
-    note = vs[-1]["filterConfig"]["filters"][0]
-    assert note["type"] == "Advanced" and "Not" in note["filter"]["Where"][0]["Condition"]
+    note = vs[[v.title for v in kpi.visuals].index("Manual entry note")]
+    assert note["visual"]["visualType"] == "tableEx" and "filterConfig" not in note
+
+
+def test_nps_department_chart_ranks_by_answers_and_sorts_by_nps(project):
+    exp = next(p for p in PAGES if p.name == "fam_experience")
+    i = [v.title for v in exp.visuals].index("NPS by department (15 with most answers)")
+    j = visuals(project, exp)[i]
+    (top,) = [f for f in j["filterConfig"]["filters"] if f["type"] == "TopN"]
+    sub = top["filter"]["From"][0]["Expression"]["Subquery"]["Query"]
+    assert sub["Top"] == 15 and sub["OrderBy"][0]["Expression"]["Measure"]["Property"] == "NPS Answers"
+    (sort,) = j["visual"]["query"]["sortDefinition"]["sort"]
+    assert (sort["field"]["Measure"]["Property"], sort["direction"]) == ("NPS (5-point)", "Descending")
+    objs = j["visual"]["objects"]
+    assert lit(objs["valueAxis"][0]["properties"]["show"]) == "false"
+    assert lit(objs["labels"][0]["properties"]["show"]) == "true"
+
+
+def test_table_word_wrap_and_title_style_land_in_objects(project):
+    kpi = next(p for p in PAGES if p.name == "kpi_detail")
+    about = visuals(project, kpi)[[v.title for v in kpi.visuals].index("About this KPI")]["visual"]
+    assert about["visualType"] == "tableEx"
+    assert lit(about["objects"]["values"][0]["properties"]["wordWrap"]) == "true"
+    assert lit(about["objects"]["columnHeaders"][0]["properties"]["wordWrap"]) == "true"
+    fam = next(p for p in PAGES if p.name == "fam_finance")
+    run = visuals(project, fam)[1]["visual"]["objects"]["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]
+    assert run["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
 
 
 def test_slicers(project):
     bsc = PAGES[0]
     vs = visuals(project, bsc)
     sl = [(v, j) for v, j in zip(bsc.visuals, vs) if v.sample.startswith("slicer")]
-    assert len(sl) == 4
+    assert len(sl) == 3
     for v, j in sl:
         f = next(iter(v.roles.values()))[0]
         assert j["visual"]["syncGroup"] == {"groupName": f"bsc {f.ref}", "fieldChanges": True, "filterChanges": True}
@@ -322,8 +347,8 @@ def test_buttons(project):
         link = j["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]
         assert (lit(link["type"]), lit(link["navigationSection"])) == ("'PageNavigation'", f"'{name}'")
         assert "visualLink" not in j["visual"].get("objects", {})
-        assert lit(j["visual"]["objects"]["text"][0]["properties"]["text"]).strip("'") == \
-            page_json(project, name)["displayName"]
+        (label,) = [e for e in j["visual"]["objects"]["text"] if e.get("selector") == {"id": "default"}]
+        assert lit(label["properties"]["text"]).strip("'") == page_json(project, name)["displayName"]
     kpi = next(p for p in PAGES if p.name == "kpi_detail")
     kv = visuals(project, kpi)
     back = kv[0]["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]
