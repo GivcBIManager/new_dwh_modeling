@@ -17,7 +17,8 @@ export interface OwnerUi {
     pick: string | null;
 }
 
-export const DEFAULT_OWNER_UI: OwnerUi = { score: "weighted", tier: "csuite", scope: "owned", pick: null };
+/** KPI list defaults to Owned + co-owned, so a co-owner's card never opens an empty list. */
+export const DEFAULT_OWNER_UI: OwnerUi = { score: "weighted", tier: "csuite", scope: "co", pick: null };
 
 /** The cards the strip shows for this state. */
 export function stripCards(vm: ViewModel, ou: OwnerUi): OwnerCard[] {

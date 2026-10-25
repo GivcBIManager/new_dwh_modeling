@@ -153,7 +153,7 @@ describe("owner view with co-owners", () => {
     ];
     const blocks = () => {
         const root = mount();
-        renderView(root, parseDataView(makeDataView(coRows)), "owner", ui({ owner: { ...DEFAULT_OWNER_UI, scope: "co" } }));
+        renderView(root, parseDataView(makeDataView(coRows)), "owner", ui());
         const bs = [...root.querySelectorAll(".owner")];
         return new Map(bs.map(b => [b.querySelector("h3")!.textContent, b]));
     };
@@ -193,12 +193,12 @@ describe("owner overview strip", () => {
     const pressed = (root: HTMLElement, group: string) =>
         root.querySelector(`button[data-owner-toggle="${group}"][aria-pressed="true"]`)!.getAttribute("data-value");
 
-    it("defaults to Weighted, C-Suite and Owned", () => {
-        expect(DEFAULT_OWNER_UI).toEqual({ score: "weighted", tier: "csuite", scope: "owned", pick: null });
+    it("defaults to Weighted, C-Suite and KPI list Owned + co-owned", () => {
+        expect(DEFAULT_OWNER_UI).toEqual({ score: "weighted", tier: "csuite", scope: "co", pick: null });
         const root = draw();
         expect(pressed(root, "score")).toBe("weighted");
         expect(pressed(root, "tier")).toBe("csuite");
-        expect(pressed(root, "scope")).toBe("owned");
+        expect(pressed(root, "scope")).toBe("co");
         expect([...root.querySelectorAll("button[data-owner-toggle]")].map(b => b.textContent))
             .toEqual(["Weighted", "On-target", "C-Suite", "All owners", "Owned", "Owned + co-owned"]);
         expect([...root.querySelectorAll(".own-lbl")].map(l => l.textContent)).toEqual(["Score", "Owners", "KPI list"]);
@@ -226,28 +226,28 @@ describe("owner overview strip", () => {
     });
     it("cards count owned + co-owned KPIs whatever the KPI list toggle says", () => {
         expect(cards(draw())[0].querySelector(".gauge text")!.textContent).toBe("90%");
-        expect(cards(draw({ scope: "co" }))[0].querySelector(".gauge text")!.textContent).toBe("90%");
+        expect(cards(draw({ scope: "owned" }))[0].querySelector(".gauge text")!.textContent).toBe("90%");
     });
-    it("lists every owner's KPI blocks below the strip until a card is picked; Owned lists owned KPIs only", () => {
-        const root = draw();
+    it("lists every owner's KPI blocks below the strip until a card is picked; KPI list Owned lists owned KPIs only", () => {
+        const root = draw({ scope: "owned" });
         expect([...root.querySelectorAll(".owners .owner h3")].map(h => h.textContent)).toEqual(["CEO", "CFO", "COO", "Quality Manager"]);
         expect(root.querySelector(".owners tr[data-key]")!.getAttribute("tabindex")).toBe("0");
         expect(root.querySelectorAll(".owners .co-tag").length).toBe(0);
     });
-    it("KPI list Owned + co-owned adds the co-owned rows, tagged", () => {
-        const root = draw({ scope: "co" });
+    it("KPI list Owned + co-owned (the default) adds the co-owned rows, tagged", () => {
+        const root = draw();
         const ceo = root.querySelector(".owners .owner")!;
         expect(ceo.querySelector("h3")!.textContent).toBe("CEO");
         expect(ceo.querySelectorAll("tbody tr").length).toBe(2);
         expect(ceo.querySelectorAll(".co-tag").length).toBe(1);
     });
     it("a picked owner filters the blocks to that owner", () => {
-        const root = draw({ pick: "CEO" });
+        const root = draw({ pick: "CEO", scope: "owned" });
         const blocks = [...root.querySelectorAll(".owners .owner")];
         expect(blocks.map(b => b.querySelector("h3")!.textContent)).toEqual(["CEO"]);
         expect(blocks[0].querySelectorAll("tbody tr").length).toBe(1);
         expect(root.querySelector('.own-card[data-owner-card="CEO"]')!.getAttribute("aria-pressed")).toBe("true");
-        const co = [...draw({ pick: "CEO", scope: "co" }).querySelectorAll(".owners .owner")];
+        const co = [...draw({ pick: "CEO" }).querySelectorAll(".owners .owner")];
         expect(co.length).toBe(1);
         expect(co[0].querySelectorAll("tbody tr").length).toBe(2);
         expect(co[0].querySelectorAll(".co-tag").length).toBe(1);
@@ -255,12 +255,13 @@ describe("owner overview strip", () => {
     it("a picked co-owner who owns nothing gets a pointer to Owned + co-owned under Owned", () => {
         const root = mount();
         const vm = parseDataView(makeDataView([row("X1", "Financial", 1, 1, { owner: "Quality Manager", coOwners: "CFO", payload: pay(0.96, 1, -0.04) })]));
-        renderView(root, vm, "owner", ui({ owner: { ...DEFAULT_OWNER_UI, pick: "CFO" } }));
+        renderView(root, vm, "owner", ui({ owner: { ...DEFAULT_OWNER_UI, pick: "CFO", scope: "owned" } }));
         expect(root.querySelector('.own-card[data-owner-card="CFO"] .gauge text')!.textContent).toBe("96%");
         expect(root.querySelectorAll(".owners .owner").length).toBe(0);
         expect(root.querySelector(".owners")!.textContent).toContain("CFO owns no KPI here");
         const co = mount();
-        renderView(co, vm, "owner", ui({ owner: { ...DEFAULT_OWNER_UI, pick: "CFO", scope: "co" } }));
+        renderView(co, vm, "owner", ui({ owner: { ...DEFAULT_OWNER_UI, pick: "CFO" } }));
+        expect(co.querySelectorAll(".owners .owner").length).toBe(1);
         expect(co.querySelectorAll(".owners .owner .co-tag").length).toBe(1);
     });
     it("says so when the selection has no C-suite owner", () => {

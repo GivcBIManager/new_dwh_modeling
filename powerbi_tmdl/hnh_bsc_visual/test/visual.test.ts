@@ -258,15 +258,15 @@ describe("Visual", () => {
             expect(value(element, "CFO")).toBe("67%");
             click(element, 'button[data-owner-toggle="tier"][data-value="all"]');
             expect(owners(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
-            expect(element.querySelectorAll(".owners .co-tag").length).toBe(0);
-            click(element, 'button[data-owner-toggle="scope"][data-value="co"]');
-            expect(value(element, "CFO")).toBe("67%");
             expect(element.querySelectorAll(".owners .co-tag").length).toBe(1);
+            click(element, 'button[data-owner-toggle="scope"][data-value="owned"]');
+            expect(value(element, "CFO")).toBe("67%");
+            expect(element.querySelectorAll(".owners .co-tag").length).toBe(0);
             expect(selects).toEqual([]);
             visual.update(opts(data()));
             expect(value(element, "CFO")).toBe("67%");
             expect(owners(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
-            expect(element.querySelectorAll(".owners .co-tag").length).toBe(1);
+            expect(element.querySelectorAll(".owners .co-tag").length).toBe(0);
         });
         it("a card click filters the KPI list to that owner; a second click shows every owner again", () => {
             const { visual, element, selects } = setup({ read: own });

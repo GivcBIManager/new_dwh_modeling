@@ -166,7 +166,7 @@ const params = new URLSearchParams(location.search);
 const shot = params.get("mode") ?? "overview";
 /** "overview-scores" is the landing page as bound in the report: [BSC Visual Payload Scores], no trends. */
 /** "comparison" is the league table; "comparison-pillar" and "comparison-objective" drill into Financial and F1 Revenue. */
-/** "owner-ontarget-all" flips the owner strip to On-target and All owners; "owner-co-pick" to Owned + co-owned with the CFO card picked. */
+/** "owner-ontarget-all" flips the owner strip to On-target and All owners; "owner-owned-pick" to KPI list Owned with the CFO card picked. */
 const mode = shot === "overview-scores" ? "overview" : shot.startsWith("comparison") ? "comparison" : shot.startsWith("owner") ? "owner" : shot;
 const HOSPITALS = ["Hospital A", "Hospital B", "Hospital C", "Hospital D", "Head Office", "Hospital E", "Hospital F", "Hospital G", "Hospital H"];
 const branches = mode === "comparison" ? HOSPITALS : null;
@@ -193,6 +193,6 @@ if (pillar) (root.querySelector(`[data-pillar="${pillar}"]`) as HTMLElement | nu
 if (shot === "comparison-pillar" || shot === "comparison-objective") (root.querySelector('thead button[data-cmp-pillar="Financial"]') as HTMLElement | null)?.click();
 const press = (sel: string) => (root.querySelector(sel) as HTMLElement | null)?.click();
 if (shot === "owner-ontarget-all") { press('button[data-owner-toggle="score"][data-value="hitrate"]'); press('button[data-owner-toggle="tier"][data-value="all"]'); }
-if (shot === "owner-co-pick") { press('button[data-owner-toggle="scope"][data-value="co"]'); press('.own-card[data-owner-card="CFO"]'); }
+if (shot === "owner-owned-pick") { press('button[data-owner-toggle="scope"][data-value="owned"]'); press('.own-card[data-owner-card="CFO"]'); }
 if (shot === "comparison-objective") (root.querySelector('thead button[data-cmp-objective="F1"]') as HTMLElement | null)?.click();
 document.body.setAttribute("data-font", getComputedStyle(root).fontFamily + "|" + getComputedStyle(root.querySelector("h1") ?? root).fontFamily);
