@@ -339,9 +339,136 @@ FAMILY_PAGES: list[Page] = [
                          rank="NPS Answers")]),
 ]
 
-PAGES: list[Page] = SCORECARD_PAGES + [KPI_DETAIL] + FAMILY_PAGES
+# ---- "How to use" and "How scores are calculated" -------------------------------------------------------------------
+
+HEADING_BLUE, BODY_INK = "#1478BE", "#0A1E32"
+
+
+def text_box(paragraphs: list[tuple[str, str]]) -> dict:
+    """Text box content, one paragraph per (style, text): "heading" Segoe UI 14pt bold blue, "body" 12pt dark,
+    "bullet" a body paragraph prefixed "• ". Same `general.paragraphs[].textRuns[]` shape as `title_text`."""
+    base = {"fontFamily": "Segoe UI"}
+    styles = {"heading": {**base, "fontSize": "14pt", "fontWeight": "bold", "color": HEADING_BLUE},
+              "body": {**base, "fontSize": "12pt", "color": BODY_INK}}
+    styles["bullet"] = styles["body"]
+    out = []
+    for style, text in paragraphs:
+        if style not in styles:
+            raise ValueError(f"paragraph style must be heading, body or bullet, got {style!r}")
+        value = "• " + text if style == "bullet" else text
+        out.append({"textRuns": [{"value": value, "textStyle": dict(styles[style])}]})
+    return {"general": [{"properties": {"paragraphs": out}}]}
+
+
+def _text(x: float, y: float, w: float, h: float, paragraphs: list[tuple[str, str]]) -> Visual:
+    return Visual("textbox", x, y, w, h, props=text_box(paragraphs))
+
+
+def _header(title: str) -> list[Visual]:
+    return [Visual("textbox", 16, 25, 1100, 70, props=title_text(title))] + _nav_buttons()
+
+
+def _section(heading: str, bullets: list[str]) -> list[tuple[str, str]]:
+    return [("heading", heading)] + [("bullet", b) for b in bullets]
+
+
+def _guide_page() -> Page:
+    cols = [16, 650, 1284]
+    sections = [
+        _section("Choose what you see", [
+            "Hospital: pick one or more hospitals, or leave it empty for all hospitals together (Corporate).",
+            "BSC Category: pick a group of hospitals (Scale & Optimize, Anchor & Protect, Ramp-Up & Prove).",
+            "Date: set the From and To dates. The report opens on 1 January to 31 December of this year; figures "
+            "stop at today, so it reads as year to date.",
+            "Your choices carry over to every scorecard page and to KPI detail."]),
+        _section("Read the scores and colours", [
+            "Every KPI gets a score from 0 to 100. Scores are points, not percentages.",
+            "On track: 85 or more.",
+            "Watch: 70 to 84.",
+            "At risk: below 70.",
+            "No data yet, No target and Parked KPIs are listed but not scored.",
+            "Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, below 85% at risk."]),
+        _section("Go deeper", [
+            "The page buttons at the top right move between the scorecard pages.",
+            "Right-click a KPI and choose Drill through › KPI detail for its trend, hospitals and definition.",
+            "On KPI detail, select a hospital and month in the table, then Open detail for the detail page behind "
+            "it.",
+            "Back (top left) returns to the page you came from.",
+            "Hospital comparison: click a pillar header to see its objectives, then an objective header to see its "
+            "KPIs; the path above the table goes back up.",
+            "Owner view: click an owner's card to list only their KPIs; click it again to list everyone.",
+            "Hover over a KPI for its actual, target, variance and owner."]),
+    ]
+    visuals = _header("How to use the scorecard")
+    visuals.append(_text(16, 120, 1888, 50, [("body", (
+        "Overall score  ›  4 pillars  ›  objectives  ›  KPIs  ›  KPI detail  ›  detail pages "
+        "(Revenue, Finance, Patient volume, Beds & clinical, Revenue cycle, Workforce, Patient experience)"))]))
+    visuals += [_text(x, 185, 620, 440, sec) for x, sec in zip(cols, sections)]
+    visuals.append(_text(16, 640, 1888, 420, [("heading", "Pages")] + [("body", t) for t in [
+        "BSC: how are we doing overall and in each pillar?",
+        "Financial, Customer, Internal Process, Learning & Growth: which KPIs in this pillar are on track, on watch "
+        "or at risk?",
+        "Owner view: how are each executive's KPIs doing?",
+        "Hospital comparison: which hospital leads or lags, and on which pillar, objective or KPI?",
+        "KPI detail: how has this KPI moved by month and by hospital, and how is it defined?",
+        "Detail pages: what is behind a hospital's figures for a month?",
+        "How scores are calculated: how is each score worked out, and what does each KPI measure?"]]))
+    return Page("guide", "How to use", visuals)
+
+
+def _definitions_page() -> Page:
+    cols = [16, 650, 1284]
+    sections = [
+        _section("KPI score (0 to 100)", [
+            "Variance: how far the actual is from the target, as a % of the target. Where lower is better, the sign "
+            "is flipped, so beating the target is always positive. For on-target KPIs, any distance from the target "
+            "counts against.",
+            "Score = score base + score slope × variance, rounded and kept between 0 and 100.",
+            "Every KPI today uses base 85 and slope 0.6: a KPI exactly on target scores 85, and each point of "
+            "variance moves the score by 0.6.",
+            "Status: On track from 85, Watch from 70, At risk below 70."]),
+        _section("Pillar and overall scores", [
+            "Objective and pillar score: the average of their KPI scores, weighted by KPI weight.",
+            "With one hospital selected, that hospital's KPI weights apply; otherwise the corporate weights.",
+            "Overall score: the average of the pillar scores, weighted by pillar weight.",
+            "KPIs without a score (no data, no target, parked) are left out; the others' weights count in full.",
+            "Hospital comparison ranks hospitals by these scores; equal rounded scores share a rank."]),
+        _section("Owner achievement (%)", [
+            "Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is "
+            "better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance "
+            "from the target.",
+            "Weighted: the owner's achievements averaged by KPI weight, over the KPIs they own and co-own. Not "
+            "capped at 100%.",
+            "On-target: the share of those KPIs at or better than target (on-target KPIs count when On track).",
+            "C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO."]),
+    ]
+    visuals = _header("How scores are calculated")
+    visuals += [_text(x, 120, 620, 330, sec) for x, sec in zip(cols, sections)]
+    visuals.append(_text(16, 460, 1888, 50, [("body", (
+        "Example: Net Revenue Achievement, actual SAR 41.2M against a target of SAR 48.0M. Variance −14.2%, so "
+        "the score is 85 + 0.6 × (−14.2) = 76.5, rounded to 77: Watch."))]))
+    visuals += [Visual("slicerDropdown", x, 520, 300, 70, roles={"Values": [col("BSC KPI", c)]},
+                       props=select_all_selection())
+                for x, c in zip([16, 326, 636], ["Pillar", "Objective Title", "Owner"])]
+    visuals.append(_text(946, 520, 958, 70, [("body", (
+        "Better when: higher = higher is better · lower = lower is better · ceiling = must stay at or below "
+        "the target · on_target = the closer to the target the better. Weight: the KPI's corporate weight within "
+        "its pillar."))]))
+    kpi_num = col("BSC KPI", "KPI Num")
+    fields = [kpi_num] + [col("BSC KPI", c) for c in ("Pillar", "Objective Title", "KPI Name", "Definition",
+                                                       "Direction")]
+    fields += [meas("BSC Target Basis"), meas("BSC KPI Weight"), col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners")]
+    visuals.append(Visual("table", 16, 600, 1888, 460, title="Every active KPI", roles={"Values": fields},
+                          filters=[Filter(col("BSC KPI", "Is Active"), "in", ["Yes"])], sort=kpi_num,
+                          sort_dir="asc", props=word_wrap()))
+    return Page("definitions", "How scores are calculated", visuals)
+
+
+GUIDE_PAGES: list[Page] = [_guide_page(), _definitions_page()]
+
+PAGES: list[Page] = SCORECARD_PAGES + [KPI_DETAIL] + FAMILY_PAGES + GUIDE_PAGES
 
 
 def build_pages(build_date: datetime.date) -> list[Page]:
     """The report's pages with the Date slicer saved on `build_date`'s year (`PAGES` is today's)."""
-    return scorecard_pages(build_date) + [_kpi_detail(build_date)] + FAMILY_PAGES
+    return scorecard_pages(build_date) + [_kpi_detail(build_date)] + FAMILY_PAGES + GUIDE_PAGES

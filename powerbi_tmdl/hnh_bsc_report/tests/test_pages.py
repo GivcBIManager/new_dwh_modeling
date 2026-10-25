@@ -48,6 +48,10 @@ def test_page_names_and_order():
     shown = [p.display for p in PAGES]
     assert shown[:8] == SCORECARD + ["KPI detail"]
     assert [p.hidden for p in PAGES[:8]] == [False] * 7 + [True]
+    assert shown[-2:] == ["How to use", "How scores are calculated"]
+    assert [p.name for p in PAGES[-2:]] == ["guide", "definitions"]
+    assert [p.hidden for p in PAGES[-2:]] == [False, False]
+    assert [p.drill_fields for p in PAGES[-2:]] == [None, None]
     names = [p.name for p in PAGES]
     assert len(set(names)) == len(names)
 
@@ -209,7 +213,7 @@ def test_unknown_fields_is_empty():
 
 def test_family_pages_slot_exists():
     import pages
-    assert PAGES == pages.SCORECARD_PAGES + [pages.KPI_DETAIL] + pages.FAMILY_PAGES
+    assert PAGES == pages.SCORECARD_PAGES + [pages.KPI_DETAIL] + pages.FAMILY_PAGES + pages.GUIDE_PAGES
 
 
 def test_pages_build_against_the_synthetic_template(pbix_path):
@@ -306,7 +310,7 @@ def test_family_pages_names_order_and_hidden():
     assert [p.display for p in pages.FAMILY_PAGES] == FAMILY
     assert [p.name for p in pages.FAMILY_PAGES] == FAMILY_NAMES
     assert all(p.hidden for p in pages.FAMILY_PAGES)
-    assert PAGES[8:] == pages.FAMILY_PAGES
+    assert PAGES[8:15] == pages.FAMILY_PAGES
 
 
 MEASURES_TMDL = Path(__file__).resolve().parents[3] / "ssas" / "HNH_Analytics" / "tables" / "_Measures.tmdl"
@@ -438,20 +442,20 @@ def test_family_cards_and_charts():
 def test_family_tables_sort_by_their_ranking_measure():
     """A family table sorts descending by the measure it ranks by (its top N measure, else its first measure), so
     "Top 20 doctors by revenue" lists the top doctor first; the income statement matrix keeps the FS lines' order."""
-    tables = [v for p in PAGES[8:] for v in p.visuals if v.sample == "table"]
+    tables = [v for p in PAGES[8:15] for v in p.visuals if v.sample == "table"]
     assert len(tables) == 4
     for v in tables:
         rank = v.top_n[0] if v.top_n else v.roles["Values"][1]
         assert (v.sort, v.sort_dir) == (rank, "desc"), v.title
         assert rank in v.roles["Values"]
-    for p in PAGES[8:]:
+    for p in PAGES[8:15]:
         assert all(v.sort is None for v in p.visuals if v.sample == "matrix"), p.display
 
 
 def test_family_bar_top_n_ranks_by_the_bars_measure():
     """Except NPS by department: the 15 departments with most answers (ranked by NPS, departments with a few answers
     won), bars sorted by NPS."""
-    for p in PAGES[8:]:
+    for p in PAGES[8:15]:
         for v in p.visuals:
             if v.sample == "barChart" and v.top_n:
                 assert v.roles["Y"][0] == v.sort, v.title
@@ -485,7 +489,7 @@ def test_family_pages_build_against_the_synthetic_template(pbix_path):
     lay = p.layout
     base, drill = lay["sections"][0], lay["sections"][1]
     for i, page in enumerate(PAGES):
-        if i < 8:
+        if not 8 <= i < 15:
             continue
         section, _ = page_section(page, i, smp, lay, drill, base)
         assert len(section["visualContainers"]) == len(page.visuals)
@@ -515,7 +519,7 @@ def test_drill_page_charts_have_titles():
     for display, titles in CHART_TITLES.items():
         charts = [v for v in by_display(display).visuals if v.sample in CHARTS]
         assert [v.title for v in charts] == titles, display
-    for p in PAGES[7:]:
+    for p in PAGES[7:15]:
         assert all(v.title for v in p.visuals if v.sample in CHARTS), p.display
 
 
@@ -562,3 +566,140 @@ def test_open_detail_button_is_readable_when_disabled():
     assert colour(fill, "fillColor") != colour(text, "fontColor")
     assert lit(fill["transparency"]) == "0D"
     assert lit(_obj(btn, "text", {"id": "default"})["text"]) == "'Open detail'"
+
+
+# ---- "How to use" and "How scores are calculated" ----------------------------------------------------------------
+
+GUIDE = "How to use"
+DEFS = "How scores are calculated"
+
+
+def paragraphs(v):
+    """[(text, fontSize, fontWeight, fontColor)] of a text box's paragraphs (one run each)."""
+    out = []
+    for para in v.props["general"][0]["properties"]["paragraphs"]:
+        (run,) = para["textRuns"]
+        st = run["textStyle"]
+        out.append((run["value"], st["fontSize"], st.get("fontWeight"), st.get("color")))
+    return out
+
+
+def box(page, x, y):
+    (v,) = [v for v in page.visuals if v.sample == "textbox" and (v.x, v.y) == (x, y)]
+    return v
+
+
+def texts_at(page, x, y):
+    return [t[0] for t in paragraphs(box(page, x, y))]
+
+
+def test_text_box_styles():
+    from pages import text_box
+    props = text_box([("heading", "H"), ("body", "B"), ("bullet", "L")])
+    paras = props["general"][0]["properties"]["paragraphs"]
+    assert len(paras) == 3
+    runs = [p["textRuns"][0] for p in paras]
+    assert [r["value"] for r in runs] == ["H", "B", "• L"]
+    assert runs[0]["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "14pt", "fontWeight": "bold",
+                                    "color": "#1478BE"}
+    for r in runs[1:]:
+        assert r["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "12pt", "color": "#0A1E32"}
+    with pytest.raises(ValueError):
+        text_box([("title", "x")])
+
+
+@pytest.mark.parametrize("display, title", [(GUIDE, "How to use the scorecard"), (DEFS, DEFS)])
+def test_guide_pages_header(display, title):
+    page = by_display(display)
+    tb = box(page, 16, 25)
+    assert (tb.w, tb.h) == (1100, 70)
+    (run,) = tb.props["general"][0]["properties"]["paragraphs"][0]["textRuns"]
+    assert run["value"] == title
+    assert run["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
+    buttons = [v for v in page.visuals if v.sample == "buttonNavigate"]
+    targets = [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in buttons]
+    assert targets == [f"'{p.name}'" for p in PAGES[:7]]
+    assert [v for v in page.visuals if v.sample == "slicerDateRange"] == []
+
+
+def test_guide_page_copy():
+    page = by_display(GUIDE)
+    (path,) = texts_at(page, 16, 120)
+    assert path == ("Overall score  ›  4 pillars  ›  objectives  ›  KPIs  ›  KPI detail  ›  "
+                    "detail pages (Revenue, Finance, Patient volume, Beds & clinical, Revenue cycle, Workforce, "
+                    "Patient experience)")
+    assert (box(page, 16, 120).w, box(page, 16, 120).h) == (1888, 50)
+    for x in (16, 650, 1284):
+        v = box(page, x, 185)
+        assert (v.w, v.h) == (620, 440)
+    choose = texts_at(page, 16, 185)
+    assert choose[0] == "Choose what you see" and len(choose) == 5
+    assert choose[1] == ("• Hospital: pick one or more hospitals, or leave it empty for all hospitals together "
+                         "(Corporate).")
+    assert choose[4] == "• Your choices carry over to every scorecard page and to KPI detail."
+    read = texts_at(page, 650, 185)
+    assert read[0] == "Read the scores and colours" and len(read) == 7
+    assert "• On track: 85 or more." in read and "• Watch: 70 to 84." in read
+    assert read[-1] == ("• Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, "
+                        "below 85% at risk.")
+    deeper = texts_at(page, 1284, 185)
+    assert deeper[0] == "Go deeper" and len(deeper) == 8
+    assert deeper[-1] == "• Hover over a KPI for its actual, target, variance and owner."
+    pages_box = texts_at(page, 16, 640)
+    assert pages_box[0] == "Pages" and len(pages_box) == 8
+    assert pages_box[1] == "BSC: how are we doing overall and in each pillar?"
+    assert pages_box[-1] == "How scores are calculated: how is each score worked out, and what does each KPI measure?"
+    v = box(page, 16, 640)
+    assert (v.w, v.h) == (1888, 420)
+    assert paragraphs(v)[0][1:] == ("14pt", "bold", "#1478BE")
+    assert {t[1] for t in paragraphs(v)[1:]} == {"12pt"}
+
+
+def test_definitions_page_copy():
+    page = by_display(DEFS)
+    score = texts_at(page, 16, 120)
+    assert score[0] == "KPI score (0 to 100)" and len(score) == 5
+    assert score[2] == "• Score = score base + score slope × variance, rounded and kept between 0 and 100."
+    assert score[4] == "• Status: On track from 85, Watch from 70, At risk below 70."
+    pillar = texts_at(page, 650, 120)
+    assert pillar[0] == "Pillar and overall scores" and len(pillar) == 6
+    assert pillar[-1] == "• Hospital comparison ranks hospitals by these scores; equal rounded scores share a rank."
+    owner = texts_at(page, 1284, 120)
+    assert owner[0] == "Owner achievement (%)" and len(owner) == 5
+    assert owner[1] == ("• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual "
+                        "where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target "
+                        "KPIs, 100% less the distance from the target.")
+    assert owner[-1] == "• C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO."
+    for x in (16, 650, 1284):
+        v = box(page, x, 120)
+        assert (v.w, v.h) == (620, 330)
+    (example,) = texts_at(page, 16, 460)
+    assert example == ("Example: Net Revenue Achievement, actual SAR 41.2M against a target of SAR 48.0M. Variance "
+                       "−14.2%, so the score is 85 + 0.6 × (−14.2) = 76.5, rounded to 77: Watch.")
+    assert (box(page, 16, 460).w, box(page, 16, 460).h) == (1888, 50)
+    (legend,) = texts_at(page, 946, 520)
+    assert legend.startswith("Better when: higher = higher is better · lower = lower is better")
+    assert legend.endswith("Weight: the KPI's corporate weight within its pillar.")
+    assert (box(page, 946, 520).w, box(page, 946, 520).h) == (958, 70)
+
+
+def test_definitions_slicers_and_table():
+    from pages import word_wrap
+    page = by_display(DEFS)
+    slicers = [v for v in page.visuals if v.sample.startswith("slicer")]
+    assert [v.sample for v in slicers] == ["slicerDropdown"] * 3
+    assert [v.roles["Values"] for v in slicers] == [
+        [col("BSC KPI", "Pillar")], [col("BSC KPI", "Objective Title")], [col("BSC KPI", "Owner")]]
+    assert [(v.x, v.y, v.w, v.h) for v in slicers] == [(16, 520, 300, 70), (326, 520, 300, 70), (636, 520, 300, 70)]
+    assert all(v.props == select_all_selection() for v in slicers)
+    (t,) = [v for v in page.visuals if v.sample == "table"]
+    assert (t.x, t.y, t.w, t.h) == (16, 600, 1888, 460)
+    assert t.title == "Every active KPI"
+    assert t.roles["Values"] == [
+        col("BSC KPI", "KPI Num"), col("BSC KPI", "Pillar"), col("BSC KPI", "Objective Title"),
+        col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"), col("BSC KPI", "Direction"),
+        meas("BSC Target Basis"), meas("BSC KPI Weight"), col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners")]
+    assert (t.sort, t.sort_dir) == (col("BSC KPI", "KPI Num"), "asc")
+    (f,) = t.filters
+    assert (f.field, f.op, f.values) == (col("BSC KPI", "Is Active"), "in", ["Yes"])
+    assert t.props == word_wrap()
