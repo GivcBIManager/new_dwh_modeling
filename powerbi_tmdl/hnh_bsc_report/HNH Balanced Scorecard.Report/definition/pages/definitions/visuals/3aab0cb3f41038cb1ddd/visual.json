@@ -2,33 +2,69 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "3aab0cb3f41038cb1ddd",
   "position": {
-    "x": 946,
+    "x": 326,
     "y": 520,
     "z": 15000,
     "height": 70,
-    "width": 958,
+    "width": 300,
     "tabOrder": 15000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "Objective Title"
+                }
+              },
+              "queryRef": "BSC KPI.Objective Title",
+              "nativeQueryRef": "Objective Title",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
     "objects": {
-      "general": [
+      "data": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Better when: higher = higher is better · lower = lower is better · ceiling = must stay at or below the target · on_target = the closer to the target the better. Weight: the KPI's corporate weight within its pillar.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
+            "mode": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dropdown'"
+                }
               }
-            ]
+            }
+          }
+        }
+      ],
+      "selection": [
+        {
+          "properties": {
+            "singleSelect": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "selectAllCheckboxEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
           }
         }
       ]
@@ -47,6 +83,11 @@
           }
         }
       ]
+    },
+    "syncGroup": {
+      "groupName": "bsc BSC KPI.Objective Title",
+      "fieldChanges": true,
+      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "86b159cf77b3213d6348",
   "position": {
-    "x": 965.0,
+    "x": 16.0,
     "y": 130,
     "z": 5000,
     "height": 110,
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "NPS Answers"
+                  "Property": "Hospital NPS (5-point)"
                 }
               },
-              "queryRef": "_Measures.NPS Answers",
-              "nativeQueryRef": "NPS Answers"
+              "queryRef": "_Measures.Hospital NPS (5-point)",
+              "nativeQueryRef": "Hospital NPS (5-point)"
             }
           ]
         }

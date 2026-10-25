@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "4104415a265d25d794bd",
   "position": {
-    "x": 16,
-    "y": 460,
+    "x": 650,
+    "y": 120,
     "z": 11000,
-    "height": 50,
-    "width": 1888,
+    "height": 330,
+    "width": 620,
     "tabOrder": 11000
   },
   "visual": {
@@ -19,7 +19,68 @@
               {
                 "textRuns": [
                   {
-                    "value": "Example: Net Revenue Achievement, actual SAR 41.2M against a target of SAR 48.0M. Variance −14.2%, so the score is 85 + 0.6 × (−14.2) = 76.5, rounded to 77: Watch.",
+                    "value": "Pillar and overall scores",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "14pt",
+                      "fontWeight": "bold",
+                      "color": "#1478BE"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Objective and pillar score: the average of their KPI scores, weighted by KPI weight.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• With one hospital selected, that hospital's KPI weights apply; otherwise the corporate weights.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Overall score: the average of the pillar scores, weighted by pillar weight.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• KPIs without a score (no data, no target, parked) are left out; the others' weights count in full.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Hospital comparison ranks hospitals by these scores; equal rounded scores share a rank.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

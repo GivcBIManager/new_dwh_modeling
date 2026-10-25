@@ -3,32 +3,37 @@
   "name": "c2320271802c38c88df2",
   "position": {
     "x": 16,
-    "y": 660,
+    "y": 260,
     "z": 10000,
     "height": 390,
     "width": 930,
     "tabOrder": 10000
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
-        "Values": {
+        "Category": {
           "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Discharge Outcome"
+                      "Entity": "Bed"
                     }
                   },
-                  "Property": "Outcome Group"
+                  "Property": "Current Ward"
                 }
               },
-              "queryRef": "Discharge Outcome.Outcome Group",
-              "nativeQueryRef": "Outcome Group"
-            },
+              "queryRef": "Bed.Current Ward",
+              "nativeQueryRef": "Current Ward",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
             {
               "field": {
                 "Measure": {
@@ -37,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Discharges"
+                  "Property": "Bed Occupancy %"
                 }
               },
-              "queryRef": "_Measures.Discharges",
-              "nativeQueryRef": "Discharges"
+              "queryRef": "_Measures.Bed Occupancy %",
+              "nativeQueryRef": "Bed Occupancy %"
             }
           ]
         }
@@ -56,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Discharges"
+                "Property": "Bed Occupancy %"
               }
             },
             "direction": "Descending"
@@ -78,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Discharges by outcome'"
+                  "Value": "'Bed occupancy by ward'"
                 }
               }
             }

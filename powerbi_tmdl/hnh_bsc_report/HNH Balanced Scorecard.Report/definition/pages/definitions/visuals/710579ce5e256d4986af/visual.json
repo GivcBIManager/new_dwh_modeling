@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "710579ce5e256d4986af",
   "position": {
-    "x": 16,
-    "y": 600,
+    "x": 636,
+    "y": 520,
     "z": 16000,
-    "height": 460,
-    "width": 1888,
+    "height": 70,
+    "width": 300,
     "tabOrder": 16000
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "slicer",
     "query": {
       "queryState": {
         "Values": {
@@ -23,177 +23,42 @@
                       "Entity": "BSC KPI"
                     }
                   },
-                  "Property": "KPI Num"
-                }
-              },
-              "queryRef": "BSC KPI.KPI Num",
-              "nativeQueryRef": "KPI Num"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Pillar"
-                }
-              },
-              "queryRef": "BSC KPI.Pillar",
-              "nativeQueryRef": "Pillar"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Objective Title"
-                }
-              },
-              "queryRef": "BSC KPI.Objective Title",
-              "nativeQueryRef": "Objective Title"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "KPI Name"
-                }
-              },
-              "queryRef": "BSC KPI.KPI Name",
-              "nativeQueryRef": "KPI Name"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Definition"
-                }
-              },
-              "queryRef": "BSC KPI.Definition",
-              "nativeQueryRef": "Definition"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Direction"
-                }
-              },
-              "queryRef": "BSC KPI.Direction",
-              "nativeQueryRef": "Direction"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC Target Basis"
-                }
-              },
-              "queryRef": "_Measures.BSC Target Basis",
-              "nativeQueryRef": "BSC Target Basis"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC KPI Weight"
-                }
-              },
-              "queryRef": "_Measures.BSC KPI Weight",
-              "nativeQueryRef": "BSC KPI Weight"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
                   "Property": "Owner"
                 }
               },
               "queryRef": "BSC KPI.Owner",
-              "nativeQueryRef": "Owner"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Co Owners"
-                }
-              },
-              "queryRef": "BSC KPI.Co Owners",
-              "nativeQueryRef": "Co Owners"
+              "nativeQueryRef": "Owner",
+              "active": true
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "BSC KPI"
-                  }
-                },
-                "Property": "KPI Num"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
       }
     },
     "objects": {
-      "values": [
+      "data": [
         {
           "properties": {
-            "wordWrap": {
+            "mode": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "'Dropdown'"
                 }
               }
             }
           }
         }
       ],
-      "columnHeaders": [
+      "selection": [
         {
           "properties": {
-            "wordWrap": {
+            "singleSelect": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "selectAllCheckboxEnabled": {
               "expr": {
                 "Literal": {
                   "Value": "true"
@@ -211,14 +76,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Every active KPI'"
+                  "Value": "false"
                 }
               }
             }
@@ -226,64 +84,11 @@
         }
       ]
     },
+    "syncGroup": {
+      "groupName": "bsc BSC KPI.Owner",
+      "fieldChanges": true,
+      "filterChanges": true
+    },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "e0b37a1220e77c10766f",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "BSC KPI"
-              }
-            },
-            "Property": "Is Active"
-          }
-        },
-        "type": "Categorical",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "b",
-              "Entity": "BSC KPI",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "b"
-                          }
-                        },
-                        "Property": "Is Active"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "'Yes'"
-                        }
-                      }
-                    ]
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

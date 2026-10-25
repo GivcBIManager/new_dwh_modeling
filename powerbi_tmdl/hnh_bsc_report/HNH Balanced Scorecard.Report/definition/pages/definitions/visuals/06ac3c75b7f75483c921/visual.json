@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "06ac3c75b7f75483c921",
   "position": {
-    "x": 636,
+    "x": 16,
     "y": 520,
     "z": 14000,
     "height": 70,
@@ -23,11 +23,11 @@
                       "Entity": "BSC KPI"
                     }
                   },
-                  "Property": "Owner"
+                  "Property": "Pillar"
                 }
               },
-              "queryRef": "BSC KPI.Owner",
-              "nativeQueryRef": "Owner",
+              "queryRef": "BSC KPI.Pillar",
+              "nativeQueryRef": "Pillar",
               "active": true
             }
           ]
@@ -85,7 +85,7 @@
       ]
     },
     "syncGroup": {
-      "groupName": "bsc BSC KPI.Owner",
+      "groupName": "bsc BSC KPI.Pillar",
       "fieldChanges": true,
       "filterChanges": true
     },

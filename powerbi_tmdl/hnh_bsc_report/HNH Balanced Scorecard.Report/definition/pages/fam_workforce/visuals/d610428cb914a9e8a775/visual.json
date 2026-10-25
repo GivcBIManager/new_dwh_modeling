@@ -3,7 +3,7 @@
   "name": "d610428cb914a9e8a775",
   "position": {
     "x": 16,
-    "y": 660,
+    "y": 260,
     "z": 10000,
     "height": 390,
     "width": 930,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "HR Department"
                     }
                   },
-                  "Property": "Nationality"
+                  "Property": "Department Name"
                 }
               },
-              "queryRef": "Employee.Nationality",
-              "nativeQueryRef": "Nationality",
+              "queryRef": "HR Department.Department Name",
+              "nativeQueryRef": "Department Name",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by nationality (top 10)'"
+                  "Value": "'Headcount by department (top 15)'"
                 }
               }
             }
@@ -101,10 +101,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Employee"
+                "Entity": "HR Department"
               }
             },
-            "Property": "Nationality"
+            "Property": "Department Name"
           }
         },
         "type": "TopN",
@@ -119,8 +119,8 @@
                     "Version": 2,
                     "From": [
                       {
-                        "Name": "e",
-                        "Entity": "Employee",
+                        "Name": "h",
+                        "Entity": "HR Department",
                         "Type": 0
                       },
                       {
@@ -134,10 +134,10 @@
                         "Column": {
                           "Expression": {
                             "SourceRef": {
-                              "Source": "e"
+                              "Source": "h"
                             }
                           },
-                          "Property": "Nationality"
+                          "Property": "Department Name"
                         },
                         "Name": "field"
                       }
@@ -157,15 +157,15 @@
                         }
                       }
                     ],
-                    "Top": 10
+                    "Top": 15
                   }
                 }
               },
               "Type": 2
             },
             {
-              "Name": "e",
-              "Entity": "Employee",
+              "Name": "h",
+              "Entity": "HR Department",
               "Type": 0
             }
           ],
@@ -178,10 +178,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "e"
+                            "Source": "h"
                           }
                         },
-                        "Property": "Nationality"
+                        "Property": "Department Name"
                       }
                     }
                   ],

@@ -3,17 +3,17 @@
   "name": "28ae9d87a8861d624df6",
   "position": {
     "x": 976,
-    "y": 590,
+    "y": 270,
     "z": 20000,
-    "height": 210,
-    "width": 700,
+    "height": 300,
+    "width": 928,
     "tabOrder": 20000
   },
   "visual": {
-    "visualType": "pivotTable",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
-        "Rows": {
+        "Category": {
           "projections": [
             {
               "field": {
@@ -32,25 +32,7 @@
             }
           ]
         },
-        "Columns": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Date"
-                    }
-                  },
-                  "Property": "Year Month Name"
-                }
-              },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name"
-            }
-          ]
-        },
-        "Values": {
+        "Y": {
           "projections": [
             {
               "field": {
@@ -68,6 +50,23 @@
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "BSC Actual"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
       }
     },
     "visualContainerObjects": {
@@ -84,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Select a hospital and month, then Open detail'"
+                  "Value": "'Actual by hospital'"
                 }
               }
             }

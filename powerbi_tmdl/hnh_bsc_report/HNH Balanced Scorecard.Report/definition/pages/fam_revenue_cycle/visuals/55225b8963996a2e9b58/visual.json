@@ -2,32 +2,46 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "55225b8963996a2e9b58",
   "position": {
-    "x": 395.6,
-    "y": 130,
+    "x": 1300,
+    "y": 10,
     "z": 4000,
-    "height": 110,
-    "width": 369.6,
+    "height": 95,
+    "width": 604,
     "tabOrder": 4000
   },
   "visual": {
-    "visualType": "card",
+    "visualType": "multiRowCard",
     "query": {
       "queryState": {
         "Values": {
           "projections": [
             {
               "field": {
-                "Measure": {
+                "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "_Measures"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "First-pass Rejection Rate %"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "_Measures.First-pass Rejection Rate %",
-              "nativeQueryRef": "First-pass Rejection Rate %"
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Date"
+                    }
+                  },
+                  "Property": "Year Month Name"
+                }
+              },
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name"
             }
           ]
         }

@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "8b804e5345c2349b149a",
   "position": {
-    "x": 974,
-    "y": 260,
+    "x": 1439.5,
+    "y": 130,
     "z": 8000,
-    "height": 390,
-    "width": 930,
+    "height": 110,
+    "width": 464.5,
     "tabOrder": 8000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Product Category"
-                    }
-                  },
-                  "Property": "High Level Department"
-                }
-              },
-              "queryRef": "Product Category.High Level Department",
-              "nativeQueryRef": "High Level Department",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,31 +23,14 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Revenue"
+                  "Property": "Claimable Revenue"
                 }
               },
-              "queryRef": "_Measures.Revenue",
-              "nativeQueryRef": "Revenue"
+              "queryRef": "_Measures.Claimable Revenue",
+              "nativeQueryRef": "Claimable Revenue"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Revenue"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
     },
     "visualContainerObjects": {
@@ -76,14 +40,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Revenue by product category'"
+                  "Value": "false"
                 }
               }
             }

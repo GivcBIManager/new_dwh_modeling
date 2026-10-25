@@ -29,6 +29,8 @@ PILLARS = {"Financial": "Financial", "Customer": "Customer", "Internal Process":
 
 
 YEAR_MONTH_NAME = col("Date", "Year Month Name")
+HELP_TARGETS = ["'guide'", "'definitions'"]  # the two guide-page buttons, left of the seven page buttons
+NAV_TARGETS = HELP_TARGETS + [f"'{p.name}'" for p in PAGES[:7]]
 
 
 def by_display(name):
@@ -107,7 +109,7 @@ def test_header_slicers_and_navigation(display):
     assert lit(sel["selectAllCheckboxEnabled"]) == "true"
     buttons = [v for v in page.visuals if v.sample == "buttonNavigate"]
     targets = [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in buttons]
-    assert targets == [f"'{p.name}'" for p in PAGES[:7]]
+    assert targets == NAV_TARGETS
 
 
 def _date_slicers(pages):
@@ -230,7 +232,7 @@ def test_pages_build_against_the_synthetic_template(pbix_path):
     fin = sections[1]
     assert "Financial" in fin["filters"]
     nav = [vc for vc in fin["visualContainers"] if "navigationSection" in vc["config"]]
-    assert len(nav) == 7
+    assert len(nav) == 9
     detail = sections[7]
     assert json.loads(detail["config"]).get("visibility") == 1
     assert "BSC Detail Page" in json.dumps(detail["visualContainers"])
@@ -277,8 +279,7 @@ def test_kpi_detail_header_back_and_navigation():
              and lit(v.props["visualLink"][0]["properties"]["type"]) == "'Back'"]
     assert len(backs) == 1 and backs[0].x < min(v.x for v in page.visuals if v.y < 110 and v is not backs[0])
     navs = [v for v in page.visuals if v.sample == "buttonNavigate" and v not in backs]
-    assert [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in navs] == \
-        [f"'{p.name}'" for p in PAGES[:7]]
+    assert [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in navs] == NAV_TARGETS
     slicers = [v for v in page.visuals if v.sample.startswith("slicer")]
     scorecard = [v for v in by_display("BSC").visuals if v.sample.startswith("slicer")]
     assert [(v.sample, v.roles) for v in slicers] == [(v.sample, v.roles) for v in scorecard]
@@ -344,8 +345,9 @@ def test_family_drill_fields_header_and_no_slicers(display):
     page = by_display(display)
     assert page.drill_fields == [col("Branch", "Branch Name"), YEAR_MONTH_NAME]
     assert not [v for v in page.visuals if v.sample.startswith("slicer")]
-    backs = [v for v in page.visuals if v.sample == "buttonNavigate"]
-    assert len(backs) == 1 and lit(backs[0].props["visualLink"][0]["properties"]["type"]) == "'Back'"
+    backs = [v for v in page.visuals if v.sample == "buttonNavigate"
+             and lit(v.props["visualLink"][0]["properties"]["type"]) == "'Back'"]
+    assert len(backs) == 1
     (mrc,) = [v for v in page.visuals if v.sample == "multiRowCard"]
     assert mrc.roles["Values"] == [col("Branch", "Branch Name"), YEAR_MONTH_NAME]
     assert [v for v in page.visuals if v.sample == "textbox"]
@@ -542,8 +544,9 @@ def test_buttons_have_a_visible_style():
         for v in p.visuals:
             if v.sample not in ("buttonNavigate", "buttonDrill"):
                 continue
-            back = lit(v.props["visualLink"][0]["properties"]["type"]) == "'Back'"
-            if back:
+            link = v.props["visualLink"][0]["properties"]
+            back = lit(link["type"]) == "'Back'"
+            if back or ("navigationSection" in link and lit(link["navigationSection"]) in HELP_TARGETS):
                 assert _style(v) == (None, "true", "'#1478BE'")
             else:
                 assert _style(v) == ("'#13ACE3'", "false", "'#FFFFFF'")
@@ -612,13 +615,13 @@ def test_text_box_styles():
 def test_guide_pages_header(display, title):
     page = by_display(display)
     tb = box(page, 16, 25)
-    assert (tb.w, tb.h) == (1100, 70)
+    assert (tb.w, tb.h) == (900, 70)
     (run,) = tb.props["general"][0]["properties"]["paragraphs"][0]["textRuns"]
     assert run["value"] == title
     assert run["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
     buttons = [v for v in page.visuals if v.sample == "buttonNavigate"]
     targets = [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in buttons]
-    assert targets == [f"'{p.name}'" for p in PAGES[:7]]
+    assert targets == NAV_TARGETS
     assert [v for v in page.visuals if v.sample == "slicerDateRange"] == []
 
 
@@ -703,3 +706,18 @@ def test_definitions_slicers_and_table():
     (f,) = t.filters
     assert (f.field, f.op, f.values) == (col("BSC KPI", "Is Active"), "in", ["Yes"])
     assert t.props == word_wrap()
+
+
+@pytest.mark.parametrize("display", [p.display for p in PAGES])
+def test_every_page_links_to_the_guide_pages(display):
+    """Two outline buttons, the same place on every page: just left of the seven page buttons."""
+    page = by_display(display)
+    links = [(v, v.props["visualLink"][0]["properties"]) for v in page.visuals if v.sample == "buttonNavigate"]
+    helps = [(v, link) for v, link in links
+             if "navigationSection" in link and lit(link["navigationSection"]) in HELP_TARGETS]
+    assert [(lit(link["navigationSection"]), lit(_obj(v, "text", {"id": "default"})["text"]), v.x, v.y, v.w, v.h)
+            for v, link in helps] == [("'guide'", "'How to use'", 940, 35, 104, 50),
+                                      ("'definitions'", "'Calculations'", 1048, 35, 104, 50)]
+    for v, link in helps:
+        assert lit(link["type"]) == "'PageNavigation'"
+        assert _style(v) == (None, "true", "'#1478BE'")

@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "4dc1d37a6a973469ac1c",
   "position": {
-    "x": 1284,
+    "x": 16,
     "y": 185,
     "z": 11000,
     "height": 440,
@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Go deeper",
+                    "value": "Choose what you see",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "14pt",
@@ -32,7 +32,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• The page buttons at the top right move between the scorecard pages.",
+                    "value": "• Hospital: pick one or more hospitals, or leave it empty for all hospitals together (Corporate).",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -44,7 +44,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Right-click a KPI and choose Drill through › KPI detail for its trend, hospitals and definition.",
+                    "value": "• BSC Category: pick a group of hospitals (Scale & Optimize, Anchor & Protect, Ramp-Up & Prove).",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -56,7 +56,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• On KPI detail, select a hospital and month in the table, then Open detail for the detail page behind it.",
+                    "value": "• Date: set the From and To dates. The report opens on 1 January to 31 December of this year; figures stop at today, so it reads as year to date.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -68,43 +68,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Back (top left) returns to the page you came from.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Hospital comparison: click a pillar header to see its objectives, then an objective header to see its KPIs; the path above the table goes back up.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Owner view: click an owner's card to list only their KPIs; click it again to list everyone.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Hover over a KPI for its actual, target, variance and owner.",
+                    "value": "• Your choices carry over to every scorecard page and to KPI detail.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "7a3c73fe9c22865b3583",
   "position": {
-    "x": 1284,
+    "x": 16,
     "y": 120,
     "z": 10000,
     "height": 330,
@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Owner achievement (%)",
+                    "value": "KPI score (0 to 100)",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "14pt",
@@ -32,7 +32,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance from the target.",
+                    "value": "• Variance: how far the actual is from the target, as a % of the target. Where lower is better, the sign is flipped, so beating the target is always positive. For on-target KPIs, any distance from the target counts against.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -44,7 +44,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Weighted: the owner's achievements averaged by KPI weight, over the KPIs they own and co-own. Not capped at 100%.",
+                    "value": "• Score = score base + score slope × variance, rounded and kept between 0 and 100.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -56,7 +56,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• On-target: the share of those KPIs at or better than target (on-target KPIs count when On track).",
+                    "value": "• Every KPI today uses base 85 and slope 0.6: a KPI exactly on target scores 85, and each point of variance moves the score by 0.6.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -68,7 +68,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO.",
+                    "value": "• Status: On track from 85, Watch from 70, At risk below 70.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

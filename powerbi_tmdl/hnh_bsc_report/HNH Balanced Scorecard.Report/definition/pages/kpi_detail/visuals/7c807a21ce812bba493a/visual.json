@@ -3,73 +3,50 @@
   "name": "7c807a21ce812bba493a",
   "position": {
     "x": 16,
-    "y": 590,
+    "y": 270,
     "z": 19000,
-    "height": 370,
+    "height": 300,
     "width": 940,
     "tabOrder": 19000
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
-        "Values": {
+        "Category": {
           "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "BSC KPI"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "KPI Name"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "BSC KPI.KPI Name",
-              "nativeQueryRef": "KPI Name"
-            },
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "BSC KPI"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Definition"
+                  "Property": "BSC Actual"
                 }
               },
-              "queryRef": "BSC KPI.Definition",
-              "nativeQueryRef": "Definition"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Owner"
-                }
-              },
-              "queryRef": "BSC KPI.Owner",
-              "nativeQueryRef": "Owner"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Co Owners"
-                }
-              },
-              "queryRef": "BSC KPI.Co Owners",
-              "nativeQueryRef": "Co Owners"
+              "queryRef": "_Measures.BSC Actual",
+              "nativeQueryRef": "BSC Actual"
             },
             {
               "field": {
@@ -79,57 +56,32 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Target Basis"
+                  "Property": "BSC Target"
                 }
               },
-              "queryRef": "_Measures.BSC Target Basis",
-              "nativeQueryRef": "BSC Target Basis"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC KPI Weight"
-                }
-              },
-              "queryRef": "_Measures.BSC KPI Weight",
-              "nativeQueryRef": "BSC KPI Weight"
+              "queryRef": "_Measures.BSC Target",
+              "nativeQueryRef": "BSC Target"
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Date"
+                  }
+                },
+                "Property": "Year Month Name"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
       }
-    },
-    "objects": {
-      "values": [
-        {
-          "properties": {
-            "wordWrap": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "columnHeaders": [
-        {
-          "properties": {
-            "wordWrap": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        }
-      ]
     },
     "visualContainerObjects": {
       "title": [
@@ -145,7 +97,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'About this KPI'"
+                  "Value": "'Actual vs target by month'"
                 }
               }
             }

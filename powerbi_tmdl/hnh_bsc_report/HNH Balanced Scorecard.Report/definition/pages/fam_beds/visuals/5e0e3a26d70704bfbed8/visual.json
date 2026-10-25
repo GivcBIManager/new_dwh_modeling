@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5e0e3a26d70704bfbed8",
   "position": {
-    "x": 775.2,
+    "x": 16.0,
     "y": 130,
     "z": 5000,
     "height": 110,
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Readmission Rate 30d %"
+                  "Property": "Bed Occupancy %"
                 }
               },
-              "queryRef": "_Measures.Readmission Rate 30d %",
-              "nativeQueryRef": "Readmission Rate 30d %"
+              "queryRef": "_Measures.Bed Occupancy %",
+              "nativeQueryRef": "Bed Occupancy %"
             }
           ]
         }

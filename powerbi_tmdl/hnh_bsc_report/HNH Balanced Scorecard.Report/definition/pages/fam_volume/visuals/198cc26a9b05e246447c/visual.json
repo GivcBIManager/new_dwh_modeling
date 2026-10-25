@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "198cc26a9b05e246447c",
   "position": {
-    "x": 974,
-    "y": 260,
+    "x": 1534.4,
+    "y": 130,
     "z": 9000,
-    "height": 390,
-    "width": 930,
+    "height": 110,
+    "width": 369.6,
     "tabOrder": 9000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Payer"
-                    }
-                  },
-                  "Property": "Category"
-                }
-              },
-              "queryRef": "Payer.Category",
-              "nativeQueryRef": "Category",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,31 +23,14 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Census"
+                  "Property": "Returning Patients"
                 }
               },
-              "queryRef": "_Measures.Census",
-              "nativeQueryRef": "Census"
+              "queryRef": "_Measures.Returning Patients",
+              "nativeQueryRef": "Returning Patients"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Census"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
     },
     "visualContainerObjects": {
@@ -76,14 +40,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Census by payer category'"
+                  "Value": "false"
                 }
               }
             }

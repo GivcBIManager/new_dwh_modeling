@@ -3,7 +3,7 @@
   "name": "c9d752505064e764a28a",
   "position": {
     "x": 16,
-    "y": 660,
+    "y": 260,
     "z": 10000,
     "height": 390,
     "width": 930,
@@ -42,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Average Wait (min)"
+                  "Property": "OP Visits"
                 }
               },
-              "queryRef": "_Measures.Average Wait (min)",
-              "nativeQueryRef": "Average Wait (min)"
+              "queryRef": "_Measures.OP Visits",
+              "nativeQueryRef": "OP Visits"
             }
           ]
         }
@@ -61,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Average Wait (min)"
+                "Property": "OP Visits"
               }
             },
             "direction": "Descending"
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Average wait by department (top 15)'"
+                  "Value": "'OP visits by department (top 15)'"
                 }
               }
             }
@@ -152,7 +152,7 @@
                                 "Source": "_"
                               }
                             },
-                            "Property": "Average Wait (min)"
+                            "Property": "OP Visits"
                           }
                         }
                       }

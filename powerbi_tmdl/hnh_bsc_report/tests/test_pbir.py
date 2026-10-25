@@ -347,7 +347,8 @@ def test_slicers(project):
 def test_buttons(project):
     bsc = PAGES[0]
     vs = visuals(project, bsc)
-    navs = [j for v, j in zip(bsc.visuals, vs) if v.sample == "buttonNavigate"]
+    # the page buttons; the two guide-page buttons before them are tested in test_pages
+    navs = [j for v, j in zip(bsc.visuals, vs) if v.sample == "buttonNavigate"][2:]
     assert len(navs) == 7
     for j, (name, *_rest) in zip(navs, [(p.name,) for p in PAGES[:7]]):
         link = j["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]

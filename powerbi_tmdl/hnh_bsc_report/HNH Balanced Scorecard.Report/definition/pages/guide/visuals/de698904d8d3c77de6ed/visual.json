@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "de698904d8d3c77de6ed",
   "position": {
-    "x": 16,
-    "y": 640,
+    "x": 650,
+    "y": 185,
     "z": 12000,
-    "height": 420,
-    "width": 1888,
+    "height": 440,
+    "width": 620,
     "tabOrder": 12000
   },
   "visual": {
@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Pages",
+                    "value": "Read the scores and colours",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "14pt",
@@ -32,7 +32,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "BSC: how are we doing overall and in each pillar?",
+                    "value": "• Every KPI gets a score from 0 to 100. Scores are points, not percentages.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -44,7 +44,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Financial, Customer, Internal Process, Learning & Growth: which KPIs in this pillar are on track, on watch or at risk?",
+                    "value": "• On track: 85 or more.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -56,7 +56,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Owner view: how are each executive's KPIs doing?",
+                    "value": "• Watch: 70 to 84.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -68,7 +68,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Hospital comparison: which hospital leads or lags, and on which pillar, objective or KPI?",
+                    "value": "• At risk: below 70.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -80,7 +80,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "KPI detail: how has this KPI moved by month and by hospital, and how is it defined?",
+                    "value": "• No data yet, No target and Parked KPIs are listed but not scored.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -92,19 +92,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Detail pages: what is behind a hospital's figures for a month?",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "How scores are calculated: how is each score worked out, and what does each KPI measure?",
+                    "value": "• Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, below 85% at risk.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

@@ -3,7 +3,7 @@
   "name": "040b1ee81d1a3de1d6d3",
   "position": {
     "x": 974,
-    "y": 660,
+    "y": 260,
     "z": 11000,
     "height": 390,
     "width": 930,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Department"
+                      "Entity": "Payer"
                     }
                   },
-                  "Property": "Department Name"
+                  "Property": "Purchaser Name"
                 }
               },
-              "queryRef": "Department.Department Name",
-              "nativeQueryRef": "Department Name",
+              "queryRef": "Payer.Purchaser Name",
+              "nativeQueryRef": "Purchaser Name",
               "active": true
             }
           ]
@@ -42,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Lost Value"
+                  "Property": "Claimed Amount"
                 }
               },
-              "queryRef": "_Measures.Lost Value",
-              "nativeQueryRef": "Lost Value"
+              "queryRef": "_Measures.Claimed Amount",
+              "nativeQueryRef": "Claimed Amount"
             }
           ]
         }
@@ -61,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Lost Value"
+                "Property": "Claimed Amount"
               }
             },
             "direction": "Descending"
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Lost value by department (top 15)'"
+                  "Value": "'Claimed amount by payer (top 15)'"
                 }
               }
             }
@@ -101,10 +101,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Department"
+                "Entity": "Payer"
               }
             },
-            "Property": "Department Name"
+            "Property": "Purchaser Name"
           }
         },
         "type": "TopN",
@@ -119,8 +119,8 @@
                     "Version": 2,
                     "From": [
                       {
-                        "Name": "d",
-                        "Entity": "Department",
+                        "Name": "p",
+                        "Entity": "Payer",
                         "Type": 0
                       },
                       {
@@ -134,10 +134,10 @@
                         "Column": {
                           "Expression": {
                             "SourceRef": {
-                              "Source": "d"
+                              "Source": "p"
                             }
                           },
-                          "Property": "Department Name"
+                          "Property": "Purchaser Name"
                         },
                         "Name": "field"
                       }
@@ -152,7 +152,7 @@
                                 "Source": "_"
                               }
                             },
-                            "Property": "Lost Value"
+                            "Property": "Claimed Amount"
                           }
                         }
                       }
@@ -164,8 +164,8 @@
               "Type": 2
             },
             {
-              "Name": "d",
-              "Entity": "Department",
+              "Name": "p",
+              "Entity": "Payer",
               "Type": 0
             }
           ],
@@ -178,10 +178,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "d"
+                            "Source": "p"
                           }
                         },
-                        "Property": "Department Name"
+                        "Property": "Purchaser Name"
                       }
                     }
                   ],

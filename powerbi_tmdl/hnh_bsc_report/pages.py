@@ -129,6 +129,9 @@ _SCORECARD = [
 
 
 NAV_X = 1156  # the first page button
+# The guide pages' buttons, left of the page buttons on every page: (page name, label), outline style.
+HELP = [("guide", "How to use"), ("definitions", "Calculations")]
+HELP_X = NAV_X - 108 * len(HELP)
 
 
 def year_range(build_date: datetime.date) -> tuple[str, str]:
@@ -137,7 +140,7 @@ def year_range(build_date: datetime.date) -> tuple[str, str]:
     return f"{build_date.year}-01-01", f"{build_date.year}-12-31"
 
 
-def _slicers(build_date: datetime.date, x0: float = 16, right: float = NAV_X - 10) -> list[Visual]:
+def _slicers(build_date: datetime.date, x0: float = 16, right: float = HELP_X - 10) -> list[Visual]:
     """The three header slicers (Branch, BSC Category, Date) spread between x0 and `right` in the ratio 3 : 2 : 4.
     The Date slicer is a From - To range saved at `year_range(build_date)`.
     No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but not to the target."""
@@ -154,8 +157,16 @@ def _slicers(build_date: datetime.date, x0: float = 16, right: float = NAV_X - 1
     ]
 
 
+def _help_buttons() -> list[Visual]:
+    """"How to use" and "Calculations": on every page, so the guide pages are one click away."""
+    return [Visual("buttonNavigate", HELP_X + 108 * i, 35, 104, 50, props=button_props(
+                {"type": _lit("PageNavigation"), "navigationSection": _lit(name)}, label, "outline"))
+            for i, (name, label) in enumerate(HELP)]
+
+
 def _nav_buttons() -> list[Visual]:
-    out = []
+    """The guide buttons, then one button per scorecard page."""
+    out = _help_buttons()
     for i, (name, display, *_rest) in enumerate(_SCORECARD):
         out.append(Visual("buttonNavigate", NAV_X + 108 * i, 35, 104, 50, props=button_props(
             {"type": _lit("PageNavigation"), "navigationSection": _lit(name)}, display, "primary")))
@@ -273,7 +284,8 @@ def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) 
     Name) arrive, never KPI detail's 'BSC KPI' drill filter or pillar filter, which every domain measure's guard
     rejects ("... can't be analysed by "BSC KPI""); the page filters hospitals itself (Review Focus 4)."""
     visuals = [back_button(),
-               Visual("textbox", 130, 25, 1000, 70, props=title_text(display)),
+               Visual("textbox", 130, 25, HELP_X - 140, 70, props=title_text(display)),
+               *_help_buttons(),
                Visual("multiRowCard", 1300, 10, 604, 95, roles={"Values": [BRANCH_NAME, YEAR_MONTH_NAME]})]
     gap = 10
     w = (1888 - gap * (len(cards) - 1)) / len(cards)
@@ -365,7 +377,7 @@ def _text(x: float, y: float, w: float, h: float, paragraphs: list[tuple[str, st
 
 
 def _header(title: str) -> list[Visual]:
-    return [Visual("textbox", 16, 25, 1100, 70, props=title_text(title))] + _nav_buttons()
+    return [Visual("textbox", 16, 25, 900, 70, props=title_text(title))] + _nav_buttons()
 
 
 def _section(heading: str, bullets: list[str]) -> list[tuple[str, str]]:

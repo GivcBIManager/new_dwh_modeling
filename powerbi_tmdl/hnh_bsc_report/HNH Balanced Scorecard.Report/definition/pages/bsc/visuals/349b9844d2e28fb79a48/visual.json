@@ -2,459 +2,142 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "349b9844d2e28fb79a48",
   "position": {
-    "x": 0,
-    "y": 120,
+    "x": 1696,
+    "y": 35,
     "z": 10000,
-    "height": 960,
-    "width": 1920,
+    "height": 50,
+    "width": 104,
     "tabOrder": 10000
   },
   "visual": {
-    "visualType": "hnhBscVisual431F658EE9D44EA3BD5E1BEA5FAF899D",
-    "query": {
-      "queryState": {
-        "kpi": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "KPI Code"
-                }
-              },
-              "queryRef": "BSC KPI.KPI Code",
-              "nativeQueryRef": "KPI Code"
-            }
-          ]
-        },
-        "kpiName": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "KPI Name"
-                }
-              },
-              "queryRef": "BSC KPI.KPI Name",
-              "nativeQueryRef": "KPI Name"
-            }
-          ]
-        },
-        "shortLabel": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Short Label"
-                }
-              },
-              "queryRef": "BSC KPI.Short Label",
-              "nativeQueryRef": "Short Label"
-            }
-          ]
-        },
-        "pillar": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Pillar"
-                }
-              },
-              "queryRef": "BSC KPI.Pillar",
-              "nativeQueryRef": "Pillar"
-            }
-          ]
-        },
-        "pillarOrder": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Pillar Order"
-                }
-              },
-              "queryRef": "BSC KPI.Pillar Order",
-              "nativeQueryRef": "Pillar Order"
-            }
-          ]
-        },
-        "pillarWeight": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Pillar Weight"
-                }
-              },
-              "queryRef": "BSC KPI.Pillar Weight",
-              "nativeQueryRef": "Pillar Weight"
-            }
-          ]
-        },
-        "pillarQuestion": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Pillar Question"
-                }
-              },
-              "queryRef": "BSC KPI.Pillar Question",
-              "nativeQueryRef": "Pillar Question"
-            }
-          ]
-        },
-        "objectiveCode": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Objective Code"
-                }
-              },
-              "queryRef": "BSC KPI.Objective Code",
-              "nativeQueryRef": "Objective Code"
-            }
-          ]
-        },
-        "objectiveTitle": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Objective Title"
-                }
-              },
-              "queryRef": "BSC KPI.Objective Title",
-              "nativeQueryRef": "Objective Title"
-            }
-          ]
-        },
-        "objectiveOrder": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Objective Order"
-                }
-              },
-              "queryRef": "BSC KPI.Objective Order",
-              "nativeQueryRef": "Objective Order"
-            }
-          ]
-        },
-        "kpiType": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "KPI Type"
-                }
-              },
-              "queryRef": "BSC KPI.KPI Type",
-              "nativeQueryRef": "KPI Type"
-            }
-          ]
-        },
-        "direction": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Direction"
-                }
-              },
-              "queryRef": "BSC KPI.Direction",
-              "nativeQueryRef": "Direction"
-            }
-          ]
-        },
-        "valueFormat": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Value Format"
-                }
-              },
-              "queryRef": "BSC KPI.Value Format",
-              "nativeQueryRef": "Value Format"
-            }
-          ]
-        },
-        "displayOrder": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Display Order"
-                }
-              },
-              "queryRef": "BSC KPI.Display Order",
-              "nativeQueryRef": "Display Order"
-            }
-          ]
-        },
-        "kpiStatus": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Status"
-                }
-              },
-              "queryRef": "BSC KPI.Status",
-              "nativeQueryRef": "Status"
-            }
-          ]
-        },
-        "valueSource": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Value Source"
-                }
-              },
-              "queryRef": "BSC KPI.Value Source",
-              "nativeQueryRef": "Value Source"
-            }
-          ]
-        },
-        "owner": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Owner"
-                }
-              },
-              "queryRef": "BSC KPI.Owner",
-              "nativeQueryRef": "Owner"
-            }
-          ]
-        },
-        "coOwners": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Co Owners"
-                }
-              },
-              "queryRef": "BSC KPI.Co Owners",
-              "nativeQueryRef": "Co Owners"
-            }
-          ]
-        },
-        "scoreBase": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Score Base"
-                }
-              },
-              "queryRef": "BSC KPI.Score Base",
-              "nativeQueryRef": "Score Base"
-            }
-          ]
-        },
-        "scoreSlope": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Score Slope"
-                }
-              },
-              "queryRef": "BSC KPI.Score Slope",
-              "nativeQueryRef": "Score Slope"
-            }
-          ]
-        },
-        "goodFrom": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Good From"
-                }
-              },
-              "queryRef": "BSC KPI.Good From",
-              "nativeQueryRef": "Good From"
-            }
-          ]
-        },
-        "watchFrom": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Watch From"
-                }
-              },
-              "queryRef": "BSC KPI.Watch From",
-              "nativeQueryRef": "Watch From"
-            }
-          ]
-        },
-        "payload": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC Visual Payload Scores"
-                }
-              },
-              "queryRef": "_Measures.BSC Visual Payload Scores",
-              "nativeQueryRef": "BSC Visual Payload Scores"
-            }
-          ]
-        },
-        "selectionLabel": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC Selection Label"
-                }
-              },
-              "queryRef": "_Measures.BSC Selection Label",
-              "nativeQueryRef": "BSC Selection Label"
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "actionButton",
     "objects": {
-      "scorecard": [
+      "text": [
         {
           "properties": {
-            "mode": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "'overview'"
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Owner view'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        },
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "disabled"
+          }
+        }
+      ],
+      "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "fillColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#13ACE3'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        },
+        {
+          "properties": {
+            "fillColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE9F2'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "disabled"
+          }
+        }
+      ],
+      "outline": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -470,6 +153,33 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualLink": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "type": {
+              "expr": {
+                "Literal": {
+                  "Value": "'PageNavigation'"
+                }
+              }
+            },
+            "navigationSection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'owner_view'"
                 }
               }
             }

@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "afc69530f3cbff2d7097",
   "position": {
-    "x": 16,
-    "y": 260,
+    "x": 965.0,
+    "y": 130,
     "z": 7000,
-    "height": 390,
-    "width": 930,
+    "height": 110,
+    "width": 464.5,
     "tabOrder": 7000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Survey Question"
-                    }
-                  },
-                  "Property": "Domain En"
-                }
-              },
-              "queryRef": "Survey Question.Domain En",
-              "nativeQueryRef": "Domain En",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,60 +23,15 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "NPS (5-point)"
+                  "Property": "NPS Answers"
                 }
               },
-              "queryRef": "_Measures.NPS (5-point)",
-              "nativeQueryRef": "NPS (5-point)"
+              "queryRef": "_Measures.NPS Answers",
+              "nativeQueryRef": "NPS Answers"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "NPS (5-point)"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
-    },
-    "objects": {
-      "valueAxis": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "labels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        }
-      ]
     },
     "visualContainerObjects": {
       "title": [
@@ -104,14 +40,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'NPS by domain'"
+                  "Value": "false"
                 }
               }
             }
