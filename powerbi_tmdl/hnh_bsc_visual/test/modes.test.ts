@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { renderView, type UiState } from "../src/render/index";
+import { DEFAULT_OWNER_UI, type OwnerUi } from "../src/render/owner";
 import { parseDataView } from "../src/model/parse";
 import type { ViewModel } from "../src/model/types";
 import { makeDataView, payload, FixtureRow } from "./fixtures";
@@ -170,6 +171,79 @@ describe("owner view with co-owners", () => {
     it("shows a KPI without co-owners once", () => {
         const all = [...blocks().values()].flatMap(b => [...b.querySelectorAll("tbody tr")]).filter(r => r.textContent!.includes("K2 name"));
         expect(all.length).toBe(1);
+    });
+});
+
+describe("owner overview strip", () => {
+    const pay = (actual: number, target: number, variance: number, weight = 1) =>
+        payload({ actual, target, variance, score: 85, state: variance >= 0 ? "On track" : "At risk", weight });
+    const ovRows: FixtureRow[] = [
+        row("K1", "Financial", 1, 0.5, { owner: "CFO", payload: pay(1.2, 1, 0.2, 3) }),
+        row("K2", "Financial", 1, 0.5, { owner: "CFO", displayOrder: 2, payload: pay(0.6, 1, -0.4, 1) }),
+        row("K3", "Customer", 2, 0.5, { owner: "Quality Manager", coOwners: "CEO", payload: pay(0.9, 1, -0.1) }),
+        row("K4", "Customer", 2, 0.5, { owner: "CEO", displayOrder: 2, payload: payload({ state: "" }) }),
+        row("K5", "Customer", 2, 0.5, { owner: "COO", displayOrder: 3, payload: pay(1, 1, 0) }),
+    ];
+    const draw = (o: Partial<OwnerUi> = {}) => {
+        const root = mount();
+        renderView(root, parseDataView(makeDataView(ovRows)), "owner", ui({ owner: { ...DEFAULT_OWNER_UI, ...o } }));
+        return root;
+    };
+    const cards = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".own-card")];
+    const pressed = (root: HTMLElement, group: string) =>
+        root.querySelector(`button[data-owner-toggle="${group}"][aria-pressed="true"]`)!.getAttribute("data-value");
+
+    it("defaults to Weighted, C-Suite and Owned", () => {
+        expect(DEFAULT_OWNER_UI).toEqual({ score: "weighted", tier: "csuite", scope: "owned", pick: null });
+        const root = draw();
+        expect(pressed(root, "score")).toBe("weighted");
+        expect(pressed(root, "tier")).toBe("csuite");
+        expect(pressed(root, "scope")).toBe("owned");
+        expect([...root.querySelectorAll("button[data-owner-toggle]")].map(b => b.textContent))
+            .toEqual(["Weighted", "On-target", "C-Suite", "All owners", "Owned", "Owned + co-owned"]);
+    });
+    it("draws one card per C-suite owner in C-suite order, each with an Achievement gauge in %", () => {
+        const root = draw();
+        expect(cards(root).map(c => c.dataset.ownerCard)).toEqual(["CEO", "COO", "CFO"]);
+        const cfo = cards(root)[2];
+        expect(cfo.tagName).toBe("BUTTON");
+        expect(cfo.getAttribute("aria-pressed")).toBe("false");
+        expect(cfo.querySelector(".gauge text")!.textContent).toBe("105%");
+        expect(cfo.textContent).toContain("Achievement");
+        expect(cfo.textContent).toContain("2 of 2 KPIs scored");
+        expect(cards(root)[0].querySelector(".gauge text")!.textContent).toBe("–");
+    });
+    it("On-target shows the hit rate", () => {
+        const root = draw({ score: "hitrate" });
+        expect(cards(root)[2].querySelector(".gauge text")!.textContent).toBe("50%");
+        expect(cards(root)[2].textContent).toContain("1 of 2 KPIs on target");
+    });
+    it("All owners adds the other owners after the C-suite", () => {
+        expect(cards(draw({ tier: "all" })).map(c => c.dataset.ownerCard)).toEqual(["CEO", "COO", "CFO", "Quality Manager"]);
+    });
+    it("Owned + co-owned counts a co-owner's KPIs on their card", () => {
+        const owned = cards(draw())[0], co = cards(draw({ scope: "co" }))[0];
+        expect(owned.querySelector(".gauge text")!.textContent).toBe("–");
+        expect(co.querySelector(".gauge text")!.textContent).toBe("90%");
+    });
+    it("lists every owner's KPI blocks below the strip until a card is picked", () => {
+        const root = draw();
+        expect([...root.querySelectorAll(".owners .owner h3")].map(h => h.textContent)).toEqual(["CEO", "CFO", "COO", "Quality Manager"]);
+        expect(root.querySelector(".owners tr[data-key]")!.getAttribute("tabindex")).toBe("0");
+    });
+    it("a picked owner filters the blocks to that owner, co-owned rows tagged", () => {
+        const root = draw({ pick: "CEO" });
+        const blocks = [...root.querySelectorAll(".owners .owner")];
+        expect(blocks.map(b => b.querySelector("h3")!.textContent)).toEqual(["CEO"]);
+        expect(blocks[0].querySelectorAll("tbody tr").length).toBe(2);
+        expect(blocks[0].querySelectorAll(".co-tag").length).toBe(1);
+        expect(root.querySelector('.own-card[data-owner-card="CEO"]')!.getAttribute("aria-pressed")).toBe("true");
+    });
+    it("says so when the selection has no C-suite owner", () => {
+        const root = mount();
+        renderView(root, parseDataView(makeDataView([row("X1", "Financial", 1, 1, { owner: "Quality Manager", payload: pay(1, 1, 0) })])), "owner", ui());
+        expect(root.querySelectorAll(".own-card").length).toBe(0);
+        expect(root.querySelector(".own-strip")!.textContent).toContain("No C-suite owner");
     });
 });
 

@@ -12,8 +12,8 @@ const PILLARS = [
     { name: "Internal Process", order: 3, weight: 0.3, count: 26, q: "Are our clinical and operational processes efficient and safe?", objectives: ["Clinical quality", "Throughput", "Supply chain", "Revenue cycle"] },
     { name: "Learning & Growth", order: 4, weight: 0.15, count: 16, q: "Are our people and systems ready for tomorrow?", objectives: ["Workforce", "Technology"] },
 ];
-const OWNERS = ["Finance Department", "Patient Experience", "Medical Director", "Nursing Affairs", "Operations", "Human Resources", "Supply Chain", "Revenue Cycle", "Quality Department", "Information Technology"];
-const CO = ["", "CFO", "", "Quality Manager|CMO", "", "Internal Audit", "", "Patient Experience"];
+const OWNERS = ["CEO", "CFO", "COO", "Patient Experience", "CMO", "CHRO", "Quality Manager", "CIO", "CSO", "Internal Audit", "Supply Chain"];
+const CO = ["", "CFO", "", "Quality Manager|CMO", "", "Internal Audit", "", "Patient Experience", "", "CEO"];
 const MONTHS = 12;
 const BASE = 85, SLOPE = 0.6, GOOD = 85, WATCH = 70;
 
@@ -47,8 +47,9 @@ const QUALIFIER = ["", " (YTD)", " (month)"];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 /** Score from the target variance: base 85 at target, 0.6 points per 1%, direction-aware, clamped and rounded. */
+const signedVariance = (variance: number, dir: string) => (dir === "lower" || dir === "ceiling" ? -variance : dir === "on_target" ? -Math.abs(variance) : variance);
 function scoreOf(variance: number, dir: string): number {
-    const signed = dir === "lower" || dir === "ceiling" ? -variance : dir === "on_target" ? -Math.abs(variance) : variance;
+    const signed = signedVariance(variance, dir);
     return Math.round(clamp(BASE + SLOPE * 100 * signed, 0, 100));
 }
 const stateOf = (score: number) => (score >= GOOD ? "On track" : score >= WATCH ? "Watch" : "At risk");
@@ -63,7 +64,8 @@ function branchPayload(kind: string, spec: Spec, tilt: number): string {
     const trend = Array.from({ length: MONTHS }, () => actual * (1 + (rnd() - 0.5) * 0.1));
     trend[MONTHS - 1] = actual;
     return payload({
-        actual, target, variance, score, state: stateOf(score), weight: 1 + Math.floor(rnd() * 3),
+        // Payload field 3 is direction-adjusted (positive = better than target), as [BSC Visual Payload] sends it.
+        actual, target, variance: signedVariance(variance, spec.dir), score, state: stateOf(score), weight: 1 + Math.floor(rnd() * 3),
         trend, targetTrend: Array(MONTHS).fill(target), scoreTrend: trend.map(v => scoreOf(v / target - 1, spec.dir)),
     });
 }
@@ -164,7 +166,8 @@ const params = new URLSearchParams(location.search);
 const shot = params.get("mode") ?? "overview";
 /** "overview-scores" is the landing page as bound in the report: [BSC Visual Payload Scores], no trends. */
 /** "comparison" is the league table; "comparison-pillar" and "comparison-objective" drill into Financial and F1 Revenue. */
-const mode = shot === "overview-scores" ? "overview" : shot.startsWith("comparison") ? "comparison" : shot;
+/** "owner-ontarget-all" flips the owner strip to On-target and All owners; "owner-co-pick" to Owned + co-owned with the CFO card picked. */
+const mode = shot === "overview-scores" ? "overview" : shot.startsWith("comparison") ? "comparison" : shot.startsWith("owner") ? "owner" : shot;
 const HOSPITALS = ["Hospital A", "Hospital B", "Hospital C", "Hospital D", "Head Office", "Hospital E", "Hospital F", "Hospital G", "Hospital H"];
 const branches = mode === "comparison" ? HOSPITALS : null;
 const built = branches ? buildComparisonRows(branches) : buildRows(null);
@@ -188,5 +191,8 @@ const pillar = params.get("pillar");
 if (pillar) (root.querySelector(`[data-pillar="${pillar}"]`) as HTMLElement | null)?.click();
 // Drill the league table the way a user does: click the pillar header, then the objective header.
 if (shot === "comparison-pillar" || shot === "comparison-objective") (root.querySelector('thead button[data-cmp-pillar="Financial"]') as HTMLElement | null)?.click();
+const press = (sel: string) => (root.querySelector(sel) as HTMLElement | null)?.click();
+if (shot === "owner-ontarget-all") { press('button[data-owner-toggle="score"][data-value="hitrate"]'); press('button[data-owner-toggle="tier"][data-value="all"]'); }
+if (shot === "owner-co-pick") { press('button[data-owner-toggle="scope"][data-value="co"]'); press('.own-card[data-owner-card="CFO"]'); }
 if (shot === "comparison-objective") (root.querySelector('thead button[data-cmp-objective="F1"]') as HTMLElement | null)?.click();
 document.body.setAttribute("data-font", getComputedStyle(root).fontFamily + "|" + getComputedStyle(root.querySelector("h1") ?? root).fontFamily);

@@ -4,7 +4,7 @@ import { empty } from "./empty";
 import { header, DEFAULT_TITLE } from "./header";
 import { overview } from "./overview";
 import { board, boardPillar } from "./board";
-import { owner } from "./owner";
+import { owner, DEFAULT_OWNER_UI, type OwnerUi } from "./owner";
 import { comparison, type CompareLevel } from "./comparison";
 
 export type Mode = "overview" | "board" | "owner" | "comparison";
@@ -13,6 +13,8 @@ export interface UiState {
     pillar: string | null;
     /** Comparison drill level (the visual's own state, like the board tab). */
     compareLevel: CompareLevel;
+    /** Owner view toggles and card pick (the visual's own state); defaults when absent. */
+    owner?: OwnerUi;
     title: string;
     subtitle: string;
     showHeader: boolean;
@@ -36,7 +38,7 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
 
     const body = mode === "overview" ? overview(vm)
         : mode === "board" ? board(vm, ui.pillar, !ui.showHeader)
-        : mode === "owner" ? owner(vm)
+        : mode === "owner" ? owner(vm, ui.owner ?? DEFAULT_OWNER_UI)
         : comparison(vm, ui.compareLevel);
     root.appendChild(el("div", { class: "view" }, [body]));
 }

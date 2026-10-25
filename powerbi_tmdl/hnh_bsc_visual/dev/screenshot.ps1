@@ -13,7 +13,7 @@ try {
 } finally { Pop-Location }
 $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
 $page = 'file:///' + ((Join-Path $dev 'harness.html') -replace '\\', '/')
-foreach ($mode in 'overview', 'overview-scores', 'board', 'owner', 'comparison', 'comparison-pillar', 'comparison-objective') {
+foreach ($mode in 'overview', 'overview-scores', 'board', 'owner', 'owner-ontarget-all', 'owner-co-pick', 'comparison', 'comparison-pillar', 'comparison-objective') {
     $png = Join-Path $out "$mode.png"
     & $edge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 "--screenshot=$png" --window-size=1920,904 ($page + '?mode=' + $mode)
     Start-Sleep -Milliseconds 800

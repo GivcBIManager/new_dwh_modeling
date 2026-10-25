@@ -19,8 +19,9 @@ export interface WireHost {
     allowInteractions: boolean;
 }
 
-/** Clicks on these are handled by the visual itself (board tab, comparison drill header and breadcrumb), never as selection or clear. */
-export const INTERNAL_SELECTOR = "button[data-pillar], button[data-cmp-pillar]";
+/** Clicks on these are handled by the visual itself (board tab, comparison drill header and breadcrumb, owner card and
+ * owner-view toggle), never as selection or clear. */
+export const INTERNAL_SELECTOR = "button[data-pillar], button[data-cmp-pillar], button[data-owner-card], button[data-owner-toggle]";
 
 export const selectionKey = (rowIndex: number, seriesIndex: number | null): string => `${rowIndex}:${seriesIndex ?? ""}`;
 

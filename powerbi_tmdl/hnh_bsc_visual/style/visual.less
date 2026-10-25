@@ -83,7 +83,26 @@
 .dot.good{background:var(--good)}.dot.warn{background:var(--warn);margin-left:10px}.dot.bad{background:var(--bad);margin-left:10px}
 .pillar .risk{color:var(--bad)}
 
-/* owner mode */
+/* owner mode: ownership overview (toggles, achievement strip, then the KPI blocks) */
+.own-ov{display:flex;flex-direction:column;overflow:auto}
+.own-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:14px 24px 0}
+.own-lbl{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin-left:14px}
+.own-lbl:first-child{margin-left:auto}
+.seg{display:inline-flex;background:var(--nodata-bg);border:1px solid var(--line);border-radius:8px;padding:2px}
+.seg button{font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;border-radius:6px;padding:5px 12px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--blue-dk);box-shadow:0 1px 2px rgba(10,30,50,.18)}
+.seg button:focus-visible,.own-card:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.own-strip{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:12px;padding:12px 24px 4px;overflow-x:auto}
+.own-card{font:inherit;color:inherit;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 0 8px;
+  display:flex;flex-direction:column;align-items:center;cursor:pointer;overflow:hidden;min-width:0}
+.own-card .own-name{align-self:stretch;padding:7px 8px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;
+  background:linear-gradient(100deg,var(--hdr-1) 0%,var(--hdr-2) 60%,var(--hdr-3) 100%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.own-card .gauge{max-width:100%;height:auto;margin-top:6px}
+.own-card .own-sub{font-size:12px;color:var(--muted)}
+.own-card[aria-pressed=true]{border:2px solid var(--blue-dk);box-shadow:0 0 0 2px var(--blue) inset}
+.own-card:hover{border-color:var(--blue)}
+.own-none{margin:6px 0;font-size:14px;color:var(--muted)}
+.own-note{margin:8px 24px 0;font-size:13px;color:var(--muted)}
 .owners{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px;padding:20px 24px;align-content:start}
 .owner{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
 .owner h3{margin:0 0 8px;font-size:18px;font-weight:800}
@@ -133,6 +152,8 @@
   --blue:var(--hc-sel); --blue-dk:var(--hc-sel); --navy:var(--hc-fg); --navy-2:var(--hc-fg);
 }
 .hnh-bsc.hc .band{background:var(--hc-bg);color:var(--hc-fg);border-bottom:2px solid var(--hc-fg)}
+.hnh-bsc.hc .own-card .own-name{background:var(--hc-bg);color:var(--hc-fg);border-bottom:1px solid var(--hc-fg)}
+.hnh-bsc.hc .seg button[aria-pressed=true]{outline:2px solid var(--hc-sel);box-shadow:none}
 .hnh-bsc.hc .chip,.hnh-bsc.hc .var,.hnh-bsc.hc .cmp td{color:var(--hc-fg);border:1px solid var(--hc-fg)}
 .hnh-bsc.hc .strip i{background:var(--hc-bg);border:2px solid var(--hc-fg)}
 .hnh-bsc.hc .strip i.bad{background:var(--hc-fg)}

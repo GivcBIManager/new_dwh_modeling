@@ -14,6 +14,7 @@ import type { ViewModel } from "./model/types";
 import { parseDataView } from "./model/parse";
 import { renderView, type Mode, type UiState } from "./render/index";
 import { levelOf, TOP_LEVEL, type CompareLevel } from "./render/comparison";
+import { DEFAULT_OWNER_UI, validPick, type OwnerUi } from "./render/owner";
 import { applyColours, buildFormattingModel, readSettings, toOptions, VisualSettings } from "./settings";
 import { INTERNAL_SELECTOR, markSelected, selectionKey, wire } from "./interactions";
 
@@ -36,6 +37,8 @@ export class Visual implements IVisual {
     private setUi: UiState = toOptions(new VisualSettings()).ui;
     private settings: VisualSettings = new VisualSettings();
     private pick: { pillar: string | null; compare: CompareLevel } = { pillar: null, compare: { ...TOP_LEVEL } };
+    /** Owner view toggles and card pick: internal state, kept across updates. */
+    private ownerUi: OwnerUi = { ...DEFAULT_OWNER_UI };
     private interactive = true;
 
     constructor(options: VisualConstructorOptions, private read: typeof readOptions = readOptions) {
@@ -80,7 +83,9 @@ export class Visual implements IVisual {
         this.interactive = this.host.hostCapabilities?.allowInteractions !== false;
         this.applyPalette();
         applyColours(this.root, this.settings, !!this.host.colorPalette?.isHighContrast);
-        const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, compareLevel: this.pick.compare };
+        // A picked owner whose card is no longer in the strip (data or toggle change) is dropped.
+        this.ownerUi.pick = validPick(this.vm, this.ownerUi);
+        const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, compareLevel: this.pick.compare, owner: { ...this.ownerUi } };
         renderView(this.root, this.vm, this.mode, ui);
         this.root.classList.toggle("hc", !!this.host.colorPalette?.isHighContrast);
         const rows = this.vm.pillars.flatMap(p => p.kpis);
@@ -107,7 +112,7 @@ export class Visual implements IVisual {
         markSelected(this.root, this.ids, this.selectionManager.getSelectionIds() as ISelectionId[]);
     }
 
-    /** Board tab, comparison drill header and breadcrumb: internal view state, no host selection. */
+    /** Board tab, comparison drill header and breadcrumb, owner card and owner toggle: internal view state, no host selection. */
     private onInternalClick(e: MouseEvent): void {
         if (!this.interactive || !this.vm || !(e.target instanceof Element)) return;
         const hit = e.target.closest(INTERNAL_SELECTOR) as HTMLElement | null;
@@ -117,6 +122,10 @@ export class Visual implements IVisual {
     private pickFrom(hit: HTMLElement): void {
         if (!this.interactive || !this.vm) return;
         const hadFocus = hit.ownerDocument.activeElement === hit;
+        if (hit.dataset.ownerCard !== undefined || hit.dataset.ownerToggle !== undefined) {
+            this.pickOwner(hit, hadFocus);
+            return;
+        }
         if (hit.dataset.cmpPillar !== undefined) {
             const from = this.pick.compare;
             this.pick.compare = levelOf(this.vm, { pillar: hit.dataset.cmpPillar || null, objective: hit.dataset.cmpObjective || null });
@@ -132,6 +141,22 @@ export class Visual implements IVisual {
             const same = Array.from(this.root.querySelectorAll<HTMLElement>("button[data-pillar]")).find(e => e.dataset.pillar === value);
             same?.focus();
         }
+    }
+
+    /** An owner card picks that owner (a second click clears); a toggle sets its group. Focus follows the re-rendered button. */
+    private pickOwner(hit: HTMLElement, hadFocus: boolean): void {
+        const card = hit.dataset.ownerCard;
+        const group = hit.dataset.ownerToggle;
+        const value = hit.dataset.value as string;
+        if (card !== undefined) this.ownerUi.pick = this.ownerUi.pick === card ? null : card;
+        else if (group === "score") this.ownerUi.score = value === "hitrate" ? "hitrate" : "weighted";
+        else if (group === "tier") this.ownerUi.tier = value === "all" ? "all" : "csuite";
+        else if (group === "scope") this.ownerUi.scope = value === "co" ? "co" : "owned";
+        this.render();
+        if (!hadFocus) return;
+        const same = Array.from(this.root.querySelectorAll<HTMLElement>("button[data-owner-card], button[data-owner-toggle]"))
+            .find(e => card !== undefined ? e.dataset.ownerCard === card : e.dataset.ownerToggle === group && e.dataset.value === value);
+        same?.focus();
     }
 
     /** After a keyboard drill: down lands on the breadcrumb's last link (the way back); up lands on the header drilled from. */

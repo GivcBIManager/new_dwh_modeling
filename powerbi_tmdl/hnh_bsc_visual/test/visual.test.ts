@@ -240,6 +240,83 @@ describe("Visual", () => {
         });
     });
 
+    describe("owner overview (strip toggles and owner filter)", () => {
+        const own: Reader = () => ({ mode: "owner", ui: { pillar: null, compareLevel: { pillar: null, objective: null }, title: "t", subtitle: "s", showHeader: false } });
+        const r = (code: string, owner: string, actual: number, extra: FixtureRow = {}): FixtureRow => ({ ...mk(code, "Financial", 1), owner,
+            payload: payload({ actual, target: 1, variance: actual - 1, score: 85, state: "On track", weight: 1 }), ...extra });
+        const data = () => makeDataView([r("K1", "CFO", 1.2), r("K2", "CFO", 0.6), r("K3", "CEO", 1, { coOwners: "CFO" }), r("K4", "Quality Manager", 0.9)]);
+        const click = (el: HTMLElement, sel: string) => (el.querySelector(sel) as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        const value = (el: HTMLElement, owner: string) => el.querySelector(`.own-card[data-owner-card="${owner}"] .gauge text`)!.textContent;
+        const owners = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>(".own-card")].map(c => c.dataset.ownerCard);
+        const blocks = (el: HTMLElement) => [...el.querySelectorAll(".owners .owner h3")].map(h => h.textContent);
+
+        it("the score, owner and scope toggles change the strip without a host selection and survive an update", () => {
+            const { visual, element, selects } = setup({ read: own });
+            visual.update(opts(data()));
+            expect(value(element, "CFO")).toBe("90%");
+            click(element, 'button[data-owner-toggle="score"][data-value="hitrate"]');
+            expect(value(element, "CFO")).toBe("50%");
+            click(element, 'button[data-owner-toggle="tier"][data-value="all"]');
+            expect(owners(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+            click(element, 'button[data-owner-toggle="scope"][data-value="co"]');
+            expect(value(element, "CFO")).toBe("67%");
+            expect(selects).toEqual([]);
+            visual.update(opts(data()));
+            expect(value(element, "CFO")).toBe("67%");
+            expect(owners(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+        });
+        it("a card click filters the KPI list to that owner; a second click shows every owner again", () => {
+            const { visual, element, selects } = setup({ read: own });
+            visual.update(opts(data()));
+            expect(blocks(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+            click(element, '.own-card[data-owner-card="CFO"]');
+            expect(blocks(element)).toEqual(["CFO"]);
+            expect(element.querySelector('.own-card[data-owner-card="CFO"]')!.getAttribute("aria-pressed")).toBe("true");
+            visual.update(opts(data()));
+            expect(blocks(element)).toEqual(["CFO"]);
+            click(element, '.own-card[data-owner-card="CFO"]');
+            expect(blocks(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+            expect(selects).toEqual([]);
+        });
+        it("the pick is dropped when its card leaves the strip", () => {
+            const { visual, element } = setup({ read: own });
+            visual.update(opts(data()));
+            click(element, 'button[data-owner-toggle="tier"][data-value="all"]');
+            click(element, '.own-card[data-owner-card="Quality Manager"]');
+            expect(blocks(element)).toEqual(["Quality Manager"]);
+            click(element, 'button[data-owner-toggle="tier"][data-value="csuite"]');
+            expect(blocks(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+        });
+        it("KPI rows under the strip still select on click", () => {
+            const { visual, element, selects } = setup({ read: own });
+            visual.update(opts(data()));
+            click(element, ".owners tr[data-key]");
+            expect(selects.length).toBe(1);
+        });
+        it("keyboard: focus stays on the card or toggle after the re-render", () => {
+            const { visual, element } = setup({ read: own });
+            document.body.appendChild(element);
+            visual.update(opts(data()));
+            const card = element.querySelector('.own-card[data-owner-card="CFO"]') as HTMLButtonElement;
+            card.focus();
+            card.click();
+            expect((document.activeElement as HTMLElement).dataset.ownerCard).toBe("CFO");
+            const tog = element.querySelector('button[data-owner-toggle="score"][data-value="hitrate"]') as HTMLButtonElement;
+            tog.focus();
+            tog.click();
+            expect((document.activeElement as HTMLElement).dataset.value).toBe("hitrate");
+            element.remove();
+        });
+        it("ignores card and toggle clicks when the host does not allow interactions", () => {
+            const { visual, element } = setup({ read: own, allow: false });
+            visual.update(opts(data()));
+            click(element, '.own-card[data-owner-card="CFO"]');
+            click(element, 'button[data-owner-toggle="score"][data-value="hitrate"]');
+            expect(blocks(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+            expect(value(element, "CFO")).toBe("90%");
+        });
+    });
+
     it("clears the view and unwires after a render error", () => {
         const { visual, element, events } = setup();
         visual.update(opts(makeDataView([mk("F1", "Financial", 1)])));

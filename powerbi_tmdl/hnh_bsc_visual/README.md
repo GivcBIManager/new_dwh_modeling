@@ -13,7 +13,7 @@
 ```powershell
 npm install
 npm test                 # Vitest, jsdom
-npx pbiviz package       # writes dist/hnhBscVisual...1.0.2.0.pbiviz (dist is not committed)
+npx pbiviz package       # writes dist/hnhBscVisual...1.0.3.0.pbiviz (dist is not committed)
 ```
 
 Screenshots without Power BI: `powershell -ExecutionPolicy Bypass -File dev\screenshot.ps1` bundles `dev/harness.ts` (the real `Visual` class, a fake host and 70 synthetic KPIs; for the comparison 8 hospitals over 14 objectives) and has headless Edge write one PNG per mode, the three comparison levels (`comparison`, `comparison-pillar`, `comparison-objective`) and the design prototype into `dev/out/` (git-ignored).
@@ -39,7 +39,7 @@ Then, per page, set Format pane > Scorecard > View:
 |---|---|---|
 | BSC landing | Overview | Payload `[BSC Visual Payload Scores]` |
 | Financial, Customer, Internal Process, Learning & Growth | Pillar board | Payload `[BSC Visual Payload]`; page filter on `'BSC KPI'[Pillar]` |
-| Owner view | Owner view | Payload `[BSC Visual Payload]`; one block per owner or co-owner (`Co Owners`, separated by `|`), co-owner rows tagged "co-owner" |
+| Owner view | Owner view | Payload `[BSC Visual Payload]`; ownership overview: a strip of owner achievement cards, then one block per owner or co-owner (`Co Owners`, separated by `|`), co-owner rows tagged "co-owner" |
 | Hospital Comparison | Hospital comparison | Payload `[BSC Visual Payload Scores]`; visual-level filter `'Branch'[Is Hospital]` is `Yes`; slicer on `'Branch'[BSC Category]` |
 
 The drill-through page (KPI Detail) takes `'BSC KPI'[KPI Code]` as its drill-through field.
@@ -60,4 +60,9 @@ Tooltips: the visual shows its own tooltip (KPI, hospital on the comparison page
 - Comparison KPI cells take the click (cross-filter), the right-click menu (drill-through to KPI Detail) and the tooltip for that KPI and hospital; "–" cells do nothing.
 - The comparison leaves out a branch with no KPI score at all (Head Office, a hospital outside the period); the visual-level filter on `'Branch'[Is Hospital]` keeps such branches out of the query too.
 - With several hospitals the header reads "<n> hospitals · <period>"; with one, that hospital's label.
+- The owner view (1.0.3.0) is the old report's ownership overview. A strip has one card per owner, each a gauge labelled **Achievement** in %; three toggles in the visual pick what it shows: **Score** Weighted (default) or On-target, **Owners** C-Suite (default: CEO, COO, CMO, CFO, CHRO, CIO, CSO) or All owners, **KPIs** Owned (default) or Owned + co-owned. Cards run C-suite first in that order, then the other owners by name; an owner shows when they have a KPI in the chosen scope. The toggles and the picked card are the visual's own state (no host selection) and survive a data refresh; a picked owner whose card leaves the strip is dropped.
+- Below the strip, every owner's KPI block is listed as before; clicking a card shows only that owner's block (a second click shows every owner again). KPI rows keep the click, right-click drill-through, tooltip and keyboard focus. Cards and toggles are buttons (Tab, then Enter or Space), and focus stays on them after the re-render.
+- **Weighted** is the weighted mean of the owner's KPI *unit scores*, weights = the KPI weight (payload field 6); a KPI without a unit score or a weight above 0 is left out. Unit score, as the handover's `_v9KpiUnitScore` (no cap): higher actual / target (target > 0); lower target / actual (both > 0); ceiling 1 at or under the target, else target / actual; on target max(0, 1 − |actual − target| / |target|); a budget variance (name contains "budget variance", or lower with target 0) 1 − (actual − target), values above 1.5 read as percentages, at or below 0 becomes 0.01. A unit at or below 0, or a KPI without actual and target (or parked / no data), is not scored. The handover also scored /readmission/ names as ceiling; here the configured direction decides.
+- **On-target** is the share of the owner's judgeable KPIs (actual and target present) whose direction-adjusted variance (payload field 3) is 0 or more; an on-target KPI's variance is −|actual − target|, so it counts only when exactly on target.
+- Achievement colours: 100% and over green, 85–99% orange, under 85% red, on the rounded value; the arc stops at 100% (the target marker), the number does not. "–" when the owner has nothing scored or judged.
 - If the Branch well is filled on an overview, board or owner page, those views show the first hospital only, and a line under the header says so.

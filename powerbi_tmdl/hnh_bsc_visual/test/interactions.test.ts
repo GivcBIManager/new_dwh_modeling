@@ -34,7 +34,7 @@ function fakeHost(allow = true) {
     return { calls, host: { selectionManager: sm, tooltipService: ts, allowInteractions: allow } as never };
 }
 
-function setup(allow = true, mode: "overview" | "board" = "board") {
+function setup(allow = true, mode: "overview" | "board" | "owner" = "board") {
     const root = document.createElement("div");
     document.body.appendChild(root);
     const vm = parseDataView(makeDataView(rows));
@@ -112,6 +112,12 @@ describe("wire", () => {
         tileOf(root, 1).dispatchEvent(new MouseEvent("click", { bubbles: true, ctrlKey: true }));
         expect(calls[0]).toEqual({ fn: "select", args: [ids.get("0:"), false] });
         expect(calls[1].args).toEqual([ids.get("1:"), true]);
+    });
+    it("clicking an owner card or an owner-view toggle neither selects nor clears", () => {
+        const { root, calls } = setup(true, "owner");
+        (root.querySelector(".own-card") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        (root.querySelector("button[data-owner-toggle]") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls).toEqual([]);
     });
     it("clears on empty space", () => {
         const { root, calls } = setup();
