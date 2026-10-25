@@ -32,7 +32,7 @@ export function validPick(vm: ViewModel, ou: OwnerUi): string | null {
 const TOGGLES: { group: keyof Omit<OwnerUi, "pick">; label: string; options: [string, string][] }[] = [
     { group: "score", label: "Score", options: [["weighted", "Weighted"], ["hitrate", "On-target"]] },
     { group: "tier", label: "Owners", options: [["csuite", "C-Suite"], ["all", "All owners"]] },
-    { group: "scope", label: "KPIs", options: [["owned", "Owned"], ["co", "Owned + co-owned"]] },
+    { group: "scope", label: "KPI list", options: [["owned", "Owned"], ["co", "Owned + co-owned"]] },
 ];
 
 function toggleBar(ou: OwnerUi): HTMLElement {
@@ -68,8 +68,9 @@ function strip(vm: ViewModel, ou: OwnerUi): HTMLElement {
     return wrap;
 }
 
-/** One block per person accountable for KPIs: a KPI sits under its owner and, tagged "co-owner", under each co-owner. */
-function blocks(vm: ViewModel, only: string | null): HTMLElement {
+/** One block per person accountable for KPIs: a KPI sits under its owner and, with Owned + co-owned, tagged "co-owner"
+ * under each co-owner. */
+function blocks(vm: ViewModel, only: string | null, scope: OwnerScope): HTMLElement {
     const by = new Map<string, { row: KpiRow; co: boolean }[]>();
     const add = (key: string, row: KpiRow, co: boolean) => {
         const g = by.get(key);
@@ -77,11 +78,14 @@ function blocks(vm: ViewModel, only: string | null): HTMLElement {
     };
     for (const r of allFirstRows(vm)) {
         add(r.owner || NONE, r, false);
-        for (const c of r.coOwners) add(c, r, true);
+        if (scope === "co") for (const c of r.coOwners) add(c, r, true);
     }
     const names = [...by.keys()].filter(n => only === null || n === only)
         .sort((a, b) => (a === NONE ? 1 : b === NONE ? -1 : a.localeCompare(b)));
     const wrap = el("div", { class: "owners" });
+    if (only !== null && !names.length) {
+        wrap.appendChild(el("p", { class: "own-none" }, [`${only} owns no KPI here — choose KPI list: Owned + co-owned to see the KPIs they co-own`]));
+    }
     for (const n of names) {
         const body = el("tbody");
         for (const { row: r, co } of by.get(n) as { row: KpiRow; co: boolean }[]) {
@@ -111,6 +115,6 @@ export function owner(vm: ViewModel, ou: OwnerUi = DEFAULT_OWNER_UI): HTMLElemen
         toggleBar(state),
         strip(vm, state),
         pick === null ? null : el("p", { class: "own-note", role: "status" }, [`Showing ${pick}'s KPIs — click the card again for every owner`]),
-        blocks(vm, pick),
+        blocks(vm, pick, ou.scope),
     ]);
 }

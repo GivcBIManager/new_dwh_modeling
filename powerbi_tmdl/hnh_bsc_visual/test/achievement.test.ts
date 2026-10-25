@@ -116,6 +116,18 @@ describe("hit rate (handover _kpiCanJudge / _kpiOnTarget)", () => {
         expect(hitRate([k({ variance: 0.1 }), k({ actual: null, variance: -0.5 })])).toBe(100);
         expect(hitRate([k({ actual: null })])).toBeNull();
     });
+    it("an on_target KPI is on target when its state is On track (its variance is -|a - t|, never above 0)", () => {
+        expect(onTarget(k({ direction: "on_target", variance: -0.02, state: "good" }))).toBe(true);
+        expect(onTarget(k({ direction: "on_target", variance: -0.2, state: "warn" }))).toBe(false);
+        expect(onTarget(k({ direction: "on_target", variance: -0.4, state: "bad" }))).toBe(false);
+        expect(hitRate([k({ direction: "on_target", variance: -0.02, state: "good" }), k({ direction: "on_target", variance: -0.3, state: "bad" })])).toBe(50);
+    });
+    it("higher, lower and ceiling KPIs keep the variance rule whatever their state", () => {
+        for (const direction of ["higher", "lower", "ceiling"]) {
+            expect(onTarget(k({ direction, variance: -0.01, state: "good" }))).toBe(false);
+            expect(onTarget(k({ direction, variance: 0, state: "warn" }))).toBe(true);
+        }
+    });
     it("without a variance compares actual with target in the KPI's direction", () => {
         expect(onTarget(k({ variance: null, actual: 5, target: 4 }))).toBe(true);
         expect(onTarget(k({ variance: null, direction: "lower", actual: 5, target: 4 }))).toBe(false);
@@ -148,20 +160,23 @@ describe("owners", () => {
     });
     it("ownerCards: C-suite tier keeps the C-suite only, All owners keeps everyone", () => {
         const rows = [k({ owner: "CFO", actual: 0.9, target: 1, variance: -0.1 }), k({ owner: "Quality Manager", actual: 1.1, target: 1, variance: 0.1 })];
-        expect(ownerCards(rows, { score: "weighted", tier: "csuite", scope: "owned" }).map(c => c.owner)).toEqual(["CFO"]);
-        const all = ownerCards(rows, { score: "weighted", tier: "all", scope: "owned" });
+        expect(ownerCards(rows, { score: "weighted", tier: "csuite" }).map(c => c.owner)).toEqual(["CFO"]);
+        const all = ownerCards(rows, { score: "weighted", tier: "all" });
         expect(all.map(c => [c.owner, Math.round(c.value as number)])).toEqual([["CFO", 90], ["Quality Manager", 110]]);
-        expect(ownerCards(rows, { score: "hitrate", tier: "all", scope: "owned" }).map(c => c.value)).toEqual([0, 100]);
+        expect(ownerCards(rows, { score: "hitrate", tier: "all" }).map(c => c.value)).toEqual([0, 100]);
     });
-    it("ownerCards: the scope changes what counts for an owner, and counts are given", () => {
+    it("ownerCards always count owned + co-owned KPIs (as the old report's cards), with counts", () => {
         const rows = [k({ owner: "COO", coOwners: ["CFO"], actual: 0.5, target: 1 }), k({ owner: "CFO", actual: 1, target: 1 }), k({ owner: "CFO", actual: null })];
-        const owned = ownerCards(rows, { score: "weighted", tier: "csuite", scope: "owned" });
-        expect(owned.find(c => c.owner === "CFO")).toMatchObject({ value: 100, counted: 1, total: 2 });
-        const co = ownerCards(rows, { score: "weighted", tier: "csuite", scope: "co" });
-        expect(co.find(c => c.owner === "CFO")).toMatchObject({ value: 75, counted: 2, total: 3 });
+        const cards = ownerCards(rows, { score: "weighted", tier: "csuite" });
+        expect(cards.find(c => c.owner === "CFO")).toMatchObject({ value: 75, counted: 2, total: 3 });
+        expect(cards.find(c => c.owner === "COO")).toMatchObject({ value: 50, counted: 1, total: 1 });
+    });
+    it("ownerCards show a co-owner who owns nothing", () => {
+        const cards = ownerCards([k({ owner: "Quality Manager", coOwners: ["CFO"], actual: 0.96, target: 1 })], { score: "weighted", tier: "csuite" });
+        expect(cards.map(c => [c.owner, Math.round(c.value as number)])).toEqual([["CFO", 96]]);
     });
     it("ownerCards: an owner with nothing scoreable has a null value", () => {
-        const c = ownerCards([k({ owner: "CIO", actual: null })], { score: "weighted", tier: "csuite", scope: "owned" });
+        const c = ownerCards([k({ owner: "CIO", actual: null })], { score: "weighted", tier: "csuite" });
         expect(c).toEqual([{ owner: "CIO", value: null, counted: 0, total: 1 }]);
     });
 });

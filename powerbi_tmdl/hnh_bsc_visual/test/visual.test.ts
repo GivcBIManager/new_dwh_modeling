@@ -250,20 +250,23 @@ describe("Visual", () => {
         const owners = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>(".own-card")].map(c => c.dataset.ownerCard);
         const blocks = (el: HTMLElement) => [...el.querySelectorAll(".owners .owner h3")].map(h => h.textContent);
 
-        it("the score, owner and scope toggles change the strip without a host selection and survive an update", () => {
+        it("the score, owner and KPI-list toggles change the view without a host selection and survive an update", () => {
             const { visual, element, selects } = setup({ read: own });
             visual.update(opts(data()));
-            expect(value(element, "CFO")).toBe("90%");
+            expect(value(element, "CFO")).toBe("93%");
             click(element, 'button[data-owner-toggle="score"][data-value="hitrate"]');
-            expect(value(element, "CFO")).toBe("50%");
+            expect(value(element, "CFO")).toBe("67%");
             click(element, 'button[data-owner-toggle="tier"][data-value="all"]');
             expect(owners(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+            expect(element.querySelectorAll(".owners .co-tag").length).toBe(0);
             click(element, 'button[data-owner-toggle="scope"][data-value="co"]');
             expect(value(element, "CFO")).toBe("67%");
+            expect(element.querySelectorAll(".owners .co-tag").length).toBe(1);
             expect(selects).toEqual([]);
             visual.update(opts(data()));
             expect(value(element, "CFO")).toBe("67%");
             expect(owners(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
+            expect(element.querySelectorAll(".owners .co-tag").length).toBe(1);
         });
         it("a card click filters the KPI list to that owner; a second click shows every owner again", () => {
             const { visual, element, selects } = setup({ read: own });
@@ -313,7 +316,7 @@ describe("Visual", () => {
             click(element, '.own-card[data-owner-card="CFO"]');
             click(element, 'button[data-owner-toggle="score"][data-value="hitrate"]');
             expect(blocks(element)).toEqual(["CEO", "CFO", "Quality Manager"]);
-            expect(value(element, "CFO")).toBe("90%");
+            expect(value(element, "CFO")).toBe("93%");
         });
     });
 

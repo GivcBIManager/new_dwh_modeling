@@ -79,8 +79,10 @@ export function canJudge(r: KpiRow): boolean {
     return hasData(r);
 }
 
-/** On or past target: the direction-adjusted variance is 0 or more; without one, actual against target by direction. */
+/** On or past target: the direction-adjusted variance is 0 or more; without one, actual against target by direction.
+ * An on_target KPI's variance is -|actual - target| (never above 0), so it is on target when its state is On track. */
 export function onTarget(r: KpiRow): boolean {
+    if (r.direction === "on_target") return r.state === "good";
     if (num(r.variance)) return r.variance >= 0;
     if (!num(r.actual) || !num(r.target)) return false;
     return r.direction === "lower" || r.direction === "ceiling" ? r.actual <= r.target : r.actual >= r.target;
@@ -122,12 +124,13 @@ export interface OwnerCard {
     total: number;
 }
 
-/** One card per owner in the tier, in strip order. */
-export function ownerCards(rows: KpiRow[], o: { score: ScoreMode; tier: OwnerTier; scope: OwnerScope }): OwnerCard[] {
-    return ownersOf(rows, o.scope)
+/** One card per owner or co-owner in the tier, in strip order. A card always counts the owned and co-owned KPIs
+ * (as the old report's _computeOwnerStats); the Owned / Owned + co-owned toggle changes only the KPI list. */
+export function ownerCards(rows: KpiRow[], o: { score: ScoreMode; tier: OwnerTier }): OwnerCard[] {
+    return ownersOf(rows, "co")
         .filter(n => o.tier === "all" || isCsuite(n))
         .map(owner => {
-            const list = kpisOf(rows, owner, o.scope);
+            const list = kpisOf(rows, owner, "co");
             if (o.score === "hitrate") {
                 const judged = list.filter(canJudge);
                 return { owner, value: hitRate(list), counted: judged.filter(onTarget).length, total: judged.length };
