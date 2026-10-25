@@ -18,6 +18,8 @@ export interface KpiRow {
     manual: boolean;
     parkedInCatalogue: boolean;
     owner: string;
+    /** Other people accountable for the KPI, from 'BSC KPI'[Co Owners] ("|" separated); never the owner. */
+    coOwners: string[];
     actual: number | null;
     target: number | null;
     variance: number | null;

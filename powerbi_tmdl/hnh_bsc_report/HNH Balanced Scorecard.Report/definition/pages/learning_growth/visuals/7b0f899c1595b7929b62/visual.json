@@ -319,6 +319,24 @@
             }
           ]
         },
+        "coOwners": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
+                  "Property": "Co Owners"
+                }
+              },
+              "queryRef": "BSC KPI.Co Owners",
+              "nativeQueryRef": "Co Owners"
+            }
+          ]
+        },
         "scoreBase": {
           "projections": [
             {

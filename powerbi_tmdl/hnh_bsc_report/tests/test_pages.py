@@ -16,7 +16,7 @@ README_ROLES = {
     "pillarOrder": "Pillar Order", "pillarWeight": "Pillar Weight", "pillarQuestion": "Pillar Question",
     "objectiveCode": "Objective Code", "objectiveTitle": "Objective Title", "objectiveOrder": "Objective Order",
     "kpiType": "KPI Type", "direction": "Direction", "valueFormat": "Value Format", "displayOrder": "Display Order",
-    "kpiStatus": "Status", "valueSource": "Value Source", "owner": "Owner", "scoreBase": "Score Base",
+    "kpiStatus": "Status", "valueSource": "Value Source", "owner": "Owner", "coOwners": "Co Owners", "scoreBase": "Score Base",
     "scoreSlope": "Score Slope", "goodFrom": "Good From", "watchFrom": "Watch From",
 }
 SCORECARD = ["BSC", "Financial", "Customer", "Internal Process", "Learning & Growth", "Owner view",
@@ -241,6 +241,10 @@ def test_role_names_come_from_the_visual_capabilities():
     assert roles == list(README_ROLES) + ["branch", "payload", "selectionLabel"]
     for display in SCORECARD:
         assert set(hnh(by_display(display)).roles) <= set(roles)
+
+
+def test_owner_view_binds_co_owners():
+    assert hnh(by_display("Owner view")).roles["coOwners"] == [col("BSC KPI", "Co Owners")]
 
 
 def test_helpers_write_literal_values():

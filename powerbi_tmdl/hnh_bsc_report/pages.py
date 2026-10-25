@@ -16,7 +16,7 @@ ATTRIBUTE_ROLES = {
     "pillarOrder": "Pillar Order", "pillarWeight": "Pillar Weight", "pillarQuestion": "Pillar Question",
     "objectiveCode": "Objective Code", "objectiveTitle": "Objective Title", "objectiveOrder": "Objective Order",
     "kpiType": "KPI Type", "direction": "Direction", "valueFormat": "Value Format", "displayOrder": "Display Order",
-    "kpiStatus": "Status", "valueSource": "Value Source", "owner": "Owner", "scoreBase": "Score Base",
+    "kpiStatus": "Status", "valueSource": "Value Source", "owner": "Owner", "coOwners": "Co Owners", "scoreBase": "Score Base",
     "scoreSlope": "Score Slope", "goodFrom": "Good From", "watchFrom": "Watch From",
 }
 

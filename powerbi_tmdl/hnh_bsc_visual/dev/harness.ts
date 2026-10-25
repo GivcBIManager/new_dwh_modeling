@@ -13,6 +13,7 @@ const PILLARS = [
     { name: "Learning & Growth", order: 4, weight: 0.15, count: 16, q: "Are our people and systems ready for tomorrow?", objectives: ["Workforce", "Technology"] },
 ];
 const OWNERS = ["Finance Department", "Patient Experience", "Medical Director", "Nursing Affairs", "Operations", "Human Resources", "Supply Chain", "Revenue Cycle", "Quality Department", "Information Technology"];
+const CO = ["", "CFO", "", "Quality Manager|CMO", "", "Internal Audit", "", "Patient Experience"];
 const MONTHS = 12;
 const BASE = 85, SLOPE = 0.6, GOOD = 85, WATCH = 70;
 
@@ -94,7 +95,7 @@ export function buildRows(branches: string[] | null): FixtureRow[] {
                 objectiveCode: `${p.name.slice(0, 1)}${p.order}.${objIdx + 1}`, objectiveTitle: p.objectives[objIdx], objectiveOrder: objIdx + 1,
                 kpiType: i < 4 ? "Primary" : "Supporting", direction: spec.dir, valueFormat: spec.fmt, displayOrder: i + 1,
                 kpiStatus: parkedCatalogue ? "parked" : "active", valueSource: manual ? "manual" : "measure",
-                owner: OWNERS[n % OWNERS.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
+                owner: OWNERS[n % OWNERS.length], coOwners: CO[n % CO.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
                 payload: branches
                     ? branches.map((b, bi) => scoresOnly(b === "Head Office" ? payload({ state: "No data yet" }) : branchPayload(kind, spec, tilt + (bi - 1) * 0.06)))
                     : branchPayload(kind, spec, tilt),
@@ -147,7 +148,7 @@ export function buildComparisonRows(branches: string[]): FixtureRow[] {
                     objectiveCode: code, objectiveTitle: title, objectiveOrder: oi + 1,
                     kpiType: ki === 0 ? "Primary" : "Supporting", direction: spec.dir, valueFormat: spec.fmt, displayOrder: display,
                     kpiStatus: "active", valueSource: n % 9 === 4 ? "manual" : "measure",
-                    owner: OWNERS[n % OWNERS.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
+                    owner: OWNERS[n % OWNERS.length], coOwners: CO[n % CO.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
                     payload: branches.map((b, bi) => scoresOnly(b === "Head Office" ? payload({ state: "No data yet" })
                         : (n * 3 + bi) % 23 === 5 ? payload({ state: "" }) : branchPayload("value", spec, (3.5 - bi) * 0.025 + lean[bi][pi]))),
                     selectionLabel: branches.map(b => `${b} · ${PERIOD}`),

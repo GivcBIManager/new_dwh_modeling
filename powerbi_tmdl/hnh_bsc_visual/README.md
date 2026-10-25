@@ -13,7 +13,7 @@
 ```powershell
 npm install
 npm test                 # Vitest, jsdom
-npx pbiviz package       # writes dist/hnhBscVisual...1.0.1.0.pbiviz (dist is not committed)
+npx pbiviz package       # writes dist/hnhBscVisual...1.0.2.0.pbiviz (dist is not committed)
 ```
 
 Screenshots without Power BI: `powershell -ExecutionPolicy Bypass -File dev\screenshot.ps1` bundles `dev/harness.ts` (the real `Visual` class, a fake host and 70 synthetic KPIs; for the comparison 8 hospitals over 14 objectives) and has headless Edge write one PNG per mode, the three comparison levels (`comparison`, `comparison-pillar`, `comparison-objective`) and the design prototype into `dev/out/` (git-ignored).
@@ -28,7 +28,7 @@ The model is `HNH_Analytics` (perspective `Balanced Scorecard`). Every page bind
 
 | Well | Field |
 |---|---|
-| the 21 attribute roles (KPI Code, KPI Name, Short Label, Pillar, Pillar Order, Pillar Weight, Pillar Question, Objective Code, Objective Title, Objective Order, KPI Type, Direction, Value Format, Display Order, Status, Value Source, Owner, Score Base, Score Slope, Good From, Watch From) | the matching `'BSC KPI'` columns |
+| the 22 attribute roles (KPI Code, KPI Name, Short Label, Pillar, Pillar Order, Pillar Weight, Pillar Question, Objective Code, Objective Title, Objective Order, KPI Type, Direction, Value Format, Display Order, Status, Value Source, Owner, Co-owners, Score Base, Score Slope, Good From, Watch From) | the matching `'BSC KPI'` columns |
 | Payload | `[BSC Visual Payload]` on the pillar board and owner pages; `[BSC Visual Payload Scores]` on the landing (Overview) and Hospital Comparison pages. The scores payload has the same first six fields and no monthly trends, which keeps those pages fast for non-admin (row-level-security) users; without trends the overview shows no pillar trend and the tiles no sparklines. |
 | Selection label | `[BSC Selection Label]` |
 | Branch (comparison mode only; the well Power BI shows as "Branch", it takes one hospital per series) | `'Branch'[Branch Name]` |
@@ -39,7 +39,7 @@ Then, per page, set Format pane > Scorecard > View:
 |---|---|---|
 | BSC landing | Overview | Payload `[BSC Visual Payload Scores]` |
 | Financial, Customer, Internal Process, Learning & Growth | Pillar board | Payload `[BSC Visual Payload]`; page filter on `'BSC KPI'[Pillar]` |
-| Owner view | Owner view | Payload `[BSC Visual Payload]` |
+| Owner view | Owner view | Payload `[BSC Visual Payload]`; one block per owner or co-owner (`Co Owners`, separated by `|`), co-owner rows tagged "co-owner" |
 | Hospital Comparison | Hospital comparison | Payload `[BSC Visual Payload Scores]`; visual-level filter `'Branch'[Is Hospital]` is `Yes`; slicer on `'Branch'[BSC Category]` |
 
 The drill-through page (KPI Detail) takes `'BSC KPI'[KPI Code]` as its drill-through field.

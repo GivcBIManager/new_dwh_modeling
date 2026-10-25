@@ -145,6 +145,34 @@ describe("owner", () => {
     });
 });
 
+describe("owner view with co-owners", () => {
+    const coRows: FixtureRow[] = [
+        row("K1", "Financial", 1, 0.5, { owner: "COO", coOwners: "CFO", payload: ok(90) }),
+        row("K2", "Financial", 1, 0.5, { owner: "COO", coOwners: "", displayOrder: 2, payload: ok(80, "Watch") }),
+    ];
+    const blocks = () => {
+        const root = mount();
+        renderView(root, parseDataView(makeDataView(coRows)), "owner", ui());
+        const bs = [...root.querySelectorAll(".owner")];
+        return new Map(bs.map(b => [b.querySelector("h3")!.textContent, b]));
+    };
+    it("lists a KPI under its owner and under each co-owner, tagged in the co-owner block", () => {
+        const m = blocks();
+        expect([...m.keys()]).toEqual(["CFO", "COO"]);
+        const cfo = m.get("CFO")!, coo = m.get("COO")!;
+        expect(cfo.querySelectorAll("tbody tr").length).toBe(1);
+        expect(cfo.querySelector("tbody tr")!.textContent).toContain("K1 name");
+        expect(cfo.querySelectorAll(".co-tag").length).toBe(1);
+        expect(cfo.querySelector(".co-tag")!.textContent).toBe("co-owner");
+        expect(coo.querySelectorAll("tbody tr").length).toBe(2);
+        expect(coo.querySelectorAll(".co-tag").length).toBe(0);
+    });
+    it("shows a KPI without co-owners once", () => {
+        const all = [...blocks().values()].flatMap(b => [...b.querySelectorAll("tbody tr")]).filter(r => r.textContent!.includes("K2 name"));
+        expect(all.length).toBe(1);
+    });
+});
+
 describe("branch hint outside comparison", () => {
     const brRows: FixtureRow[] = [row("F1", "Financial", 1, 0.3, { payload: [ok(90), ok(60, "At risk")] })];
     it("names the hospital shown in overview, board and owner when a branch series exists", () => {

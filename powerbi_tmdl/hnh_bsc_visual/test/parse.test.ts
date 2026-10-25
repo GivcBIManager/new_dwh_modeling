@@ -190,3 +190,14 @@ describe("directionNote", () => {
         expect(directionNote("higher")).toBeNull();
     });
 });
+
+describe("co-owners", () => {
+    const parse = (co: unknown, owner = "COO") =>
+        parseDataView(makeDataView([row("K1", "Financial", 1, 1, { owner, coOwners: co, payload: ok(90, 1) })])).pillars[0].kpis[0].coOwners;
+    it("splits on | , trims, drops blanks and the owner itself", () => {
+        expect(parse("CFO| Quality Manager |")).toEqual(["CFO", "Quality Manager"]);
+        expect(parse("COO|CMO")).toEqual(["CMO"]);
+        expect(parse("")).toEqual([]);
+        expect(parse(null)).toEqual([]);
+    });
+});

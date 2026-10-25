@@ -15,7 +15,7 @@ export interface FixtureOpts {
 export const CATEGORY_ROLES = [
     "kpi", "kpiName", "shortLabel", "pillar", "pillarOrder", "pillarWeight", "pillarQuestion",
     "objectiveCode", "objectiveTitle", "objectiveOrder", "kpiType", "direction", "valueFormat",
-    "displayOrder", "kpiStatus", "valueSource", "owner", "scoreBase", "scoreSlope", "goodFrom", "watchFrom",
+    "displayOrder", "kpiStatus", "valueSource", "owner", "coOwners", "scoreBase", "scoreSlope", "goodFrom", "watchFrom",
 ];
 
 /** Build the payload text: fields 1-9 in the measure's order. */

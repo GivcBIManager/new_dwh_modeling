@@ -8,7 +8,7 @@ function row(o: Partial<KpiRow> = {}): KpiRow {
     return {
         code: "K1", name: "Net revenue", shortLabel: "Revenue", pillar: "Financial", pillarOrder: 1, pillarWeight: 0.3,
         pillarQuestion: "", objectiveCode: "F1", objectiveTitle: "Grow", objectiveOrder: 1, primary: true,
-        direction: "lower", valueFormat: "pct", displayOrder: 1, manual: false, parkedInCatalogue: false, owner: "CFO",
+        direction: "lower", valueFormat: "pct", displayOrder: 1, manual: false, parkedInCatalogue: false, owner: "CFO", coOwners: [],
         actual: 0.42, target: 0.4, variance: 0.05, score: 87.4, weight: 1, state: "good", stateWord: "On track", reason: null,
         trend: [0.3, 0.4, 0.42], targetTrend: [0.4, 0.4, 0.4], scoreTrend: [], branch: null, rowIndex: 7, seriesIndex: null, ...o,
     };

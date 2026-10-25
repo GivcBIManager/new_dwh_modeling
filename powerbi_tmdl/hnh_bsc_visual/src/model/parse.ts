@@ -62,6 +62,11 @@ const asNum = (v: unknown): number | null => {
     return Number.isFinite(n) ? n : null;
 };
 
+/** "COO|CMO" -> ["COO", "CMO"]: trimmed, blanks dropped, the owner removed if repeated. */
+export function splitCoOwners(text: string, owner: string): string[] {
+    return text.split("|").map(s => s.trim()).filter(s => s !== "" && s !== owner.trim());
+}
+
 export function parseDataView(dv: DataView): ViewModel {
     const cat = dv?.categorical;
     if (!cat || !cat.categories || !cat.values) return emptyModel(null);
@@ -120,6 +125,7 @@ export function parseDataView(dv: DataView): ViewModel {
                 manual: valueSource === "manual",
                 parkedInCatalogue: kpiStatus === "parked",
                 owner: asStr(attr("owner", i)),
+                coOwners: splitCoOwners(asStr(attr("coOwners", i)), asStr(attr("owner", i))),
                 actual: p.actual,
                 target: p.target,
                 variance: p.variance,

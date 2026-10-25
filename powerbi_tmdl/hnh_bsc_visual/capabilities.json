@@ -86,6 +86,11 @@
       "kind": "Grouping"
     },
     {
+      "displayName": "Co-owners",
+      "name": "coOwners",
+      "kind": "Grouping"
+    },
+    {
       "displayName": "Score Base",
       "name": "scoreBase",
       "kind": "Grouping"
@@ -175,6 +180,9 @@
             "max": 1
           },
           "owner": {
+            "max": 1
+          },
+          "coOwners": {
             "max": 1
           },
           "scoreBase": {
@@ -286,6 +294,11 @@
             {
               "bind": {
                 "to": "owner"
+              }
+            },
+            {
+              "bind": {
+                "to": "coOwners"
               }
             },
             {
