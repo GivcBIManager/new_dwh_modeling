@@ -13,6 +13,7 @@ import "./../style/visual.less";
 import type { ViewModel } from "./model/types";
 import { parseDataView } from "./model/parse";
 import { renderView, type Mode, type UiState } from "./render/index";
+import { levelOf, TOP_LEVEL, type CompareLevel } from "./render/comparison";
 import { applyColours, buildFormattingModel, readSettings, toOptions, VisualSettings } from "./settings";
 import { INTERNAL_SELECTOR, markSelected, selectionKey, wire } from "./interactions";
 
@@ -34,7 +35,7 @@ export class Visual implements IVisual {
     private mode: Mode = "overview";
     private setUi: UiState = toOptions(new VisualSettings()).ui;
     private settings: VisualSettings = new VisualSettings();
-    private pick: { pillar: string | null; focusBranch: string | null } = { pillar: null, focusBranch: null };
+    private pick: { pillar: string | null; compare: CompareLevel } = { pillar: null, compare: { ...TOP_LEVEL } };
     private interactive = true;
 
     constructor(options: VisualConstructorOptions, private read: typeof readOptions = readOptions) {
@@ -42,14 +43,8 @@ export class Visual implements IVisual {
         this.host = options.host;
         this.selectionManager = options.host.createSelectionManager();
         this.selectionManager.registerOnSelectCallback(() => this.refreshSelection());
+        // Tabs, drill headers and breadcrumb links are buttons: Enter and Space reach this handler as clicks.
         this.root.addEventListener("click", e => this.onInternalClick(e));
-        this.root.addEventListener("keydown", e => {
-            if ((e.key !== "Enter" && e.key !== " ") || !(e.target instanceof Element)) return;
-            const th = e.target.closest("th[data-branch]") as HTMLElement | null;
-            if (!th || th !== e.target) return;
-            e.preventDefault();
-            this.pickFrom(th);
-        });
     }
 
     public update(options: VisualUpdateOptions): void {
@@ -60,13 +55,13 @@ export class Visual implements IVisual {
             const opt = this.read(dv);
             // A changed setting wins over an earlier tab or hospital click.
             if (opt.ui.pillar !== this.setUi.pillar) this.pick.pillar = null;
-            if (opt.ui.focusBranch !== this.setUi.focusBranch) this.pick.focusBranch = null;
             this.setUi = opt.ui;
             if (opt.settings) this.settings = opt.settings;
             this.mode = opt.mode;
             this.vm = parseDataView(dv as DataView);
             if (this.pick.pillar !== null && !this.vm.pillars.some(p => p.name === this.pick.pillar)) this.pick.pillar = null;
-            if (this.pick.focusBranch !== null && !this.vm.branches.includes(this.pick.focusBranch)) this.pick.focusBranch = null;
+            // A comparison level whose pillar or objective is gone goes back to the top.
+            this.pick.compare = levelOf(this.vm, this.pick.compare);
             this.ids = this.buildIds(dv, this.vm);
             this.render();
             events.renderingFinished(options);
@@ -85,7 +80,7 @@ export class Visual implements IVisual {
         this.interactive = this.host.hostCapabilities?.allowInteractions !== false;
         this.applyPalette();
         applyColours(this.root, this.settings, !!this.host.colorPalette?.isHighContrast);
-        const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, focusBranch: this.pick.focusBranch ?? this.setUi.focusBranch };
+        const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, compareLevel: this.pick.compare };
         renderView(this.root, this.vm, this.mode, ui);
         this.root.classList.toggle("hc", !!this.host.colorPalette?.isHighContrast);
         const rows = this.vm.pillars.flatMap(p => p.kpis);
@@ -112,7 +107,7 @@ export class Visual implements IVisual {
         markSelected(this.root, this.ids, this.selectionManager.getSelectionIds() as ISelectionId[]);
     }
 
-    /** Board tab and comparison hospital header: internal view state, no host selection. */
+    /** Board tab, comparison drill header and breadcrumb: internal view state, no host selection. */
     private onInternalClick(e: MouseEvent): void {
         if (!this.interactive || !this.vm || !(e.target instanceof Element)) return;
         const hit = e.target.closest(INTERNAL_SELECTOR) as HTMLElement | null;
@@ -121,16 +116,33 @@ export class Visual implements IVisual {
 
     private pickFrom(hit: HTMLElement): void {
         if (!this.interactive || !this.vm) return;
-        const attr = hit.dataset.pillar !== undefined ? "pillar" : "branch";
-        const value = hit.dataset[attr] as string;
-        if (attr === "pillar") this.pick.pillar = value; else this.pick.focusBranch = value;
         const hadFocus = hit.ownerDocument.activeElement === hit;
+        if (hit.dataset.cmpPillar !== undefined) {
+            const from = this.pick.compare;
+            this.pick.compare = levelOf(this.vm, { pillar: hit.dataset.cmpPillar || null, objective: hit.dataset.cmpObjective || null });
+            this.render();
+            if (hadFocus) this.refocusCompare(from, this.pick.compare);
+            return;
+        }
+        const value = hit.dataset.pillar as string;
+        this.pick.pillar = value;
         this.render();
-        // The re-render replaced the tab or header: give focus back to its successor, so keyboard users keep their place.
+        // The re-render replaced the tab: give focus back to its successor, so keyboard users keep their place.
         if (hadFocus) {
-            const same = Array.from(this.root.querySelectorAll<HTMLElement>(`${hit.tagName.toLowerCase()}[data-${attr}]`)).find(e => e.dataset[attr] === value);
+            const same = Array.from(this.root.querySelectorAll<HTMLElement>("button[data-pillar]")).find(e => e.dataset.pillar === value);
             same?.focus();
         }
+    }
+
+    /** After a keyboard drill: down lands on the breadcrumb's last link (the way back); up lands on the header drilled from. */
+    private refocusCompare(from: CompareLevel, to: CompareLevel): void {
+        const depth = (l: CompareLevel) => (l.pillar === null ? 0 : l.objective === null ? 1 : 2);
+        const crumbs = Array.from(this.root.querySelectorAll<HTMLElement>(".crumbs button"));
+        const heads = Array.from(this.root.querySelectorAll<HTMLElement>("thead button[data-cmp-pillar]"));
+        const at = (p: string | null, o: string | null) => heads.find(h => h.dataset.cmpPillar === (p ?? "") && h.dataset.cmpObjective === (o ?? ""));
+        const target = depth(to) > depth(from) ? crumbs[crumbs.length - 1]
+            : at(from.pillar, from.objective) ?? at(from.pillar, null) ?? heads[0] ?? crumbs[0];
+        target?.focus();
     }
 
     /** One selection id per row: the KPI category, plus the branch series when there is one with a name. */

@@ -93,26 +93,36 @@
 .owner td.num{text-align:right;font-weight:600;white-space:nowrap}
 .owner tr:focus-visible{outline:2px solid var(--blue)}
 
-/* comparison mode */
+/* comparison mode: a league table, hospitals as ranked rows; the columns drill Pillar > Objective > KPI */
 .cmp{padding:20px 24px 0;overflow:hidden;display:flex;flex-direction:column;gap:10px}
 .cmp-scroll{overflow:auto;flex:1;min-height:0;padding-bottom:20px}
 .cmp-legend{font-size:13px;color:var(--muted)}
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;font-size:16px;font-weight:600;color:var(--ink)}
+.crumbs .gt{color:var(--muted);white-space:pre}
+.crumbs .here{padding:2px 4px}
+.crumbs button,.cmp thead button.drill{font:inherit;color:var(--blue-dk);background:none;border:0;padding:2px 4px;border-radius:4px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.crumbs button:hover,.cmp thead button.drill:hover{text-decoration-style:solid}
+.crumbs button:focus-visible,.cmp thead button.drill:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
 .cmp table{width:100%;table-layout:fixed;background:var(--card);border:1px solid var(--line);border-collapse:separate;border-spacing:0;border-radius:12px}
-.cmp thead th:first-child{width:min(32%,420px)}
-.cmp thead th{text-align:center;position:sticky;top:0;background:var(--card);z-index:2}.cmp thead th:first-child{text-align:left;left:0;z-index:3}
-.cmp tbody th{text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);position:sticky;left:0;background:var(--card)}
+.cmp thead th{text-align:center;position:sticky;top:0;background:var(--card);z-index:2;vertical-align:bottom}
+.cmp .rank{width:44px;text-align:center;position:sticky;left:0;background:var(--card);color:var(--muted);font-weight:600}
+.cmp .hosp{width:min(22%,240px);position:sticky;left:44px;background:var(--card)}
+.cmp thead th.rank,.cmp thead th.hosp{z-index:3}
+.cmp thead th.hosp{text-align:left}
+.cmp tbody th{text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);z-index:1}
 .cmp td{text-align:center;padding:8px 14px;font-weight:700;border-bottom:1px solid var(--line)}
+.cmp td.rank{padding:8px 4px}
 .cmp td.good{background:var(--good-bg);color:#08776B}.cmp td.warn{background:var(--warn-bg);color:#A35F00}.cmp td.bad{background:var(--bad-bg);color:#A81E06}.cmp td.nodata{background:var(--nodata-bg);color:var(--muted)}
-.cmp th.focus,.cmp td.focus{box-shadow:inset 0 0 0 2px var(--blue)}
+.cmp .lead{border-right:2px solid var(--line)}
+.cmp td.lead{font-size:16px}
+.cmp td .sc{display:block}
+.cmp td .at{display:block;font-size:12px;font-weight:400;margin-top:2px;overflow-wrap:anywhere}
 .cmp .peer{border-left:2px solid var(--line)}
-.topline{display:flex;gap:18px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
-.topline b{color:var(--ink);font-size:18px}.topline .focus b{color:var(--blue-dk)}
 
 /* interactions */
 .sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .hnh-bsc .selected{outline:3px solid var(--blue-dk);outline-offset:1px}
 .hnh-bsc .dimmed{opacity:.45}
-.cmp th[data-branch]{cursor:pointer}
 
 /* high contrast: the host palette sets these variables; icons and words carry the state */
 .hnh-bsc.hc{
@@ -143,7 +153,6 @@
 .hnh-bsc.hc .strip i.warn{background:linear-gradient(90deg,var(--hc-fg) 50%,var(--hc-bg) 50%)}
 .hnh-bsc.hc .strip i.nodata{background:var(--hc-bg);border-style:dashed}
 .hnh-bsc.hc .selected{outline-color:var(--hc-sel)}
-.cmp th[data-branch]:focus-visible{outline:3px solid var(--blue)}
 
 /* branch series outside comparison mode: which hospital the page shows */
 .hnh-bsc .hint{flex:none;padding:6px 24px;font-size:13px;color:var(--muted);background:var(--card);border-bottom:1px solid var(--line)}

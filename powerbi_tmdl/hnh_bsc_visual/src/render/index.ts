@@ -5,13 +5,14 @@ import { header, DEFAULT_TITLE } from "./header";
 import { overview } from "./overview";
 import { board, boardPillar } from "./board";
 import { owner } from "./owner";
-import { comparison } from "./comparison";
+import { comparison, type CompareLevel } from "./comparison";
 
 export type Mode = "overview" | "board" | "owner" | "comparison";
 
 export interface UiState {
     pillar: string | null;
-    focusBranch: string | null;
+    /** Comparison drill level (the visual's own state, like the board tab). */
+    compareLevel: CompareLevel;
     title: string;
     subtitle: string;
     showHeader: boolean;
@@ -36,6 +37,6 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
     const body = mode === "overview" ? overview(vm)
         : mode === "board" ? board(vm, ui.pillar, !ui.showHeader)
         : mode === "owner" ? owner(vm)
-        : comparison(vm, ui.focusBranch);
+        : comparison(vm, ui.compareLevel);
     root.appendChild(el("div", { class: "view" }, [body]));
 }

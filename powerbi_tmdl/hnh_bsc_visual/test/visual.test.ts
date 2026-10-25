@@ -94,7 +94,7 @@ describe("Visual", () => {
 
     describe("internal picks", () => {
         const reader = (pillar: string | null): Reader => () => ({
-            mode: "board", ui: { pillar, focusBranch: null, title: "Balanced scorecard", subtitle: "s", showHeader: false },
+            mode: "board", ui: { pillar, compareLevel: { pillar: null, objective: null }, title: "Balanced scorecard", subtitle: "s", showHeader: false },
         });
         const two = () => makeDataView([mk("F1", "Financial", 1), mk("C1", "Customer", 2)]);
         const active = (el: HTMLElement) => el.querySelector('.tabs [aria-selected="true"]')!.getAttribute("data-pillar");
@@ -141,18 +141,6 @@ describe("Visual", () => {
             expect(document.activeElement).toBe(now);
             element.remove();
         });
-        it("keeps keyboard focus on the picked hospital header after Enter", () => {
-            const read: Reader = () => ({ mode: "comparison", ui: { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false } });
-            const { visual, element } = setup({ read });
-            document.body.appendChild(element);
-            visual.update(opts(makeDataView([mk("F1", "Financial", 1)], { branches: ["A", "B"] })));
-            const th = element.querySelector('th[data-branch="B"]') as HTMLElement;
-            th.focus();
-            th.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
-            expect((document.activeElement as HTMLElement).dataset.branch).toBe("B");
-            expect(document.activeElement).not.toBe(th);
-            element.remove();
-        });
         it("does not take focus after a mouse pick on an unfocused element", () => {
             const { visual, element } = setup({ read: reader(null) });
             document.body.appendChild(element);
@@ -162,14 +150,93 @@ describe("Visual", () => {
             expect(document.activeElement).toBe(document.body);
             element.remove();
         });
-        it("hospital headers are focusable and Enter picks the hospital", () => {
-            const read: Reader = () => ({ mode: "comparison", ui: { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false } });
-            const { visual, element } = setup({ read });
-            visual.update(opts(makeDataView([mk("F1", "Financial", 1)], { branches: ["A", "B"] })));
-            const th = element.querySelector('th[data-branch="B"]') as HTMLElement;
-            expect(th.getAttribute("tabindex")).toBe("0");
-            th.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
-            expect(element.querySelector("th.focus")!.getAttribute("data-branch")).toBe("B");
+    });
+
+    describe("comparison drill (Pillar > Objective > KPI)", () => {
+        const cmp: Reader = () => ({ mode: "comparison", ui: { pillar: null, compareLevel: { pillar: null, objective: null }, title: "t", subtitle: "s", showHeader: false } });
+        const row = (code: string, pillar: string, order: number, obj: string, scores: number[]): FixtureRow => ({ ...mk(code, pillar, order), objectiveCode: obj, objectiveTitle: obj + " title",
+            payload: scores.map(v => payload({ actual: 0.5, target: 0.5, variance: 0, score: v, state: v >= 85 ? "On track" : "Watch", weight: 1 })) });
+        const full = () => makeDataView([row("F1", "Financial", 1, "FO1", [90, 70]), row("F2", "Financial", 1, "FO2", [80, 95]), row("C1", "Customer", 2, "CO1", [88, 72])], { branches: ["A", "B"] });
+        const lead = (el: HTMLElement) => el.querySelectorAll("thead th")[2].textContent;
+        const click = (el: HTMLElement, sel: string) => (el.querySelector(sel) as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        it("a pillar header drills to its objectives, an objective header to its KPIs, without a host selection", () => {
+            const { visual, element, selects } = setup({ read: cmp });
+            visual.update(opts(full()));
+            expect(lead(element)).toBe("Overall");
+            click(element, 'thead button[data-cmp-pillar="Financial"]');
+            expect(lead(element)).toBe("Financial");
+            click(element, 'thead button[data-cmp-objective="FO2"]');
+            expect(lead(element)).toBe("FO2 · FO2 title");
+            expect(element.querySelectorAll("tbody td[data-key]").length).toBe(2);
+            expect(selects).toEqual([]);
+        });
+        it("the breadcrumb goes back up a level or to the top", () => {
+            const { visual, element } = setup({ read: cmp });
+            visual.update(opts(full()));
+            click(element, 'thead button[data-cmp-pillar="Financial"]');
+            click(element, 'thead button[data-cmp-objective="FO1"]');
+            click(element, '.crumbs button[data-cmp-pillar="Financial"]');
+            expect(lead(element)).toBe("Financial");
+            click(element, 'thead button[data-cmp-objective="FO1"]');
+            click(element, '.crumbs button[data-cmp-pillar=""]');
+            expect(lead(element)).toBe("Overall");
+        });
+        it("keeps the level across updates", () => {
+            const { visual, element } = setup({ read: cmp });
+            visual.update(opts(full()));
+            click(element, 'thead button[data-cmp-pillar="Financial"]');
+            click(element, 'thead button[data-cmp-objective="FO1"]');
+            visual.update(opts(full()));
+            expect(lead(element)).toBe("FO1 · FO1 title");
+        });
+        it("goes back to the top when the picked objective disappears", () => {
+            const { visual, element } = setup({ read: cmp });
+            visual.update(opts(full()));
+            click(element, 'thead button[data-cmp-pillar="Financial"]');
+            click(element, 'thead button[data-cmp-objective="FO2"]');
+            visual.update(opts(makeDataView([row("F1", "Financial", 1, "FO1", [90, 70]), row("C1", "Customer", 2, "CO1", [88, 72])], { branches: ["A", "B"] })));
+            expect(lead(element)).toBe("Overall");
+            visual.update(opts(full()));
+            expect(lead(element)).toBe("Overall");
+        });
+        it("goes back to the top when the picked pillar disappears", () => {
+            const { visual, element } = setup({ read: cmp });
+            visual.update(opts(full()));
+            click(element, 'thead button[data-cmp-pillar="Customer"]');
+            visual.update(opts(makeDataView([row("F1", "Financial", 1, "FO1", [90, 70])], { branches: ["A", "B"] })));
+            expect(lead(element)).toBe("Overall");
+        });
+        it("keyboard: a drill puts focus on the breadcrumb's last link; going up puts it back on the header drilled from", () => {
+            const { visual, element } = setup({ read: cmp });
+            document.body.appendChild(element);
+            visual.update(opts(full()));
+            const head = element.querySelector('thead button[data-cmp-pillar="Financial"]') as HTMLButtonElement;
+            expect(head.tagName).toBe("BUTTON");
+            head.focus();
+            head.click();
+            expect((document.activeElement as HTMLElement).closest(".crumbs")).not.toBeNull();
+            expect(document.activeElement!.textContent).toBe("All pillars");
+            (document.activeElement as HTMLElement).click();
+            expect(lead(element)).toBe("Overall");
+            expect((document.activeElement as HTMLElement).dataset.cmpPillar).toBe("Financial");
+            expect(document.activeElement!.closest("thead")).not.toBeNull();
+            element.remove();
+        });
+        it("a mouse drill on an unfocused header does not take focus", () => {
+            const { visual, element } = setup({ read: cmp });
+            document.body.appendChild(element);
+            visual.update(opts(full()));
+            (document.activeElement as HTMLElement | null)?.blur();
+            click(element, 'thead button[data-cmp-pillar="Financial"]');
+            expect(document.activeElement).toBe(document.body);
+            element.remove();
+        });
+        it("ignores drill clicks when the host does not allow interactions", () => {
+            const { visual, element } = setup({ read: cmp, allow: false });
+            visual.update(opts(full()));
+            click(element, 'thead button[data-cmp-pillar="Financial"]');
+            expect(lead(element)).toBe("Overall");
         });
     });
 
@@ -187,7 +254,7 @@ describe("Visual", () => {
         const rows = (): FixtureRow[] => [mk("F1", "Financial", 1), mk("C1", "Customer", 2)].map(r => ({ ...r, payload: scoresOnly(r.payload as string) }));
         const withTrends = (): FixtureRow[] => [mk("F1", "Financial", 1), mk("C1", "Customer", 2)].map(r => ({ ...r,
             payload: payload({ actual: 0.5, target: 0.5, variance: 0, score: 90, state: "On track", weight: 1, trend: [0.4, 0.5], targetTrend: [0.5, 0.5], scoreTrend: [80, 90] }) }));
-        const view = (mode: Mode): Reader => () => ({ mode, ui: { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false } });
+        const view = (mode: Mode): Reader => () => ({ mode, ui: { pillar: null, compareLevel: { pillar: null, objective: null }, title: "t", subtitle: "s", showHeader: false } });
 
         it("the overview pillar card has no trend block, caption or sparkline", () => {
             const { visual, element } = setup({ read: view("overview") });

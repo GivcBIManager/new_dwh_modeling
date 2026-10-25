@@ -13,10 +13,10 @@
 ```powershell
 npm install
 npm test                 # Vitest, jsdom
-npx pbiviz package       # writes dist/hnhBscVisual...1.0.0.0.pbiviz (dist is not committed)
+npx pbiviz package       # writes dist/hnhBscVisual...1.0.1.0.pbiviz (dist is not committed)
 ```
 
-Screenshots without Power BI: `powershell -ExecutionPolicy Bypass -File dev\screenshot.ps1` bundles `dev/harness.ts` (the real `Visual` class, a fake host and 70 synthetic KPIs) and has headless Edge write one PNG per mode, plus the design prototype, into `dev/out/` (git-ignored).
+Screenshots without Power BI: `powershell -ExecutionPolicy Bypass -File dev\screenshot.ps1` bundles `dev/harness.ts` (the real `Visual` class, a fake host and 70 synthetic KPIs; for the comparison 8 hospitals over 14 objectives) and has headless Edge write one PNG per mode, the three comparison levels (`comparison`, `comparison-pillar`, `comparison-objective`) and the design prototype into `dev/out/` (git-ignored).
 
 ## Import into Desktop for Report Server
 
@@ -52,8 +52,12 @@ Tooltips: the visual shows its own tooltip (KPI, hospital on the comparison page
 - The gauge arc and the pillar chip follow the state of the displayed (rounded) score, so 85 is never orange. Green is 85 and over, orange 70 to 84, red under 70.
 - Each KPI tile's variance chip carries the state word ("▼ At risk · −29.5%"), not only an icon and a colour.
 - The pillar trend and the KPI trends draw a dashed line: the target for a KPI, the "on track" threshold for a pillar.
-- Comparison cells read "<hospital>: <score> · <state>" to a screen reader and in the hover title; no-data cells read "No data yet".
-- Comparison score cells take the click (cross-filter), the right-click menu (drill-through to KPI Detail) and the tooltip for that KPI and hospital; "–" cells do nothing.
+- The hospital comparison (1.0.1.0) is a league table: hospitals are rows, ranked; the columns drill **Pillar › Objective › KPI**. Level 1 shows Overall and the four pillars, ranked by the overall score; clicking a pillar header shows that pillar's score and one column per objective ("F1 · Revenue"), ranked by the pillar score; clicking an objective header shows the objective's score and one column per KPI, ranked by the objective score. A breadcrumb ("All pillars › Financial › F1 · Revenue") goes back up. The level is the visual's own state (no host selection, like the board tab): it survives a data refresh and goes back to the top when its pillar or objective is no longer in the data.
+- The objective score is the weighted mean of the objective's KPI scores for that hospital, the same rule as the pillar score (KPIs with a score and a weight above 0).
+- Ranking uses the shown (rounded) score: equal scores share the rank and are listed by hospital name; a hospital without a score at that level is listed last with "–". The peer median is the median score of the other hospitals at that level. The focus-hospital highlight and the hospital line above the table of 1.0.0.0 are gone: the Overall column and the ranking replace them.
+- Overall, pillar and objective cells are coloured by their rounded score with the visual's thresholds; they are not drill sources. KPI cells show the score and "actual / target" in the KPI's value format, coloured by the KPI state.
+- Comparison cells read "<hospital>: <column> <score> · <state>" to a screen reader and in the hover title (KPI cells add actual / target); no-data cells read "No data yet". Drill headers and breadcrumb links are buttons (Tab, then Enter or Space); after a keyboard drill the focus moves to the breadcrumb's last link, and after going up to the header drilled from.
+- Comparison KPI cells take the click (cross-filter), the right-click menu (drill-through to KPI Detail) and the tooltip for that KPI and hospital; "–" cells do nothing.
 - The comparison leaves out a branch with no KPI score at all (Head Office, a hospital outside the period); the visual-level filter on `'Branch'[Is Hospital]` keeps such branches out of the query too.
 - With several hospitals the header reads "<n> hospitals · <period>"; with one, that hospital's label.
 - If the Branch well is filled on an overview, board or owner page, those views show the first hospital only, and a line under the header says so.

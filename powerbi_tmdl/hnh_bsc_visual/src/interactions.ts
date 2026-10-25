@@ -19,8 +19,8 @@ export interface WireHost {
     allowInteractions: boolean;
 }
 
-/** Clicks on these are handled by the visual itself (tab and hospital switch), never as selection or clear. */
-export const INTERNAL_SELECTOR = "button[data-pillar], th[data-branch]";
+/** Clicks on these are handled by the visual itself (board tab, comparison drill header and breadcrumb), never as selection or clear. */
+export const INTERNAL_SELECTOR = "button[data-pillar], button[data-cmp-pillar]";
 
 export const selectionKey = (rowIndex: number, seriesIndex: number | null): string => `${rowIndex}:${seriesIndex ?? ""}`;
 

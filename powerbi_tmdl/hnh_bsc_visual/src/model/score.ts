@@ -16,6 +16,11 @@ export function pillarScore(rows: KpiRow[]): number | null {
     return weighted(rows);
 }
 
+/** An objective's score for one hospital: the same weighted rule as the pillar, over the objective's KPI rows. */
+export function objectiveScore(rows: KpiRow[]): number | null {
+    return weighted(rows);
+}
+
 export function overallScore(pillars: PillarSummary[]): number | null {
     return weighted(pillars);
 }

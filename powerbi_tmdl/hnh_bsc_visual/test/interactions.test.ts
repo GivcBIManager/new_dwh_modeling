@@ -38,7 +38,7 @@ function setup(allow = true, mode: "overview" | "board" = "board") {
     const root = document.createElement("div");
     document.body.appendChild(root);
     const vm = parseDataView(makeDataView(rows));
-    renderView(root, vm, mode, { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false });
+    renderView(root, vm, mode, { pillar: null, compareLevel: { pillar: null, objective: null }, title: "t", subtitle: "s", showHeader: false });
     const all = vm.pillars.flatMap(p => p.kpis);
     const ids = new Map<string, unknown>();
     for (const r of all) ids.set(selectionKey(r.rowIndex, r.seriesIndex), { key: r.code, equals(o: { key: string }) { return o.key === r.code; } });
@@ -63,7 +63,8 @@ describe("wire on the comparison table", () => {
         const root = document.createElement("div");
         document.body.appendChild(root);
         const vm = parseDataView(makeDataView(rows.map(r => ({ ...r, payload: [r.payload as string, r.payload as string] })), { branches: ["Abha", "Jazan"] }));
-        renderView(root, vm, "comparison", { pillar: null, focusBranch: null, title: "t", subtitle: "s", showHeader: false });
+        // KPI cells live on the objective level of the league table.
+        renderView(root, vm, "comparison", { pillar: null, compareLevel: { pillar: "Financial", objective: "O1" }, title: "t", subtitle: "s", showHeader: false });
         const all = vm.pillars.flatMap(p => p.kpis);
         const ids = new Map<string, unknown>();
         for (const r of all) ids.set(selectionKey(r.rowIndex, r.seriesIndex), { key: `${r.code}@${r.branch}`, equals(o: { key: string }) { return o.key === this.key; } });
@@ -88,8 +89,19 @@ describe("wire on the comparison table", () => {
     });
     it("clicking a score cell selects that KPI and hospital", () => {
         const { root, ids, calls } = cmpSetup();
-        cell(root, 2, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        expect(calls[0]).toEqual({ fn: "select", args: [ids.get("2:0"), false] });
+        cell(root, 1, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls[0]).toEqual({ fn: "select", args: [ids.get("1:0"), false] });
+    });
+    it("Shift+F10 on a focused KPI cell opens the context menu for that KPI and hospital", () => {
+        const { root, ids, calls } = cmpSetup();
+        cell(root, 0, 1).dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "F10", shiftKey: true }));
+        expect(calls[0].fn).toBe("showContextMenu");
+        expect(calls[0].args[0]).toBe(ids.get("0:1"));
+    });
+    it("clicking a drill header or a breadcrumb neither selects nor clears", () => {
+        const { root, calls } = cmpSetup();
+        (root.querySelector(".crumbs button") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls).toEqual([]);
     });
 });
 

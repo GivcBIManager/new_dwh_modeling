@@ -1,4 +1,5 @@
-// Dev harness: renders the real Visual class with a fake host and a synthetic 70-KPI catalogue. No real hospital figures.
+// Dev harness: renders the real Visual class with a fake host and a synthetic 70-KPI catalogue (comparison: 8 hospitals,
+// 14 objectives, 31 KPIs). No real hospital figures.
 import { Visual } from "../src/visual";
 import { makeDataView, payload, FixtureRow } from "../test/fixtures";
 
@@ -104,12 +105,68 @@ export function buildRows(branches: string[] | null): FixtureRow[] {
     return rows;
 }
 
+/** Comparison catalogue: the four pillars with lettered objectives (F1 Revenue, ...) and two or three KPIs each. */
+const CMP: { pillar: string; order: number; weight: number; q: string; objectives: [string, string, Spec[]][] }[] = [
+    { pillar: "Financial", order: 1, weight: 0.3, q: PILLARS[0].q, objectives: [
+        ["F1", "Revenue", [{ name: "Net revenue achievement", fmt: "sar", dir: "higher", target: 48_000_000 }, { name: "Net revenue growth vs last year", fmt: "pct", dir: "higher", target: 0.06 }]],
+        ["F2", "Profitability", [{ name: "EBITDA margin", fmt: "pct", dir: "higher", target: 0.18 }, { name: "Cost-to-revenue ratio", fmt: "num", dir: "ceiling", target: 0.88 }]],
+        ["F3", "Cash & Collections", [{ name: "Collection rate", fmt: "pct", dir: "higher", target: 0.92 }, { name: "Days in accounts receivable", fmt: "days", dir: "lower", target: 62 }, { name: "Claim rejection rate", fmt: "pct", dir: "lower", target: 0.06 }]],
+        ["F4", "Asset Productivity", [{ name: "Bed occupancy rate", fmt: "pct", dir: "on_target", target: 0.78 }, { name: "Theatre utilisation rate", fmt: "pct", dir: "higher", target: 0.82 }]],
+        ["F5", "Cost", [{ name: "Operating cost per bed day", fmt: "sar", dir: "ceiling", target: 1_800 }, { name: "Pharmacy cost", fmt: "sar", dir: "ceiling", target: 2_400_000 }]],
+    ] },
+    { pillar: "Customer", order: 2, weight: 0.25, q: PILLARS[1].q, objectives: [
+        ["C1", "Patient Experience", [{ name: "Patient satisfaction (NPS)", fmt: "num", dir: "higher", target: 72 }, { name: "Complaints per 1,000 visits", fmt: "num", dir: "lower", target: 2.5 }]],
+        ["C2", "Access", [{ name: "ER door-to-doctor time", fmt: "mins", dir: "lower", target: 18 }, { name: "Outpatient waiting time", fmt: "mins", dir: "lower", target: 25 }]],
+        ["C3", "Payer Relationships", [{ name: "Approval turnaround", fmt: "days", dir: "lower", target: 2 }, { name: "Payer contracts renewed on time", fmt: "pct", dir: "higher", target: 0.9 }]],
+    ] },
+    { pillar: "Internal Process", order: 3, weight: 0.3, q: PILLARS[2].q, objectives: [
+        ["P1", "Clinical Quality", [{ name: "Readmission within 30 days", fmt: "pct", dir: "lower", target: 0.045 }, { name: "Hospital-acquired infection rate", fmt: "pct", dir: "lower", target: 0.012 }]],
+        ["P2", "Throughput", [{ name: "Average length of stay", fmt: "days", dir: "on_target", target: 3.8 }, { name: "Discharge process time", fmt: "mins", dir: "lower", target: 120 }, { name: "Lab turnaround time", fmt: "mins", dir: "lower", target: 45 }]],
+        ["P3", "Supply Chain", [{ name: "Inventory days on hand", fmt: "days", dir: "on_target", target: 24 }, { name: "Stock-out rate", fmt: "pct", dir: "lower", target: 0.02 }]],
+        ["P4", "Revenue Cycle", [{ name: "Clean claim rate", fmt: "pct", dir: "higher", target: 0.95 }, { name: "Coding accuracy", fmt: "pct", dir: "higher", target: 0.97 }]],
+    ] },
+    { pillar: "Learning & Growth", order: 4, weight: 0.15, q: PILLARS[3].q, objectives: [
+        ["L1", "Workforce", [{ name: "Staff turnover rate", fmt: "pct", dir: "lower", target: 0.11 }, { name: "Saudization rate", fmt: "pct", dir: "higher", target: 0.35 }, { name: "Training hours per employee", fmt: "num", dir: "higher", target: 24 }]],
+        ["L2", "Technology", [{ name: "Core system uptime", fmt: "pct", dir: "higher", target: 0.995 }, { name: "Digital adoption rate", fmt: "pct", dir: "higher", target: 0.6 }]],
+    ] },
+];
+
+/** Eight hospitals and Head Office over the comparison catalogue; each hospital leans differently per pillar so the ranks move between levels. */
+export function buildComparisonRows(branches: string[]): FixtureRow[] {
+    const lean = branches.map(() => CMP.map(() => (rnd() - 0.5) * 0.3));
+    const rows: FixtureRow[] = [];
+    let n = 0;
+    CMP.forEach((p, pi) => {
+        let display = 0;
+        p.objectives.forEach(([code, title, specs], oi) => {
+            specs.forEach((spec, ki) => {
+                display++;
+                rows.push({
+                    kpi: `${code}.${ki + 1}`, kpiName: spec.name, shortLabel: spec.name,
+                    pillar: p.pillar, pillarOrder: p.order, pillarWeight: p.weight, pillarQuestion: p.q,
+                    objectiveCode: code, objectiveTitle: title, objectiveOrder: oi + 1,
+                    kpiType: ki === 0 ? "Primary" : "Supporting", direction: spec.dir, valueFormat: spec.fmt, displayOrder: display,
+                    kpiStatus: "active", valueSource: n % 9 === 4 ? "manual" : "measure",
+                    owner: OWNERS[n % OWNERS.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
+                    payload: branches.map((b, bi) => scoresOnly(b === "Head Office" ? payload({ state: "No data yet" })
+                        : (n * 3 + bi) % 23 === 5 ? payload({ state: "" }) : branchPayload("value", spec, (3.5 - bi) * 0.025 + lean[bi][pi]))),
+                    selectionLabel: branches.map(b => `${b} · ${PERIOD}`),
+                });
+                n++;
+            });
+        });
+    });
+    return rows;
+}
+
 const params = new URLSearchParams(location.search);
 const shot = params.get("mode") ?? "overview";
 /** "overview-scores" is the landing page as bound in the report: [BSC Visual Payload Scores], no trends. */
-const mode = shot === "overview-scores" ? "overview" : shot;
-const branches = mode === "comparison" ? ["Hospital A", "Hospital B", "Head Office", "Hospital C"] : null;
-const built = buildRows(branches);
+/** "comparison" is the league table; "comparison-pillar" and "comparison-objective" drill into Financial and F1 Revenue. */
+const mode = shot === "overview-scores" ? "overview" : shot.startsWith("comparison") ? "comparison" : shot;
+const HOSPITALS = ["Hospital A", "Hospital B", "Hospital C", "Hospital D", "Head Office", "Hospital E", "Hospital F", "Hospital G", "Hospital H"];
+const branches = mode === "comparison" ? HOSPITALS : null;
+const built = branches ? buildComparisonRows(branches) : buildRows(null);
 if (shot === "overview-scores") for (const r of built) r.payload = scoresOnly(r.payload as string);
 const dv = makeDataView(built, branches ? { branches } : {});
 (dv.metadata as unknown as { objects: unknown }).objects = { scorecard: { mode } };
@@ -128,4 +185,7 @@ const visual = new Visual({ element: root, host } as never);
 visual.update({ dataViews: [dv], viewport: { width: window.innerWidth, height: window.innerHeight }, type: 2 } as never);
 const pillar = params.get("pillar");
 if (pillar) (root.querySelector(`[data-pillar="${pillar}"]`) as HTMLElement | null)?.click();
+// Drill the league table the way a user does: click the pillar header, then the objective header.
+if (shot === "comparison-pillar" || shot === "comparison-objective") (root.querySelector('thead button[data-cmp-pillar="Financial"]') as HTMLElement | null)?.click();
+if (shot === "comparison-objective") (root.querySelector('thead button[data-cmp-objective="F1"]') as HTMLElement | null)?.click();
 document.body.setAttribute("data-font", getComputedStyle(root).fontFamily + "|" + getComputedStyle(root.querySelector("h1") ?? root).fontFamily);

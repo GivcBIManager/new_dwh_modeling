@@ -61,12 +61,12 @@ export function buildFormattingModel(settings: VisualSettings): powerbi.visuals.
     return service.buildFormattingModel(settings);
 }
 
-/** The mode and header state the settings choose. Pillar and branch come from the visual's own picks. */
+/** The mode and header state the settings choose. The board pillar and the comparison level come from the visual's own picks. */
 export function toOptions(s: VisualSettings): { mode: Mode; ui: UiState } {
     const c = s.scorecard;
     return {
         mode: (c.mode.value.value as Mode) ?? "overview",
-        ui: { pillar: null, focusBranch: null, title: c.title.value, subtitle: c.subtitle.value, showHeader: c.showHeader.value },
+        ui: { pillar: null, compareLevel: { pillar: null, objective: null }, title: c.title.value, subtitle: c.subtitle.value, showHeader: c.showHeader.value },
     };
 }
 

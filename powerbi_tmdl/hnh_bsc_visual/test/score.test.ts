@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pillarScore, overallScore, pillarTrend } from "../src/model/score";
+import { pillarScore, overallScore, pillarTrend, objectiveScore } from "../src/model/score";
 import type { KpiRow, PillarSummary } from "../src/model/types";
 
 const r = (score: number | null, weight: number | null, scoreTrend: (number | null)[] = []) =>
@@ -12,6 +12,10 @@ describe("score", () => {
     it("pillarScore is null when nothing is scored", () => {
         expect(pillarScore([r(null, 1), r(50, 0)])).toBeNull();
         expect(pillarScore([])).toBeNull();
+    });
+    it("objectiveScore is the weighted mean of the objective's KPI scores, same rule as the pillar", () => {
+        expect(objectiveScore([r(80, 2), r(50, 1), r(null, 4), r(100, 0)])).toBeCloseTo(70);
+        expect(objectiveScore([r(null, 1)])).toBeNull();
     });
     it("overallScore weights the pillars that have a score", () => {
         const p = (score: number | null, weight: number) => ({ score, weight }) as PillarSummary;

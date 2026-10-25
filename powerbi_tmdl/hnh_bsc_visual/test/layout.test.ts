@@ -7,10 +7,14 @@ describe("layout rules found in the screenshot review", () => {
     it("owner figures stay on one line", () => {
         expect(css).toMatch(/\.owner td\.num\{[^}]*white-space:nowrap/);
     });
-    it("the comparison table is fixed-layout with a sticky header and a capped KPI column", () => {
+    it("the comparison table is fixed-layout with a sticky header, a narrow rank and a capped hospital column", () => {
         expect(css).toMatch(/\.cmp table\{[^}]*table-layout:fixed/);
         expect(css).toMatch(/\.cmp thead th\{[^}]*position:sticky;top:0;background:var\(--card\)/);
-        expect(css).toMatch(/\.cmp thead th:first-child\{width:min\(32%,420px\)\}/);
+        expect(css).toMatch(/\.cmp \.rank\{[^}]*width:44px/);
+        expect(css).toMatch(/\.cmp \.hosp\{[^}]*width:min\(22%,240px\)/);
+    });
+    it("KPI cells put actual / target on their own smaller line", () => {
+        expect(css).toMatch(/\.cmp td \.at\{[^}]*display:block/);
     });
     it("gauges and the overview grid shrink instead of overflowing narrow pages", () => {
         expect(css).toMatch(/\.overall \.gauge,[^{]*\{max-width:100%;height:auto\}/);
