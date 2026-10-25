@@ -179,3 +179,14 @@ Tests for each level, ranking, breadcrumb, objective-score formula, state reset,
 ### Task 13: Owner view shows co-owners (user request 2026-10-25)
 
 The Owner view groups by `'BSC KPI'[Owner]` only, so co-owners (CFO, Quality Manager, Internal Audit, Patient Experience) have no block. Add a data role `coOwners` bound to `'BSC KPI'[Co Owners]` (values separated by `|`, blank = none); the owner mode lists each KPI under its owner and under each co-owner, the co-owner rows marked "co-owner"; owners sorted by name. Bind it on the Owner view page (pages.py), README field table, visual version 1.0.2.0, package, copy to C:\HNH\visual\, rebuild the PBIP. Tests: parse splits co-owners; a KPI owned by COO with co-owner CFO appears in both blocks, marked in the CFO block; a KPI without co-owners appears once.
+
+### Task 14: Owner view as the old report's ownership overview (user request 2026-10-25, design approved)
+
+In the HNH visual's owner mode (`powerbi_tmdl/hnh_bsc_visual`):
+- **Owner strip:** one card per owner (owners and co-owners), each a gauge labelled **Achievement** with the owner's value in %.
+- **Weighted** (default) = weighted mean of KPI *unit scores* over the owner's KPIs, weights = the KPI weight (payload field 6); unit score as the handover's `_v9KpiUnitScore` (powerbi_tmdl/Hayat BSC Deliverable/00_Full Access/Hayat_BSC_Full_RS.Report — read `_v9KpiUnitScore`, `_varianceUnit`, `_ceilingUnit`): higher a/t; lower t/a (a>0, t>0); ceiling 1 when a≤t else t/a; on_target max(0, 1−|a−t|/|t|); budget-variance KPIs (direction lower with target 0, or a KPI the config marks as a variance) by `_varianceUnit`; no cap; unscoreable KPIs (missing actual/target, unit ≤ 0) excluded.
+- **On-target** = share of the owner's judgeable KPIs (actual and target present) whose direction-adjusted variance (payload field 3) is ≥ 0.
+- **Toggles** inside the visual (internal state, kept across updates): Weighted / On-target (default Weighted); C-Suite / All owners (default C-Suite = CEO, COO, CMO, CFO, CHRO, CIO, CSO); Owned / Owned + co-owned (default Owned, as the old report's `ownerScope: primary`).
+- **Below the strip:** all owners' KPI blocks (as today, co-owned rows tagged) until an owner card is clicked; a click filters to that owner, a second click clears; KPI rows keep right-click drill-through, tooltips and keyboard focus; cards and toggles keyboard-reachable.
+- Gauge colours: ≥ 100% on track, 85–99% watch, < 85% at risk (my call, to be confirmed in Desktop); "–" when the owner has nothing scoreable.
+Tests: each unit-score rule (incl. variance and ceiling), weighted mean with weights, hit rate, the three toggles and their defaults, owner filter by click, C-suite list. Version 1.0.3.0, package, copy to C:\HNH\visual\, rebuild the PBIP, harness screenshots.
