@@ -38,6 +38,8 @@ After the production SSAS deploy of `HNH_Analytics`: run `python powerbi_tmdl/hn
 
 ## Re-run after a change
 
+The Date slicer on the scorecard pages and KPI detail is a From - To range that opens on 1 January - 31 December of the year of the build; rebuild in January to move it to the new year (the measures and the header label stop at today, so the page reads as year to date).
+
 After a change to `pages.py`, the measures or the visual: run the tests, rebuild, commit the project, then open, save and upload again. A change made in Desktop and saved to the PBIP is overwritten by the next build. Carry the change into `pages.py` instead.
 
 ## Format notes

@@ -7,7 +7,7 @@ Shapes follow Desktop-written files on this server (LAYOUT_FORMAT.md, "PBIR"): t
 connection Desktop for Report Server writes), the legacy pbix's `Report/CustomVisuals` (a private visual), and Power BI
 Desktop 2.158's own packaging library and embedded report schemas (`pbir_check.py`). The filter, top N and literal
 shapes are the legacy writer's (`layout.py`), with the PBIR key names. Points no real file confirmed are each written by
-one function here: `live_connection`, `custom_visual`, `relative_date_slicer`, `drill_binding`.
+one function here: `live_connection`, `custom_visual`, `date_range_slicer`, `drill_binding`.
 """
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ SCHEMAS = {  # every URL as the handover project has it, except modelReference (
 VISUAL_TYPES = {
     "card": "card", "multiRowCard": "multiRowCard", "table": "tableEx", "matrix": "pivotTable",
     "barChart": "clusteredBarChart", "lineChart": "lineChart", "slicerDropdown": "slicer",
-    "slicerRelativeDate": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
+    "slicerDateRange": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
     "buttonDrill": "actionButton", "hnhVisual": None,
 }
 # Container formatting objects (visualContainerObjects in visualConfiguration 2.8.0). `general` stays in `objects`:
@@ -224,20 +224,24 @@ def drill_binding(page: Page) -> tuple[dict, list[dict]]:
 
 # ---- visuals -------------------------------------------------------------------------------------------------------
 
-def relative_date_slicer(column: Field) -> dict:
-    """Slicer objects for "in this calendar year": style Relative Date, This 1 Years, and the selection as a filter
-    on the date between DateSpan(Now, Year) and itself (TimeUnit 3 = Year). Property names and values are Desktop's
-    (its report theme schema lists data.mode 'Relative', relativeRange 'This', relativePeriod 'Years'); the stored
-    selection follows the handover slicer's `general.filter` shape. Not confirmed by a Desktop-written slicer."""
+def date_range_slicer(column: Field, date_range: tuple[str, str]) -> dict:
+    """Slicer objects for a From - To date slicer: style Between (`data.mode`), and the saved range as the slicer's
+    selection filter, `general.filter`: `column >= from AND column <= to` (semanticQuery schema 1.4.0: Comparison with
+    ComparisonKind 2 GreaterThanOrEqual and 4 LessThanOrEqual, And; datetime literals `datetime'YYYY-MM-DDThh:mm:ss'`).
+    Dates are ISO strings, both inclusive. The names `Between` and the filter body follow what Desktop writes for a
+    date range slicer; the extracted schemas do not list slicer property values, so only the filter body is
+    schema-checked."""
     al = aliases([column.table])
-    year_now = {"DateSpan": {"Expression": {"Now": {}}, "TimeUnit": 3}}
-    cond = {"Between": {"Expression": source_expr(column, al[column.table]), "LowerBound": year_now,
-                        "UpperBound": year_now}}
+    left = source_expr(column, al[column.table])
+
+    def bound(kind: int, day: str) -> dict:
+        return {"Comparison": {"ComparisonKind": kind, "Left": left,
+                               "Right": {"Literal": {"Value": f"datetime'{day}T00:00:00'"}}}}
+    cond = {"And": {"Left": bound(2, date_range[0]), "Right": bound(4, date_range[1])}}
     flt = {"Version": 2, "From": [{"Name": al[column.table], "Entity": column.table, "Type": 0}],
            "Where": [{"Condition": cond}]}
     return {
-        "data": [{"properties": {"mode": _value("Relative"), "relativeRange": _value("This"),
-                                 "relativeDuration": _value(1.0), "relativePeriod": _value("Years")}}],
+        "data": [{"properties": {"mode": _value("Between")}}],
         "general": [{"properties": {"filter": {"filter": flt}}}],
     }
 
@@ -300,8 +304,10 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
     container: dict = {}
     if visual.sample == "slicerDropdown":
         objects["data"] = [{"properties": {"mode": _value("Dropdown")}}]
-    elif visual.sample == "slicerRelativeDate":
-        objects.update(relative_date_slicer(fields[0]))
+    elif visual.sample == "slicerDateRange":
+        if visual.date_range is None:
+            raise ValueError(f"page {page.display}: a slicerDateRange needs a date_range")
+        objects.update(date_range_slicer(fields[0], visual.date_range))
     title = ({"show": _value(True), "text": _value(visual.title)} if visual.title is not None
              else {"show": _value(False)})
     container["title"] = [{"properties": title}]

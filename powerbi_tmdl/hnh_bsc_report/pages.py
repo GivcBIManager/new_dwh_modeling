@@ -6,6 +6,8 @@ Canvas 1920 x 1080: header row y 0-110 (slicers left, page buttons right), conte
 """
 from __future__ import annotations
 
+import datetime
+
 from model import Field, Filter, Page, Visual, col, meas
 
 # Roles of the HNH visual (capabilities.json) -> 'BSC KPI' column, as the visual README's field-well table.
@@ -129,8 +131,15 @@ _SCORECARD = [
 NAV_X = 1156  # the first page button
 
 
-def _slicers(x0: float = 16, right: float = NAV_X - 10) -> list[Visual]:
+def year_range(build_date: datetime.date) -> tuple[str, str]:
+    """1 January - 31 December of the build year: the Date slicer's saved range. The measures and the header label
+    stop at today, so what opens reads as year to date; the range moves on at the next rebuild."""
+    return f"{build_date.year}-01-01", f"{build_date.year}-12-31"
+
+
+def _slicers(build_date: datetime.date, x0: float = 16, right: float = NAV_X - 10) -> list[Visual]:
     """The three header slicers (Branch, BSC Category, Date) spread between x0 and `right` in the ratio 3 : 2 : 4.
+    The Date slicer is a From - To range saved at `year_range(build_date)`.
     No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but not to the target."""
     gap, weights = 10, [3, 2, 4]
     unit = (right - x0 - gap * (len(weights) - 1)) / sum(weights)
@@ -140,7 +149,8 @@ def _slicers(x0: float = 16, right: float = NAV_X - 10) -> list[Visual]:
         Visual("slicerDropdown", xs[0], 20, w[0], 80, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
                props=select_all_selection()),
         Visual("slicerDropdown", xs[1], 20, w[1], 80, roles={"Values": [col("Branch", "BSC Category")]}),
-        Visual("slicerRelativeDate", xs[2], 20, w[2], 80, roles={"Values": [col("Date", "Date")]}),
+        Visual("slicerDateRange", xs[2], 20, w[2], 80, roles={"Values": [col("Date", "Date")]},
+               date_range=year_range(build_date)),
     ]
 
 
@@ -152,7 +162,8 @@ def _nav_buttons() -> list[Visual]:
     return out
 
 
-def _scorecard_page(name: str, display: str, pillar: str | None, mode: str, payload: str) -> Page:
+def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: str | None, mode: str,
+                    payload: str) -> Page:
     roles = {role: [col("BSC KPI", column)] for role, column in ATTRIBUTE_ROLES.items()}
     roles["payload"] = [meas(payload)]
     roles["selectionLabel"] = [meas("BSC Selection Label")]
@@ -163,10 +174,14 @@ def _scorecard_page(name: str, display: str, pillar: str | None, mode: str, payl
     visual = Visual("hnhVisual", 0, 120, 1920, 960, roles=roles, filters=filters,
                     props={"scorecard": [{"properties": {"mode": _lit(mode)}}]})
     page_filters = [Filter(col("BSC KPI", "Pillar"), "eq", [pillar])] if pillar else []
-    return Page(name, display, _slicers() + _nav_buttons() + [visual], filters=page_filters)
+    return Page(name, display, _slicers(build_date) + _nav_buttons() + [visual], filters=page_filters)
 
 
-SCORECARD_PAGES: list[Page] = [_scorecard_page(*row) for row in _SCORECARD]
+def scorecard_pages(build_date: datetime.date) -> list[Page]:
+    return [_scorecard_page(build_date, *row) for row in _SCORECARD]
+
+
+SCORECARD_PAGES: list[Page] = scorecard_pages(datetime.date.today())
 
 
 # ---- KPI detail ---------------------------------------------------------------------------------------------------
@@ -177,7 +192,7 @@ def word_wrap() -> dict:
             "columnHeaders": [{"properties": {"wordWrap": _lit(True)}}]}
 
 
-def _kpi_detail() -> Page:
+def _kpi_detail(build_date: datetime.date) -> Page:
     """Drill-through target (KPI Code, keep all filters). Header: Back, the four slicers (synced by field with the
     scorecard pages), the seven page buttons. The "Open detail" button drills on the matrix's cell selection
     (Branch Name x Year Month Name, the family pages' drill fields); the matrix is the drill source and sits beside
@@ -185,7 +200,7 @@ def _kpi_detail() -> Page:
     a multi-row card truncates it, and drops the rows whose measures are all blank, so a measure KPI shows an empty
     note table where a card showed "(Blank)"."""
     cards = ["BSC Actual", "BSC Target", "BSC Score", "BSC State", "BSC Numerator", "BSC Denominator"]
-    visuals = [back_button()] + _slicers(130) + _nav_buttons()
+    visuals = [back_button()] + _slicers(build_date, 130) + _nav_buttons()
     visuals += [Visual("card", 16 + 310 * i, 120, 300, 130, roles={"Values": [meas(m)]})
                 for i, m in enumerate(cards)]
     visuals += [
@@ -212,7 +227,7 @@ def _kpi_detail() -> Page:
     return Page("kpi_detail", "KPI detail", visuals, drill_fields=[col("BSC KPI", "KPI Code")], hidden=True)
 
 
-KPI_DETAIL: Page = _kpi_detail()
+KPI_DETAIL: Page = _kpi_detail(datetime.date.today())
 
 # ---- family detail pages --------------------------------------------------------------------------------------------
 
@@ -325,3 +340,8 @@ FAMILY_PAGES: list[Page] = [
 ]
 
 PAGES: list[Page] = SCORECARD_PAGES + [KPI_DETAIL] + FAMILY_PAGES
+
+
+def build_pages(build_date: datetime.date) -> list[Page]:
+    """The report's pages with the Date slicer saved on `build_date`'s year (`PAGES` is today's)."""
+    return scorecard_pages(build_date) + [_kpi_detail(build_date)] + FAMILY_PAGES

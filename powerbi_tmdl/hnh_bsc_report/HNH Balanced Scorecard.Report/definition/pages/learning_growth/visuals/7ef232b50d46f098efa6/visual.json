@@ -41,28 +41,7 @@
             "mode": {
               "expr": {
                 "Literal": {
-                  "Value": "'Relative'"
-                }
-              }
-            },
-            "relativeRange": {
-              "expr": {
-                "Literal": {
-                  "Value": "'This'"
-                }
-              }
-            },
-            "relativeDuration": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "relativePeriod": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Years'"
+                  "Value": "'Between'"
                 }
               }
             }
@@ -85,31 +64,45 @@
                 "Where": [
                   {
                     "Condition": {
-                      "Between": {
-                        "Expression": {
-                          "Column": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "d"
+                      "And": {
+                        "Left": {
+                          "Comparison": {
+                            "ComparisonKind": 2,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "d"
+                                  }
+                                },
+                                "Property": "Date"
                               }
                             },
-                            "Property": "Date"
+                            "Right": {
+                              "Literal": {
+                                "Value": "datetime'2026-01-01T00:00:00'"
+                              }
+                            }
                           }
                         },
-                        "LowerBound": {
-                          "DateSpan": {
-                            "Expression": {
-                              "Now": {}
+                        "Right": {
+                          "Comparison": {
+                            "ComparisonKind": 4,
+                            "Left": {
+                              "Column": {
+                                "Expression": {
+                                  "SourceRef": {
+                                    "Source": "d"
+                                  }
+                                },
+                                "Property": "Date"
+                              }
                             },
-                            "TimeUnit": 3
-                          }
-                        },
-                        "UpperBound": {
-                          "DateSpan": {
-                            "Expression": {
-                              "Now": {}
-                            },
-                            "TimeUnit": 3
+                            "Right": {
+                              "Literal": {
+                                "Value": "datetime'2026-12-31T00:00:00'"
+                              }
+                            }
                           }
                         }
                       }

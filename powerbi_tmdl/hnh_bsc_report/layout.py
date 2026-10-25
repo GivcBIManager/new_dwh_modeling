@@ -406,15 +406,20 @@ def rebind(sample: dict, visual: Visual, page: Page, index: int) -> dict:
 
 # ---- pages -------------------------------------------------------------------------------------------------------
 
+# The template has no From - To slicer sample: the legacy route keeps the sample's "this calendar year" slicer.
+LEGACY_SAMPLE = {"slicerDateRange": "slicerRelativeDate"}
+
+
 def page_section(page: Page, index: int, samples: dict, layout: dict, drill_sample: dict | None,
                  base: dict) -> tuple[dict, list[dict]]:
     """(section, pods) for one page. `base` is the template page whose page-level keys are kept."""
     containers = []
     for i, v in enumerate(page.visuals):
-        if v.sample not in samples:
+        key = LEGACY_SAMPLE.get(v.sample, v.sample)
+        if key not in samples:
             raise ValueError(f"page {page.display}: unknown sample '{v.sample}' (template has: "
                              f"{', '.join(sorted(samples))})")
-        containers.append(rebind(samples[v.sample], v, page, i))
+        containers.append(rebind(samples[key], v, page, i))
     filters = [filter_json(stable_id(page.name, "page-filter", j), f) for j, f in enumerate(page.filters)]
     cfg, pods = {}, []
     if page.drill_fields:

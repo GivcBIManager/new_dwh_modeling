@@ -1,5 +1,6 @@
 """The PBIP writer: project tree, live connection, theme and visual resources, pages, visuals, determinism, and checks
 against Power BI Desktop's own schemas and project reader when Desktop is installed on this machine."""
+import datetime
 import json
 import zipfile
 from pathlib import Path
@@ -227,7 +228,7 @@ def test_family_pages_do_not_accept_filter_context(project):
 
 TYPES = {"card": "card", "multiRowCard": "multiRowCard", "table": "tableEx", "matrix": "pivotTable",
          "barChart": "clusteredBarChart", "lineChart": "lineChart", "slicerDropdown": "slicer",
-         "slicerRelativeDate": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
+         "slicerDateRange": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
          "buttonDrill": "actionButton", "hnhVisual": GUID}
 
 
@@ -320,18 +321,20 @@ def test_slicers(project):
         f = next(iter(v.roles.values()))[0]
         assert j["visual"]["syncGroup"] == {"groupName": f"bsc {f.ref}", "fieldChanges": True, "filterChanges": True}
         mode = lit(j["visual"]["objects"]["data"][0]["properties"]["mode"])
-        assert mode == ("'Relative'" if v.sample == "slicerRelativeDate" else "'Dropdown'")
+        assert mode == ("'Between'" if v.sample == "slicerDateRange" else "'Dropdown'")
     branch = sl[0][1]
     assert lit(branch["visual"]["objects"]["selection"][0]["properties"]["selectAllCheckboxEnabled"]) == "true"
     assert branch["filterConfig"]["filters"][0]["field"]["Column"]["Property"] == "Is Hospital"
-    rel = next(j for v, j in sl if v.sample == "slicerRelativeDate")["visual"]["objects"]
-    props = rel["data"][0]["properties"]
-    assert (lit(props["relativeRange"]), lit(props["relativeDuration"]), lit(props["relativePeriod"])) == \
-        ("'This'", "1D", "'Years'")
-    cond = rel["general"][0]["properties"]["filter"]["filter"]["Where"][0]["Condition"]["Between"]
-    year_now = {"DateSpan": {"Expression": {"Now": {}}, "TimeUnit": 3}}
-    assert cond["LowerBound"] == cond["UpperBound"] == year_now
-    assert cond["Expression"]["Column"]["Property"] == "Date"
+    rng = next(j for v, j in sl if v.sample == "slicerDateRange")["visual"]["objects"]
+    flt = rng["general"][0]["properties"]["filter"]["filter"]
+    assert flt["From"] == [{"Name": "d", "Entity": "Date", "Type": 0}]
+    (cond,) = flt["Where"]
+    lo, hi = cond["Condition"]["And"]["Left"]["Comparison"], cond["Condition"]["And"]["Right"]["Comparison"]
+    year = datetime.date.today().year
+    assert (lo["ComparisonKind"], hi["ComparisonKind"]) == (2, 4)  # GreaterThanOrEqual, LessThanOrEqual
+    for c, day in ((lo, f"{year}-01-01"), (hi, f"{year}-12-31")):
+        assert c["Left"] == {"Column": {"Expression": {"SourceRef": {"Source": "d"}}, "Property": "Date"}}
+        assert c["Right"] == {"Literal": {"Value": f"datetime'{day}T00:00:00'"}}
     # slicers on the KPI detail page join the same groups (synced by field across pages)
     kpi = next(p for p in PAGES if p.name == "kpi_detail")
     groups = {j["visual"]["syncGroup"]["groupName"] for j in visuals(project, kpi) if "syncGroup" in j["visual"]}

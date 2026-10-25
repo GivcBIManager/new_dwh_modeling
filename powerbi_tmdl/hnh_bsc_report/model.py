@@ -48,7 +48,8 @@ class Visual:
     `top_n` = (the measure to rank by, N): keeps the top N of the visual's first column. `sort` (one of the visual's
     fields) sorts `sort_dir`: "desc" (default) or "asc" (time axes).
     `props` merges into the visual's format objects (`singleVisual.objects`, or `vcObjects` when the sample holds
-    that object there, as Desktop does for a button's `visualLink`).
+    that object there, as Desktop does for a button's `visualLink`). `date_range` is the saved selection of a
+    `slicerDateRange` (a From - To slicer on a date column).
     """
     sample: str
     x: float
@@ -62,6 +63,7 @@ class Visual:
     sort: Field | None = None
     props: dict = field(default_factory=dict)
     sort_dir: Literal["desc", "asc"] = "desc"
+    date_range: tuple[str, str] | None = None  # slicerDateRange: the saved (from, to) as ISO dates, both inclusive
 
 
 @dataclass

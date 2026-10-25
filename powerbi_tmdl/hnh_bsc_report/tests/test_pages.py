@@ -95,7 +95,7 @@ def test_header_slicers_and_navigation(display):
     assert [(v.sample, v.roles["Values"]) for v in slicers] == [
         ("slicerDropdown", [col("Branch", "Branch Name")]),
         ("slicerDropdown", [col("Branch", "BSC Category")]),
-        ("slicerRelativeDate", [col("Date", "Date")])]
+        ("slicerDateRange", [col("Date", "Date")])]
     (flt,) = slicers[0].filters
     assert (flt.field, flt.op, flt.values) == (col("Branch", "Is Hospital"), "in", ["Yes"])
     sel = slicers[0].props["selection"][0]["properties"]
@@ -104,6 +104,28 @@ def test_header_slicers_and_navigation(display):
     buttons = [v for v in page.visuals if v.sample == "buttonNavigate"]
     targets = [lit(v.props["visualLink"][0]["properties"]["navigationSection"]) for v in buttons]
     assert targets == [f"'{p.name}'" for p in PAGES[:7]]
+
+
+def _date_slicers(pages):
+    return [(p, v) for p in pages for v in p.visuals if v.sample.startswith("slicer") and v.roles["Values"] == [col("Date", "Date")]]
+
+
+def test_no_page_uses_the_relative_date_slicer():
+    assert not [p.display for p in PAGES for v in p.visuals if v.sample == "slicerRelativeDate"]
+
+
+def test_date_slicer_is_a_range_over_the_build_year():
+    """Task 11: scorecard pages and KPI detail open on 1 January - 31 December of the build year (today by default);
+    the family pages have no date slicer."""
+    import datetime
+    import pages
+    year = datetime.date.today().year
+    found = _date_slicers(PAGES)
+    assert {p.display for p, _ in found} == set(SCORECARD) | {"KPI detail"}
+    assert {v.date_range for _, v in found} == {(f"{year}-01-01", f"{year}-12-31")}
+    later = pages.build_pages(datetime.date(2027, 1, 2))
+    assert {v.date_range for _, v in _date_slicers(later)} == {("2027-01-01", "2027-12-31")}
+    assert [p.name for p in later] == [p.name for p in PAGES]
 
 
 def test_no_page_binds_time_calculation():
