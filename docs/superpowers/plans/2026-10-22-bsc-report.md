@@ -159,3 +159,19 @@ Every family page: drill fields `Branch[Branch Name]` and `'Date'[Year Month Nam
 - [ ] **Step 1: Write the failing tests:** the project tree (`.pbip`, `definition.pbir` with a live connection to `server`/`database`/perspective, `definition/report.json` with the custom theme and the HNH visual registered, `pages/pages.json` in `PAGES` order, one `page.json` per page with display name, 1920 × 1080, hidden flag, page filters, drill-through binding with keep-all-filters as the page sets it (on for KPI detail, off for the family pages), one `visual.json` per visual with position, visual type, roles → projections, sort, top N, visual filters, slicer sync groups per field, button actions, the HNH visual's mode); every JSON file carries its `$schema` like the handover's; no field outside the perspective; deterministic output (two writes are byte-identical).
 - [ ] **Step 2–4:** run (FAIL), implement, run (PASS). Write the project with `--database HNH_Analytics_Test`. Commit.
 - [ ] **Step 5 (user):** open `HNH Balanced Scorecard.pbip` in Power BI Desktop; every page renders; then the README's Save As .pbix → Desktop for Report Server → save → `check_upload_rules` → upload to a test folder. Defects go back to this task.
+
+### Task 11: Date range slicer (user request 2026-10-25)
+
+Replace the relative-date slicer (`slicerRelativeDate`, "this calendar year") on every scorecard page and KPI detail with a **From – To date range** slicer (Between) on `'Date'[Date]`, synced per field as before, saved range **1 January – 31 December of the build year** (user decision: the measures and the header label stop at today, so what opens reads as year to date; the saved range moves on at the next rebuild). Family pages are unchanged (month from the drill). Tests: no page uses the relative-date slicer; every scorecard page and KPI detail has the Between slicer with that saved range; the PBIP output carries it and passes pbir_check. Rebuild the PBIP.
+
+### Task 12: Hospital comparison drill-down (user request 2026-10-25, mockup approved)
+
+In the HNH visual's comparison mode (`powerbi_tmdl/hnh_bsc_visual`, `src/render/comparison.ts` and the view model): a league table — hospitals as rows, ranked; columns drill **Pillar › Objective › KPI**:
+- Level 1: Overall, then the four pillars (each a clickable header). Rows ranked by overall score.
+- Level 2 (after clicking a pillar): that pillar's score, then one column per objective of the pillar (`objectiveCode · objectiveTitle`), rows ranked by the pillar score.
+- Level 3 (after clicking an objective): the objective's score, then one column per KPI of the objective; each cell shows the KPI score and "actual / target" (formatted by the KPI's value format); rows ranked by the objective score.
+- A breadcrumb (All pillars › Financial › F1 Revenue) goes back up; the level is the visual's own UI state (no host selection), kept across updates and reset when its pillar/objective disappears.
+- Objective score = weighted mean of the objective's KPI scores (same rule as the pillar score: KPIs with a score and weight > 0); per hospital.
+- Cells coloured by state (85+ on track, 70–84 watch, under 70 at risk, no data); KPI cells keep the right-click drill-through to KPI detail (KPI × hospital selection id), tooltips and keyboard focus; header clicks and breadcrumb are keyboard-reachable.
+- The peer-median column and the colour legend stay.
+Tests for each level, ranking, breadcrumb, objective-score formula, state reset, and the KPI-cell drill ids. Bump the visual version to 1.0.1.0, package, copy the .pbiviz to `C:\HNH\visual\`, and rebuild the PBIP so it embeds the new visual. Screenshot harness: add the three levels.
