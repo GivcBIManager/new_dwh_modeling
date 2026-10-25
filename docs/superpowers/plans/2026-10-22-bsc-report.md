@@ -175,3 +175,7 @@ In the HNH visual's comparison mode (`powerbi_tmdl/hnh_bsc_visual`, `src/render/
 - Cells coloured by state (85+ on track, 70–84 watch, under 70 at risk, no data); KPI cells keep the right-click drill-through to KPI detail (KPI × hospital selection id), tooltips and keyboard focus; header clicks and breadcrumb are keyboard-reachable.
 - The peer-median column and the colour legend stay.
 Tests for each level, ranking, breadcrumb, objective-score formula, state reset, and the KPI-cell drill ids. Bump the visual version to 1.0.1.0, package, copy the .pbiviz to `C:\HNH\visual\`, and rebuild the PBIP so it embeds the new visual. Screenshot harness: add the three levels.
+
+### Task 13: Owner view shows co-owners (user request 2026-10-25)
+
+The Owner view groups by `'BSC KPI'[Owner]` only, so co-owners (CFO, Quality Manager, Internal Audit, Patient Experience) have no block. Add a data role `coOwners` bound to `'BSC KPI'[Co Owners]` (values separated by `|`, blank = none); the owner mode lists each KPI under its owner and under each co-owner, the co-owner rows marked "co-owner"; owners sorted by name. Bind it on the Owner view page (pages.py), README field table, visual version 1.0.2.0, package, copy to C:\HNH\visual\, rebuild the PBIP. Tests: parse splits co-owners; a KPI owned by COO with co-owner CFO appears in both blocks, marked in the CFO block; a KPI without co-owners appears once.
