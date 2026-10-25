@@ -9,7 +9,7 @@ import pytest
 
 from fields import perspective_fields
 from model import Filter, Page, Visual, col, meas
-from pages import PAGES
+from pages import build_pages
 from pbir import (REPORT_NAME, SCHEMAS, connection_string, write_pbip)
 import pbir_check
 
@@ -31,6 +31,9 @@ HANDOVER_SCHEMAS = {
 # Not in the handover (it has no live connection): read from Power BI Desktop 2.158's packaging library.
 MODEL_REFERENCE_SCHEMA = \
     "https://developer.microsoft.com/json-schemas/fabric/item/semanticModel/modelReference/2.0.0/schema.json"
+
+BUILD_DATE = datetime.date(2026, 6, 1)  # fixed: no test depends on the clock
+PAGES = build_pages(BUILD_DATE)
 
 
 def make_pbiviz(path: Path) -> Path:
@@ -330,7 +333,7 @@ def test_slicers(project):
     assert flt["From"] == [{"Name": "d", "Entity": "Date", "Type": 0}]
     (cond,) = flt["Where"]
     lo, hi = cond["Condition"]["And"]["Left"]["Comparison"], cond["Condition"]["And"]["Right"]["Comparison"]
-    year = datetime.date.today().year
+    year = BUILD_DATE.year
     assert (lo["ComparisonKind"], hi["ComparisonKind"]) == (2, 4)  # GreaterThanOrEqual, LessThanOrEqual
     for c, day in ((lo, f"{year}-01-01"), (hi, f"{year}-12-31")):
         assert c["Left"] == {"Column": {"Expression": {"SourceRef": {"Source": "d"}}, "Property": "Date"}}
@@ -556,11 +559,14 @@ def test_committed_project_is_current():
     to pages.py, the theme or the writer. CR/LF is ignored (git may check text files out either way). Without the
     packaged visual in hnh_bsc_visual/dist, the stand-in package is used and CustomVisuals is not compared."""
     import tempfile
-    from pbir import VISUAL_DIST, find_pbiviz, project_files
+    from pbir import VISUAL_DIST, committed_year, find_pbiviz, project_files
+    year = committed_year(HERE)  # the saved Date range's year is the committed project's, not the clock's
+    assert year is not None
+    pages = build_pages(datetime.date(year, 1, 1))
     real = sorted(VISUAL_DIST.glob("hnhBscVisual*.pbiviz"))
     with tempfile.TemporaryDirectory() as tmp:
         pbiviz = find_pbiviz() if real else make_pbiviz(Path(tmp) / "v.pbiviz")
-        files = project_files(PAGES, "HNH_Analytics_Test", pbiviz=pbiviz)
+        files = project_files(pages, "HNH_Analytics_Test", pbiviz=pbiviz)
     skip = () if real else (f"{REPORT_NAME}.Report/CustomVisuals/",)
     expected = {k: v for k, v in files.items() if not k.startswith(skip) and k != ".gitignore"}
     roots = [HERE / f"{REPORT_NAME}.Report", HERE / f"{REPORT_NAME}.SemanticModel"]

@@ -115,12 +115,13 @@ def test_no_page_uses_the_relative_date_slicer():
 
 
 def test_date_slicer_is_a_range_over_the_build_year():
-    """Task 11: scorecard pages and KPI detail open on 1 January - 31 December of the build year (today by default);
+    """Task 11: scorecard pages and KPI detail open on 1 January - 31 December of the build year ;
     the family pages have no date slicer."""
     import datetime
     import pages
-    year = datetime.date.today().year
-    found = _date_slicers(PAGES)
+    year = 2026
+    current = pages.build_pages(datetime.date(year, 10, 25))
+    found = _date_slicers(current)
     assert {p.display for p, _ in found} == set(SCORECARD) | {"KPI detail"}
     assert {v.date_range for _, v in found} == {(f"{year}-01-01", f"{year}-12-31")}
     later = pages.build_pages(datetime.date(2027, 1, 2))

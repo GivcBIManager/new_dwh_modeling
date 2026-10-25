@@ -246,6 +246,16 @@ def date_range_slicer(column: Field, date_range: tuple[str, str]) -> dict:
     }
 
 
+def committed_year(project_dir) -> int | None:
+    """The year the committed project's Date slicers are saved on (the date literal in a slicer's `general.filter`),
+    or None when the project has none. `build.py` warns when it differs from today's year."""
+    for f in sorted(Path(project_dir).glob(f"{REPORT_NAME}.Report/definition/pages/*/visuals/*/visual.json")):
+        m = re.search(r"datetime'(\d{4})-", f.read_text(encoding="utf-8"))
+        if m:
+            return int(m.group(1))
+    return None
+
+
 def _projection(f: Field, active: bool) -> dict:
     p = {"field": field_expr(f), "queryRef": f.ref, "nativeQueryRef": f.name}
     if active:

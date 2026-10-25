@@ -136,6 +136,12 @@ def _main_pbip(args, pages: list[Page]) -> int:
     from pbir import write_pbip
     import pbir_check
     out = args.out or HERE
+    import datetime
+    from pbir import committed_year
+    year = committed_year(out)
+    if year is not None and year != datetime.date.today().year:
+        print(f"warning: the committed Date slicer is saved on {year}; this build moves it to "
+              f"{datetime.date.today().year}")
     try:
         pbip = write_pbip(pages, out, args.database, args.server, pbiviz=args.pbiviz)
     except (ValueError, OSError) as e:
