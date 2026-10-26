@@ -4,8 +4,8 @@ import { stateClass } from "./chips";
 import { empty } from "./empty";
 import { hasScore } from "../model/state";
 import { objectiveScore } from "../model/score";
-import { formatValue } from "../model/format";
-import { scoreState, STATE_WORD } from "./rows";
+import { formatValue, isNum } from "../model/format";
+import { scoreState, SCORE_WORD, STATE_WORD } from "./rows";
 
 /** The comparison's drill level: all pillars (both null), a pillar's objectives, or an objective's KPIs. */
 export interface CompareLevel { pillar: string | null; objective: string | null }
@@ -18,8 +18,6 @@ export function median(v: number[]): number | null {
     return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
-const num = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
-const NO_DATA = "No data yet";
 
 /** The level to draw: the picked one, or the top when its pillar, or its objective within that pillar, is not in the data. */
 export function levelOf(vm: ViewModel, level: CompareLevel): CompareLevel {
@@ -137,7 +135,7 @@ export function comparison(vm: ViewModel, picked: CompareLevel = TOP_LEVEL): HTM
     // Rank by the shown (rounded) lead score; equal shown scores share the rank and go by name; no score goes last.
     const ranked = scored.map(x => {
         const s = (lead.score as (bi: number) => number | null)(x.bi);
-        return { ...x, score: num(s) ? s : null, shown: num(s) ? Math.round(s) : null };
+        return { ...x, score: isNum(s) ? s : null, shown: isNum(s) ? Math.round(s) : null };
     }).sort((a, c) => {
         if (a.shown === null || c.shown === null) {
             if (a.shown !== c.shown) return a.shown === null ? 1 : -1;
@@ -148,16 +146,16 @@ export function comparison(vm: ViewModel, picked: CompareLevel = TOP_LEVEL): HTM
     const scoreCell = (b: string, label: string, s: number | null, extra = ""): HTMLElement => {
         const st = scoreState(s, t);
         const cls = stateClass(st) + extra;
-        const say = num(s) ? `${b}: ${label} ${Math.round(s)} · ${STATE_WORD[stateClass(st)]}` : `${b}: ${label} ${NO_DATA}`;
-        return el("td", { class: cls, title: say, "aria-label": say }, [num(s) ? String(Math.round(s)) : "–"]);
+        const say = isNum(s) ? `${b}: ${label} ${Math.round(s)} · ${STATE_WORD[stateClass(st)]}` : `${b}: ${label} ${SCORE_WORD.nodata}`;
+        return el("td", { class: cls, title: say, "aria-label": say }, [isNum(s) ? String(Math.round(s)) : "–"]);
     };
     const kpiCell = (b: string, label: string, r: KpiRow | undefined): HTMLElement => {
         if (!hasScore(r)) {
-            const say = `${b}: ${label} ${NO_DATA}`;
+            const say = `${b}: ${label} ${SCORE_WORD.nodata}`;
             return el("td", { class: "nodata", title: say, "aria-label": say }, ["–"]);
         }
         const shown = String(Math.round(r.score as number));
-        const at = num(r.actual) || num(r.target) ? actualTarget(r) : null;
+        const at = isNum(r.actual) || isNum(r.target) ? actualTarget(r) : null;
         const say = `${b}: ${label} ${shown} · ${r.stateWord}` + (at ? ` · ${at}` : "");
         return el("td", { class: stateClass(r.state), title: say, "aria-label": say, "data-key": r.rowIndex, "data-series": r.seriesIndex, tabindex: 0 },
             [el("span", { class: "sc" }, [shown]), at ? el("span", { class: "at" }, [at]) : null]);

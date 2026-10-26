@@ -34,7 +34,7 @@ function fakeHost(allow = true) {
     return { calls, host: { selectionManager: sm, tooltipService: ts, allowInteractions: allow } as never };
 }
 
-function setup(allow = true, mode: "overview" | "board" | "owner" = "board") {
+function setup(allow = true, mode: "overview" | "board" | "owner" | "detail" = "board") {
     const root = document.createElement("div");
     document.body.appendChild(root);
     const vm = parseDataView(makeDataView(rows));
@@ -151,6 +151,21 @@ describe("wire", () => {
     it("clears on empty space", () => {
         const { root, calls } = setup();
         root.querySelector(".bd-strip")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls.map(c => c.fn)).toEqual(["clear"]);
+    });
+    it("a click inside the selected-KPI panel keeps the selection (the panel describes it)", () => {
+        const { root, calls } = setup();
+        tileOf(root, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        for (const sel of [".bd-panel", ".bd-panel-main", ".bd-empty"]) root.querySelector(sel)!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls.map(c => c.fn)).toEqual(["select"]);
+        root.querySelector(".bd-table h2")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls.map(c => c.fn)).toEqual(["select", "clear"]);
+    });
+    it("a click inside the detail view's profile or trend panel keeps the selection", () => {
+        const { root, calls } = setup(true, "detail");
+        for (const sel of [".dt-profile", ".dt-profile h1", ".dt-trend", ".dt-trend h2"]) root.querySelector(sel)!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls).toEqual([]);
+        root.querySelector(".dt-sub")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(calls.map(c => c.fn)).toEqual(["clear"]);
     });
     it("opens the context menu at the mouse position", () => {

@@ -169,6 +169,36 @@ describe("bandChart", () => {
         expect(Math.abs(mid(good) - mid(watch))).toBeLessThan(0.2);
         expect(Number(watch.getAttribute("height"))).toBeGreaterThan(Number(good.getAttribute("height")));
     });
+    const yLabels = (s: SVGSVGElement) => [...s.querySelectorAll(".dt-y")].map(x => x.textContent as string);
+    const yValues = (s: SVGSVGElement) => yLabels(s).map(t => Number(t.replace(/[^\d.-]/g, "")));
+    it("a small-range minutes KPI gets whole-minute ticks, none repeated", () => {
+        const trend = [17.2, 17.8, 18.1, 17.6, 18.4, 17.9, 18.2, 17.4, 18.0, 17.7, 18.3, 17.9];
+        const s = bandChart(kpi({ valueFormat: "mins", direction: "lower", scoreSlope: 6,
+            payload: payload({ actual: 17.9, target: 18, score: 86, state: "On track", weight: 1, trend, targetTrend: Array(12).fill(18) }) }), M, 1278, 288);
+        const labels = yLabels(s);
+        expect(labels.length).toBeGreaterThan(1);
+        expect(new Set(labels).size).toBe(labels.length);
+        for (const t of labels) expect(t).toMatch(/^\d+ min$/);
+        const v = yValues(s);
+        for (let i = 1; i < v.length; i++) expect(Number.isInteger(v[i] - v[i - 1])).toBe(true);
+    });
+    it("a SAR axis that crosses 1 million says every tick in millions, none repeated", () => {
+        const trend = [0.82e6, 0.88e6, 0.93e6, 0.97e6, 1.01e6, 1.04e6, 0.99e6, 1.06e6, 1.1e6, 1.08e6, 1.12e6, 1.15e6];
+        const s = bandChart(kpi({ valueFormat: "sar", scoreSlope: 0.6,
+            payload: payload({ actual: 1.15e6, target: 1e6, score: 94, state: "On track", weight: 1, trend, targetTrend: Array(12).fill(1e6) }) }), M, 1278, 288);
+        const labels = yLabels(s);
+        expect(labels.length).toBeGreaterThan(1);
+        expect(new Set(labels).size).toBe(labels.length);
+        for (const t of labels) expect(t).toMatch(/^SAR \d+(\.\d+)?M$/);
+    });
+    it("a SAR axis under 1 million says every tick in whole riyals", () => {
+        const trend = [1799.6, 1800.1, 1799.8, 1800.2, 1800.3, 1799.9, 1800, 1800.1, 1799.8, 1800.2, 1800.3, 1800.1];
+        const s = bandChart(kpi({ valueFormat: "sar", direction: "ceiling", scoreSlope: 600,
+            payload: payload({ actual: 1800.1, target: 1800, score: 85, state: "On track", weight: 1, trend, targetTrend: Array(12).fill(1800) }) }), M, 1278, 288);
+        const labels = yLabels(s);
+        expect(new Set(labels).size).toBe(labels.length);
+        for (const t of labels) expect(t).toMatch(/^SAR [\d,]+$/);
+    });
     it("leaves the month labels out without months, and never leaves the plot with extreme values", () => {
         const s = bandChart(kpi({ payload: payload({ actual: 5, target: 0.5, score: 300, state: "On track", weight: 1, trend: [-2, 0.5, 9], targetTrend: [0.5, 0.5, 0.5] }) }), [], 600, 200);
         expect(s.querySelectorAll(".dt-month").length).toBe(0);

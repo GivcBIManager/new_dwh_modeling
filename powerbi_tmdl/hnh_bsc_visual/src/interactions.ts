@@ -2,7 +2,7 @@ import powerbi from "powerbi-visuals-api";
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import type { KpiRow } from "./model/types";
-import { formatValue, formatVariance } from "./model/format";
+import { DASH, formatValue, formatVariance } from "./model/format";
 
 /** The parts of the host the wiring uses (the real ISelectionManager and ITooltipService satisfy it). */
 export interface WireHost {
@@ -26,9 +26,11 @@ export interface WireHost {
  * toggle, the board's objective picker), never as selection or clear. */
 export const INTERNAL_SELECTOR = "button[data-cmp-pillar], button[data-owner-card], button[data-owner-toggle], select[data-objective-picker]";
 
-export const selectionKey = (rowIndex: number, seriesIndex: number | null): string => `${rowIndex}:${seriesIndex ?? ""}`;
+/** Panels that describe the host selection (the board's selected-KPI panel, KPI detail's profile and trend): a click
+ * inside one is not a click on empty space, so it keeps the selection instead of clearing it under the pointer. */
+export const KEEP_SELECTOR = ".bd-panel, .dt-profile, .dt-trend";
 
-const DASH = "–";
+export const selectionKey = (rowIndex: number, seriesIndex: number | null): string => `${rowIndex}:${seriesIndex ?? ""}`;
 
 export function tooltipItems(row: KpiRow): VisualTooltipDataItem[] {
     const has = (v: number | null) => v !== null && v !== undefined && Number.isFinite(v);
@@ -81,6 +83,7 @@ export function wire(root: HTMLElement, rows: KpiRow[], ids: Map<string, ISelect
             e.stopPropagation();
             return;
         }
+        if (e.target instanceof Element && e.target.closest(KEEP_SELECTOR)) return;
         sm.clear().then(refresh);
     };
     const onContext = (e: MouseEvent) => {

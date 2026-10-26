@@ -1,3 +1,4 @@
+import { isNum } from "../model/format";
 import { svg } from "./dom";
 
 export interface SparkPath {
@@ -6,7 +7,6 @@ export interface SparkPath {
     last: { x: number; y: number } | null;
 }
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 /** Path data for a trend and its target trend. Nulls leave gaps in the series but keep their x position. */
 export function sparkPath(values: (number | null)[], target: (number | null)[], w: number, h: number): SparkPath {

@@ -1,17 +1,15 @@
 import type { KpiRow } from "../model/types";
-import { formatValue } from "../model/format";
+import { DASH, formatValue, isNum } from "../model/format";
 import { directionNote } from "../model/parse";
 import { el } from "./dom";
 import { stateChip, stateMark, stateClass } from "./chips";
 import { monthlyBars } from "./bars";
 import { hasValue } from "./scorecard";
 
-const DASH = "–";
 /** Bars size inside the panel's 432 px at the report's 1860 x 870 box (the SVG scales down in a smaller one). */
 const BARS_W = 606, BARS_H = 126;
 export const EMPTY_PANEL = "Select a KPI in the table to see its monthly trend and hospitals";
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 /** "Higher is better", "Lower is better", "At most the target", "Closest to the target is best". */
 export function polarity(direction: string): string {

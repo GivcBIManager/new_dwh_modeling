@@ -1,18 +1,14 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
+import { isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { selectionKey } from "../interactions";
 import { el } from "./dom";
 import { pillarColourVar, stateChip, stateMark } from "./chips";
-import { firstRows, scoreState } from "./rows";
+import { firstRows, scoreState, GROUPS, GROUP_WORD, SCORE_WORD, type Group } from "./rows";
 import { scorecardTable } from "./scorecard";
 import { kpiPanel } from "./kpipanel";
 
-type Group = "good" | "warn" | "bad" | "nodata";
-const GROUPS: Group[] = ["good", "warn", "bad", "nodata"];
-const GROUP_WORD: Record<Group, string> = { good: "On track", warn: "Watch", bad: "At risk", nodata: "No data" };
-const SCORE_WORD: Record<Group, string> = { good: "On track", warn: "Watch", bad: "At risk", nodata: "No data yet" };
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 /** The pillar the board shows: the requested one when present, else the first. */
 export function boardPillar(vm: ViewModel, wanted: string | null): PillarSummary {

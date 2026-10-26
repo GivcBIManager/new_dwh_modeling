@@ -1,4 +1,8 @@
-const DASH = "–";
+/** The placeholder for a missing value, everywhere in the visual. */
+export const DASH = "–";
+
+/** A finite number (not null, undefined or NaN). */
+export const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 function fixed(v: number, decimals: number): string {
     return v.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });

@@ -1,24 +1,22 @@
 import type { KpiRow, ViewModel } from "../model/types";
 import { bandEdges, met } from "../model/bands";
-import { formatValue, formatVariance } from "../model/format";
+import { DASH, formatValue, formatVariance, isNum } from "../model/format";
 import { monthLabels } from "../model/months";
 import { el, svg } from "./dom";
 import { pillarColourVar, stateChip, stateClass, stateMark } from "./chips";
 import { empty } from "./empty";
 import { polarity } from "./kpipanel";
-import { allFirstRows } from "./rows";
+import { allFirstRows, GROUP_WORD } from "./rows";
 import { hasValue, targetText } from "./scorecard";
 
-const DASH = "–";
 /** Chart size inside the trend panel at the report's 1920 x 996 box (the SVG scales down in a smaller one). */
 const CHART_W = 1278, CHART_H = 300;
 /** The band tints: On track, Watch, At risk (tokens --good-bg, --warn-bg, --bad-bg; high contrast replaces them in CSS). */
 export const BAND_FILL = { good: "#E3F6F3", warn: "#FFF2E0", bad: "#FDE9E5" } as const;
 type Band = keyof typeof BAND_FILL;
-const BAND_WORD: Record<Band, string> = { good: "On track", warn: "Watch", bad: "At risk" };
+const BAND_WORD: Record<Band, string> = GROUP_WORD;
 const FONT = 16.5;
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 /** A KPI the model judged this period: On track, Watch or At risk with a value. */
 const judged = (r: KpiRow) => hasValue(r) && (r.state === "good" || r.state === "warn" || r.state === "bad");
 
@@ -105,14 +103,48 @@ function profile(row: KpiRow): HTMLElement {
     ]);
 }
 
-/** Ticks every `step` on a 1-2-2.5-5 scale, about four of them across the range. */
-function niceStep(span: number): number {
-    const raw = span / 4;
+/** Ticks every `step` on a 1-2-2.5-5 scale, about four of them across the range, never finer than `res` and always a
+ * whole multiple of it (2.5 x res becomes 5 x res). */
+function niceStep(span: number, res: number): number {
+    const raw = Math.max(span / 4, res);
     const p = Math.pow(10, Math.floor(Math.log10(raw)));
     const m = raw / p;
-    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+    let step = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+    if (Math.abs(step / res - Math.round(step / res)) > 1e-9) step = 5 * p;
+    return Math.max(step, res);
 }
 const tidy = (v: number) => Number(v.toPrecision(12));
+const fixedText = (v: number, d: number) => v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+/** The fewest decimals (0-6) that print `v` exactly. */
+function decimalsOf(v: number): number {
+    for (let d = 0; d < 6; d++) if (Math.abs(v * 10 ** d - Math.round(v * 10 ** d)) < 1e-6) return d;
+    return 6;
+}
+/** The smallest tick step each value format can tell apart: whole minutes and riyals, 0.1% and 0.1 days. */
+const RESOLUTION: Record<string, number> = { mins: 1, sar: 1, pct: 0.001, days: 0.1 };
+
+/** The y axis in the KPI's units: ticks no finer than the format prints, and one unit for the whole axis (a SAR axis
+ * that reaches 1 million says every tick in millions, with as many decimals as the step needs), so no two ticks read
+ * the same. */
+export function axisTicks(rawLo: number, rawHi: number, fmt: string): { lo: number; hi: number; ticks: number[]; labels: string[] } {
+    const step = niceStep(rawHi - rawLo, RESOLUTION[fmt] ?? 0.01);
+    const lo = tidy(Math.floor(rawLo / step) * step), hi = tidy(Math.ceil(rawHi / step) * step);
+    const ticks: number[] = [];
+    for (let k = 0; lo + k * step <= hi + step * 1e-9; k++) ticks.push(tidy(lo + k * step));
+    const big = (limit: number) => ticks.some(v => Math.abs(v) >= limit);
+    let label: (v: number) => string;
+    if (fmt === "sar") {
+        const d = Math.max(1, decimalsOf(step / 1e6));
+        label = big(1e6) ? v => `SAR ${fixedText(v / 1e6, d)}M` : v => `SAR ${fixedText(v, 0)}`;
+    } else if (fmt === "pct" || fmt === "days" || fmt === "mins") {
+        label = v => formatValue(v, fmt);
+    } else {
+        // Plain numbers: two decimals under 1,000 and none from there, as formatValue prints them, the same for every tick.
+        const d = big(1000) ? decimalsOf(step) : 2;
+        label = v => fixedText(v, d);
+    }
+    return { lo, hi, ticks, labels: ticks.map(label) };
+}
 
 /** "Monthly trend with performance bands": per month, the three bands from that month's target by the KPI's own
  * scoring rule (`bandEdges`; months without a finite target draw none, nor does a parked or no-target KPI), the
@@ -136,11 +168,7 @@ export function bandChart(row: KpiRow, months: string[], width: number, height: 
     const pad = (rawHi - rawLo) * 0.08;
     rawLo -= pad; rawHi += pad;
     if (data.length && Math.min(...data) >= 0) rawLo = Math.max(0, rawLo);
-    const step = niceStep(rawHi - rawLo);
-    const lo = tidy(Math.floor(rawLo / step) * step), hi = tidy(Math.ceil(rawHi / step) * step);
-    const ticks: number[] = [];
-    for (let k = 0; lo + k * step <= hi + step * 1e-9; k++) ticks.push(tidy(lo + k * step));
-    const tickText = ticks.map(v => formatValue(v, row.valueFormat));
+    const { lo, hi, ticks, labels: tickText } = axisTicks(rawLo, rawHi, row.valueFormat);
 
     const left = Math.max(54, 18 + Math.max(...tickText.map(t => t.length)) * 9.5), right = 12;
     const top = 12, bottom = months.length >= n && n > 0 ? 36 : 12;

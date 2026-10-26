@@ -1,25 +1,18 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
-import { formatValue } from "../model/format";
+import { formatValue, isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { overallTrend } from "../model/score";
 import { el, svg } from "./dom";
 import { pillarColourVar, stateChip, stateMark } from "./chips";
 import { lineChart } from "./linechart";
 import { ring } from "./ring";
-import { allFirstRows, comparator, firstRows, scoreState } from "./rows";
+import { allFirstRows, comparator, firstRows, scoreState, GROUPS, GROUP_WORD, SCORE_WORD, type Group } from "./rows";
 
-type Group = "good" | "warn" | "bad" | "nodata";
-const GROUPS: Group[] = ["good", "warn", "bad", "nodata"];
-/** Words of the distribution: "No data" groups No data yet, Parked and No target. */
-const GROUP_WORD: Record<Group, string> = { good: "On track", warn: "Watch", bad: "At risk", nodata: "No data" };
-/** Chip words for a score's state; a missing score is "No data yet", as the model says it. */
-const SCORE_WORD: Record<Group, string> = { good: "On track", warn: "Watch", bad: "At risk", nodata: "No data yet" };
 /** Needs attention rows that fit the bottom row at 66 px each. */
 const ATTENTION_ROWS = 6;
 /** Trend chart size inside its panel at the report's 1860 x 870 box (the SVG scales down in a smaller one). */
 const CHART_W = 1156, CHART_H = 400;
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 function groupCounts(ps: PillarSummary[]): Record<Group, number> {
     const out = { good: 0, warn: 0, bad: 0, nodata: 0 };

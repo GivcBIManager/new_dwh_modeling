@@ -1,8 +1,8 @@
 import type { KpiRow } from "../model/types";
 import { met } from "../model/bands";
+import { isNum } from "../model/format";
 import { svg } from "./dom";
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 /** The design's missed-month colour (the Watch tint, token --missed-bar). */
 export const MISSED_FILL = "#F5B865";
 const TOP = 6;

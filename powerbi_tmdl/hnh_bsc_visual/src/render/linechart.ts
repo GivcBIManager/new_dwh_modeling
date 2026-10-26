@@ -1,3 +1,4 @@
+import { isNum } from "../model/format";
 import { svg } from "./dom";
 
 export interface LineSeries {
@@ -16,7 +17,6 @@ export interface LineChartOpts {
     height: number;
 }
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 const floor10 = (v: number) => Math.floor(v / 10) * 10;
 const ceil10 = (v: number) => Math.ceil(v / 10) * 10;
 const FONT = 16.5;

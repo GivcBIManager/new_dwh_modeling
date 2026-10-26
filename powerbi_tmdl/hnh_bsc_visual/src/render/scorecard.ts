@@ -1,16 +1,14 @@
 import type { KpiRow } from "../model/types";
-import { formatValue, formatVariance } from "../model/format";
+import { DASH, formatValue, formatVariance, isNum } from "../model/format";
 import { selectionKey } from "../interactions";
 import { el } from "./dom";
 import { stateChip, stateClass } from "./chips";
 import { comparator } from "./rows";
 import { sparkline } from "./sparkline";
 
-const DASH = "–";
 const SPARK_W = 156, SPARK_H = 42;
 export const COLUMNS = ["Status", "KPI · objective", "Actual", "Target", "Variance", "Score", "12-mo trend"];
 
-const isNum = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
 
 /** A row with a value to show: an actual, and a state other than no data or parked. */
 export const hasValue = (r: KpiRow): boolean => isNum(r.actual) && r.state !== "nodata" && r.state !== "parked";
