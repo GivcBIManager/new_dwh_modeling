@@ -60,14 +60,14 @@ def server(stub):
 class Client:
     def __init__(self, server):
         self.port = server.server_address[1]
-        self.cookie = None
+        self.token = None
 
     def call(self, method, path, body=None, headers=None, origin=True, host=None):
         h = {"Host": host or "127.0.0.1:%d" % self.port}
         if origin and method == "POST":
             h["Origin"] = "http://127.0.0.1:%d" % self.port
-        if self.cookie:
-            h["Cookie"] = self.cookie
+        if self.token:
+            h["X-BSC-Session"] = self.token
         h.update(headers or {})
         data = None
         if body is not None:
@@ -92,7 +92,7 @@ class Client:
     def signin(self, user="tester", password=PASSWORD):
         status, payload, r = self.call("POST", "/api/signin", {"user": user, "password": password})
         if status == 200:
-            self.cookie = r.getheader("Set-Cookie").split(";")[0]
+            self.token = payload["token"]
         return status, payload, r
 
 
@@ -137,22 +137,23 @@ def test_static_and_unknown_paths(server):
     assert c.call("GET", "/elsewhere")[0] == 404
 
 
-def test_signin_sets_cookie_and_never_echoes_password(server, stub, capfd):
+def test_signin_returns_token_and_never_echoes_password(server, stub, capfd):
     c = Client(server)
     status, payload, r = c.signin()
-    assert status == 200 and payload == {"user": "tester"}
-    cookie = r.getheader("Set-Cookie")
-    assert cookie.startswith("bsc_session=")
-    for flag in ("HttpOnly", "SameSite=Strict", "Path=/"):
-        assert flag in cookie
+    assert status == 200 and payload["user"] == "tester" and len(payload["token"]) >= 32
+    assert r.getheader("Set-Cookie") is None
     assert r.getheader("Cache-Control") == "no-store"
+    assert c.call("GET", "/api/meta")[0] == 200
+    # the token alone in a cookie, or a wrong header, does not sign in
+    anon = Client(server)
+    assert anon.call("GET", "/api/meta", headers={"Cookie": "bsc_session=" + payload["token"]})[0] == 401
+    assert anon.call("GET", "/api/meta", headers={"X-BSC-Session": "nope"})[0] == 401
     stub.reject_user("bad", echo_password=True)
     status, payload, r = c.signin("bad", PASSWORD)
     assert status == 401 and payload["error"].startswith("Sign-in failed: ")
     assert PASSWORD not in json.dumps(payload)
     status, payload, _ = c.signin("bad\nuser", PASSWORD)
     assert status == 401
-    c.call("GET", "/api/meta")
     out, err = capfd.readouterr()
     assert PASSWORD not in out + err
 
@@ -260,3 +261,33 @@ def test_only_select_and_insert_reach_clickhouse(client, stub):
     for r in stub.requests:
         t = r["text"]
         assert t.startswith("SELECT") or t.startswith("INSERT INTO default.map_bsc_"), t
+
+
+def test_older_review_is_not_insertable(client, stub):
+    _, old, _ = client.call("POST", "/api/review", {"note": "a", "changes": [manual_change()]})
+    _, new, _ = client.call("POST", "/api/review", {"note": "b", "changes": [manual_change(numerator=1)]})
+    assert client.call("POST", "/api/insert", {"review_id": old["review_id"]})[0] == 409
+    assert not [r for r in stub.requests if r["text"].startswith("INSERT")]
+    assert client.call("POST", "/api/insert", {"review_id": new["review_id"]})[0] == 200
+
+
+def test_insert_rechecks_for_later_changes(client, stub):
+    _, rev, _ = client.call("POST", "/api/review", {"note": "a", "changes": [manual_change()]})
+    stub.tables["map_bsc_manual_value"].append(
+        {**MANUAL, "branch_id": 2, "month": 3, "changed_at": "2026-10-25 09:31:00.000", "changed_by": "other"})
+    status, res, _ = client.call("POST", "/api/insert", {"review_id": rev["review_id"]})
+    assert status == 409 and res == {"error": "Changed since review: review again."}
+    assert not [r for r in stub.requests if r["text"].startswith("INSERT")]
+
+
+def test_parents_are_inserted_first(client, stub):
+    kpi_row = {k: v for k, v in KPI.items() if k not in ("changed_at", "changed_by", "change_note", "is_deleted")}
+    kpi_row["kpi_code"] = "NEW_KPI"
+    tgt = {"table": "map_bsc_target", "op": "upsert", "base_changed_at": None,
+           "row": {"kpi_code": "NEW_KPI", "branch_id": 2, "year": 2026, "month": 3, "target_value": 3}}
+    kpi = {"table": "map_bsc_kpi", "op": "upsert", "row": kpi_row, "base_changed_at": None}
+    _, rev, _ = client.call("POST", "/api/review", {"note": "new kpi", "changes": [tgt, kpi]})
+    assert rev["can_insert"] is True, rev["issues"]
+    assert client.call("POST", "/api/insert", {"review_id": rev["review_id"]})[0] == 200
+    inserts = [r["text"].split(" FORMAT")[0] for r in stub.requests if r["text"].startswith("INSERT")]
+    assert inserts == ["INSERT INTO default.map_bsc_kpi", "INSERT INTO default.map_bsc_target"]

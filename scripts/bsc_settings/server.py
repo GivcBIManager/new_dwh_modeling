@@ -10,7 +10,6 @@ import secrets
 import sys
 import threading
 import webbrowser
-from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -20,15 +19,18 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from clickhouse import ClickHouse, ClickHouseError  # noqa: E402
-from rules import Change, Context, current, prepare  # noqa: E402
+from rules import Change, Context, current, key_of, prepare  # noqa: E402
 from tables import DEFAULT_MANUAL_HINT, GROUPS, MANUAL_HINTS, TABLES  # noqa: E402
 
 STATIC = HERE / "static"
-COOKIE = "bsc_session"
+TOKEN_HEADER = "X-BSC-Session"
 MAX_BODY = 5 * 1024 * 1024
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
                  ".css": "text/css; charset=utf-8"}
 STATIC_NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
+# parents first, so a failed batch never leaves rows pointing at a KPI or objective that is missing
+INSERT_ORDER = ["map_bsc_objective", "map_bsc_kpi"] + [
+    t for t in TABLES if t not in ("map_bsc_objective", "map_bsc_kpi")]
 SIGNED_OUT = "Signed out: sign in again."
 HOSPITAL_SQL = ("SELECT branch_key, branch_name FROM gold.ssas_dim_branch "
                 "WHERE is_hospital = 'Yes' ORDER BY branch_key")
@@ -137,13 +139,8 @@ class Handler(BaseHTTPRequestHandler):
         return data
 
     def session(self):
-        raw = self.headers.get("Cookie") or ""
-        try:
-            jar = SimpleCookie(raw)
-        except Exception:
-            jar = {}
-        morsel = jar.get(COOKIE) if jar else None
-        sess = self.app.sessions.get(morsel.value) if morsel else None
+        token = self.headers.get(TOKEN_HEADER)
+        sess = self.app.sessions.get(token) if token else None
         if sess is None:
             raise ApiError(401, SIGNED_OUT)
         return sess
@@ -203,8 +200,7 @@ class Handler(BaseHTTPRequestHandler):
         token = secrets.token_urlsafe(32)
         with self.app.lock:
             self.app.sessions[token] = Session(user, ch)
-        cookie = "%s=%s; HttpOnly; SameSite=Strict; Path=/" % (COOKIE, token)
-        return {"user": user}, (("Set-Cookie", cookie),)
+        return {"user": user, "token": token}, ()
 
     def api_meta(self):
         sess = self.session()
@@ -252,6 +248,7 @@ class Handler(BaseHTTPRequestHandler):
                       for i in issues]
         can_insert = not any(i["level"] == "error" for i in out_issues)
         review_id = secrets.token_urlsafe(16)
+        sess.reviews.clear()  # only the latest review can be inserted
         sess.reviews[review_id] = {"rows": rows, "can_insert": can_insert}
         return {"review_id": review_id, "rows": rows, "issues": out_issues, "can_insert": can_insert}, ()
 
@@ -261,7 +258,16 @@ class Handler(BaseHTTPRequestHandler):
         review = sess.reviews.pop(review_id, None) if isinstance(review_id, str) else None
         if review is None or not review["can_insert"]:
             raise ApiError(409, "This review is unknown, already used or has errors: review again.")
-        order = [t for t in TABLES if review["rows"].get(t)]
+        order = [t for t in INSERT_ORDER if review["rows"].get(t)]
+        for table in order:
+            spec = TABLES[table]
+            newest = {}
+            for r in read_table(sess.ch, table):
+                k = key_of(spec, r)
+                newest[k] = max(newest.get(k, ""), r["changed_at"])
+            for row in review["rows"][table]:
+                if newest.get(key_of(spec, row), "") >= row["changed_at"]:
+                    raise ApiError(409, "Changed since review: review again.")
         done = {}
         for i, table in enumerate(order):
             try:
