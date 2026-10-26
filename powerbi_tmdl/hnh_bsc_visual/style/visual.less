@@ -156,8 +156,9 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .bd-row:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
 .bd-row .chip{font-size:16.5px;padding:4.5px 12px;gap:9px;white-space:nowrap}
 .c-kpi{display:flex;flex-direction:column;gap:3px;min-width:0}
-.bd-name{font-size:19.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bd-tag{margin-left:9px;padding:0 7.5px;border:1px solid var(--line);border-radius:6px;font-size:15px;font-weight:600;color:var(--muted);vertical-align:2px}
+.bd-name{display:flex;align-items:center;min-width:0;font-size:19.5px;font-weight:600;white-space:nowrap}
+.bd-name-t{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.bd-tag{flex:none;margin-left:9px;padding:0 7.5px;border:1px solid var(--line);border-radius:6px;font-size:15px;line-height:1.4;font-weight:600;color:var(--muted)}
 .bd-obj{font-size:16.5px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .c-actual,.c-target,.c-var,.c-score{text-align:right;white-space:nowrap}
 .c-actual{font-size:24px;font-weight:600}
@@ -230,6 +231,7 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .dt-profile .chip{font-size:16.5px;padding:3px 12px;gap:9px;white-space:nowrap}
 .dt-tline-text{font-size:18px;color:var(--ink);font-weight:400}
 .dt-tline-text strong{font-weight:600}
+.dt-tline-text>span,.dt-tline-text>strong{white-space:nowrap}
 .dt-why{margin:0;font-size:19.5px;line-height:1.4;color:var(--muted);font-weight:400}
 .dt-facts{margin:0;display:grid;grid-template-columns:138px minmax(0,1fr);row-gap:12px;column-gap:15px;font-size:18px;line-height:1.35}
 .dt-facts dt{color:var(--muted);font-weight:400}
@@ -262,60 +264,70 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 
 @media (prefers-reduced-motion:no-preference){.gauge-arc{transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1)}}
 
-/* owner mode: ownership overview (toggles, achievement strip, then the KPI blocks) */
-.own-ov{display:flex;flex-direction:column;overflow:auto}
-.own-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:14px 24px 0}
-.own-lbl{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin-left:14px}
-.own-lbl:first-child{margin-left:auto}
-.seg{display:inline-flex;background:var(--nodata-bg);border:1px solid var(--line);border-radius:8px;padding:2px}
-.seg button{font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;border-radius:6px;padding:5px 12px;cursor:pointer}
-.seg button[aria-pressed=true]{background:var(--card);color:var(--blue-dk);box-shadow:0 1px 2px rgba(10,30,50,.18)}
+/* owner mode: ownership overview in the panel style (white, 1 px line, radius 12, 21 px headings): the toggles, the
+   achievement cards, then the KPI blocks; the whole view scrolls in the report's 1860 x 870 box */
+.own-ov{display:flex;flex-direction:column;gap:21px;overflow:auto}
+.own-bar{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:9px 12px}
+.own-lbl{font-size:16.5px;font-weight:400;color:var(--muted);margin-left:18px}
+.own-lbl:first-child{margin-left:0}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--slicer-border);border-radius:9px;padding:3px;gap:3px}
+.seg button{font:inherit;font-size:18px;font-weight:600;color:var(--muted);background:none;border:0;border-radius:6px;padding:6px 15px;cursor:pointer;white-space:nowrap}
+.seg button:hover{color:var(--ink);background:var(--surface)}
+.seg button[aria-pressed=true]{background:var(--blue-dk);color:#fff}
 .seg button:focus-visible,.own-card:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.own-strip{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);gap:12px;padding:12px 24px 4px;overflow-x:auto}
-.own-card{font:inherit;color:inherit;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 0 8px;
-  display:flex;flex-direction:column;align-items:center;cursor:pointer;overflow:hidden;min-width:0}
-.own-card .own-name{align-self:stretch;padding:7px 8px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;
-  background:linear-gradient(100deg,var(--hdr-1) 0%,var(--hdr-2) 60%,var(--hdr-3) 100%);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.own-card .gauge{max-width:100%;height:auto;margin-top:6px}
-.own-card .own-sub{font-size:12px;color:var(--muted)}
-.own-card[aria-pressed=true]{border:2px solid var(--blue-dk);box-shadow:0 0 0 2px var(--blue) inset}
+.own-strip{flex:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:24px}
+.own-card{font:inherit;color:inherit;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 18px 21px;
+  display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer;overflow:hidden;min-width:0}
+.own-card .own-name{align-self:stretch;font-size:21px;font-weight:600;line-height:1.2;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.own-card .gauge{max-width:100%;height:auto}
+.own-card .chip{font-size:16.5px;padding:4.5px 12px;gap:9px;white-space:nowrap}
+.own-card .own-sub{font-size:16.5px;color:var(--muted);font-weight:400}
 .own-card:hover{border-color:var(--blue)}
-.own-none{margin:6px 0;font-size:14px;color:var(--muted)}
-.own-note{margin:8px 24px 0;font-size:13px;color:var(--muted)}
-.owners{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px;padding:20px 24px;align-content:start}
-.owner{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
-.owner h3{margin:0 0 8px;font-size:18px;font-weight:800}
-.owner table,.cmp table{width:100%;border-collapse:collapse;font-size:14px}
-.owner th,.cmp thead th{text-align:left;font-weight:600;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
-.owner td{padding:6px 8px;border-bottom:1px solid var(--line)}
-.owner .co-tag{display:inline-block;margin-left:8px;border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.own-card[aria-pressed=true]{border-color:var(--blue-dk);box-shadow:inset 0 0 0 2px var(--blue-dk);background:var(--row-hl)}
+.own-none{margin:6px 0;font-size:19.5px;color:var(--muted);font-weight:400}
+.own-note{margin:0;font-size:18px;color:var(--muted);font-weight:400}
+.owners{display:grid;grid-template-columns:repeat(auto-fill,minmax(560px,1fr));gap:24px;align-content:start}
+.owner{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:21px 24px}
+.owner h3{margin:0 0 9px;font-size:21px;font-weight:600}
+.owner table{width:100%;border-collapse:collapse}
+.owner th{text-align:left;height:42px;padding:0 9px;font-size:16.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
+.owner th:nth-child(2),.owner th:nth-child(3){text-align:right}
+.owner td{height:60px;padding:6px 9px;font-size:19.5px;font-weight:400;border-bottom:1px solid var(--nodata-bg)}
+.owner td:first-child{font-weight:600}
+.owner .co-tag{display:inline-block;margin-left:9px;border:1px solid var(--line);border-radius:6px;padding:0 7.5px;font-size:15px;line-height:1.4;font-weight:600;color:var(--muted);white-space:nowrap}
 .owner td.num{text-align:right;font-weight:600;white-space:nowrap}
-.owner tr:focus-visible{outline:2px solid var(--blue)}
+.owner .chip{font-size:16.5px;padding:4.5px 12px;gap:9px;white-space:nowrap}
+.owner tr[data-key]{cursor:context-menu}
+.owner tr[data-key]:hover{background:var(--surface)}
+.owner tr:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
 
-/* comparison mode: a league table, hospitals as ranked rows; the columns drill Pillar > Objective > KPI */
-.cmp{padding:20px 24px 0;overflow:hidden;display:flex;flex-direction:column;gap:10px}
-.cmp-scroll{overflow:auto;flex:1;min-height:0;padding-bottom:20px}
-.cmp-legend{font-size:13px;color:var(--muted)}
-.crumbs{display:flex;flex-wrap:wrap;align-items:center;font-size:16px;font-weight:600;color:var(--ink)}
-.crumbs .gt{color:var(--muted);white-space:pre}
-.crumbs .here{padding:2px 4px}
-.crumbs button,.cmp thead button.drill{font:inherit;color:var(--blue-dk);background:none;border:0;padding:2px 4px;border-radius:4px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+/* comparison mode: a league table in one panel, hospitals as ranked rows; the columns drill Pillar > Objective > KPI */
+.cmp{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:21px 24px;overflow:hidden;display:flex;flex-direction:column;gap:9px;min-height:0}
+.cmp-scroll{overflow:auto;flex:1;min-height:0;margin-top:6px}
+.cmp-legend{font-size:18px;line-height:1.4;color:var(--muted);font-weight:400}
+.cmp-legend .mark{margin:0 7.5px 0 3px;vertical-align:1px}
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;font-size:21px;font-weight:600;color:var(--ink)}
+.crumbs .gt{color:var(--muted);white-space:pre;font-weight:400}
+.crumbs .here{padding:3px 4.5px}
+.crumbs button,.cmp thead button.drill{font:inherit;color:var(--blue-dk);background:none;border:0;padding:3px 4.5px;border-radius:6px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px}
+.cmp thead button.drill{padding:0 3px;line-height:inherit;font-weight:600}
 .crumbs button:hover,.cmp thead button.drill:hover{text-decoration-style:solid}
 .crumbs button:focus-visible,.cmp thead button.drill:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
-.cmp table{width:100%;table-layout:fixed;background:var(--card);border:1px solid var(--line);border-collapse:separate;border-spacing:0;border-radius:12px}
-.cmp thead th{text-align:center;position:sticky;top:0;background:var(--card);z-index:2;vertical-align:bottom}
+.cmp table{width:100%;table-layout:fixed;background:var(--card);border-collapse:separate;border-spacing:0}
+.cmp thead th{text-align:center;position:sticky;top:0;background:var(--card);z-index:2;vertical-align:middle;height:51px;padding:3px 12px;font-size:16.5px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line)}
 .cmp .rank{width:44px;text-align:center;position:sticky;left:0;background:var(--card);color:var(--muted);font-weight:600}
 .cmp .hosp{width:min(22%,240px);position:sticky;left:44px;background:var(--card)}
 .cmp thead th.rank,.cmp thead th.hosp{z-index:3}
 .cmp thead th.hosp{text-align:left}
-.cmp tbody th{text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);z-index:1}
-.cmp td{text-align:center;padding:8px 14px;font-weight:700;border-bottom:1px solid var(--line)}
-.cmp td.rank{padding:8px 4px}
-.cmp td.good{background:var(--good-bg);color:#08776B}.cmp td.warn{background:var(--warn-bg);color:#A35F00}.cmp td.bad{background:var(--bad-bg);color:#A81E06}.cmp td.nodata{background:var(--nodata-bg);color:var(--muted)}
+.cmp tbody th{text-align:left;font-size:19.5px;font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line);z-index:1}
+.cmp td{text-align:center;height:66px;padding:6px 12px;font-size:19.5px;font-weight:600;border-bottom:1px solid var(--line)}
+.cmp td.rank{padding:6px 4.5px}
+.cmp td .mark{margin-right:9px;vertical-align:2px}
+.cmp td.good{background:var(--good-bg);color:var(--good-tx)}.cmp td.warn{background:var(--warn-bg);color:var(--warn-tx)}.cmp td.bad{background:var(--bad-bg);color:var(--bad-tx)}.cmp td.nodata{background:var(--nodata-bg);color:var(--nodata-tx)}
 .cmp .lead{border-right:2px solid var(--line)}
-.cmp td.lead{font-size:16px}
+.cmp td.lead{font-size:21px}
 .cmp td .sc{display:block}
-.cmp td .at{display:block;font-size:12px;font-weight:400;margin-top:2px;overflow-wrap:anywhere}
+.cmp td .at{display:block;font-size:16.5px;font-weight:400;margin-top:3px;overflow-wrap:anywhere}
 .cmp .peer{border-left:2px solid var(--line)}
 
 /* interactions */
@@ -333,8 +345,8 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
   --good-tx:var(--hc-fg); --warn-tx:var(--hc-fg); --bad-tx:var(--hc-fg); --nodata-tx:var(--hc-fg); --missed-bar:var(--hc-bg);
 }
 .hnh-bsc.hc .band{background:var(--hc-bg);color:var(--hc-fg);border-bottom:2px solid var(--hc-fg)}
-.hnh-bsc.hc .own-card .own-name{background:var(--hc-bg);color:var(--hc-fg);border-bottom:1px solid var(--hc-fg)}
-.hnh-bsc.hc .seg button[aria-pressed=true]{outline:2px solid var(--hc-sel);box-shadow:none}
+.hnh-bsc.hc .seg button[aria-pressed=true]{background:var(--hc-bg);color:var(--hc-fg);outline:2px solid var(--hc-sel)}
+.hnh-bsc.hc .own-card[aria-pressed=true]{background:var(--hc-bg);box-shadow:inset 0 0 0 3px var(--hc-sel)}
 .hnh-bsc.hc .chip,.hnh-bsc.hc .cmp td{color:var(--hc-fg);border:1px solid var(--hc-fg)}
 
 /* SVG colours live here so high contrast can replace them */
@@ -371,6 +383,6 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .hnh-bsc.hc .dt-key i.swatch.warn{background:var(--hc-fg);opacity:.1}
 
 /* branch series outside comparison mode: which hospital the page shows */
-.hnh-bsc .hint{flex:none;padding:6px 24px;font-size:13px;color:var(--muted);background:var(--card);border-bottom:1px solid var(--line)}
+.hnh-bsc .hint{flex:none;padding:6px 24px;font-size:16.5px;color:var(--muted);background:var(--card);border-bottom:1px solid var(--line)}
 .cmp td[data-key]{cursor:context-menu}
 .cmp td[data-key]:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}

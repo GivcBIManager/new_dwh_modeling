@@ -1,9 +1,9 @@
 import type { KpiRow, ViewModel } from "../model/types";
-import { formatValue } from "../model/format";
+import { DASH, formatValue, isNum } from "../model/format";
 import { ownerCards, type OwnerCard, type OwnerScope, type OwnerTier, type ScoreMode } from "../model/achievement";
 import { el } from "./dom";
 import { stateChip } from "./chips";
-import { allFirstRows } from "./rows";
+import { allFirstRows, SCORE_WORD, type Group } from "./rows";
 import { achievementGauge } from "./gauge";
 
 const NONE = "Unassigned";
@@ -46,15 +46,25 @@ function toggleBar(ou: OwnerUi): HTMLElement {
     return bar;
 }
 
+/** The achievement's state, as the gauge colours it: 100% and over on track, 85-99% watch, under 85% at risk. */
+export function achievementState(value: number | null): Group {
+    if (!isNum(value)) return "nodata";
+    const shown = Math.round(value);
+    return shown >= 100 ? "good" : shown >= 85 ? "warn" : "bad";
+}
+
 function card(c: OwnerCard, ou: OwnerUi): HTMLElement {
     const shown = c.value === null ? "no data" : `${Math.round(c.value)}%`;
+    const st = achievementState(c.value);
     const sub = ou.score === "hitrate" ? `${c.counted} of ${c.total} KPIs on target` : `${c.counted} of ${c.total} KPIs scored`;
     return el("button", {
         type: "button", class: "own-card", "data-owner-card": c.owner, "aria-pressed": String(ou.pick === c.owner),
-        "aria-label": `${c.owner}: achievement ${shown}, ${sub}`,
+        "aria-label": `${c.owner}: achievement ${shown}, ${SCORE_WORD[st]}, ${sub}`,
     }, [
         el("span", { class: "own-name" }, [c.owner]),
-        achievementGauge(c.value, 150, c.owner),
+        achievementGauge(c.value, 180, c.owner),
+        // The gauge's colour as a shape and a word too.
+        stateChip(st, SCORE_WORD[st]),
         el("span", { class: "own-sub" }, [sub]),
     ]);
 }
@@ -93,8 +103,8 @@ function blocks(vm: ViewModel, only: string | null, scope: OwnerScope): HTMLElem
             const has = r.actual !== null && r.state !== "nodata" && r.state !== "parked";
             body.appendChild(el("tr", { "data-key": r.rowIndex, "data-series": r.seriesIndex, tabindex: 0 }, [
                 el("td", {}, co ? [r.name, el("span", { class: "co-tag" }, ["co-owner"])] : [r.name]),
-                el("td", { class: "num" }, [has ? formatValue(r.actual, r.valueFormat) : "–"]),
-                el("td", { class: "num" }, [r.target !== null ? formatValue(r.target, r.valueFormat) : "–"]),
+                el("td", { class: "num" }, [has ? formatValue(r.actual, r.valueFormat) : DASH]),
+                el("td", { class: "num" }, [r.target !== null ? formatValue(r.target, r.valueFormat) : DASH]),
                 el("td", {}, [stateChip(r.state, r.stateWord)]),
             ]));
         }

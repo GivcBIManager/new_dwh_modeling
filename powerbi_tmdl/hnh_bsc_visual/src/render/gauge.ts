@@ -38,9 +38,9 @@ function dial(d: Dial): SVGSVGElement {
         stroke: "var(--navy)", "stroke-width": 3, class: "gauge-target",
     }));
     s.appendChild(svg("text", {
-        x: mid, y: mid - 6, "text-anchor": "middle", "font-size": (size / 5.2).toFixed(1), "font-weight": 800, fill: col,
+        x: mid, y: mid - 6, "text-anchor": "middle", "font-size": (size / 5.2).toFixed(1), "font-weight": 600, fill: col,
     }, [shown === null ? "–" : `${shown}${d.suffix}`]));
-    s.appendChild(svg("text", { x: mid, y: mid + 20, "text-anchor": "middle", "font-size": 13, fill: "var(--muted)" }, [d.caption]));
+    s.appendChild(svg("text", { x: mid, y: mid + 21, "text-anchor": "middle", "font-size": 16.5, "font-weight": 400, fill: "var(--muted)" }, [d.caption]));
     return s;
 }
 

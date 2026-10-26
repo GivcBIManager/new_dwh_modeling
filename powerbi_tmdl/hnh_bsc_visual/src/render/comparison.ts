@@ -1,10 +1,10 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
 import { el } from "./dom";
-import { stateClass } from "./chips";
+import { stateClass, stateMark } from "./chips";
 import { empty } from "./empty";
 import { hasScore } from "../model/state";
 import { objectiveScore } from "../model/score";
-import { formatValue, isNum } from "../model/format";
+import { DASH, formatValue, isNum } from "../model/format";
 import { scoreState, SCORE_WORD, STATE_WORD } from "./rows";
 
 /** The comparison's drill level: all pillars (both null), a pillar's objectives, or an objective's KPIs. */
@@ -147,18 +147,19 @@ export function comparison(vm: ViewModel, picked: CompareLevel = TOP_LEVEL): HTM
         const st = scoreState(s, t);
         const cls = stateClass(st) + extra;
         const say = isNum(s) ? `${b}: ${label} ${Math.round(s)} · ${STATE_WORD[stateClass(st)]}` : `${b}: ${label} ${SCORE_WORD.nodata}`;
-        return el("td", { class: cls, title: say, "aria-label": say }, [isNum(s) ? String(Math.round(s)) : "–"]);
+        // A score carries its state's shape as well as its tint; "–" (no data) is its own mark.
+        return el("td", { class: cls, title: say, "aria-label": say }, isNum(s) ? [stateMark(st), String(Math.round(s))] : [DASH]);
     };
     const kpiCell = (b: string, label: string, r: KpiRow | undefined): HTMLElement => {
         if (!hasScore(r)) {
             const say = `${b}: ${label} ${SCORE_WORD.nodata}`;
-            return el("td", { class: "nodata", title: say, "aria-label": say }, ["–"]);
+            return el("td", { class: "nodata", title: say, "aria-label": say }, [DASH]);
         }
         const shown = String(Math.round(r.score as number));
         const at = isNum(r.actual) || isNum(r.target) ? actualTarget(r) : null;
         const say = `${b}: ${label} ${shown} · ${r.stateWord}` + (at ? ` · ${at}` : "");
         return el("td", { class: stateClass(r.state), title: say, "aria-label": say, "data-key": r.rowIndex, "data-series": r.seriesIndex, tabindex: 0 },
-            [el("span", { class: "sc" }, [shown]), at ? el("span", { class: "at" }, [at]) : null]);
+            [el("span", { class: "sc" }, [stateMark(r.state), shown]), at ? el("span", { class: "at" }, [at]) : null]);
     };
 
     const head = el("tr", {}, [
@@ -170,15 +171,16 @@ export function comparison(vm: ViewModel, picked: CompareLevel = TOP_LEVEL): HTM
     ]);
     const body = el("tbody");
     for (const x of ranked) {
-        const rank = x.shown === null ? "–" : String(1 + ranked.filter(y => y.shown !== null && y.shown > (x.shown as number)).length);
+        const rank = x.shown === null ? DASH : String(1 + ranked.filter(y => y.shown !== null && y.shown > (x.shown as number)).length);
         const tr = el("tr", {}, [el("td", { class: "rank" }, [rank]), el("th", { class: "hosp", scope: "row" }, [x.b]), scoreCell(x.b, lead.label, x.score, " lead")]);
         for (const c of cols) tr.appendChild(c.kpi ? kpiCell(x.b, c.label, c.kpi(x.bi)) : scoreCell(x.b, c.label, (c.score as (bi: number) => number | null)(x.bi)));
         const m = median(ranked.filter(y => y !== x && y.score !== null).map(y => y.score as number));
-        tr.appendChild(el("td", { class: "peer", title: `Median ${lead.label} of the other hospitals` }, [m === null ? "–" : String(Math.round(m))]));
+        tr.appendChild(el("td", { class: "peer", title: `Median ${lead.label} of the other hospitals` }, [m === null ? DASH : String(Math.round(m))]));
         body.appendChild(tr);
     }
     const legend = el("div", { class: "cmp-legend" }, [
-        `Scores are points out of 100: ${t.good} and over on track, ${t.watch}–${t.good - 1} watch, under ${t.watch} at risk; – means no data yet. ${hint}`,
+        "Scores are points out of 100: ", stateMark("good"), `${t.good} and over on track, `, stateMark("warn"), `${t.watch}–${t.good - 1} watch, `,
+        stateMark("bad"), `under ${t.watch} at risk; – means no data yet. ${hint}`,
     ]);
     return el("div", { class: "cmp" }, [crumbs(level, objectiveLabel), legend, el("div", { class: "cmp-scroll" }, [el("table", {}, [el("thead", {}, [head]), body])])]);
 }

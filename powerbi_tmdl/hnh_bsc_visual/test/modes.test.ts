@@ -456,6 +456,15 @@ describe("owner overview strip", () => {
         expect(cards(root)[0].querySelector(".gauge text")!.textContent).toBe("90%");
         expect(cards(root)[0].textContent).toContain("1 of 2 KPIs scored");
     });
+    it("each card says its achievement state with a chip: 100% and over On track, 85-99% Watch, under 85% At risk", () => {
+        const root = draw();
+        const chip = (c: HTMLElement) => c.querySelector(".chip")!;
+        expect(chip(cards(root)[2]).textContent).toBe("On track");
+        expect(chip(cards(root)[2]).querySelector(".mark.good")).not.toBeNull();
+        expect(chip(cards(root)[0]).textContent).toBe("Watch");
+        expect(chip(cards(draw({ score: "hitrate" }))[2]).textContent).toBe("At risk");
+        expect(cards(root)[2].getAttribute("aria-label")).toBe("CFO: achievement 105%, On track, 2 of 2 KPIs scored");
+    });
     it("On-target shows the hit rate", () => {
         const root = draw({ score: "hitrate" });
         expect(cards(root)[2].querySelector(".gauge text")!.textContent).toBe("50%");

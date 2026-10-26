@@ -78,10 +78,11 @@ function profile(row: KpiRow): HTMLElement {
             el("span", { class: `dt-actual ${cls}` }, [value ? formatValue(row.actual, row.valueFormat) : DASH]),
             el("div", { class: "dt-figure-r" }, [
                 stateChip(row.state, row.stateWord),
+                // The line breaks between its three parts, never inside one ("score" and its number stay together).
                 el("span", { class: "dt-tline-text" }, [
-                    `Target ${targetText(row)} · `,
-                    el("strong", { class: value && isNum(row.variance) ? cls : "" }, [value ? formatVariance(row.variance) : DASH]),
-                    ` · score ${scored ? String(Math.round(row.score as number)) : DASH}`,
+                    el("span", {}, [`Target ${targetText(row)}`]), " · ",
+                    el("strong", { class: value && isNum(row.variance) ? cls : "" }, [value ? formatVariance(row.variance) : DASH]), " · ",
+                    el("span", {}, [`score ${scored ? String(Math.round(row.score as number)) : DASH}`]),
                 ]),
             ]),
         ]),

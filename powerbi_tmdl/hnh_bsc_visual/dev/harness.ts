@@ -1,5 +1,10 @@
 // Dev harness: renders the real Visual class with a fake host and a synthetic 70-KPI catalogue (comparison: 8 hospitals,
 // 14 objectives, 31 KPIs). No real hospital figures.
+//
+// Query string: ?mode=overview | overview-scores | board | detail | owner | owner-ontarget-all | owner-owned-pick |
+// comparison | comparison-pillar | comparison-objective. On the board, ?pillar=<name> keeps that pillar's rows (as the
+// report's page filter does), ?select=<KPI code> makes the host's selection that row (the panel shows it) and
+// ?objective=<objective code> picks it in the objective picker. In detail, ?kpi=<KPI code> is the drilled KPI.
 import { Visual } from "../src/visual";
 import { makeDataView, payload, FixtureRow } from "../test/fixtures";
 
@@ -44,6 +49,10 @@ const LONG: Spec[] = [
     { name: "Outpatient prescriptions dispensed within 20 minutes of arrival", fmt: "pct", dir: "higher", target: 0.9 },
 ];
 const QUALIFIER = ["", " (YTD)", " (month)"];
+const BASIS = ["Budget 2026", "Prior year actual + 5%", "Saudi MOH benchmark", "Board-approved plan"];
+const NOTE = "Entered monthly by the department from its own register; checked by the BSC office before the close.";
+const better = (dir: string) => (dir === "higher" ? "a higher value is better" : dir === "on_target" ? "the closer to the target the better" : "a lower value is better");
+const definitionOf = (spec: Spec) => `${spec.name}, as reported for the month; ${better(spec.dir)}.`;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 /** Score from the target variance: base 85 at target, 0.6 points per 1%, direction-aware, clamped and rounded. */
@@ -57,6 +66,13 @@ const stateOf = (score: number) => (score >= GOOD ? "On track" : score >= WATCH 
 function branchPayload(kind: string, spec: Spec, tilt: number): string {
     if (kind === "empty") return payload({ state: "" });
     if (kind === "parked") return payload({ state: "Parked" });
+    if (kind === "over") {
+        // A score above 100 (scoring changes come later): the number prints in full, rings and bars stop at 100.
+        const trend = Array.from({ length: MONTHS }, (_, i) => spec.target * (1.2 + i * 0.02));
+        const actual = trend[MONTHS - 1];
+        return payload({ actual, target: spec.target, variance: actual / spec.target - 1, score: 112, state: "On track", weight: 2,
+            trend, targetTrend: Array(MONTHS).fill(spec.target), scoreTrend: trend.map((_, i) => 100 + i) });
+    }
     const target = spec.target * (1 + (rnd() - 0.5) * 0.04);
     const variance = (rnd() - 0.5) * 0.55 + tilt;
     const actual = target * (1 + variance);
@@ -88,7 +104,7 @@ export function buildRows(branches: string[] | null): FixtureRow[] {
             const parkedCatalogue = allParked || n % 17 === 6;
             const manual = n % 9 === 4;
             const noData = !parkedCatalogue && n % 11 === 3;
-            const kind = parkedCatalogue ? "parked" : noData ? "empty" : "value";
+            const kind = parkedCatalogue ? "parked" : noData ? "empty" : n === 0 ? "over" : "value";
             const tilt = (2.5 - p.order) * 0.03;
             rows.push({
                 kpi: `${p.name.slice(0, 1)}${p.order}-${String(i + 1).padStart(2, "0")}`,
@@ -98,6 +114,7 @@ export function buildRows(branches: string[] | null): FixtureRow[] {
                 kpiType: i < 4 ? "Primary" : "Supporting", direction: spec.dir, valueFormat: spec.fmt, displayOrder: i + 1,
                 kpiStatus: parkedCatalogue ? "parked" : "active", valueSource: manual ? "manual" : "measure",
                 owner: OWNERS[n % OWNERS.length], coOwners: CO[n % CO.length], scoreBase: BASE, scoreSlope: SLOPE, goodFrom: GOOD, watchFrom: WATCH,
+                definition: definitionOf(spec), targetBasis: BASIS[n % BASIS.length], manualNote: manual ? NOTE : "",
                 payload: branches
                     ? branches.map((b, bi) => scoresOnly(b === "Head Office" ? payload({ state: "No data yet" }) : branchPayload(kind, spec, tilt + (bi - 1) * 0.06)))
                     : branchPayload(kind, spec, tilt),
@@ -170,29 +187,74 @@ const shot = params.get("mode") ?? "overview";
 const mode = shot === "overview-scores" ? "overview" : shot.startsWith("comparison") ? "comparison" : shot.startsWith("owner") ? "owner" : shot;
 const HOSPITALS = ["Hospital A", "Hospital B", "Hospital C", "Hospital D", "Head Office", "Hospital E", "Hospital F", "Hospital G", "Hospital H"];
 const branches = mode === "comparison" ? HOSPITALS : null;
-const built = branches ? buildComparisonRows(branches) : buildRows(null);
+let built = branches ? buildComparisonRows(branches) : buildRows(null);
 if (shot === "overview-scores") for (const r of built) r.payload = scoresOnly(r.payload as string);
+// The pillar pages filter on their pillar, the drill-through page on its KPI (default: a manual KPI with a note).
+const pillar = params.get("pillar");
+if (mode === "board" && pillar) built = built.filter(r => r.pillar === pillar);
+if (mode === "detail") built = built.filter(r => r.kpi === (params.get("kpi") ?? "F1-05"));
 const dv = makeDataView(built, branches ? { branches } : {});
 (dv.metadata as unknown as { objects: unknown }).objects = { scorecard: { mode } };
 
-const selection = { select: () => Promise.resolve([]), clear: () => Promise.resolve({}), showContextMenu: () => undefined, getSelectionIds: () => [], registerOnSelectCallback: () => undefined };
+/** Fake selection ids: equal when they name the same row and series. */
+interface FakeId { row: number; series: number | null; equals(o: FakeId): boolean }
+const fakeId = (row: number, series: number | null): FakeId => ({ row, series, equals: o => o.row === row && o.series === series });
+// ?select=<KPI code>: the host's selection is that row, as after a click in the table, so the panel shows it.
+const selectRow = built.findIndex(r => r.kpi === params.get("select"));
+let selected: FakeId[] = selectRow >= 0 ? [fakeId(selectRow, null)] : [];
+const selection = {
+    select: (id: FakeId | FakeId[], multi?: boolean) => {
+        const ids = Array.isArray(id) ? id : [id];
+        selected = multi ? [...selected.filter(s => !ids.some(i => i.equals(s))), ...ids] : ids;
+        return Promise.resolve(selected);
+    },
+    clear: () => { selected = []; return Promise.resolve({}); },
+    showContextMenu: () => undefined,
+    getSelectionIds: () => selected,
+    registerOnSelectCallback: () => undefined,
+};
 const host = {
     eventService: { renderingStarted: () => undefined, renderingFinished: () => document.body.setAttribute("data-rendered", "1"), renderingFailed: (_o: unknown, m?: string) => { document.body.setAttribute("data-failed", m ?? "1"); document.body.textContent = "render failed: " + (m ?? ""); } },
     createSelectionManager: () => selection,
-    createSelectionIdBuilder: () => { const b = { withCategory: () => b, withSeries: () => b, createSelectionId: () => ({ equals: () => false }) }; return b; },
+    createSelectionIdBuilder: () => {
+        let row = -1, series: number | null = null;
+        const b = {
+            withCategory: (_c: unknown, i: number) => { row = i; return b; },
+            withSeries: (_v: unknown, g: { name?: unknown }) => { series = HOSPITALS.indexOf(String(g.name)); return b; },
+            createSelectionId: () => fakeId(row, series),
+        };
+        return b;
+    },
     tooltipService: { show: () => undefined, hide: () => undefined },
     hostCapabilities: { allowInteractions: true },
     colorPalette: { isHighContrast: false },
 };
 const root = document.getElementById("root") as HTMLElement;
+// ?w=&h= give the visual the report's box whatever the browser window is.
+const w = Number(params.get("w")), h = Number(params.get("h"));
+if (w > 0 && h > 0) root.setAttribute("style", `position:absolute;left:0;top:0;width:${w}px;height:${h}px`);
 const visual = new Visual({ element: root, host } as never);
-visual.update({ dataViews: [dv], viewport: { width: window.innerWidth, height: window.innerHeight }, type: 2 } as never);
-const pillar = params.get("pillar");
-if (pillar) (root.querySelector(`[data-pillar="${pillar}"]`) as HTMLElement | null)?.click();
-// Drill the league table the way a user does: click the pillar header, then the objective header.
-if (shot === "comparison-pillar" || shot === "comparison-objective") (root.querySelector('thead button[data-cmp-pillar="Financial"]') as HTMLElement | null)?.click();
+visual.update({ dataViews: [dv], viewport: { width: root.clientWidth, height: root.clientHeight }, type: 2 } as never);
 const press = (sel: string) => (root.querySelector(sel) as HTMLElement | null)?.click();
+const objective = params.get("objective");
+const picker = root.querySelector("select[data-objective-picker]") as HTMLSelectElement | null;
+if (objective && picker) { picker.value = objective; picker.dispatchEvent(new Event("change", { bubbles: true })); }
+// Drill the league table the way a user does: click the pillar header, then the objective header.
+if (shot === "comparison-pillar" || shot === "comparison-objective") press('thead button[data-cmp-pillar="Financial"]');
+if (shot === "comparison-objective") press('thead button[data-cmp-objective="F1"]');
 if (shot === "owner-ontarget-all") { press('button[data-owner-toggle="score"][data-value="hitrate"]'); press('button[data-owner-toggle="tier"][data-value="all"]'); }
 if (shot === "owner-owned-pick") { press('button[data-owner-toggle="scope"][data-value="owned"]'); press('.own-card[data-owner-card="CFO"]'); }
-if (shot === "comparison-objective") (root.querySelector('thead button[data-cmp-objective="F1"]') as HTMLElement | null)?.click();
-document.body.setAttribute("data-font", getComputedStyle(root).fontFamily + "|" + getComputedStyle(root.querySelector("h1") ?? root).fontFamily);
+document.body.setAttribute("data-font", getComputedStyle(root).fontFamily + "|" + getComputedStyle(root.querySelector("h1, h2") ?? root).fontFamily);
+// The report's contract, in the visual's coordinates: the pillar cards under the page buttons, the board's slots for the
+// native chart and button, the detail panels. dev/screenshot.ps1 reads it with --dump-dom.
+const origin = root.getBoundingClientRect();
+const rect = (e: Element) => {
+    const r = e.getBoundingClientRect();
+    return [r.left - origin.left, r.top - origin.top, r.width, r.height].map(v => Math.round(v * 10) / 10);
+};
+const geometry: Record<string, unknown> = { window: [window.innerWidth, window.innerHeight], box: [root.clientWidth, root.clientHeight] };
+for (const sel of [".ov-pillar", ".bd-slot-chart", ".bd-slot-button", ".dt-profile", ".dt-trend"]) {
+    const found = [...root.querySelectorAll(sel)].map(rect);
+    if (found.length) geometry[sel] = found;
+}
+document.body.setAttribute("data-geometry", JSON.stringify(geometry));

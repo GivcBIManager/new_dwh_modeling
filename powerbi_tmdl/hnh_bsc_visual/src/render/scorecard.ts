@@ -36,7 +36,8 @@ function scoreRow(r: KpiRow, selected: boolean, colourVar: string): HTMLElement 
     }, [
         el("span", { class: "c-chip" }, [stateChip(r.state, r.stateWord)]),
         el("span", { class: "c-kpi" }, [
-            el("span", { class: "bd-name" }, [r.name, r.manual ? el("span", { class: "bd-tag" }, ["Manual"]) : null]),
+            // The name gives way (ellipsis) before the Manual tag does.
+            el("span", { class: "bd-name" }, [el("span", { class: "bd-name-t" }, [r.name]), r.manual ? el("span", { class: "bd-tag" }, ["Manual"]) : null]),
             el("span", { class: "bd-obj" }, [r.reason ?? r.objectiveTitle]),
         ]),
         el("span", { class: "c-actual" }, [value ? formatValue(r.actual, r.valueFormat) : DASH]),

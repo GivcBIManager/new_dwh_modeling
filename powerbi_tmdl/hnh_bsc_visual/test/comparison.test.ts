@@ -124,6 +124,16 @@ describe("comparison level 3 (an objective's KPIs)", () => {
             ["3", "Jazan", "70", "78"],
         ]);
     });
+    it("score cells carry their state's shape (aria-hidden), never only a tint; no-data cells keep the dash", () => {
+        const [abha, khamis, jazan] = bodyRows(draw(ui("Financial", "F1")));
+        expect(abha[3].querySelector(".sc .mark.good")!.getAttribute("aria-hidden")).toBe("true");
+        expect(jazan[3].querySelector(".mark.bad")).not.toBeNull();
+        expect(abha[2].querySelector(".mark")).not.toBeNull();
+        expect(khamis[2].querySelector(".mark.warn")).not.toBeNull();
+        const level2 = bodyRows(draw(ui("Financial")));
+        expect(level2[1][4].querySelector(".mark")).toBeNull();
+        expect(level2[1][4].textContent).toBe("–");
+    });
     it("a KPI cell shows the score and actual / target in the KPI's value format, coloured by state", () => {
         const root = draw(ui("Financial", "F1"));
         const [abha, , jazan] = bodyRows(root);

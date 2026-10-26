@@ -1,4 +1,6 @@
-# Bundle the harness with esbuild, then screenshot each mode (and the prototype) with headless Edge into dev/out/.
+# Bundle the harness with esbuild, then screenshot each view with headless Edge into dev/out/, at the size the report
+# gives the visual: the content box 1860 x 870 (overview, board, owner, comparison) and 1920 x 996 (KPI detail).
+# Then print the geometry the report's native visuals rely on (pillar cards, board slots, detail panels).
 $ErrorActionPreference = 'Stop'
 $dev = $PSScriptRoot
 $proj = Split-Path $dev -Parent
@@ -13,23 +15,49 @@ try {
 } finally { Pop-Location }
 $edge = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
 $page = 'file:///' + ((Join-Path $dev 'harness.html') -replace '\\', '/')
-foreach ($mode in 'overview', 'overview-scores', 'board', 'owner', 'owner-ontarget-all', 'owner-owned-pick', 'comparison', 'comparison-pillar', 'comparison-objective') {
-    $png = Join-Path $out "$mode.png"
-    & $edge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 "--screenshot=$png" --window-size=1920,904 ($page + '?mode=' + $mode)
-    Start-Sleep -Milliseconds 800
+# The headless window draws its page 24 px narrower and 92 px shorter than --window-size; the harness also pins the
+# visual's box with w= and h=, so a different allowance only adds a white margin.
+$box = @(1860, 870)
+$detailBox = @(1920, 996)
+$shots = [ordered]@{
+    'overview'             = @('mode=overview', $box)
+    'overview-scores'      = @('mode=overview-scores', $box)
+    'board'                = @('mode=board&pillar=Financial', $box)
+    'board-select'         = @('mode=board&pillar=Financial&select=F1-01', $box)
+    'board-ip'             = @('mode=board&pillar=Internal%20Process', $box)
+    'detail'               = @('mode=detail', $detailBox)
+    'owner'                = @('mode=owner', $box)
+    'owner-ontarget-all'   = @('mode=owner-ontarget-all', $box)
+    'owner-owned-pick'     = @('mode=owner-owned-pick', $box)
+    'comparison'           = @('mode=comparison', $box)
+    'comparison-pillar'    = @('mode=comparison-pillar', $box)
+    'comparison-objective' = @('mode=comparison-objective', $box)
 }
-foreach ($mode in 'overview', 'board') {
-    $png = Join-Path $out "$mode-1280x720.png"
-    & $edge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 "--screenshot=$png" --window-size=1280,720 ($page + '?mode=' + $mode)
-    Start-Sleep -Milliseconds 800
+# Edge returns before its headless child finishes and logs noise on stderr: run each capture to completion in its own
+# profile, with stderr in a log file.
+$edgeProfile = Join-Path $out 'edge-profile'
+$log = Join-Path $out 'edge.log'
+function Invoke-Edge([string[]] $Arguments, [string] $StdOut) {
+    $common = @('--headless=new', '--disable-gpu', '--hide-scrollbars', '--virtual-time-budget=4000', "--user-data-dir=`"$edgeProfile`"")
+    $p = @{ FilePath = $edge; ArgumentList = $common + $Arguments; Wait = $true; NoNewWindow = $true; RedirectStandardError = $log }
+    if ($StdOut) { $p.RedirectStandardOutput = $StdOut }
+    Start-Process @p
 }
-$proto = Join-Path (Split-Path (Split-Path $proj -Parent) -Parent) 'docs\superpowers\specs\assets\2026-10-20-bsc-visual-prototype.html'
-if (Test-Path $proto) {
-    $purl = 'file:///' + ($proto -replace '\\', '/')
-    foreach ($mode in 'overview', 'board') {
-        $png = Join-Path $out "prototype-$mode.png"
-        & $edge --headless=new --disable-gpu --hide-scrollbars --virtual-time-budget=4000 "--screenshot=$png" --window-size=1920,904 ($purl + '?mode=' + $mode)
-        Start-Sleep -Milliseconds 800
-    }
+function Get-Shot([string] $name) {
+    $query, $size = $shots[$name]
+    return @("${query}&w=$($size[0])&h=$($size[1])", "$($size[0] + 24),$($size[1] + 92)")
+}
+foreach ($name in $shots.Keys) {
+    $query, $size = Get-Shot $name
+    $png = Join-Path $out "$name.png"
+    Invoke-Edge @("--screenshot=`"$png`"", "--window-size=$size", "`"${page}?$query`"")
+}
+$domFile = Join-Path $out 'dom.html'
+foreach ($name in 'overview', 'board', 'detail') {
+    $query, $size = Get-Shot $name
+    Invoke-Edge @('--dump-dom', "--window-size=$size", "`"${page}?$query`"") $domFile
+    $dom = Get-Content $domFile -Raw
+    if ($dom -match 'data-geometry="([^"]*)"') { Write-Output ("{0}: {1}" -f $name, ($Matches[1] -replace '&quot;', '"')) }
+    else { Write-Output "${name}: no geometry" }
 }
 Get-ChildItem $out -Filter *.png | Select-Object Name, Length
