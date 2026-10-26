@@ -13,6 +13,7 @@ class StubClickHouse:
         self.now = "2026-10-25 09:30:00.123"
         self._fail_next_insert = False
         self._fail_selects = []
+        self._redirect = None
         self._rejected = {}         # user -> echo the password in the error body?
         stub = self
 
@@ -33,6 +34,8 @@ class StubClickHouse:
                 status, payload = stub._answer(self.headers, text)
                 data = payload.encode("utf-8")
                 self.send_response(status)
+                if stub._redirect:
+                    self.send_header("Location", stub._redirect)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
@@ -55,6 +58,11 @@ class StubClickHouse:
         """Answer 516 to this user; optionally echo the password in the body (to test scrubbing)."""
         self._rejected[user] = echo_password
 
+    def redirect_to(self, location, status=302):
+        """Answer every request with a redirect to `location`."""
+        self._redirect = location
+        self._redirect_status = status
+
     def set_now(self, value):
         self.now = value
 
@@ -71,6 +79,8 @@ class StubClickHouse:
             if self._rejected[user]:
                 msg += " (password: %s)" % headers.get("X-ClickHouse-Key", "")
             return 516, msg + "\n"
+        if self._redirect:
+            return self._redirect_status, ""
         head = text.lstrip()
         if head.upper().startswith("INSERT INTO"):
             if self._fail_next_insert:

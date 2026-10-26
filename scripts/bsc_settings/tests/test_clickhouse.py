@@ -93,3 +93,55 @@ def test_stub_controls(stub, ch):
     with pytest.raises(ClickHouseError):
         ch.insert("map_bsc_parameter", [{"name": "a"}])
     assert ch.insert("map_bsc_parameter", [{"name": "a"}]) == 1
+
+
+def test_redirects_are_refused():
+    target = StubClickHouse()
+    origin = StubClickHouse()
+    try:
+        for status in (301, 302, 303, 307):
+            origin.redirect_to(target.url, status)
+            ch = ClickHouse(origin.url, "bi_user", PASSWORD)
+            with pytest.raises(ClickHouseError) as e:
+                ch.select("SELECT 1")
+            assert "redirect" in str(e.value)
+            assert PASSWORD not in str(e.value)
+            with pytest.raises(ClickHouseError):
+                ch.insert("map_bsc_parameter", [{"name": "a"}])
+        assert target.requests == []
+    finally:
+        target.close()
+        origin.close()
+
+
+@pytest.mark.parametrize("user,password", [("u", "pw-SECRET\n"), ("u", "pw\r"), ("u\n", "pw"), ("u\x7f", "pw"), ("u", "pwا")])
+def test_credentials_with_unsendable_characters_are_rejected(user, password):
+    with pytest.raises(ClickHouseError) as e:
+        ClickHouse("http://127.0.0.1:1/", user, password)
+    assert "SECRET" not in str(e.value)
+    assert "cannot be sent" in str(e.value)
+
+
+@pytest.mark.parametrize("url", [
+    "ftp://127.0.0.1:8123/", "127.0.0.1:8123", "http:///", "http://127.0.0.1:8123/?query=DROP",
+    "http://127.0.0.1:8123/?readonly=0", "http://127.0.0.1:8123/#x", "http://u:p@127.0.0.1:8123/",
+    "http://127.0.0.1:8123/path", "http://127.0.0.1:8123/?",
+])
+def test_bad_urls_are_rejected(url):
+    with pytest.raises(ClickHouseError) as e:
+        ClickHouse(url, "u", "pw")
+    assert "must be http(s)://host:port/" in str(e.value)
+
+
+def test_url_without_trailing_slash_is_accepted(stub):
+    assert ClickHouse(stub.url.rstrip("/"), "u", "pw").select("SELECT 1") == [{"1": 1}]
+
+
+def test_readonly_on_selects_only(stub, ch):
+    ch.select("SELECT 1")
+    ch.insert("map_bsc_parameter", [{"name": "a"}])
+    ch.server_now()
+    sel, ins, now = stub.requests
+    assert "readonly=2" in sel["path"] and "readonly=2" in now["path"]
+    assert "output_format_json_quote_64bit_integers=0" in sel["path"]
+    assert "readonly" not in ins["path"]
