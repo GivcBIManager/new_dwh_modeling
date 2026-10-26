@@ -1,5 +1,5 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
-import { formatValue, isNum } from "../model/format";
+import { DASH, formatValue, isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { overallTrend } from "../model/score";
 import { el, svg } from "./dom";
@@ -23,7 +23,7 @@ function groupCounts(ps: PillarSummary[]): Record<Group, number> {
     return out;
 }
 
-const scoreText = (v: number | null) => (isNum(v) ? String(Math.round(v)) : "–");
+const scoreText = (v: number | null) => (isNum(v) ? String(Math.round(v)) : DASH);
 const weightText = (w: number | null) => (isNum(w) ? `Weight ${Math.round(w * 100)}%` : "Weight –");
 
 /** "▲ 0.3" (with " vs Aug" when the month is known); null without a delta. */

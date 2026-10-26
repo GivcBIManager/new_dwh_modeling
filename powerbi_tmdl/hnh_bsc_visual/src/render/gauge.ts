@@ -1,3 +1,4 @@
+import { DASH } from "../model/format";
 import { svg } from "./dom";
 
 interface Dial {
@@ -39,7 +40,7 @@ function dial(d: Dial): SVGSVGElement {
     }));
     s.appendChild(svg("text", {
         x: mid, y: mid - 6, "text-anchor": "middle", "font-size": (size / 5.2).toFixed(1), "font-weight": 600, fill: col,
-    }, [shown === null ? "–" : `${shown}${d.suffix}`]));
+    }, [shown === null ? DASH : `${shown}${d.suffix}`]));
     s.appendChild(svg("text", { x: mid, y: mid + 21, "text-anchor": "middle", "font-size": 16.5, "font-weight": 400, fill: "var(--muted)" }, [d.caption]));
     return s;
 }

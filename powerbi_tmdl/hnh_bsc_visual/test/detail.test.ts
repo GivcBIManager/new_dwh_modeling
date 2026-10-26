@@ -89,16 +89,16 @@ describe("KPI detail", () => {
     it("performance bands for a higher-is-better KPI are in its units", () => {
         const d = draw();
         expect(d.querySelector(".dt-profile h2")!.textContent).toBe("Performance bands");
-        expect(bands(d)).toEqual(["On track ≥ 50.0%", "Watch 37.5% – 50.0%", "At risk < 37.5%"]);
+        expect(bands(d)).toEqual(["On track ≥ 49.6%", "Watch 37.1% – 49.6%", "At risk < 37.1%"]);
         expect(d.querySelectorAll(".dt-bands li .mark").length).toBe(3);
     });
     it("a lower-is-better KPI mirrors them", () => {
         const d = draw([row("F1", { direction: "lower" })]);
-        expect(bands(d)).toEqual(["On track ≤ 50.0%", "Watch 50.0% – 62.5%", "At risk > 62.5%"]);
+        expect(bands(d)).toEqual(["On track ≤ 50.4%", "Watch 50.4% – 62.9%", "At risk > 62.9%"]);
     });
     it("an on-target KPI shows its bands within ± of the target", () => {
         const d = draw([row("F1", { direction: "on_target", scoreBase: 100 })]);
-        expect(bands(d)).toEqual(["On track within ± 12.5%", "Watch within ± 25.0%", "At risk beyond ± 25.0%"]);
+        expect(bands(d)).toEqual(["On track within ± 12.9%", "Watch within ± 25.4%", "At risk beyond ± 25.4%"]);
     });
     it("a KPI without a target has no performance bands, no band rects, its chip and reason and dashes", () => {
         const d = draw([row("F1", { payload: payload({ actual: 0.45, state: "No target", weight: 1, trend: months12(0.4), targetTrend: Array(12).fill(null) }) })]);

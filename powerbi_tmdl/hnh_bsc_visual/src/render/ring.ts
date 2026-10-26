@@ -1,3 +1,4 @@
+import { DASH } from "../model/format";
 import { svg } from "./dom";
 
 const R = 50;
@@ -18,7 +19,7 @@ export function ring(score: number | null, size: number, label: string): SVGSVGE
         cx: 60, cy: 60, r: R, fill: "none", "stroke-width": 12, "stroke-linecap": pct > 0 ? "round" : "butt", class: "ring-arc",
         "stroke-dasharray": `${(CIRC * pct).toFixed(2)} ${CIRC.toFixed(2)}`, transform: "rotate(-90 60 60)",
     }));
-    s.appendChild(svg("text", { x: 60, y: 62, "text-anchor": "middle", "font-size": 34, class: "ring-score" }, [shown === null ? "–" : String(shown)]));
+    s.appendChild(svg("text", { x: 60, y: 62, "text-anchor": "middle", "font-size": 34, class: "ring-score" }, [shown === null ? DASH : String(shown)]));
     s.appendChild(svg("text", { x: 60, y: 82, "text-anchor": "middle", "font-size": 12, class: "ring-of" }, ["of 100"]));
     return s;
 }

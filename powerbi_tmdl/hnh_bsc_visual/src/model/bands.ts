@@ -17,12 +17,14 @@ export function met(row: KpiRow, actual: number, target: number): boolean {
     return kpiScoreOf(row, actual, target) >= row.goodFrom;
 }
 
-/** Actual values where the KPI turns On track (good) and Watch (watch); null when no bands can be drawn. */
+/** Actual values where the KPI turns On track (good) and Watch (watch); null when no bands can be drawn. The model
+ * compares the ROUNDED score with Good From and Watch From (S = ROUND(base + slope x 100 x V, 0)), so each edge is where
+ * the unrounded score reaches the threshold less 0.5: an actual the model calls On track lies inside the On track band. */
 export function bandEdges(row: KpiRow, target: number): { kind: "above" | "below" | "around"; good: number; watch: number } | null {
     if (!Number.isFinite(target) || !row.scoreSlope) return null;
     const k = row.scoreSlope * 100;
-    const vg = (row.goodFrom - row.scoreBase) / k;
-    const vw = (row.watchFrom - row.scoreBase) / k;
+    const vg = (row.goodFrom - 0.5 - row.scoreBase) / k;
+    const vw = (row.watchFrom - 0.5 - row.scoreBase) / k;
     const s = target === 0 ? 1 : Math.abs(target);
     if (row.direction === "higher") return { kind: "above", good: target + vg * s, watch: target + vw * s };
     if (row.direction === "on_target") return { kind: "around", good: Math.max(0, -vg * s), watch: Math.max(0, -vw * s) };

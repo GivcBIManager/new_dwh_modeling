@@ -1,5 +1,5 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
-import { isNum } from "../model/format";
+import { DASH, isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { selectionKey } from "../interactions";
 import { el } from "./dom";
@@ -38,7 +38,7 @@ function strip(vm: ViewModel, p: PillarSummary, colourVar: string): HTMLElement 
     const d = lastDelta(p.trend);
     const r = d === null ? null : Math.round(d * 10) / 10;
     const delta = el("span", { class: `bd-delta ${r === null || r === 0 ? "flat" : r > 0 ? "up" : "down"}` },
-        [r === null ? "–" : `${r < 0 ? "▼" : "▲"} ${Math.abs(r).toFixed(1)}`]);
+        [r === null ? DASH : `${r < 0 ? "▼" : "▲"} ${Math.abs(r).toFixed(1)}`]);
     const prev = months.length >= 2 ? months[months.length - 2] : null;
     const c = p.counts;
     const counts: Record<Group, number> = { good: c.good, warn: c.warn, bad: c.bad, nodata: c.nodata + c.parked + c.notarget };
@@ -49,11 +49,11 @@ function strip(vm: ViewModel, p: PillarSummary, colourVar: string): HTMLElement 
         ]),
         el("span", { class: "bd-rule", "aria-hidden": "true" }),
         block("Pillar score", el("span", { class: "bd-fig-row" }, [
-            el("span", { class: "bd-pscore" }, [isNum(p.score) ? String(Math.round(p.score)) : "–"]), stateChip(st, SCORE_WORD[st]),
+            el("span", { class: "bd-pscore" }, [isNum(p.score) ? String(Math.round(p.score)) : DASH]), stateChip(st, SCORE_WORD[st]),
         ])),
         // Without trends (the scores payload) there is no month-on-month change to show.
         p.trend.length >= 2 ? block(prev ? `vs ${prev}` : "vs last month", delta, "bd-fig-l bd-delta-label") : null,
-        block("Weight", el("span", { class: "bd-weight" }, [isNum(p.weight) ? `${Math.round(p.weight * 100)}%` : "–"])),
+        block("Weight", el("span", { class: "bd-weight" }, [isNum(p.weight) ? `${Math.round(p.weight * 100)}%` : DASH])),
         block("KPI status", el("span", { class: "bd-counts" },
             GROUPS.map(g => el("span", {}, [stateMark(g), el("b", {}, [String(counts[g])]), ` ${GROUP_WORD[g]}`])))),
         p.question ? el("p", { class: "bd-q" }, [p.question]) : null,
