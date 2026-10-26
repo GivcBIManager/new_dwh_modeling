@@ -2,75 +2,30 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "24a3bec43a2874fa823b",
   "position": {
-    "x": 16,
-    "y": 260,
+    "x": 0,
+    "y": 84,
     "z": 10000,
-    "height": 390,
-    "width": 930,
+    "height": 78,
+    "width": 1920,
     "tabOrder": 10000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
-    "query": {
-      "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "NPHIES Reason"
-                    }
-                  },
-                  "Property": "Reason"
-                }
-              },
-              "queryRef": "NPHIES Reason.Reason",
-              "nativeQueryRef": "Reason",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Claims Rejected"
-                }
-              },
-              "queryRef": "_Measures.Claims Rejected",
-              "nativeQueryRef": "Claims Rejected"
-            }
-          ]
-        }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Claims Rejected"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
-      }
-    },
+    "visualType": "textbox",
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
         {
           "properties": {
             "show": {
@@ -80,10 +35,47 @@
                 }
               }
             },
-            "text": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "'Rejected claims by NPHIES reason (top 15)'"
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -92,111 +84,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "5420318c7333bf42dba4",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "NPHIES Reason"
-              }
-            },
-            "Property": "Reason"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "n",
-                        "Entity": "NPHIES Reason",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "n"
-                            }
-                          },
-                          "Property": "Reason"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Claims Rejected"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "n",
-              "Entity": "NPHIES Reason",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "n"
-                          }
-                        },
-                        "Property": "Reason"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

@@ -2,149 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "d245aff2e6cdca94c073",
   "position": {
-    "x": 1804,
-    "y": 35,
+    "x": 0,
+    "y": 84,
     "z": 11000,
-    "height": 50,
-    "width": 104,
+    "height": 78,
+    "width": 1920,
     "tabOrder": 11000
   },
   "visual": {
-    "visualType": "actionButton",
-    "objects": {
-      "text": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Hospital comparison'"
-                }
-              }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        },
-        {
-          "properties": {
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "disabled"
-          }
-        }
-      ],
-      "fill": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#13ACE3'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#DCE9F2'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "disabled"
-          }
-        }
-      ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
+    "visualType": "textbox",
     "visualContainerObjects": {
       "title": [
         {
@@ -159,7 +25,7 @@
           }
         }
       ],
-      "visualLink": [
+      "background": [
         {
           "properties": {
             "show": {
@@ -169,17 +35,47 @@
                 }
               }
             },
-            "type": {
-              "expr": {
-                "Literal": {
-                  "Value": "'PageNavigation'"
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
                 }
               }
             },
-            "navigationSection": {
+            "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "'hospital_comparison'"
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

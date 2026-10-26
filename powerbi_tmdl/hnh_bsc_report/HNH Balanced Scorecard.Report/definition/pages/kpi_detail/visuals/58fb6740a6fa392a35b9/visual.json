@@ -2,66 +2,43 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "58fb6740a6fa392a35b9",
   "position": {
-    "x": 130,
-    "y": 20,
+    "x": 30,
+    "y": 21,
     "z": 1000,
-    "height": 80,
-    "width": 260.0,
+    "height": 42,
+    "width": 220,
     "tabOrder": 1000
   },
   "visual": {
-    "visualType": "slicer",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Branch"
-                    }
-                  },
-                  "Property": "Branch Name"
-                }
-              },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
-              "active": true
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "image",
     "objects": {
-      "data": [
+      "image": [
         {
           "properties": {
-            "mode": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Dropdown'"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "selection": [
-        {
-          "properties": {
-            "singleSelect": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "selectAllCheckboxEnabled": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
+            "sourceFile": {
+              "image": {
+                "name": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'hnh_logo_white.png'"
+                    }
+                  }
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hnh_logo_white.png"
+                    }
+                  }
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
+                    }
+                  }
                 }
               }
             }
@@ -82,71 +59,47 @@
             }
           }
         }
-      ]
-    },
-    "syncGroup": {
-      "groupName": "bsc Branch.Branch Name",
-      "fieldChanges": true,
-      "filterChanges": true
-    },
-    "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "62f987c6fa42b914b927",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Branch"
-              }
-            },
-            "Property": "Is Hospital"
-          }
-        },
-        "type": "Categorical",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "b",
-              "Entity": "Branch",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "b"
-                          }
-                        },
-                        "Property": "Is Hospital"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "'Yes'"
-                        }
-                      }
-                    ]
-                  ]
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
   }
 }

@@ -2,73 +2,30 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "dbef62aff816ded82b80",
   "position": {
-    "x": 1264,
-    "y": 35,
+    "x": 933.0,
+    "y": 80,
     "z": 6000,
-    "height": 50,
-    "width": 104,
+    "height": 4,
+    "width": 126.0,
     "tabOrder": 6000
   },
   "visual": {
-    "visualType": "actionButton",
-    "objects": {
-      "text": [
+    "visualType": "textbox",
+    "visualContainerObjects": {
+      "title": [
         {
           "properties": {
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
-          }
-        },
-        {
-          "properties": {
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Financial'"
-                }
-              }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        },
-        {
-          "properties": {
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "disabled"
           }
         }
       ],
-      "fill": [
+      "background": [
         {
           "properties": {
             "show": {
@@ -77,12 +34,8 @@
                   "Value": "true"
                 }
               }
-            }
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
+            },
+            "color": {
               "solid": {
                 "color": {
                   "expr": {
@@ -100,53 +53,10 @@
                 }
               }
             }
-          },
-          "selector": {
-            "id": "default"
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#DCE9F2'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "disabled"
           }
         }
       ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    "visualContainerObjects": {
-      "title": [
+      "border": [
         {
           "properties": {
             "show": {
@@ -159,27 +69,13 @@
           }
         }
       ],
-      "visualLink": [
+      "visualHeader": [
         {
           "properties": {
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "type": {
-              "expr": {
-                "Literal": {
-                  "Value": "'PageNavigation'"
-                }
-              }
-            },
-            "navigationSection": {
-              "expr": {
-                "Literal": {
-                  "Value": "'financial'"
+                  "Value": "false"
                 }
               }
             }

@@ -2,75 +2,30 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "c2320271802c38c88df2",
   "position": {
-    "x": 16,
-    "y": 260,
+    "x": 0,
+    "y": 84,
     "z": 10000,
-    "height": 390,
-    "width": 930,
+    "height": 78,
+    "width": 1920,
     "tabOrder": 10000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
-    "query": {
-      "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Bed"
-                    }
-                  },
-                  "Property": "Current Ward"
-                }
-              },
-              "queryRef": "Bed.Current Ward",
-              "nativeQueryRef": "Current Ward",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Bed Occupancy %"
-                }
-              },
-              "queryRef": "_Measures.Bed Occupancy %",
-              "nativeQueryRef": "Bed Occupancy %"
-            }
-          ]
-        }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Bed Occupancy %"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
-      }
-    },
+    "visualType": "textbox",
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
         {
           "properties": {
             "show": {
@@ -80,10 +35,47 @@
                 }
               }
             },
-            "text": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "'Bed occupancy by ward'"
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

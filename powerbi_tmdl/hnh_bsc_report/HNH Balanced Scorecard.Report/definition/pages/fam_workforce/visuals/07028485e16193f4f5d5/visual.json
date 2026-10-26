@@ -2,39 +2,91 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "07028485e16193f4f5d5",
   "position": {
-    "x": 130,
-    "y": 25,
+    "x": 30,
+    "y": 21,
     "z": 1000,
-    "height": 70,
-    "width": 800,
+    "height": 42,
+    "width": 220,
     "tabOrder": 1000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "image",
     "objects": {
-      "general": [
+      "image": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Workforce detail",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "20pt",
-                      "fontWeight": "bold"
+            "sourceFile": {
+              "image": {
+                "name": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'hnh_logo_white.png'"
                     }
                   }
-                ]
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hnh_logo_white.png"
+                    }
+                  }
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
+                    }
+                  }
+                }
               }
-            ]
+            }
           }
         }
       ]
     },
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

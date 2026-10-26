@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "cee559c7c22ca9bc6c5f",
   "position": {
-    "x": 1048,
-    "y": 35,
+    "x": 793.5,
+    "y": 0,
     "z": 4000,
-    "height": 50,
-    "width": 104,
+    "height": 80,
+    "width": 136.5,
     "tabOrder": 4000
   },
   "visual": {
@@ -29,7 +29,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Calculations'"
+                  "Value": "'Financial'"
                 }
               }
             },
@@ -38,9 +38,16 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1478BE'"
+                      "Value": "'#C3CEDB'"
                     }
                   }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
                 }
               }
             }
@@ -69,42 +76,10 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ]
@@ -143,7 +118,46 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'definitions'"
+                  "Value": "'financial'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

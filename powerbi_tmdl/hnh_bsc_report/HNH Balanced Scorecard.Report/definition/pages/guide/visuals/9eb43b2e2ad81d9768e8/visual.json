@@ -2,39 +2,74 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "9eb43b2e2ad81d9768e8",
   "position": {
-    "x": 16,
-    "y": 25,
+    "x": 0,
+    "y": 0,
     "z": 0,
-    "height": 70,
-    "width": 900,
+    "height": 84,
+    "width": 1920,
     "tabOrder": 0
   },
   "visual": {
     "visualType": "textbox",
-    "objects": {
-      "general": [
-        {
-          "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "How to use the scorecard",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "20pt",
-                      "fontWeight": "bold"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        }
-      ]
-    },
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "9750df0ba7e796a0f78b",
   "position": {
-    "x": 1696,
-    "y": 35,
+    "x": 30,
+    "y": 96,
     "z": 11000,
-    "height": 50,
-    "width": 104,
+    "height": 54,
+    "width": 110,
     "tabOrder": 11000
   },
   "visual": {
@@ -29,28 +29,10 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Owner view'"
+                  "Value": "'Back'"
                 }
               }
             },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        },
-        {
-          "properties": {
             "fontColor": {
               "solid": {
                 "color": {
@@ -64,11 +46,24 @@
             }
           },
           "selector": {
-            "id": "disabled"
+            "id": "default"
           }
         }
       ],
       "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "outline": [
         {
           "properties": {
             "show": {
@@ -82,14 +77,21 @@
         },
         {
           "properties": {
-            "fillColor": {
+            "lineColor": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#13ACE3'"
+                      "Value": "'#1478BE'"
                     }
                   }
+                }
+              }
+            },
+            "weight": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
                 }
               }
             },
@@ -103,44 +105,6 @@
           },
           "selector": {
             "id": "default"
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#DCE9F2'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "disabled"
-          }
-        }
-      ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
           }
         }
       ]
@@ -172,14 +136,46 @@
             "type": {
               "expr": {
                 "Literal": {
-                  "Value": "'PageNavigation'"
+                  "Value": "'Back'"
                 }
               }
-            },
-            "navigationSection": {
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "'owner_view'"
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

@@ -408,7 +408,7 @@ def _guide_page() -> Page:
             "Drill through to KPI detail.",
             "On KPI detail, select a hospital and month in the table, then Open detail for the detail page behind "
             "it.",
-            "Back (top left) returns to the page you came from.",
+            "Back (on the left, under the dark bar) returns to the page you came from.",
             "Hospital comparison: click a pillar header to see its objectives, then an objective header to see its "
             "KPIs; the path above the table goes back up.",
             "Owner view: click an owner's card to list only their KPIs; click it again to list everyone.",

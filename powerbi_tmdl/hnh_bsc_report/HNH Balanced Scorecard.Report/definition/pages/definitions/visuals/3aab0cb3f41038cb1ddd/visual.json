@@ -2,69 +2,82 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "3aab0cb3f41038cb1ddd",
   "position": {
-    "x": 326,
-    "y": 520,
+    "x": 30.0,
+    "y": 258,
     "z": 15000,
-    "height": 70,
-    "width": 300,
+    "height": 300,
+    "width": 604.0,
     "tabOrder": 15000
   },
   "visual": {
-    "visualType": "slicer",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Objective Title"
-                }
-              },
-              "queryRef": "BSC KPI.Objective Title",
-              "nativeQueryRef": "Objective Title",
-              "active": true
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "data": [
+      "general": [
         {
           "properties": {
-            "mode": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Dropdown'"
-                }
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "KPI score (0 to 100)",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "14pt",
+                      "fontWeight": "bold",
+                      "color": "#1478BE"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Variance: how far the actual is from the target, as a % of the target. Where lower is better, the sign is flipped, so beating the target is always positive. For on-target KPIs, any distance from the target counts against.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Score = score base + score slope × variance, rounded and kept between 0 and 100.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Every KPI today uses base 85 and slope 0.6: a KPI exactly on target scores 85, and each point of variance moves the score by 0.6.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Status: On track from 85, Watch from 70, At risk below 70.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
               }
-            }
-          }
-        }
-      ],
-      "selection": [
-        {
-          "properties": {
-            "singleSelect": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "selectAllCheckboxEnabled": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
+            ]
           }
         }
       ]
@@ -82,12 +95,76 @@
             }
           }
         }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE5EF'"
+                    }
+                  }
+                }
+              }
+            },
+            "radius": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "width": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            }
+          }
+        }
       ]
-    },
-    "syncGroup": {
-      "groupName": "bsc BSC KPI.Objective Title",
-      "fieldChanges": true,
-      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

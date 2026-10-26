@@ -2,113 +2,82 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "9e9e7c37e7fb7f5a263a",
   "position": {
-    "x": 583.3333333333334,
-    "y": 20,
+    "x": 664.5,
+    "y": 0,
     "z": 3000,
     "height": 80,
-    "width": 346.6666666666667,
+    "width": 126.0,
     "tabOrder": 3000
   },
   "visual": {
-    "visualType": "slicer",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Date"
-                    }
-                  },
-                  "Property": "Date"
-                }
-              },
-              "queryRef": "Date.Date",
-              "nativeQueryRef": "Date",
-              "active": true
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "actionButton",
     "objects": {
-      "data": [
+      "text": [
         {
           "properties": {
-            "mode": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "'Between'"
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Overview'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#C3CEDB'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ],
+      "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
           }
         }
       ],
-      "general": [
+      "outline": [
         {
           "properties": {
-            "filter": {
-              "filter": {
-                "Version": 2,
-                "From": [
-                  {
-                    "Name": "d",
-                    "Entity": "Date",
-                    "Type": 0
-                  }
-                ],
-                "Where": [
-                  {
-                    "Condition": {
-                      "And": {
-                        "Left": {
-                          "Comparison": {
-                            "ComparisonKind": 2,
-                            "Left": {
-                              "Column": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Source": "d"
-                                  }
-                                },
-                                "Property": "Date"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "datetime'2026-01-01T00:00:00'"
-                              }
-                            }
-                          }
-                        },
-                        "Right": {
-                          "Comparison": {
-                            "ComparisonKind": 4,
-                            "Left": {
-                              "Column": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Source": "d"
-                                  }
-                                },
-                                "Property": "Date"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "datetime'2026-12-31T00:00:00'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                ]
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
               }
             }
           }
@@ -128,12 +97,73 @@
             }
           }
         }
+      ],
+      "visualLink": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "type": {
+              "expr": {
+                "Literal": {
+                  "Value": "'PageNavigation'"
+                }
+              }
+            },
+            "navigationSection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'bsc'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
       ]
-    },
-    "syncGroup": {
-      "groupName": "bsc Date.Date",
-      "fieldChanges": true,
-      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

@@ -2,70 +2,128 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "ff4982fabc0fa907d7a7",
   "position": {
-    "x": 974,
-    "y": 660,
+    "x": 30,
+    "y": 96,
     "z": 12000,
-    "height": 390,
-    "width": 930,
+    "height": 54,
+    "width": 110,
     "tabOrder": 12000
   },
   "visual": {
-    "visualType": "tableEx",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Staff"
-                    }
-                  },
-                  "Property": "Staff Name"
+    "visualType": "actionButton",
+    "objects": {
+      "text": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
-              },
-              "queryRef": "Staff.Staff Name",
-              "nativeQueryRef": "Staff Name"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Revenue"
-                }
-              },
-              "queryRef": "_Measures.Revenue",
-              "nativeQueryRef": "Revenue"
+              }
             }
-          ]
-        }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Revenue"
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Back'"
+                }
               }
             },
-            "direction": "Descending"
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
           }
-        ]
-      }
+        }
+      ],
+      "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "outline": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "lineColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            },
+            "weight": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ]
     },
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualLink": [
         {
           "properties": {
             "show": {
@@ -75,10 +133,49 @@
                 }
               }
             },
-            "text": {
+            "type": {
               "expr": {
                 "Literal": {
-                  "Value": "'Top 20 doctors by revenue'"
+                  "Value": "'Back'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -87,111 +184,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "c0f32b4aaa6571143ed3",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Staff"
-              }
-            },
-            "Property": "Staff Name"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "s",
-                        "Entity": "Staff",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "s"
-                            }
-                          },
-                          "Property": "Staff Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Revenue"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 20
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "s",
-              "Entity": "Staff",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "s"
-                          }
-                        },
-                        "Property": "Staff Name"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

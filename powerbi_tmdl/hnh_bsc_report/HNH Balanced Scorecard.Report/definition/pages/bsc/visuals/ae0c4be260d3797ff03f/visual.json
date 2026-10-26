@@ -2,113 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "ae0c4be260d3797ff03f",
   "position": {
-    "x": 1048,
-    "y": 35,
+    "x": 664.5,
+    "y": 80,
     "z": 4000,
-    "height": 50,
-    "width": 104,
+    "height": 4,
+    "width": 126.0,
     "tabOrder": 4000
   },
   "visual": {
-    "visualType": "actionButton",
-    "objects": {
-      "text": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Calculations'"
-                }
-              }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        }
-      ],
-      "fill": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        }
-      ]
-    },
+    "visualType": "textbox",
     "visualContainerObjects": {
       "title": [
         {
@@ -123,7 +25,7 @@
           }
         }
       ],
-      "visualLink": [
+      "background": [
         {
           "properties": {
             "show": {
@@ -133,17 +35,47 @@
                 }
               }
             },
-            "type": {
-              "expr": {
-                "Literal": {
-                  "Value": "'PageNavigation'"
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#13ACE3'"
+                    }
+                  }
                 }
               }
             },
-            "navigationSection": {
+            "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "'definitions'"
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

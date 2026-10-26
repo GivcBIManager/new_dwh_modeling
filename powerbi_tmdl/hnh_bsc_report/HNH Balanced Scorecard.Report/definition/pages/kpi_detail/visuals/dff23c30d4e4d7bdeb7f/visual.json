@@ -2,49 +2,45 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "dff23c30d4e4d7bdeb7f",
   "position": {
-    "x": 400.0,
-    "y": 20,
+    "x": 270,
+    "y": 9,
     "z": 2000,
-    "height": 80,
-    "width": 173.33333333333334,
+    "height": 66,
+    "width": 370,
     "tabOrder": 2000
   },
   "visual": {
-    "visualType": "slicer",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Branch"
-                    }
-                  },
-                  "Property": "BSC Category"
-                }
-              },
-              "queryRef": "Branch.BSC Category",
-              "nativeQueryRef": "BSC Category",
-              "active": true
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "data": [
+      "general": [
         {
           "properties": {
-            "mode": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Dropdown'"
-                }
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Balanced Scorecard",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "19pt",
+                      "color": "#FFFFFF"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Hayat Healthcare",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#C3CEDB"
+                    }
+                  }
+                ]
               }
-            }
+            ]
           }
         }
       ]
@@ -62,12 +58,46 @@
             }
           }
         }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
       ]
-    },
-    "syncGroup": {
-      "groupName": "bsc Branch.BSC Category",
-      "fieldChanges": true,
-      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

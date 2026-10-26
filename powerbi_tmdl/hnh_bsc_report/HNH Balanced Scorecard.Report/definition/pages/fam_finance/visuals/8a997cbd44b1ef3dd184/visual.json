@@ -1,0 +1,67 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "8a997cbd44b1ef3dd184",
+  "position": {
+    "x": 1254,
+    "y": 186,
+    "z": 16000,
+    "height": 54,
+    "width": 636,
+    "tabOrder": 16000
+  },
+  "visual": {
+    "visualType": "multiRowCard",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Branch"
+                    }
+                  },
+                  "Property": "Branch Name"
+                }
+              },
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Date"
+                    }
+                  },
+                  "Property": "Year Month Name"
+                }
+              },
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

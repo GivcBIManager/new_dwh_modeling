@@ -2,75 +2,30 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "f0a0283dfa5d317eb234",
   "position": {
-    "x": 974,
-    "y": 260,
+    "x": 0,
+    "y": 161,
     "z": 11000,
-    "height": 390,
-    "width": 930,
+    "height": 1,
+    "width": 1920,
     "tabOrder": 11000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
-    "query": {
-      "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Job"
-                    }
-                  },
-                  "Property": "Job Name"
-                }
-              },
-              "queryRef": "Job.Job Name",
-              "nativeQueryRef": "Job Name",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Headcount"
-                }
-              },
-              "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
-            }
-          ]
-        }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Headcount"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
-      }
-    },
+    "visualType": "textbox",
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
         {
           "properties": {
             "show": {
@@ -80,10 +35,47 @@
                 }
               }
             },
-            "text": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE5EF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by job (top 15)'"
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -92,111 +84,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "3bf5410c19b87f7ed218",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Job"
-              }
-            },
-            "Property": "Job Name"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "j",
-                        "Entity": "Job",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "j"
-                            }
-                          },
-                          "Property": "Job Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Headcount"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "j",
-              "Entity": "Job",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "j"
-                          }
-                        },
-                        "Property": "Job Name"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

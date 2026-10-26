@@ -2,69 +2,34 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "06ac3c75b7f75483c921",
   "position": {
-    "x": 16,
-    "y": 520,
+    "x": 30,
+    "y": 186,
     "z": 14000,
-    "height": 70,
-    "width": 300,
+    "height": 54,
+    "width": 1200,
     "tabOrder": 14000
   },
   "visual": {
-    "visualType": "slicer",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "BSC KPI"
-                    }
-                  },
-                  "Property": "Pillar"
-                }
-              },
-              "queryRef": "BSC KPI.Pillar",
-              "nativeQueryRef": "Pillar",
-              "active": true
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "data": [
+      "general": [
         {
           "properties": {
-            "mode": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Dropdown'"
-                }
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "How scores are calculated",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "22pt",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
               }
-            }
-          }
-        }
-      ],
-      "selection": [
-        {
-          "properties": {
-            "singleSelect": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "selectAllCheckboxEnabled": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
+            ]
           }
         }
       ]
@@ -82,12 +47,46 @@
             }
           }
         }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
       ]
-    },
-    "syncGroup": {
-      "groupName": "bsc BSC KPI.Pillar",
-      "fieldChanges": true,
-      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

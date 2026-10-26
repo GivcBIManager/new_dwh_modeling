@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "91218057f1d6373b4624",
   "position": {
-    "x": 946,
-    "y": 520,
+    "x": 1286.0,
+    "y": 258,
     "z": 17000,
-    "height": 70,
-    "width": 958,
+    "height": 300,
+    "width": 604.0,
     "tabOrder": 17000
   },
   "visual": {
@@ -19,7 +19,56 @@
               {
                 "textRuns": [
                   {
-                    "value": "Better when: higher = higher is better · lower = lower is better · ceiling = must stay at or below the target · on_target = the closer to the target the better. Weight: the KPI's corporate weight within its pillar.",
+                    "value": "Owner achievement (%)",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "14pt",
+                      "fontWeight": "bold",
+                      "color": "#1478BE"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance from the target.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Weighted: the owner's achievements averaged by KPI weight, over the KPIs they own and co-own. Not capped at 100%.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• On-target: the share of those KPIs at or better than target (on-target KPIs count when On track).",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -41,6 +90,75 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE5EF'"
+                    }
+                  }
+                }
+              }
+            },
+            "radius": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "width": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
                 }
               }
             }

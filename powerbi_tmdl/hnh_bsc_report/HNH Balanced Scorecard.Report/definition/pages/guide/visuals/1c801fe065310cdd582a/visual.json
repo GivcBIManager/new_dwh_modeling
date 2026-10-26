@@ -2,124 +2,181 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "1c801fe065310cdd582a",
   "position": {
-    "x": 1284,
-    "y": 185,
+    "x": 1745,
+    "y": 96,
     "z": 13000,
-    "height": 440,
-    "width": 620,
+    "height": 54,
+    "width": 145,
     "tabOrder": 13000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "actionButton",
     "objects": {
-      "general": [
+      "text": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Go deeper",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "14pt",
-                      "fontWeight": "bold",
-                      "color": "#1478BE"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• The page buttons at the top right move between the scorecard pages.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Right-click a KPI and choose Drill through › KPI detail for its trend, hospitals and definition.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• On KPI detail, select a hospital and month in the table, then Open detail for the detail page behind it.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Back (top left) returns to the page you came from.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Hospital comparison: click a pillar header to see its objectives, then an objective header to see its KPIs; the path above the table goes back up.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Owner view: click an owner's card to list only their KPIs; click it again to list everyone.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Hover over a KPI for its actual, target, variance and owner.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
               }
-            ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Calculations'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ],
+      "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "outline": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "lineColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            },
+            "weight": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
           }
         }
       ]
     },
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualLink": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "type": {
+              "expr": {
+                "Literal": {
+                  "Value": "'PageNavigation'"
+                }
+              }
+            },
+            "navigationSection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'definitions'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

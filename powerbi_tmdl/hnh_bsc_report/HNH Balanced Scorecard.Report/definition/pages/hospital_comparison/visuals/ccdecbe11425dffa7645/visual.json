@@ -2,115 +2,45 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "ccdecbe11425dffa7645",
   "position": {
-    "x": 532.6666666666666,
-    "y": 20,
+    "x": 270,
+    "y": 9,
     "z": 2000,
-    "height": 80,
-    "width": 397.3333333333333,
+    "height": 66,
+    "width": 370,
     "tabOrder": 2000
   },
   "visual": {
-    "visualType": "slicer",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Date"
-                    }
-                  },
-                  "Property": "Date"
-                }
-              },
-              "queryRef": "Date.Date",
-              "nativeQueryRef": "Date",
-              "active": true
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "textbox",
     "objects": {
-      "data": [
-        {
-          "properties": {
-            "mode": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Between'"
-                }
-              }
-            }
-          }
-        }
-      ],
       "general": [
         {
           "properties": {
-            "filter": {
-              "filter": {
-                "Version": 2,
-                "From": [
+            "paragraphs": [
+              {
+                "textRuns": [
                   {
-                    "Name": "d",
-                    "Entity": "Date",
-                    "Type": 0
+                    "value": "Balanced Scorecard",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "19pt",
+                      "color": "#FFFFFF"
+                    }
                   }
-                ],
-                "Where": [
+                ]
+              },
+              {
+                "textRuns": [
                   {
-                    "Condition": {
-                      "And": {
-                        "Left": {
-                          "Comparison": {
-                            "ComparisonKind": 2,
-                            "Left": {
-                              "Column": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Source": "d"
-                                  }
-                                },
-                                "Property": "Date"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "datetime'2026-01-01T00:00:00'"
-                              }
-                            }
-                          }
-                        },
-                        "Right": {
-                          "Comparison": {
-                            "ComparisonKind": 4,
-                            "Left": {
-                              "Column": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Source": "d"
-                                  }
-                                },
-                                "Property": "Date"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "datetime'2026-12-31T00:00:00'"
-                              }
-                            }
-                          }
-                        }
-                      }
+                    "value": "Hayat Healthcare",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#C3CEDB"
                     }
                   }
                 ]
               }
-            }
+            ]
           }
         }
       ]
@@ -128,12 +58,46 @@
             }
           }
         }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
       ]
-    },
-    "syncGroup": {
-      "groupName": "bsc Date.Date",
-      "fieldChanges": true,
-      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

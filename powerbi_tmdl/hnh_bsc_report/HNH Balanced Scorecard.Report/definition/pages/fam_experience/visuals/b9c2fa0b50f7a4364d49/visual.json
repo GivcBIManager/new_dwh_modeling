@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "b9c2fa0b50f7a4364d49",
   "position": {
-    "x": 1048,
-    "y": 35,
+    "x": 664.5,
+    "y": 0,
     "z": 3000,
-    "height": 50,
-    "width": 104,
+    "height": 80,
+    "width": 126.0,
     "tabOrder": 3000
   },
   "visual": {
@@ -29,7 +29,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Calculations'"
+                  "Value": "'Overview'"
                 }
               }
             },
@@ -38,9 +38,16 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1478BE'"
+                      "Value": "'#C3CEDB'"
                     }
                   }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
                 }
               }
             }
@@ -69,42 +76,10 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ]
@@ -143,7 +118,46 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'definitions'"
+                  "Value": "'bsc'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

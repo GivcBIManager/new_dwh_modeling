@@ -2,109 +2,46 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0b11973b67a5e88d372e",
   "position": {
-    "x": 940,
-    "y": 35,
+    "x": 30,
+    "y": 21,
     "z": 1000,
-    "height": 50,
-    "width": 104,
+    "height": 42,
+    "width": 220,
     "tabOrder": 1000
   },
   "visual": {
-    "visualType": "actionButton",
+    "visualType": "image",
     "objects": {
-      "text": [
+      "image": [
         {
           "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'How to use'"
-                }
-              }
-            },
-            "fontColor": {
-              "solid": {
-                "color": {
+            "sourceFile": {
+              "image": {
+                "name": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1478BE'"
+                      "Value": "'hnh_logo_white.png'"
+                    }
+                  }
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hnh_logo_white.png"
+                    }
+                  }
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
                     }
                   }
                 }
               }
             }
-          },
-          "selector": {
-            "id": "default"
-          }
-        }
-      ],
-      "fill": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ]
@@ -123,27 +60,39 @@
           }
         }
       ],
-      "visualLink": [
+      "background": [
         {
           "properties": {
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
-            },
-            "type": {
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "'PageNavigation'"
+                  "Value": "false"
                 }
               }
-            },
-            "navigationSection": {
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "'guide'"
+                  "Value": "false"
                 }
               }
             }

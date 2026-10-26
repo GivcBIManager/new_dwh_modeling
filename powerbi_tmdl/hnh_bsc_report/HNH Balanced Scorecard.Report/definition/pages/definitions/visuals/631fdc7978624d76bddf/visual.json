@@ -2,88 +2,181 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "631fdc7978624d76bddf",
   "position": {
-    "x": 1284,
-    "y": 120,
+    "x": 1590,
+    "y": 96,
     "z": 12000,
-    "height": 330,
-    "width": 620,
+    "height": 54,
+    "width": 140,
     "tabOrder": 12000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "actionButton",
     "objects": {
-      "general": [
+      "text": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Owner achievement (%)",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "14pt",
-                      "fontWeight": "bold",
-                      "color": "#1478BE"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance from the target.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Weighted: the owner's achievements averaged by KPI weight, over the KPIs they own and co-own. Not capped at 100%.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• On-target: the share of those KPIs at or better than target (on-target KPIs count when On track).",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
               }
-            ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'How to use'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ],
+      "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "outline": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "lineColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            },
+            "weight": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
           }
         }
       ]
     },
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualLink": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "type": {
+              "expr": {
+                "Literal": {
+                  "Value": "'PageNavigation'"
+                }
+              }
+            },
+            "navigationSection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'guide'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {

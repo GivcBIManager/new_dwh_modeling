@@ -2,112 +2,30 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "2c31ad4c2300eba42871",
   "position": {
-    "x": 16,
-    "y": 660,
+    "x": 0,
+    "y": 161,
     "z": 11000,
-    "height": 390,
-    "width": 930,
+    "height": 1,
+    "width": 1920,
     "tabOrder": 11000
   },
   "visual": {
-    "visualType": "tableEx",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Survey Question"
-                    }
-                  },
-                  "Property": "Question En"
-                }
-              },
-              "queryRef": "Survey Question.Question En",
-              "nativeQueryRef": "Question En"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "% Promoters"
-                }
-              },
-              "queryRef": "_Measures.% Promoters",
-              "nativeQueryRef": "% Promoters"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "% Passives"
-                }
-              },
-              "queryRef": "_Measures.% Passives",
-              "nativeQueryRef": "% Passives"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "% Detractors"
-                }
-              },
-              "queryRef": "_Measures.% Detractors",
-              "nativeQueryRef": "% Detractors"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "NPS Answers"
-                }
-              },
-              "queryRef": "_Measures.NPS Answers",
-              "nativeQueryRef": "NPS Answers"
-            }
-          ]
-        }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "NPS Answers"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
-      }
-    },
+    "visualType": "textbox",
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
         {
           "properties": {
             "show": {
@@ -117,10 +35,47 @@
                 }
               }
             },
-            "text": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE5EF'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "'Promoters, passives and detractors by question (top 20)'"
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -129,111 +84,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "3153592cf8ee3299673b",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Survey Question"
-              }
-            },
-            "Property": "Question En"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "s",
-                        "Entity": "Survey Question",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "s"
-                            }
-                          },
-                          "Property": "Question En"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "NPS Answers"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 20
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "s",
-              "Entity": "Survey Question",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "s"
-                          }
-                        },
-                        "Property": "Question En"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

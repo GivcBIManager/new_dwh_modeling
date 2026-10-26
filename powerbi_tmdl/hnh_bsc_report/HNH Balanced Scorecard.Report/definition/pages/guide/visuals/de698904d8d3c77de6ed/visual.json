@@ -2,112 +2,181 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "de698904d8d3c77de6ed",
   "position": {
-    "x": 650,
-    "y": 185,
+    "x": 1590,
+    "y": 96,
     "z": 12000,
-    "height": 440,
-    "width": 620,
+    "height": 54,
+    "width": 140,
     "tabOrder": 12000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "actionButton",
     "objects": {
-      "general": [
+      "text": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Read the scores and colours",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "14pt",
-                      "fontWeight": "bold",
-                      "color": "#1478BE"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Every KPI gets a score from 0 to 100. Scores are points, not percentages.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• On track: 85 or more.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Watch: 70 to 84.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• At risk: below 70.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• No data yet, No target and Parked KPIs are listed but not scored.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, below 85% at risk.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
-                      "color": "#0A1E32"
-                    }
-                  }
-                ]
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
               }
-            ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'How to use'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        }
+      ],
+      "fill": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "outline": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "lineColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            },
+            "weight": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
           }
         }
       ]
     },
     "visualContainerObjects": {
       "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualLink": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "type": {
+              "expr": {
+                "Literal": {
+                  "Value": "'PageNavigation'"
+                }
+              }
+            },
+            "navigationSection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'guide'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
         {
           "properties": {
             "show": {
