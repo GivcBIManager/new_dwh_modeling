@@ -381,6 +381,9 @@ def test_slicers(project):
         assert j["visual"]["syncGroup"] == {"groupName": f"bsc {f.ref}", "fieldChanges": True, "filterChanges": True}
         mode = lit(j["visual"]["objects"]["data"][0]["properties"]["mode"])
         assert mode == ("'Between'" if v.sample == "slicerDateRange" else "'Dropdown'")
+    # a field renamed in a visual is written as the projection's displayName, as Desktop does
+    names = [[p.get("displayName") for p in j["visual"]["query"]["queryState"]["Values"]["projections"]] for _, j in sl]
+    assert names == [["Hospital"], [None], ["Date"]]
     branch = sl[0][1]
     assert lit(branch["visual"]["objects"]["selection"][0]["properties"]["selectAllCheckboxEnabled"]) == "true"
     assert branch["filterConfig"]["filters"][0]["field"]["Column"]["Property"] == "Is Hospital"
@@ -396,7 +399,7 @@ def test_slicers(project):
         assert c["Right"] == {"Literal": {"Value": f"datetime'{day}T00:00:00'"}}
     # the dropdown look: the header in the slicer's objects, the border on its container
     for _, j in sl:
-        assert lit(j["visual"]["objects"]["header"][0]["properties"]["textSize"]) == "11D"
+        assert lit(j["visual"]["objects"]["header"][0]["properties"]["textSize"]) == "9D"
         border = j["visual"]["visualContainerObjects"]["border"][0]["properties"]
         assert (lit(border["radius"]), lit(border["color"]["solid"]["color"])) == ("6D", "'#CBD3DC'")
     # every scorecard page's slicers join the same groups (synced by field across pages); KPI detail has none

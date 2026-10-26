@@ -235,9 +235,11 @@ def test_scorecard_slicers_and_selection_label(display):
     page = by_display(display)
     sl = slicers(page)
     assert [(v.sample, v.roles["Values"], rect(v)) for v in sl] == [
-        ("slicerDropdown", [BRANCH_NAME], (30, 96, 330, 54)),
-        ("slicerDropdown", [col("Branch", "BSC Category")], (375, 96, 270, 54)),
-        ("slicerDateRange", [col("Date", "Date")], (660, 96, 420, 54))]
+        ("slicerDropdown", [BRANCH_NAME], (30, 90, 330, 66)),
+        ("slicerDropdown", [col("Branch", "BSC Category")], (375, 90, 270, 66)),
+        ("slicerDateRange", [col("Date", "Date")], (660, 90, 420, 66))]
+    # headers read Hospital, BSC Category (the field's own name), Date
+    assert [v.labels for v in sl] == [{BRANCH_NAME: "Hospital"}, {}, {col("Date", "Date"): "Date"}]
     (flt,) = sl[0].filters
     assert (flt.field, flt.op, flt.values) == (IS_HOSPITAL, "in", ["Yes"])
     sel = sl[0].props["selection"][0]["properties"]
@@ -245,7 +247,7 @@ def test_scorecard_slicers_and_selection_label(display):
     assert lit(sel["selectAllCheckboxEnabled"]) == "true"
     for v in sl:  # the design's dropdown look: small grey header, #CBD3DC border, radius 6
         header = _obj(v, "header")
-        assert (lit(header["textSize"]), colour(header["fontColor"])) == ("11D", f"'{MUTED}'")
+        assert (lit(header["textSize"]), colour(header["fontColor"])) == ("9D", f"'{MUTED}'")
         border = _obj(v, "border")
         assert lit(border["show"]) == "true" and colour(border["color"]) == f"'{SLICER_BORDER}'"
         assert lit(border["radius"]) == "6D"

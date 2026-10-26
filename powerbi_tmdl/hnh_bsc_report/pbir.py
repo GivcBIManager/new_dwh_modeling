@@ -261,8 +261,11 @@ def committed_year(project_dir) -> int | None:
     return None
 
 
-def _projection(f: Field, active: bool) -> dict:
+def _projection(f: Field, active: bool, label: str | None = None) -> dict:
+    """`label`: the field's name in this visual (`displayName`, as Desktop writes a field renamed in a visual)."""
     p = {"field": field_expr(f), "queryRef": f.ref, "nativeQueryRef": f.name}
+    if label:
+        p["displayName"] = label
     if active:
         p["active"] = True
     return p
@@ -307,7 +310,7 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
     v: dict = {"visualType": vtype}
     if fields:
         query: dict = {"queryState": {
-            role: {"projections": [_projection(f, _active(visual.sample, role)) for f in fs]}
+            role: {"projections": [_projection(f, _active(visual.sample, role), visual.labels.get(f)) for f in fs]}
             for role, fs in visual.roles.items()}}
         if visual.sort:
             query["sortDefinition"] = {"sort": [{"field": field_expr(visual.sort),

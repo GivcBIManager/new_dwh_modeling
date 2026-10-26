@@ -68,6 +68,7 @@ class Visual:
     props: dict = field(default_factory=dict)
     sort_dir: Literal["desc", "asc"] = "desc"
     date_range: tuple[str, str] | None = None  # slicerDateRange: the saved (from, to) as ISO dates, both inclusive
+    labels: dict[Field, str] = field(default_factory=dict)  # a field's name in this visual (a slicer's header)
 
 
 # How a selection in one visual reaches another on the page (PBIR page schema `VisualInteractionFilterType`).

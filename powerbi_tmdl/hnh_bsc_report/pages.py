@@ -90,7 +90,8 @@ PILLAR_COLOURS = {"Financial": "#002E5A", "Customer": "#1478BE", "Internal Proce
                   "Learning & Growth": "#6E8196"}
 
 # The filter bar: Hospital, BSC Category, Date, then the selection label; How to use and Calculations on the right.
-SLICER_RECTS = [(30, 96, 330, 54), (375, 96, 270, 54), (660, 96, 420, 54)]
+# The slicers fill the bar (84..162) less 6 px top and bottom: a header and a dropdown need 66 px.
+SLICER_RECTS = [(30, 90, 330, 66), (375, 90, 270, 66), (660, 90, 420, 66)]
 SELECTION_LABEL = (1100, 99, 470, 48)
 
 
@@ -101,8 +102,8 @@ def year_range(build_date: datetime.date) -> tuple[str, str]:
 
 
 def dropdown_look() -> dict:
-    """The design's dropdown slicer: a small grey header (11pt), a #CBD3DC border with radius 6."""
-    return {"header": [{"properties": {"show": _lit(True), "textSize": _num(11), "fontColor": _colour(MUTED)}}],
+    """The design's dropdown slicer: a small grey header (9pt), a #CBD3DC border with radius 6."""
+    return {"header": [{"properties": {"show": _lit(True), "textSize": _num(9), "fontColor": _colour(MUTED)}}],
             "border": [{"properties": {"show": _lit(True), "color": _colour(SLICER_BORDER), "radius": _num(6),
                                        "width": _num(1)}}]}
 
@@ -114,10 +115,10 @@ def _slicers(build_date: datetime.date) -> list[Visual]:
     hospital, category, date = SLICER_RECTS
     return [
         Visual("slicerDropdown", *hospital, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
-               props={**select_all_selection(), **dropdown_look()}),
+               props={**select_all_selection(), **dropdown_look()}, labels={BRANCH_NAME: "Hospital"}),
         Visual("slicerDropdown", *category, roles={"Values": [col("Branch", "BSC Category")]}, props=dropdown_look()),
         Visual("slicerDateRange", *date, roles={"Values": [col("Date", "Date")]}, date_range=year_range(build_date),
-               props=dropdown_look()),
+               props=dropdown_look(), labels={col("Date", "Date"): "Date"}),
     ]
 
 
