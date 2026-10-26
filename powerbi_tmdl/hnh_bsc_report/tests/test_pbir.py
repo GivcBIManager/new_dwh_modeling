@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from fields import perspective_fields
-from model import Filter, Page, Visual, col, meas
+from model import Filter, Interaction, Page, Visual, col, meas
 from pages import build_pages
 from pbir import (REPORT_NAME, SCHEMAS, connection_string, write_pbip)
 import pbir_check
@@ -214,6 +214,56 @@ def test_drill_through_pages(project):
     assert len(names) == len(set(names))
 
 
+PILLAR_PAGE_NAMES = ["financial", "customer", "internal_process", "learning_growth"]
+
+
+def test_pillar_pages_write_no_filter_interactions(project):
+    """page.json `visualInteractions` (page schema 2.1.0): from the by-hospital chart to the HNH visual and to the
+    selection label, NoFilter, by the generated visual names. Other pages write none."""
+    for p in PAGES:
+        pj = page_json(project, p.name)
+        if p.name not in PILLAR_PAGE_NAMES:
+            assert "visualInteractions" not in pj, p.display
+            continue
+        name = {v.sample: j["name"] for v, j in zip(p.visuals, visuals(project, p))
+                if v.sample in ("barChart", "hnhVisual", "card")}
+        assert pj["visualInteractions"] == [
+            {"source": name["barChart"], "target": name["hnhVisual"], "type": "NoFilter"},
+            {"source": name["barChart"], "target": name["card"], "type": "NoFilter"}], p.display
+
+
+def test_interactions_name_visuals_of_the_page(tmp_path):
+    pbiviz = make_pbiviz(tmp_path / "v.pbiviz")
+    a, b = Visual("card", 0, 0, 1, 1, roles={"Values": [meas("A")]}), Visual("card", 0, 0, 1, 1, roles={"Values": [meas("A")]})
+    page = Page("a", "A", [a, b], interactions=[Interaction(b, a, "DataFilter")])
+    write_pbip([page], tmp_path / "o", "X", SERVER, pbiviz=pbiviz)
+    pj = load(tmp_path / "o" / f"{REPORT_NAME}.Report" / "definition" / "pages" / "a" / "page.json")
+    vdir = tmp_path / "o" / f"{REPORT_NAME}.Report" / "definition" / "pages" / "a" / "visuals"
+    names = [v["name"] for v in sorted((load(f) for f in vdir.glob("*/visual.json")), key=lambda v: v["position"]["z"])]
+    # b equals a field by field: the source is found by identity, not by equality
+    assert pj["visualInteractions"] == [{"source": names[1], "target": names[0], "type": "DataFilter"}]
+    stray = Visual("card", 0, 0, 1, 1)
+    with pytest.raises(ValueError, match="not on the page"):
+        write_pbip([Page("a", "A", [a], interactions=[Interaction(stray, a)])], tmp_path / "o2", "X", SERVER,
+                   pbiviz=pbiviz)
+    with pytest.raises(ValueError, match="interaction type"):
+        write_pbip([Page("a", "A", [a, b], interactions=[Interaction(a, b, "None")])], tmp_path / "o3", "X", SERVER,
+                   pbiviz=pbiviz)
+
+
+def test_project_converts_with_the_interactions(project, tmp_path):
+    """The Report Server package (pbir_to_pbix.py) carries the pillar pages' NoFilter interactions (legacy type 3)."""
+    import pbir_to_pbix
+    layout = pbir_to_pbix.write(project[1], tmp_path / "r.pbix")
+    for s in layout["sections"]:
+        got = json.loads(s["config"]).get("visualInteractions")
+        if s["name"] in PILLAR_PAGE_NAMES:
+            assert [i["type"] for i in got] == [3, 3]
+            assert got == [{**i, "type": 3} for i in page_json(project, s["name"])["visualInteractions"]]
+        else:
+            assert got is None, s["name"]
+
+
 def test_family_pages_do_not_accept_filter_context(project):
     """KPI detail keeps all filters; a family page takes only its drill fields (Branch Name, Year Month Name) and
     filters hospitals itself, so the 'BSC KPI' drill filter never reaches the domain measures' guards."""
@@ -404,6 +454,9 @@ def test_hnh_visual_and_textbox(project):
         container = j["visual"]["visualContainerObjects"]
         assert lit(container["background"][0]["properties"]["show"]) == "false"
         assert lit(container["border"][0]["properties"]["show"]) == "false"
+        assert lit(container["visualHeader"][0]["properties"]["show"]) == "false"
+        assert {k: lit(x) for k, x in container["padding"][0]["properties"].items()} ==             {"top": "0D", "bottom": "0D", "left": "0D", "right": "0D"}
+        assert "padding" not in j["visual"].get("objects", {}) and "visualHeader" not in j["visual"]["objects"]
     fam = next(p for p in PAGES if p.name == "fam_finance")
     tb = _title_box(project, fam)
     assert tb["visualType"] == "textbox"
@@ -675,7 +728,8 @@ def test_desktop_opens_the_frame_project(frame_project):
 def test_theme():
     theme = load(HERE / "theme" / "hnh_bsc_theme.json")
     assert theme["dataColors"] == ["#002E5A", "#1478BE", "#13ACE3", "#6E8196",
-                                   "#13ACE3", "#32A4E5", "#0E9F8E", "#EF8B00"]
+                                   "#0A1E32", "#32A4E5", "#0E9F8E", "#EF8B00"]
+    assert len(set(theme["dataColors"])) == len(theme["dataColors"])  # no colour twice
     assert (theme["good"], theme["neutral"], theme["bad"]) == ("#0E9F8E", "#EF8B00", "#DB280A")
     vs = theme["visualStyles"]
     page = vs["page"]["*"]

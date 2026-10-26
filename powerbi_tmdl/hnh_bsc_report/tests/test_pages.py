@@ -198,6 +198,21 @@ def test_mode_size_and_no_container(display):
     # visual); the visual draws its own panels
     assert lit(_obj(v, "background")["show"]) == "false"
     assert lit(_obj(v, "border")["show"]) == "false"
+    # no visual header (its icons would pop over the tabs and the help buttons), as frame.no_container
+    assert lit(_obj(v, "visualHeader")["show"]) == "false"
+    for key, entries in frame.no_container().items():
+        assert v.props[key] == entries, key
+    # padding 0 on every side: the visual's own box is its rect (the geometry contract with visual.less)
+    pad = _obj(v, "padding")
+    assert {side: lit(pad[side]) for side in ("top", "bottom", "left", "right")} ==         {"top": "0D", "bottom": "0D", "left": "0D", "right": "0D"}
+
+
+def test_native_charts_keep_their_visual_header():
+    """Only the HNH visual and the frame turn the visual header off: the charts keep theirs (focus mode, sort)."""
+    for p in PAGES:
+        for v in p.visuals:
+            if v.sample in ("barChart", "lineChart", "table", "matrix"):
+                assert "visualHeader" not in v.props, (p.display, v.sample)
 
 
 def test_pillar_pages_carry_their_pillar_filter():
@@ -286,6 +301,25 @@ def test_pillar_page_by_hospital_chart_and_drill_button(display):
     assert lit(_obj(btn, "outline")["show"]) == "true"
     assert colour(outline["lineColor"]) == f"'{PILLAR_COLOUR[display]}'"
     assert lit(_obj(btn, "fill")["show"]) == "false"
+
+
+@pytest.mark.parametrize("display", list(PILLARS))
+def test_pillar_page_chart_does_not_filter_the_board_or_the_label(display):
+    """A click on a bar of the by-hospital chart must not cross-filter the HNH visual (Power BI would clear its KPI
+    selection, so the panel and the chart empty) or the selection label: NoFilter from the chart to both."""
+    page = by_display(display)
+    (chart,) = [v for v in page.visuals if v.sample == "barChart"]
+    (label,) = [v for v in page.visuals if v.sample == "card"]
+    pairs = [(i.source, i.target, i.type) for i in page.interactions]
+    assert len(pairs) == 2
+    assert pairs[0][0] is chart and pairs[0][1] is hnh(page) and pairs[0][2] == "NoFilter"
+    assert pairs[1][0] is chart and pairs[1][1] is label and pairs[1][2] == "NoFilter"
+
+
+def test_only_pillar_pages_set_interactions():
+    for p in PAGES:
+        if p.display not in PILLARS:
+            assert p.interactions == [], p.display
 
 
 def test_pillar_pages_bind_no_branch_series():
@@ -396,11 +430,27 @@ def _inside(a, b):
     return a.x >= b.x and a.y >= b.y and a.x + a.w <= b.x + b.w and a.y + a.h <= b.y + b.h
 
 
+# The native visuals each HNH visual mode has over it, by rect: the Overview's card buttons, the board's chart and
+# drill button, KPI detail's Back, How to use / Calculations (on its sub-bar), chart, matrix and Open detail.
+OVER_HNH = {
+    "overview": set(OV_CARDS),
+    "board": {BOARD_CHART, BOARD_BUTTON},
+    "detail": {DETAIL_BACK, DETAIL_BY_HOSPITAL, DETAIL_MATRIX, DETAIL_OPEN} | {r for _n, _l, r in HELP_BUTTONS},
+}
+
+
+def _mode(v):
+    return lit(_obj(v, "scorecard")["mode"]).strip("'")
+
+
 def _may_overlap(lower, upper):
-    """The overlaps the layout means: a frame panel under the visuals placed on it, and native visuals over the HNH
-    visual (the Overview's buttons, the board's chart and button, KPI detail's Back, guide buttons, chart, matrix and
-    button). The upper one is drawn later and lies inside the lower one."""
-    return lower.sample in ("panel", "hnhVisual") and _inside(upper, lower)
+    """The overlaps the layout means: a frame panel under the visuals placed on it, and the named native visuals over
+    the HNH visual (`OVER_HNH`, by the visual's mode). The upper one is drawn later and lies inside the lower one."""
+    if lower.sample == "panel":
+        return _inside(upper, lower)
+    if lower.sample == "hnhVisual":
+        return _inside(upper, lower) and rect(upper) in OVER_HNH.get(_mode(lower), set())
+    return False
 
 
 def test_no_overlaps_and_inside_the_canvas():
@@ -414,11 +464,24 @@ def test_no_overlaps_and_inside_the_canvas():
 
 def test_overlap_rule_bites():
     from model import Visual
-    hv, panel = Visual("hnhVisual", 0, 0, 100, 100), frame.panel(0, 0, 100, 100, "#FFFFFF")
+    board = hnh(by_display("Financial"))
+    panel = frame.panel(0, 0, 100, 100, "#FFFFFF")
     inner, sticking_out = Visual("card", 10, 10, 20, 20), Visual("card", 90, 10, 20, 20)
-    assert _may_overlap(hv, inner) and _may_overlap(panel, inner)
-    assert not _may_overlap(hv, sticking_out) and not _may_overlap(inner, hv)
+    assert _may_overlap(panel, inner) and not _may_overlap(panel, sticking_out)
+    assert _may_overlap(board, Visual("barChart", *BOARD_CHART))
+    assert not _may_overlap(board, Visual("card", 40, 200, 20, 20))  # inside, but not a named slot
+    assert not _may_overlap(board, Visual("card", *OV_CARDS[0]))  # the Overview's slot, not the board's
+    assert not _may_overlap(inner, board)
     assert not _may_overlap(Visual("card", 0, 0, 100, 100), inner)
+
+
+def test_a_stray_visual_over_the_owner_view_fails():
+    """Owner view has nothing over its HNH visual: any visual there, even in another mode's slot, is an overlap."""
+    from model import Visual
+    owner = hnh(by_display("Owner view"))
+    for r in [(100, 300, 200, 100), BOARD_CHART, OV_CARDS[0], DETAIL_MATRIX]:
+        assert _inside(Visual("card", *r), owner)
+        assert not _may_overlap(owner, Visual("card", *r)), r
 
 
 def test_unknown_fields_is_empty():

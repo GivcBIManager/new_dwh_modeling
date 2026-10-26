@@ -1,4 +1,7 @@
 """The page frame (frame.py): geometry, tabs, header, filter bar, panel and image visuals."""
+import re
+from pathlib import Path
+
 import pytest
 
 import frame
@@ -49,6 +52,90 @@ def test_geometry_constants():
     assert DETAIL_BY_HOSPITAL == (564, 600, 639, 456)
     assert DETAIL_MATRIX == (1227, 600, 663, 372)
     assert DETAIL_OPEN == (1227, 984, 663, 60)
+
+
+VISUAL_LESS = Path(__file__).resolve().parents[2] / "hnh_bsc_visual" / "style" / "visual.less"
+
+
+def _rule(css: str, selector: str) -> str:
+    """The declarations of the rule whose selector is exactly `selector` (one line per rule in visual.less)."""
+    m = re.search(r"(?m)^" + re.escape(selector) + r"\{([^}]*)\}", css)
+    assert m, f"no rule {selector} in visual.less"
+    return m.group(1)
+
+
+def _px(decls: str, prop: str) -> list[float]:
+    """The px numbers of `prop` in a rule's declarations, in order."""
+    m = re.search(r"(?:^|;)" + re.escape(prop) + r":([^;]*)", decls)
+    assert m, f"no {prop} in {decls}"
+    return [float(x) for x in re.findall(r"(-?\d+(?:\.\d+)?)px", m.group(1))]
+
+
+def test_visual_css_contract():
+    """The native visuals over the HNH visual sit where its CSS leaves room: frame.py's rects follow from the
+    numbers in visual.less (the visual's origin is CONTENT's corner, or DETAIL_VISUAL's on KPI detail)."""
+    css = VISUAL_LESS.read_text(encoding="utf-8")
+    x0, y0, width, height = CONTENT
+
+    # overview: 450 px overall panel, then four equal pillar cards, rows of 348 px, gap 24
+    ov = _rule(css, ".ov")
+    assert _px(ov, "grid-template-columns") == [450]
+    assert _px(ov, "grid-template-rows") == [348]
+    (gap,) = _px(ov, "gap")
+    assert gap == 24
+    overall, top = 450, 348
+    card_w = (width - overall - 4 * gap) / 4
+    assert OV_CARDS == [(x0 + overall + gap + i * (card_w + gap), y0, card_w, top) for i in range(4)]
+
+    # board: strip 96, gap 21; panel 660 wide after a 24 gap; in it 432 of content, the 219 chart slot and the 60
+    # button slot, each inset 24 at the sides, the button 18 under the chart
+    bd = _rule(css, ".bd")
+    (strip,) = _px(bd, "grid-template-rows")
+    (bd_gap,) = _px(bd, "gap")
+    assert (strip, bd_gap) == (96, 21)
+    body = _rule(css, ".bd-body")
+    (panel_w,) = _px(body, "grid-template-columns")
+    (body_gap,) = _px(body, "gap")
+    assert (panel_w, body_gap) == (660, 24)
+    (main_h,) = _px(_rule(css, ".bd-panel-main"), "height")
+    chart = _rule(css, ".bd-slot-chart")
+    button = _rule(css, ".bd-slot-button")
+    (chart_h,) = _px(chart, "height")
+    (button_h,) = _px(button, "height")
+    assert (main_h, chart_h, button_h) == (432, 219, 60)
+    chart_m = _px(chart, "margin")  # 0 24px
+    button_m = _px(button, "margin")  # 18px 24px 0
+    assert chart_m == [24] and button_m == [18, 24]
+    side, button_top = chart_m[0], button_m[0]
+    panel_x = x0 + width - panel_w
+    chart_y = y0 + strip + bd_gap + main_h
+    assert BOARD_CHART == (panel_x + side, chart_y, panel_w - 2 * side, chart_h)
+    assert BOARD_BUTTON == (panel_x + side, chart_y + chart_h + button_top, panel_w - 2 * side, button_h)
+    assert BOARD_BUTTON[0] - x0 == width - panel_w + side  # the table takes the rest: 1176 + 24 gap
+    assert width - panel_w - body_gap == 1176
+
+    # KPI detail: the visual's sub-bar 78; body padded 24 / 30 with a 510 profile and a 390 trend row, gap 24. The
+    # native lower row starts under the trend panel, at its left edge, and ends at the body's right and bottom padding
+    vx, vy, vw, vh = DETAIL_VISUAL
+    (sub_h,) = _px(_rule(css, ".dt-sub"), "height")
+    dt = _rule(css, ".dt-body")
+    (profile_w,) = _px(dt, "grid-template-columns")
+    (trend_h,) = _px(dt, "grid-template-rows")
+    (dt_gap,) = _px(dt, "gap")
+    pad_y, pad_x = _px(dt, "padding")
+    assert (sub_h, profile_w, trend_h, dt_gap, pad_y, pad_x) == (78, 510, 390, 24, 24, 30)
+    trend_x = vx + pad_x + profile_w + dt_gap
+    lower_y = vy + sub_h + pad_y + trend_h + dt_gap
+    right, bottom = vx + vw - pad_x, vy + vh - pad_y
+    assert trend_x == 564 and lower_y == 600
+    bh, mx, op = DETAIL_BY_HOSPITAL, DETAIL_MATRIX, DETAIL_OPEN
+    assert (bh[0], bh[1]) == (trend_x, lower_y) and bh[1] + bh[3] == bottom
+    assert mx[0] == bh[0] + bh[2] + dt_gap and mx[1] == lower_y and mx[0] + mx[2] == right
+    assert (op[0], op[2]) == (mx[0], mx[2]) and op[1] > mx[1] + mx[3] and op[1] + op[3] <= bottom
+    # Back sits in the sub-bar, left of its text (padding-left 150)
+    sub_pad = _px(_rule(css, ".dt-sub"), "padding")
+    assert DETAIL_BACK[1] >= vy and DETAIL_BACK[1] + DETAIL_BACK[3] <= vy + sub_h
+    assert DETAIL_BACK[0] + DETAIL_BACK[2] <= vx + sub_pad[-1]
 
 
 def test_tab_list():

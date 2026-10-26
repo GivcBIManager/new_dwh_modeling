@@ -5,7 +5,7 @@ import pytest
 
 from conftest import DRILL_FILTER, build_layout, good_parts
 from build import build
-from model import Filter, Page, Visual, col, meas
+from model import Filter, Interaction, Page, Visual, col, meas
 from pbix import check_upload_rules, read_pbix
 
 DEPT = col("Department", "Department Name")
@@ -243,6 +243,30 @@ def test_two_drill_pages_get_their_own_pods(pbix_path, tmp_path):
     pods = p.layout["pods"]
     assert [x["boundSection"] for x in pods] == ["a", "b"]
     assert len({x["name"] for x in pods}) == 2
+
+
+def test_interactions_in_the_page_config(pbix_path, tmp_path):
+    """Page.interactions as the legacy page config writes them: `visualInteractions` with numeric types (Default 0,
+    DataFilter 1, HighlightFilter 2, NoFilter 3), by the visual names; one with a left-out visual (a panel) is
+    dropped."""
+    import frame
+    from layout import stable_id
+    chart = Visual("barChart", 10, 20, 300, 200, roles={"Category": [DEPT], "Y": [REVENUE]})
+    card = Visual("card", 400, 20, 100, 50, roles={"Values": [REVENUE]})
+    panel = frame.panel(0, 0, 1920, 84, "#0A1E32")
+    page = Page("p_i", "Interactions", [panel, chart, card],
+                interactions=[Interaction(chart, card, "NoFilter"), Interaction(card, chart, "HighlightFilter"),
+                              Interaction(chart, panel, "NoFilter")])
+    p = run(tmp_path, pbix_path, [page])
+    cfg = json.loads(page_of(p.layout, "Interactions")["config"])
+    assert cfg["visualInteractions"] == [
+        {"source": stable_id("p_i", "visual", 1), "target": stable_id("p_i", "visual", 2), "type": 3},
+        {"source": stable_id("p_i", "visual", 2), "target": stable_id("p_i", "visual", 1), "type": 2}]
+    names = [json.loads(vc["config"])["name"] for vc in page_of(p.layout, "Interactions")["visualContainers"]]
+    assert names == [stable_id("p_i", "visual", 1), stable_id("p_i", "visual", 2)]
+    (tmp_path / "plain").mkdir()
+    plain = run(tmp_path / "plain", pbix_path, [bar_page()])
+    assert "visualInteractions" not in json.loads(page_of(plain.layout, "Bars")["config"])
 
 
 def many_pages():

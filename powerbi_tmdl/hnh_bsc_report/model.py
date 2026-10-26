@@ -70,11 +70,26 @@ class Visual:
     date_range: tuple[str, str] | None = None  # slicerDateRange: the saved (from, to) as ISO dates, both inclusive
 
 
+# How a selection in one visual reaches another on the page (PBIR page schema `VisualInteractionFilterType`).
+INTERACTION_TYPES = ("Default", "DataFilter", "HighlightFilter", "NoFilter")
+
+
+@dataclass
+class Interaction:
+    """How a data-point selection in `source` reaches `target`, both visuals of the same page (found by identity):
+    "NoFilter" ignores it, "DataFilter" filters, "HighlightFilter" highlights, "Default" leaves it to the target.
+    Written as the page's `visualInteractions` by the generated visual names."""
+    source: Visual
+    target: Visual
+    type: Literal["Default", "DataFilter", "HighlightFilter", "NoFilter"] = "NoFilter"
+
+
 @dataclass
 class Page:
     """`name` is the page's internal name (navigation targets it), `display` the tab name users see. A page with
     `drill_fields` is a drill-through page; `keep_filters` is its "keep all filters": on, every filter of the source
-    page arrives; off, only the drill fields' values do (the family pages, Review Focus 4)."""
+    page arrives; off, only the drill fields' values do (the family pages, Review Focus 4). `interactions` change how
+    a selection in one of its visuals reaches another (the default: Power BI's cross-filter or cross-highlight)."""
     name: str
     display: str
     visuals: list[Visual]
@@ -82,6 +97,27 @@ class Page:
     drill_fields: list[Field] | None = None
     hidden: bool = False
     keep_filters: bool = True
+    interactions: list[Interaction] = field(default_factory=list)
+
+
+def visual_index(page: Page, visual: Visual) -> int:
+    """The index of `visual` in `page.visuals`, by identity (two visuals may be equal field by field); the generated
+    visual name is `stable_id(page.name, "visual", index)` on both routes."""
+    for i, v in enumerate(page.visuals):
+        if v is visual:
+            return i
+    raise ValueError(f"page {page.display}: an interaction names a {visual.sample} visual that is not on the page")
+
+
+def interaction_indexes(page: Page) -> list[tuple[int, int, str]]:
+    """(source index, target index, type) of each of the page's interactions, checked."""
+    out = []
+    for it in page.interactions:
+        if it.type not in INTERACTION_TYPES:
+            raise ValueError(f"page {page.display}: interaction type must be one of {', '.join(INTERACTION_TYPES)}, "
+                             f"got {it.type!r}")
+        out.append((visual_index(page, it.source), visual_index(page, it.target), it.type))
+    return out
 
 
 def page_fields(page: Page) -> list[Field]:

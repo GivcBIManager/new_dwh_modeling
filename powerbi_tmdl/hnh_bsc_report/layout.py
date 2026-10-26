@@ -12,7 +12,8 @@ import hashlib
 import json
 from decimal import Decimal
 
-from model import Field, Filter, Page, Visual
+from model import Field, Filter, Page, Visual, interaction_indexes
+from pbir_to_pbix import INTERACTION  # legacy visualInteractions types, one mapping for both legacy writers
 
 SYNC_PREFIX = "bsc "  # sync group per field: "bsc Branch.Branch Name"
 PAGE_WIDTH, PAGE_HEIGHT = 1920, 1080
@@ -441,6 +442,12 @@ def page_section(page: Page, index: int, samples: dict, layout: dict, drill_samp
         cfg["visibility"] = 1
     else:
         cfg.pop("visibility", None)
+    kept = {i for i, v in enumerate(page.visuals) if v.sample not in NO_SAMPLE}
+    interactions = [{"source": stable_id(page.name, "visual", s), "target": stable_id(page.name, "visual", t),
+                     "type": INTERACTION[kind]} for s, t, kind in interaction_indexes(page) if {s, t} <= kept]
+    cfg.pop("visualInteractions", None)
+    if interactions:
+        cfg["visualInteractions"] = interactions  # as pbir_to_pbix writes them (powerbi_tmdl/README.md)
     section = {k: v for k, v in base.items() if k not in ("visualContainers", "filters", "config")}
     section.update(id=index, name=page.name, displayName=page.display, filters=_dump(filters), ordinal=index,
                    visualContainers=containers, config=_dump(cfg), width=PAGE_WIDTH, height=PAGE_HEIGHT)

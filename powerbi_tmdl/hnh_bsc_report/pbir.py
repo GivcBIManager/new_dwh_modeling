@@ -20,7 +20,7 @@ from pathlib import Path
 
 from frame import LOGO
 from layout import DIRECTION, aliases, field_expr, filter_json, lit, source_expr, stable_id, top_n_json
-from model import Field, Filter, Page, Visual
+from model import Field, Filter, Page, Visual, interaction_indexes
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
@@ -368,6 +368,10 @@ def page_json(page: Page) -> dict:
         out["filterConfig"] = {"filters": filters}
     if page.hidden:
         out["visibility"] = "HiddenInViewMode"
+    interactions = [{"source": stable_id(page.name, "visual", s), "target": stable_id(page.name, "visual", t),
+                     "type": kind} for s, t, kind in interaction_indexes(page)]
+    if interactions:
+        out["visualInteractions"] = interactions  # page schema 2.1.0 VisualInteraction {source, target, type}
     return out
 
 

@@ -12,7 +12,7 @@ import datetime
 
 from frame import (BOARD_BUTTON, BOARD_CHART, CONTENT, DETAIL_BACK, DETAIL_BY_HOSPITAL, DETAIL_MATRIX, DETAIL_OPEN,
                    DETAIL_VISUAL, LINE, NAVY, OV_CARDS, WHITE, _colour, _lit, _num, button_props, frame, no_container)
-from model import Field, Filter, Page, Visual, col, meas
+from model import Field, Filter, Interaction, Page, Visual, col, meas
 
 # Roles of the HNH visual (capabilities.json) -> 'BSC KPI' column, as the visual README's field-well table.
 ATTRIBUTE_ROLES = {
@@ -57,8 +57,19 @@ def _hospitals() -> Filter:
 
 
 def _container_off() -> dict:
-    """No container background or border: the visual sits on a panel the HNH visual draws (or draws its own)."""
-    return {"background": [{"properties": {"show": _lit(False)}}], "border": [{"properties": {"show": _lit(False)}}]}
+    """No container background or border (frame.no_container's): a native visual on a panel the HNH visual draws
+    (the board's chart) or on the filter bar (the selection label). Its visual header stays."""
+    off = no_container()
+    return {"background": off["background"], "border": off["border"]}
+
+
+def hnh_container() -> dict:
+    """The HNH visual's container: frame.no_container (no background or border: it draws its own panels; no visual
+    header, whose icons would pop over the tabs and the help buttons) and padding 0 on every side, so the visual's
+    box is its rect and the geometry visual.less shares with frame.py holds."""
+    zero = _num(0)
+    return {**no_container(),
+            "padding": [{"properties": {"top": zero, "bottom": zero, "left": zero, "right": zero}}]}
 
 
 # ---- scorecard pages ----------------------------------------------------------------------------------------------
@@ -119,13 +130,14 @@ def _selection_label() -> Visual:
 
 def _hnh_visual(rect: tuple, mode: str, payload: str, extra_roles: dict | None = None,
                 filters: list[Filter] | None = None) -> Visual:
-    """The HNH visual in `mode`, its header band off (the frame is native) and no container box (it draws its own
-    panels; set here as well as by the theme's rule for its guid, which is unconfirmed for a private visual)."""
+    """The HNH visual in `mode`, its header band off (the frame is native) and `hnh_container` (no container box: it
+    draws its own panels; set here as well as by the theme's rule for its guid, which is unconfirmed for a private
+    visual)."""
     roles = {role: [col("BSC KPI", column)] for role, column in ATTRIBUTE_ROLES.items()}
     roles["payload"] = [meas(payload)]
     roles["selectionLabel"] = [meas("BSC Selection Label")]
     roles.update(extra_roles or {})
-    props = {"scorecard": [{"properties": {"mode": _lit(mode), "showHeader": _lit(False)}}], **_container_off()}
+    props = {"scorecard": [{"properties": {"mode": _lit(mode), "showHeader": _lit(False)}}], **hnh_container()}
     return Visual("hnhVisual", *rect, roles=roles, filters=filters or [], props=props)
 
 
@@ -163,18 +175,26 @@ def _drill_to_detail(pillar: str) -> Visual:
 def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: str | None, mode: str,
                     payload: str) -> Page:
     """The frame (this page's tab current, the slicers and the selection label in the filter bar), the HNH visual in
-    the content box, and the native visuals over it: the Overview's card buttons, a pillar board's chart and button."""
+    the content box, and the native visuals over it: the Overview's card buttons, a pillar board's chart and button.
+    On a board, a click on a hospital bar filters neither the HNH visual (Power BI would clear its KPI selection, so
+    the panel and the chart would empty) nor the selection label: NoFilter interactions."""
     comparison = mode == "comparison"
     visual = _hnh_visual(CONTENT, mode, payload, {"branch": [BRANCH_NAME]} if comparison else None,
                          [_hospitals()] if comparison else None)
-    visuals = frame(name, _slicers(build_date) + [_selection_label()]) + [visual]
+    label = _selection_label()
+    visuals = frame(name, _slicers(build_date) + [label]) + [visual]
+    interactions: list[Interaction] = []
     if mode == "overview":
-        pillars = [row for row in _SCORECARD if row[3] == "board"]  # in Pillar Order, as the visual draws the cards
+        # The card buttons assume the visual draws the cards in this order ('BSC KPI'[Pillar Order] 1-4, all four
+        # pillars present; README "Pillar order")
+        pillars = [row for row in _SCORECARD if row[3] == "board"]
         visuals += [_card_button(r, row[0], row[1]) for r, row in zip(OV_CARDS, pillars)]
     elif mode == "board":
-        visuals += [_by_hospital(BOARD_CHART, on_panel_chart()), _drill_to_detail(pillar)]
+        chart = _by_hospital(BOARD_CHART, on_panel_chart())
+        visuals += [chart, _drill_to_detail(pillar)]
+        interactions = [Interaction(chart, visual, "NoFilter"), Interaction(chart, label, "NoFilter")]
     page_filters = [Filter(col("BSC KPI", "Pillar"), "eq", [pillar])] if pillar else []
-    return Page(name, display, visuals, filters=page_filters)
+    return Page(name, display, visuals, filters=page_filters, interactions=interactions)
 
 
 def scorecard_pages(build_date: datetime.date) -> list[Page]:
