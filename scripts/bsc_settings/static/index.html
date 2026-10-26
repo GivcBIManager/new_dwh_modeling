@@ -2,10 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BSC settings</title>
+<link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<div id="app">Loading...</div>
+<section id="signin" hidden>
+  <form id="signin-form" class="card" autocomplete="off">
+    <h1>BSC settings</h1>
+    <p class="small">Sign in with your ClickHouse user. The page forgets the sign-in when it is reloaded; sign in again then.</p>
+    <p id="signin-msg" class="bad" role="alert"></p>
+    <label>User <input id="signin-user" name="user" autocomplete="username"></label>
+    <label>Password <input id="signin-pass" name="password" type="password" autocomplete="off"></label>
+    <button type="submit" class="btn">Sign in</button>
+  </form>
+</section>
+<section id="shell" class="app" hidden>
+  <nav id="nav" class="nav"></nav>
+  <main class="main">
+    <div id="banner" class="banner"></div>
+    <div id="banner2" class="banner" hidden></div>
+    <div id="content"></div>
+    <div id="pending" class="pend"></div>
+  </main>
+</section>
+<dialog id="review-dialog" class="modal"></dialog>
+<dialog id="history-dialog" class="modal"></dialog>
 <script src="/static/app.js"></script>
 </body>
 </html>

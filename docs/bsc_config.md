@@ -20,6 +20,8 @@ Every row ends with the same four columns:
 | `change_note` | why, in a few words |
 | `is_deleted` | `0`, or `1` to remove the key |
 
+**The settings page.** `scripts/bsc_settings/` has a local page that does these inserts for you, with checks and history: see its [README](../scripts/bsc_settings/README.md).
+
 **When it shows in the report.** The next morning, after the nightly build and SSAS refresh. To see it sooner, run `dbt build --select stg_ref__bsc_*+` in the receiving project and then `ssas\scripts\process.ps1 -Mode Daily -Force`. The `-Force` run changes the production SSAS database.
 
 **Check an edit straight away.** Run `dbt test --select stg_ref__bsc_*`. A row that breaks a rule shows as a warning. The nightly build still runs: the scorecard ignores that row (an unknown KPI code, category or list), or shows its value as entered, until you insert a corrected row. No other report is held up by a scorecard edit.
