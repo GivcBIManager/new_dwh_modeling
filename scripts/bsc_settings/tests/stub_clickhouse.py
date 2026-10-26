@@ -13,6 +13,7 @@ class StubClickHouse:
         self.now = "2026-10-25 09:30:00.123"
         self._fail_next_insert = False
         self._fail_selects = []
+        self._fail_insert_tables = set()
         self._redirect = None
         self._rejected = {}         # user -> echo the password in the error body?
         stub = self
@@ -49,6 +50,10 @@ class StubClickHouse:
     # --- controls -----------------------------------------------------
     def fail_next_insert(self):
         self._fail_next_insert = True
+
+    def fail_insert_into(self, table):
+        """Answer 500 to every insert into this table."""
+        self._fail_insert_tables.add(table)
 
     def fail_select(self, substring):
         """Answer a non-200 error to any SELECT whose text contains `substring`."""
@@ -90,6 +95,8 @@ class StubClickHouse:
             m = re.match(r"INSERT INTO default\.(\w+) FORMAT JSONEachRow$", first.strip())
             if not m:
                 return 400, "Code: 62. DB::Exception: Syntax error\n"
+            if m.group(1) in self._fail_insert_tables:
+                return 500, "Code: 1000. DB::Exception: insert into %s failed\n" % m.group(1)
             rows = [json.loads(line) for line in rest.splitlines() if line.strip()]
             self.tables.setdefault(m.group(1), []).extend(rows)
             return 200, ""
