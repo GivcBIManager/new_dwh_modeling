@@ -1,5 +1,5 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
-import { DASH, formatValue, isNum } from "../model/format";
+import { DASH, deltaDirection, formatDelta, formatValue, isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { overallTrend } from "../model/score";
 import { el, svg } from "./dom";
@@ -26,14 +26,11 @@ function groupCounts(ps: PillarSummary[]): Record<Group, number> {
 const scoreText = (v: number | null) => (isNum(v) ? String(Math.round(v)) : DASH);
 const weightText = (w: number | null) => (isNum(w) ? `Weight ${Math.round(w * 100)}%` : "Weight –");
 
-/** "▲ 0.3" (with " vs Aug" when the month is known); null without a delta. */
+/** "▲ 0.3" or "0.0" (with " vs Aug" when the month is known); null without a delta. */
 function delta(trend: (number | null)[], vs: string | null): HTMLElement | null {
     const d = lastDelta(trend);
     if (d === null) return null;
-    const r = Math.round(d * 10) / 10;
-    const dir = r > 0 ? "up" : r < 0 ? "down" : "flat";
-    const text = `${r < 0 ? "▼" : "▲"} ${Math.abs(r).toFixed(1)}${vs ? ` vs ${vs}` : ""}`;
-    return el("span", { class: `ov-delta ${dir}` }, [text]);
+    return el("span", { class: `ov-delta ${deltaDirection(d)}` }, [`${formatDelta(d)}${vs ? ` vs ${vs}` : ""}`]);
 }
 
 const hasTrend = (vm: ViewModel) => vm.pillars.some(p => p.trend.length >= 2 && p.trend.some(isNum));

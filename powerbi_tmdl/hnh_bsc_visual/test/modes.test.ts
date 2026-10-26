@@ -120,6 +120,14 @@ describe("overview", () => {
         expect(root.querySelectorAll(".ov-trend svg path").length).toBeGreaterThanOrEqual(4);
         expect(root.querySelector(".ov-overall .ov-delta")!.textContent).toMatch(/^[▲▼] \d+\.\d/);
     });
+    it("prints an unchanged score as 0.0 without an arrow", () => {
+        const flat = labelled(rows.map(r => ({ ...r, payload: payload({ actual: 1, target: 1, variance: 0, score: 90, state: "On track", weight: 1, trend: [90, 90], scoreTrend: [90, 90] }) })));
+        const root = draw(flat);
+        const d = root.querySelector(".ov-overall .ov-delta")!;
+        expect(d.textContent).toBe("0.0 vs Aug");
+        expect(d.classList.contains("flat")).toBe(true);
+        expect(root.querySelector(".ov-pillar .ov-delta")!.textContent).toBe("0.0");
+    });
     it("shows 85 as on track in the pillar chip, from the rounded score", () => {
         const rs = [row("F1", "Financial", 1, 0.3, { payload: payload({ actual: 1, target: 1, variance: 0, score: 84.6, state: "Watch", weight: 1, trend: [80, 82, 84.6], scoreTrend: [80, 82, 84.6] }) })];
         const card = draw(rs).querySelector(".ov-pillar")!;
@@ -197,6 +205,12 @@ describe("board", () => {
         expect(strip.querySelector(".bd-q")!.textContent).toBe("Financial question?");
         expect(strip.querySelector(".bd-delta-label")!.textContent).toBe("vs Aug");
         expect(strip.querySelector(".bd-delta")!.textContent).toBe("▲ 1.0");
+    });
+    it("the strip prints an unchanged pillar score as 0.0 without an arrow", () => {
+        const flat = rows.map(r => ({ ...r, payload: payload({ actual: 1, target: 1, variance: 0, score: 90, state: "On track", weight: 1, trend: [90, 90], scoreTrend: [90, 90] }) }));
+        const d = draw(flat).querySelector(".bd-strip .bd-delta")!;
+        expect(d.textContent).toBe("0.0");
+        expect(d.classList.contains("flat")).toBe(true);
     });
     it("an objective pick narrows the table only; the strip's score stays the pillar's", () => {
         const all = draw();

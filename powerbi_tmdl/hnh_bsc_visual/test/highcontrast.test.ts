@@ -45,6 +45,10 @@ describe("colours stay out of the SVG so high contrast can replace them", () => 
         expect(css).toContain(".hnh-bsc.hc .bd-bar.missed");
         expect(css).toContain(".hnh-bsc.hc .bd-tline");
     });
+    it("the owner table's row dividers use the line colour, which high contrast maps to the host foreground", () => {
+        expect(css).toMatch(/\.owner td\{[^}]*border-bottom:1px solid var\(--line\)/);
+        expect(css).toMatch(/\.hnh-bsc\.hc\{[^}]*--line:var\(--hc-fg\)/);
+    });
     it("state text colours (variance, panel state, deltas) follow the host foreground", () => {
         for (const t of ["--good-tx", "--warn-tx", "--bad-tx", "--nodata-tx"]) expect(css).toMatch(new RegExp(`\\.hnh-bsc\\.hc\\{[^}]*${t}:var\\(--hc-fg\\)`));
     });

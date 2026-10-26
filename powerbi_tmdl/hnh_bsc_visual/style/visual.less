@@ -1,4 +1,5 @@
-// Colours are CSS variables on the visual root (.hnh-bsc). Prototype CSS from docs/superpowers/specs/assets.
+// Colours are CSS variables on the visual root (.hnh-bsc). Sizes are the design's px x 1.5; the page geometry contract
+// (overview, board, detail boxes) is shared with powerbi_tmdl/hnh_bsc_report/frame.py (test_visual_css_contract).
 .hnh-bsc{font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
 .hnh-bsc{
   --navy:#0A1E32; --navy-2:#002E5A; --blue-dk:#1478BE; --blue:#13ACE3; --sky:#32A4E5;
@@ -292,7 +293,7 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .owner table{width:100%;border-collapse:collapse}
 .owner th{text-align:left;height:42px;padding:0 9px;font-size:16.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);white-space:nowrap}
 .owner th:nth-child(2),.owner th:nth-child(3){text-align:right}
-.owner td{height:60px;padding:6px 9px;font-size:19.5px;font-weight:400;border-bottom:1px solid var(--nodata-bg)}
+.owner td{height:60px;padding:6px 9px;font-size:19.5px;font-weight:400;border-bottom:1px solid var(--line)}
 .owner td:first-child{font-weight:600}
 .owner .co-tag{display:inline-block;margin-left:9px;border:1px solid var(--line);border-radius:6px;padding:0 7.5px;font-size:15px;line-height:1.4;font-weight:600;color:var(--muted);white-space:nowrap}
 .owner td.num{text-align:right;font-weight:600;white-space:nowrap}

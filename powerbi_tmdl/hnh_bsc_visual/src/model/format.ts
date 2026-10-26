@@ -29,3 +29,19 @@ export function formatVariance(v: number | null): string {
     const text = fixed(Math.abs(v) * 100, 1);
     return `${v < 0 ? "−" : "+"}${text}%`;
 }
+
+const roundDelta = (d: number) => Math.round(d * 10) / 10;
+
+/** A month-on-month change in score points: "▲ 1.0" / "▼ 2.4"; "0.0" without an arrow when it rounds to zero. */
+export function formatDelta(d: number | null): string {
+    if (d === null || d === undefined || !Number.isFinite(d)) return DASH;
+    const r = roundDelta(d);
+    return r === 0 ? "0.0" : `${r < 0 ? "▼" : "▲"} ${Math.abs(r).toFixed(1)}`;
+}
+
+/** The delta's class: "up", "down", or "flat" when it rounds to zero or is missing. */
+export function deltaDirection(d: number | null): "up" | "down" | "flat" {
+    if (d === null || d === undefined || !Number.isFinite(d)) return "flat";
+    const r = roundDelta(d);
+    return r > 0 ? "up" : r < 0 ? "down" : "flat";
+}

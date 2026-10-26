@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatValue, formatVariance } from "../src/model/format";
+import { deltaDirection, formatDelta, formatValue, formatVariance } from "../src/model/format";
 
 describe("formatValue", () => {
     it("formats each value format", () => {
@@ -21,5 +21,24 @@ describe("formatVariance", () => {
         expect(formatVariance(0.052)).toBe("+5.2%");
         expect(formatVariance(-0.1)).toBe("−10.0%");
         expect(formatVariance(null)).toBe("–");
+    });
+});
+
+describe("formatDelta", () => {
+    it("rounds to one decimal, with an arrow up or down", () => {
+        expect(formatDelta(1)).toBe("▲ 1.0");
+        expect(formatDelta(-2.36)).toBe("▼ 2.4");
+        expect(deltaDirection(1)).toBe("up");
+        expect(deltaDirection(-2.36)).toBe("down");
+    });
+    it("prints a delta that rounds to zero without an arrow", () => {
+        for (const d of [0, 0.04, -0.04, -0]) {
+            expect(formatDelta(d)).toBe("0.0");
+            expect(deltaDirection(d)).toBe("flat");
+        }
+    });
+    it("shows a dash for no delta", () => {
+        expect(formatDelta(null)).toBe("–");
+        expect(deltaDirection(null)).toBe("flat");
     });
 });

@@ -1,5 +1,5 @@
 import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
-import { DASH, isNum } from "../model/format";
+import { DASH, deltaDirection, formatDelta, isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { selectionKey } from "../interactions";
 import { el } from "./dom";
@@ -36,9 +36,7 @@ function strip(vm: ViewModel, p: PillarSummary, colourVar: string): HTMLElement 
     const st = scoreState(p.score, vm.thresholds) as Group;
     const months = monthLabels(vm.label, p.trend.length);
     const d = lastDelta(p.trend);
-    const r = d === null ? null : Math.round(d * 10) / 10;
-    const delta = el("span", { class: `bd-delta ${r === null || r === 0 ? "flat" : r > 0 ? "up" : "down"}` },
-        [r === null ? DASH : `${r < 0 ? "▼" : "▲"} ${Math.abs(r).toFixed(1)}`]);
+    const delta = el("span", { class: `bd-delta ${deltaDirection(d)}` }, [formatDelta(d)]);
     const prev = months.length >= 2 ? months[months.length - 2] : null;
     const c = p.counts;
     const counts: Record<Group, number> = { good: c.good, warn: c.warn, bad: c.bad, nodata: c.nodata + c.parked + c.notarget };
