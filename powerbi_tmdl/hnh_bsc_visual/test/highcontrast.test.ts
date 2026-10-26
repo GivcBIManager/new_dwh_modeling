@@ -5,7 +5,7 @@ import { ring } from "../src/render/ring";
 import { lineChart } from "../src/render/linechart";
 import { sparkline } from "../src/render/sparkline";
 import { header } from "../src/render/header";
-import { statusStrip } from "../src/render/chips";
+import { monthlyBars } from "../src/render/bars";
 import type { ViewModel } from "../src/model/types";
 import { readFileSync } from "node:fs";
 
@@ -37,9 +37,15 @@ describe("colours stay out of the SVG so high contrast can replace them", () => 
             expect(css).toContain(`.hnh-bsc.hc ${c}`);
         }
     });
-    it("strip squares differ by state class for the warn pattern", () => {
-        const s = statusStrip([{ state: "warn", stateWord: "Watch", name: "a", rowIndex: 0, seriesIndex: null } as never]);
-        expect(s.querySelector("i")!.classList.contains("warn")).toBe(true);
-        expect(css).toContain(".hnh-bsc.hc .strip i.warn");
+    it("monthly bars tell met from missed by class, and high contrast draws the missed ones hollow", () => {
+        const row = { trend: [1, 0.5], targetTrend: [1, 1], direction: "higher", scoreBase: 85, scoreSlope: 0.6, goodFrom: 85 } as never;
+        const s = monthlyBars(row, 200, 100, "var(--p1)");
+        expect([...s.querySelectorAll("rect.bd-bar")].map(r => r.getAttribute("class"))).toEqual(["bd-bar met", "bd-bar missed"]);
+        expect(s.querySelector(".bd-tline")!.hasAttribute("stroke")).toBe(false);
+        expect(css).toContain(".hnh-bsc.hc .bd-bar.missed");
+        expect(css).toContain(".hnh-bsc.hc .bd-tline");
+    });
+    it("state text colours (variance, panel state, deltas) follow the host foreground", () => {
+        for (const t of ["--good-tx", "--warn-tx", "--bad-tx", "--nodata-tx"]) expect(css).toMatch(new RegExp(`\\.hnh-bsc\\.hc\\{[^}]*${t}:var\\(--hc-fg\\)`));
     });
 });

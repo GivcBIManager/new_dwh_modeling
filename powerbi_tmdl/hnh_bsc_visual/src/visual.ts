@@ -14,6 +14,7 @@ import type { ViewModel } from "./model/types";
 import { parseDataView } from "./model/parse";
 import { renderView, type Mode, type UiState } from "./render/index";
 import { levelOf, TOP_LEVEL, type CompareLevel } from "./render/comparison";
+import { boardPillar, objectivesOf } from "./render/board";
 import { DEFAULT_OWNER_UI, validPick, type OwnerUi } from "./render/owner";
 import { applyColours, buildFormattingModel, readSettings, toOptions, VisualSettings } from "./settings";
 import { INTERNAL_SELECTOR, markSelected, selectionKey, wire } from "./interactions";
@@ -36,7 +37,10 @@ export class Visual implements IVisual {
     private mode: Mode = "overview";
     private setUi: UiState = toOptions(new VisualSettings()).ui;
     private settings: VisualSettings = new VisualSettings();
-    private pick: { pillar: string | null; compare: CompareLevel } = { pillar: null, compare: { ...TOP_LEVEL } };
+    /** Internal view state, kept across updates: the comparison drill level and the board's objective pick. */
+    private pick: { compare: CompareLevel; objective: string | null } = { compare: { ...TOP_LEVEL }, objective: null };
+    /** The pillar the objective pick belongs to; a different pillar drops the pick. */
+    private objectivePillar: string | null = null;
     /** Owner view toggles and card pick: internal state, kept across updates. */
     private ownerUi: OwnerUi = { ...DEFAULT_OWNER_UI };
     private interactive = true;
@@ -46,8 +50,10 @@ export class Visual implements IVisual {
         this.host = options.host;
         this.selectionManager = options.host.createSelectionManager();
         this.selectionManager.registerOnSelectCallback(() => this.refreshSelection());
-        // Tabs, drill headers and breadcrumb links are buttons: Enter and Space reach this handler as clicks.
+        // Drill headers, breadcrumb links, owner cards and toggles are buttons: Enter and Space reach this handler as clicks.
         this.root.addEventListener("click", e => this.onInternalClick(e));
+        // The objective picker is a native select: a pick arrives as a change, not as a click.
+        this.root.addEventListener("change", e => this.onPickerChange(e));
     }
 
     public update(options: VisualUpdateOptions): void {
@@ -56,17 +62,15 @@ export class Visual implements IVisual {
         try {
             const dv = options.dataViews && options.dataViews[0];
             const opt = this.read(dv);
-            // A changed setting wins over an earlier tab or hospital click.
-            if (opt.ui.pillar !== this.setUi.pillar) this.pick.pillar = null;
             this.setUi = opt.ui;
             if (opt.settings) this.settings = opt.settings;
             this.mode = opt.mode;
             this.vm = parseDataView(dv as DataView);
-            if (this.pick.pillar !== null && !this.vm.pillars.some(p => p.name === this.pick.pillar)) this.pick.pillar = null;
             // A comparison level whose pillar or objective is gone goes back to the top.
             this.pick.compare = levelOf(this.vm, this.pick.compare);
+            const samePillar = this.checkObjective(this.vm);
             this.ids = this.buildIds(dv, this.vm);
-            this.render();
+            this.render(samePillar);
             events.renderingFinished(options);
         } catch (error) {
             this.unwire();
@@ -77,22 +81,66 @@ export class Visual implements IVisual {
         }
     }
 
-    private render(): void {
+    /** Redraw. With keepScroll the scorecard body stays where it was scrolled (selection changes, plain updates); a
+     * new objective pick or pillar starts at the top. */
+    private render(keepScroll = true): void {
         if (!this.vm) return;
+        const scroll = keepScroll ? this.root.querySelector<HTMLElement>(".bd-tbody")?.scrollTop ?? 0 : 0;
         this.unwire();
         this.interactive = this.host.hostCapabilities?.allowInteractions !== false;
         this.applyPalette();
         applyColours(this.root, this.settings, !!this.host.colorPalette?.isHighContrast);
         // A picked owner whose card is no longer in the strip (data or toggle change) is dropped.
         this.ownerUi.pick = validPick(this.vm, this.ownerUi);
-        const ui: UiState = { ...this.setUi, pillar: this.pick.pillar ?? this.setUi.pillar, compareLevel: this.pick.compare, owner: { ...this.ownerUi } };
+        const selected = this.selectionManager.getSelectionIds() as ISelectionId[];
+        const ui: UiState = {
+            ...this.setUi, compareLevel: this.pick.compare, objective: this.pick.objective, owner: { ...this.ownerUi },
+            selectedKey: this.mode === "board" ? this.singleSelectedKey(selected) : null,
+        };
         renderView(this.root, this.vm, this.mode, ui);
+        const body = this.root.querySelector<HTMLElement>(".bd-tbody");
+        if (body && scroll) body.scrollTop = scroll;
         this.root.classList.toggle("hc", !!this.host.colorPalette?.isHighContrast);
+        const picker = this.root.querySelector<HTMLSelectElement>("select[data-objective-picker]");
+        if (picker) picker.disabled = !this.interactive;
         const rows = this.vm.pillars.flatMap(p => p.kpis);
         this.unwire = wire(this.root, rows, this.ids, {
             selectionManager: this.selectionManager, tooltipService: this.host.tooltipService, allowInteractions: this.interactive,
+            onSelected: () => this.refreshSelection(),
         });
-        this.refreshSelection();
+        markSelected(this.root, this.ids, selected);
+    }
+
+    /** The key of the one row the host has selected; null when none or several are. */
+    private singleSelectedKey(selected: ISelectionId[]): string | null {
+        if (selected.length === 0) return null;
+        const keys = [...this.ids].filter(([, id]) => selected.some(s => s.equals(id))).map(([k]) => k);
+        return keys.length === 1 ? keys[0] : null;
+    }
+
+    /** The objective pick belongs to one pillar: a different board pillar, or an objective no longer in the data, drops
+     * it. Returns false when the board's pillar changed (its table then starts at the top). */
+    private checkObjective(vm: ViewModel): boolean {
+        if (this.mode !== "board" || vm.pillars.length === 0) return true;
+        const p = boardPillar(vm, this.setUi.pillar);
+        const same = p.name === this.objectivePillar;
+        if (!same) { this.objectivePillar = p.name; this.pick.objective = null; }
+        if (this.pick.objective !== null && !objectivesOf(p).some(([code]) => code === this.pick.objective)) this.pick.objective = null;
+        return same;
+    }
+
+    /** Re-render, then give keyboard focus back to the successor of the row or picker that had it. */
+    private renderKeepingFocus(keepScroll: boolean): void {
+        const doc = this.root.ownerDocument;
+        const had = doc.activeElement instanceof HTMLElement && this.root.contains(doc.activeElement) ? doc.activeElement : null;
+        this.render(keepScroll);
+        if (!had) return;
+        const next = had.matches("select[data-objective-picker]")
+            ? this.root.querySelector<HTMLElement>("select[data-objective-picker]")
+            : had.dataset.key === undefined ? null
+            : Array.from(this.root.querySelectorAll<HTMLElement>("[data-key]")).find(e => e.dataset.key === had.dataset.key && e.dataset.series === had.dataset.series);
+        // The scroll position was restored: focusing must not move it again.
+        next?.focus({ preventScroll: true });
     }
 
     private applyPalette(): void {
@@ -108,11 +156,21 @@ export class Visual implements IVisual {
         return buildFormattingModel(this.settings);
     }
 
+    /** After a selection change: the board re-renders so its panel follows the selection; other modes re-mark. */
     private refreshSelection(): void {
-        markSelected(this.root, this.ids, this.selectionManager.getSelectionIds() as ISelectionId[]);
+        if (!this.vm) return;
+        if (this.mode === "board") this.renderKeepingFocus(true);
+        else markSelected(this.root, this.ids, this.selectionManager.getSelectionIds() as ISelectionId[]);
     }
 
-    /** Board tab, comparison drill header and breadcrumb, owner card and owner toggle: internal view state, no host selection. */
+    /** The board's objective picker: internal view state, never a host selection. */
+    private onPickerChange(e: Event): void {
+        if (!this.interactive || !this.vm || !(e.target instanceof HTMLSelectElement) || !e.target.matches("select[data-objective-picker]")) return;
+        this.pick.objective = e.target.value || null;
+        this.renderKeepingFocus(false);
+    }
+
+    /** Comparison drill header and breadcrumb, owner card and owner toggle: internal view state, no host selection. */
     private onInternalClick(e: MouseEvent): void {
         if (!this.interactive || !this.vm || !(e.target instanceof Element)) return;
         const hit = e.target.closest(INTERNAL_SELECTOR) as HTMLElement | null;
@@ -131,16 +189,8 @@ export class Visual implements IVisual {
             this.pick.compare = levelOf(this.vm, { pillar: hit.dataset.cmpPillar || null, objective: hit.dataset.cmpObjective || null });
             this.render();
             if (hadFocus) this.refocusCompare(from, this.pick.compare);
-            return;
         }
-        const value = hit.dataset.pillar as string;
-        this.pick.pillar = value;
-        this.render();
-        // The re-render replaced the tab: give focus back to its successor, so keyboard users keep their place.
-        if (hadFocus) {
-            const same = Array.from(this.root.querySelectorAll<HTMLElement>("button[data-pillar]")).find(e => e.dataset.pillar === value);
-            same?.focus();
-        }
+        // The objective picker reacts to its change event (onPickerChange); a click on it does nothing here.
     }
 
     /** An owner card picks that owner (a second click clears); a toggle sets its group. Focus follows the re-rendered button. */

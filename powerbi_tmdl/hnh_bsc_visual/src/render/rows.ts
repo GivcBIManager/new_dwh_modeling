@@ -19,3 +19,8 @@ export function scoreState(score: number | null, t: ViewModel["thresholds"]): St
 export const STATE_WORD: Record<"good" | "warn" | "bad" | "nodata", string> = {
     good: "On track", warn: "Watch", bad: "At risk", nodata: "No data",
 };
+
+/** The target's comparison sign: at least (higher), about (on_target), at most (lower and ceiling). */
+export function comparator(direction: string): string {
+    return direction === "higher" ? "≥" : direction === "on_target" ? "≈" : "≤";
+}

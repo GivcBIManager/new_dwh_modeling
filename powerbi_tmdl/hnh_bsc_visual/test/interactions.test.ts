@@ -38,7 +38,7 @@ function setup(allow = true, mode: "overview" | "board" | "owner" = "board") {
     const root = document.createElement("div");
     document.body.appendChild(root);
     const vm = parseDataView(makeDataView(rows));
-    renderView(root, vm, mode, { pillar: null, compareLevel: { pillar: null, objective: null }, title: "t", subtitle: "s", showHeader: false });
+    renderView(root, vm, mode, { pillar: null, compareLevel: { pillar: null, objective: null }, objective: null, title: "t", subtitle: "s", showHeader: false });
     const all = vm.pillars.flatMap(p => p.kpis);
     const ids = new Map<string, unknown>();
     for (const r of all) ids.set(selectionKey(r.rowIndex, r.seriesIndex), { key: r.code, equals(o: { key: string }) { return o.key === r.code; } });
@@ -46,7 +46,7 @@ function setup(allow = true, mode: "overview" | "board" | "owner" = "board") {
     wire(root, all, ids as never, f.host);
     return { root, ids, all, ...f };
 }
-const tileOf = (root: HTMLElement, key: number) => root.querySelector(`.tile[data-key="${key}"]`) as HTMLElement;
+const tileOf = (root: HTMLElement, key: number) => root.querySelector(`.bd-row[data-key="${key}"]`) as HTMLElement;
 
 describe("tooltipItems", () => {
     it("lists the nine items in order with formatted values", () => {
@@ -119,9 +119,38 @@ describe("wire", () => {
         (root.querySelector("button[data-owner-toggle]") as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(calls).toEqual([]);
     });
+    it("clicking or changing the objective picker neither selects nor clears", () => {
+        const { root, calls } = setup();
+        const sel = root.querySelector("select[data-objective-picker]") as HTMLSelectElement;
+        sel.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        sel.value = "O1";
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+        sel.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+        expect(calls).toEqual([]);
+    });
+    it("calls onSelected after each select and clear has resolved", async () => {
+        const root = document.createElement("div");
+        document.body.appendChild(root);
+        const vm = parseDataView(makeDataView(rows));
+        renderView(root, vm, "board", { pillar: null, compareLevel: { pillar: null, objective: null }, objective: null, title: "t", subtitle: "s", showHeader: false });
+        const all = vm.pillars.flatMap(p => p.kpis);
+        const ids = new Map<string, unknown>(all.map(r => [selectionKey(r.rowIndex, r.seriesIndex), { equals: () => false }]));
+        const f = fakeHost();
+        const seen: string[] = [];
+        wire(root, all, ids as never, { ...(f.host as object), onSelected: () => seen.push(f.calls.map(c => c.fn).join(",")) } as never);
+        tileOf(root, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(seen).toEqual([]);
+        await new Promise(r => setTimeout(r, 0));
+        expect(seen).toEqual(["select"]);
+        tileOf(root, 0).dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+        root.querySelector(".bd-strip")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        await new Promise(r => setTimeout(r, 0));
+        expect(seen).toEqual(["select", "select,select,clear", "select,select,clear"]);
+        root.remove();
+    });
     it("clears on empty space", () => {
         const { root, calls } = setup();
-        root.querySelector(".grid")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        root.querySelector(".bd-strip")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(calls.map(c => c.fn)).toEqual(["clear"]);
     });
     it("opens the context menu at the mouse position", () => {
@@ -129,7 +158,7 @@ describe("wire", () => {
         tileOf(root, 0).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 40, clientY: 55 }));
         expect(calls).toEqual([{ fn: "showContextMenu", args: [ids.get("0:"), { x: 40, y: 55 }] }]);
     });
-    it("Shift+F10 and the context-menu key open the menu at the tile", () => {
+    it("Shift+F10 and the context-menu key open the menu at the row", () => {
         const { root, calls } = setup();
         const t = tileOf(root, 1);
         t.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "F10", shiftKey: true }));
@@ -184,13 +213,13 @@ describe("wire", () => {
         t.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
         t.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
         t.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
-        root.querySelector(".grid")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        root.querySelector(".bd-strip")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(calls).toEqual([]);
     });
     it("the returned disposer removes the listeners", () => {
         const root = document.createElement("div");
         const cell = document.createElement("div");
-        cell.className = "tile"; cell.dataset.key = "0"; root.appendChild(cell);
+        cell.className = "bd-row"; cell.dataset.key = "0"; root.appendChild(cell);
         const f = fakeHost();
         const off = wire(root, [{ rowIndex: 0, seriesIndex: null } as KpiRow], new Map([["0:", {}]]) as never, f.host);
         off();
@@ -201,14 +230,14 @@ describe("wire", () => {
         const { root } = setup();
         tileOf(root, 0).dispatchEvent(new MouseEvent("click", { bubbles: true }));
         await Promise.resolve(); await Promise.resolve();
-        root.querySelector(".grid")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        root.querySelector(".bd-strip")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         await Promise.resolve(); await Promise.resolve();
         expect(root.querySelectorAll(".dimmed, .selected").length).toBe(0);
     });
-    it("does not hide the tooltip when the pointer moves inside the same tile", () => {
+    it("does not hide the tooltip when the pointer moves inside the same row", () => {
         const { root, calls } = setup();
         const t = tileOf(root, 0);
-        t.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: t.querySelector("h4") }));
+        t.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: t.querySelector(".bd-name") }));
         expect(calls).toEqual([]);
         t.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: tileOf(root, 1) }));
         expect(calls.map(c => c.fn)).toEqual(["hide"]);

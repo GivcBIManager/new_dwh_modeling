@@ -71,7 +71,7 @@ export function toOptions(s: VisualSettings): { mode: Mode; ui: UiState } {
     const c = s.scorecard;
     return {
         mode: (c.mode.value.value as Mode) ?? "overview",
-        ui: { pillar: null, compareLevel: { pillar: null, objective: null }, title: c.title.value, subtitle: c.subtitle.value, showHeader: c.showHeader.value },
+        ui: { pillar: null, compareLevel: { pillar: null, objective: null }, objective: null, title: c.title.value, subtitle: c.subtitle.value, showHeader: c.showHeader.value },
     };
 }
 

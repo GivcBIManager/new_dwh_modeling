@@ -17,11 +17,14 @@ export interface WireHost {
         hide(options: powerbi.extensibility.TooltipHideOptions): void;
     };
     allowInteractions: boolean;
+    /** Called after every select or clear made here has resolved (the host's select callback only reports selections
+     * made outside the visual, such as bookmarks). */
+    onSelected?: () => void;
 }
 
-/** Clicks on these are handled by the visual itself (board tab, comparison drill header and breadcrumb, owner card and
- * owner-view toggle), never as selection or clear. */
-export const INTERNAL_SELECTOR = "button[data-pillar], button[data-cmp-pillar], button[data-owner-card], button[data-owner-toggle]";
+/** Clicks on these are handled by the visual itself (comparison drill header and breadcrumb, owner card and owner-view
+ * toggle, the board's objective picker), never as selection or clear. */
+export const INTERNAL_SELECTOR = "button[data-cmp-pillar], button[data-owner-card], button[data-owner-toggle], select[data-objective-picker]";
 
 export const selectionKey = (rowIndex: number, seriesIndex: number | null): string => `${rowIndex}:${seriesIndex ?? ""}`;
 
@@ -44,7 +47,7 @@ export function tooltipItems(row: KpiRow): VisualTooltipDataItem[] {
     ];
 }
 
-/** Mark the selected tiles and strip cells, and dim the rest while something is selected. */
+/** Mark the selected rows and cells, and dim the rest while something is selected. */
 export function markSelected(root: HTMLElement, ids: Map<string, ISelectionId>, selected: ISelectionId[]): void {
     const cells = root.querySelectorAll<HTMLElement>("[data-key]");
     cells.forEach(c => {
@@ -65,7 +68,7 @@ export function wire(root: HTMLElement, rows: KpiRow[], ids: Map<string, ISelect
     const rowOf = new Map(rows.map(r => [selectionKey(r.rowIndex, r.seriesIndex), r]));
     const keyOf = (c: HTMLElement) => selectionKey(Number(c.dataset.key), c.dataset.series === undefined ? null : Number(c.dataset.series));
     const cellOf = (t: EventTarget | null) => (t instanceof Element ? (t.closest("[data-key]") as HTMLElement | null) : null);
-    const refresh = () => markSelected(root, ids, sm.getSelectionIds() as ISelectionId[]);
+    const refresh = () => { markSelected(root, ids, sm.getSelectionIds() as ISelectionId[]); host.onSelected?.(); };
     const select = (target: ISelectionId | ISelectionId[], multi: boolean) => { sm.select(target, multi).then(refresh); };
 
     const onClick = (e: MouseEvent) => {

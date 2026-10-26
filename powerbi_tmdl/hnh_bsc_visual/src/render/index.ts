@@ -11,8 +11,12 @@ export type Mode = "overview" | "board" | "owner" | "comparison" | "detail";
 
 export interface UiState {
     pillar: string | null;
-    /** Comparison drill level (the visual's own state, like the board tab). */
+    /** Comparison drill level (the visual's own state, like the board's objective pick). */
     compareLevel: CompareLevel;
+    /** The board's objective pick (the visual's own state; null shows every objective). */
+    objective: string | null;
+    /** The board's selected-KPI panel row: the single host-selected row's key, or null. */
+    selectedKey?: string | null;
     /** Owner view toggles and card pick (the visual's own state); defaults when absent. */
     owner?: OwnerUi;
     title: string;
@@ -37,7 +41,7 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
     }
 
     const body = mode === "overview" || mode === "detail" ? overview(vm)
-        : mode === "board" ? board(vm, ui.pillar, !ui.showHeader)
+        : mode === "board" ? board(vm, ui.pillar, ui.objective ?? null, ui.selectedKey ?? null)
         : mode === "owner" ? owner(vm, ui.owner ?? DEFAULT_OWNER_UI)
         : comparison(vm, ui.compareLevel);
     root.appendChild(el("div", { class: "view" }, [body]));

@@ -6,7 +6,7 @@ import { el, svg } from "./dom";
 import { pillarColourVar, stateChip, stateMark } from "./chips";
 import { lineChart } from "./linechart";
 import { ring } from "./ring";
-import { allFirstRows, firstRows, scoreState } from "./rows";
+import { allFirstRows, comparator, firstRows, scoreState } from "./rows";
 
 type Group = "good" | "warn" | "bad" | "nodata";
 const GROUPS: Group[] = ["good", "warn", "bad", "nodata"];
@@ -132,10 +132,6 @@ function trendPanel(vm: ViewModel): HTMLElement {
         el("div", { class: "ov-head" }, [el("h2", {}, [`Pillar score trend · last ${n} months`]), legend]),
         el("div", { class: "ov-chart" }, [chart]),
     ]);
-}
-
-function comparator(direction: string): string {
-    return direction === "higher" ? "≥" : direction === "on_target" ? "≈" : "≤";
 }
 
 function attentionRow(k: KpiRow, vm: ViewModel): HTMLElement {
