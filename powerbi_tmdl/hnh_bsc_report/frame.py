@@ -35,7 +35,7 @@ HEADER: Rect = (0, 0, 1920, 84)
 FILTER_BAR: Rect = (0, 84, 1920, 78)
 FILTER_RULE: Rect = (0, 161, 1920, 1)
 LOGO_RECT: Rect = (30, 21, 220, 42)
-TITLE_RECT: Rect = (270, 12, 370, 60)
+TITLE_RECT: Rect = (270, 9, 370, 66)  # "Balanced Scorecard" 19pt over "Hayat Healthcare" 12pt
 HELP_BUTTONS: list[tuple[str, str, Rect]] = [("guide", "How to use", (1590, 96, 140, 54)),
                                              ("definitions", "Calculations", (1745, 96, 145, 54))]
 CONTENT: Rect = (30, 186, 1860, 870)  # ends at y 1056: 24 px under the filter bar, 24 px bottom margin
@@ -104,14 +104,14 @@ def _colour(hex_colour: str) -> dict:
     return {"solid": {"color": _lit(hex_colour)}}
 
 
-def button_style(kind: str) -> dict:
+def button_style(kind: str, colour: str | None = None) -> dict:
     """The one place for button looks. As the handover's buttons write them: `show` in an entry without a selector,
-    colours in the default state's entry (selector id "default"). "primary" (Open detail; the old page buttons):
-    brand-blue fill, white
+    colours in the default state's entry (selector id "default"). "primary" (Open detail): brand-blue fill, white
     text, no outline; disabled (Open detail until a matrix cell is selected; Desktop's default is a light grey fill
     with grey text): pale blue fill, blue-dark text. "outline" (Back, How to use, Calculations): no fill, blue-dark
-    outline and text. "tab" (a page tab on the navy header): no fill, no outline, `TAB_TEXT` label; "tab_current"
-    (the page's own tab): white label on a white 8 % fill."""
+    outline and text, or `colour` ones (the pillar pages' drill-through button, in the pillar colour). "tab" (a page
+    tab on the navy header): no fill, no outline, `TAB_TEXT` label; "tab_current" (the page's own tab): white label
+    on a white 8 % fill."""
     default = DEFAULT_STATE
     if kind == "primary":
         fill = [{"properties": {"show": _lit(True)}},
@@ -122,11 +122,12 @@ def button_style(kind: str) -> dict:
         text = [{"properties": {"fontColor": _colour(WHITE)}, "selector": default},
                 {"properties": {"fontColor": _colour(BUTTON_DISABLED_TEXT)}, "selector": DISABLED_STATE}]
     elif kind == "outline":
+        line = colour or BUTTON_BLUE_DARK
         fill = [{"properties": {"show": _lit(False)}}]
         outline = [{"properties": {"show": _lit(True)}},
-                   {"properties": {"lineColor": _colour(BUTTON_BLUE_DARK), "weight": _num(1),
+                   {"properties": {"lineColor": _colour(line), "weight": _num(1),
                                    "transparency": _num(0)}, "selector": default}]
-        text = [{"properties": {"fontColor": _colour(BUTTON_BLUE_DARK)}, "selector": default}]
+        text = [{"properties": {"fontColor": _colour(line)}, "selector": default}]
     elif kind in ("tab", "tab_current"):
         current = kind == "tab_current"
         fill = [{"properties": {"show": _lit(current)}}]
@@ -154,9 +155,10 @@ def _by_selector(*entry_lists: list[dict]) -> list[dict]:
     return out
 
 
-def button_props(link: dict, label: str, kind: str) -> dict:
-    """A button's format objects: the action (`visualLink` properties besides show), the label and the style."""
-    style = button_style(kind)
+def button_props(link: dict, label: str, kind: str, colour: str | None = None) -> dict:
+    """A button's format objects: the action (`visualLink` properties besides show), the label and the style
+    (`colour`: an outline button's line and text colour)."""
+    style = button_style(kind, colour)
     return {"visualLink": [{"properties": {"show": _lit(True), **link}}],
             "text": _by_selector(label_text(label)["text"], style.pop("text")), **style}
 
@@ -238,7 +240,8 @@ def help_buttons() -> list[Visual]:
 def frame(current: str | None, filter_visuals: list[Visual], filter_bar: bool = True) -> list[Visual]:
     """The frame, bottom to top: the header bar, the logo, the title, the tabs (`current`: the page's own tab, one of
     `TABS`' names, or None for a page without one), the filter bar and its rule (left out when `filter_bar` is False:
-    KPI detail's visual draws that band itself), `filter_visuals`, then How to use and Calculations."""
+    KPI detail's visual draws that band itself), `filter_visuals`, then How to use and Calculations. KPI detail passes
+    its HNH visual and Back as `filter_visuals`, so How to use and Calculations are drawn over the visual's sub-bar."""
     out = [panel(*HEADER, NAVY), image(*LOGO_RECT), title_box(), *tabs(current)]
     if filter_bar:
         out += [panel(*FILTER_BAR, WHITE), panel(*FILTER_RULE, LINE)]

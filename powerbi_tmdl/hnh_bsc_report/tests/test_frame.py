@@ -5,7 +5,7 @@ import frame
 from frame import (BOARD_BUTTON, BOARD_CHART, CONTENT, DETAIL_BACK, DETAIL_BY_HOSPITAL, DETAIL_MATRIX, DETAIL_OPEN,
                    DETAIL_VISUAL, OV_CARDS, TABS, image, panel, tab_button)
 
-TITLE_BOX = (270, 12, 370, 60)
+TITLE_BOX = (270, 9, 370, 66)  # fits "Balanced Scorecard" (19pt) over "Hayat Healthcare" (12pt)
 SCORECARD = ["bsc", "financial", "customer", "internal_process", "learning_growth", "owner_view",
              "hospital_comparison"]
 
@@ -188,3 +188,17 @@ def test_logo_png_is_committed_and_600_wide():
     assert data[:8] == b"\x89PNG\r\n\x1a\n"
     width, height = struct.unpack(">II", data[16:24])
     assert width == 600 and 0 < height < 600
+
+
+def test_outline_button_takes_a_colour():
+    """The pillar pages' drill-through button is outlined in the pillar colour; the default is blue-dark."""
+    style = frame.button_style("outline", "#6E8196")
+    (line,) = [e for e in style["outline"] if e.get("selector") == {"id": "default"}]
+    (text,) = [e for e in style["text"] if e.get("selector") == {"id": "default"}]
+    assert lit(line["properties"]["lineColor"]["solid"]["color"]) == "'#6E8196'"
+    assert lit(text["properties"]["fontColor"]["solid"]["color"]) == "'#6E8196'"
+    (line,) = [e for e in frame.button_style("outline")["outline"] if e.get("selector") == {"id": "default"}]
+    assert lit(line["properties"]["lineColor"]["solid"]["color"]) == "'#1478BE'"
+    props = frame.button_props({"type": frame._lit("Back")}, "Back", "outline", "#002E5A")
+    (text,) = [e for e in props["text"] if e.get("selector") == {"id": "default"}]
+    assert lit(text["properties"]["fontColor"]["solid"]["color"]) == "'#002E5A'"

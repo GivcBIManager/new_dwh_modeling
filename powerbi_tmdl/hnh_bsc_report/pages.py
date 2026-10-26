@@ -1,16 +1,17 @@
-"""The report's pages: seven scorecard pages, the hidden KPI detail drill-through page, then the family pages.
+"""The report's pages: seven scorecard pages, the hidden KPI detail drill-through page, the family pages, then the two
+guide pages (spec docs/superpowers/specs/2026-10-26-bsc-report-redesign-design.md).
 
-`PAGES` is the list `build.py` writes. Task 6 fills `FAMILY_PAGES` (they follow KPI detail, in that order) and can
-reuse `back_button`, `label_text`, `select_all_selection`, `_slicers` and `_nav_buttons`.
-Canvas 1920 x 1080: header row y 0-110 (slicers left, page buttons right), content below.
+Every page has the frame (frame.py: the navy header with the logo, the title and the tabs; the white filter bar with
+How to use and Calculations); the geometry is frame.py's. A scorecard page's own tab is current; KPI detail, the
+family pages and the guide pages have no tab of their own. `PAGES` is the list `build.py` writes; `build_pages`
+writes it with the Date slicer saved on another year.
 """
 from __future__ import annotations
 
 import datetime
 
-from frame import (BUTTON_BLUE, BUTTON_BLUE_DARK, BUTTON_DISABLED_FILL, BUTTON_DISABLED_TEXT,  # noqa: F401
-                   DEFAULT_STATE, DISABLED_STATE, WHITE, _by_selector, _colour, _lit, _num, button_props,
-                   button_style, label_text)
+from frame import (BOARD_BUTTON, BOARD_CHART, CONTENT, DETAIL_BACK, DETAIL_BY_HOSPITAL, DETAIL_MATRIX, DETAIL_OPEN,
+                   DETAIL_VISUAL, LINE, NAVY, OV_CARDS, WHITE, _colour, _lit, _num, button_props, frame, no_container)
 from model import Field, Filter, Page, Visual, col, meas
 
 # Roles of the HNH visual (capabilities.json) -> 'BSC KPI' column, as the visual README's field-well table.
@@ -22,10 +23,21 @@ ATTRIBUTE_ROLES = {
     "kpiStatus": "Status", "valueSource": "Value Source", "owner": "Owner", "coOwners": "Co Owners", "scoreBase": "Score Base",
     "scoreSlope": "Score Slope", "goodFrom": "Good From", "watchFrom": "Watch From",
 }
+# The visual's KPI-detail wells (README: bound on KPI detail only).
+DETAIL_ROLES = {"definition": [col("BSC KPI", "Definition")], "targetBasis": [meas("BSC Target Basis")],
+                "manualNote": [meas("BSC Manual Note")]}
 
 BRANCH_NAME = col("Branch", "Branch Name")
 IS_HOSPITAL = col("Branch", "Is Hospital")
 YEAR_MONTH_NAME = col("Date", "Year Month Name")  # "Aug 2026", sorted by 'Date'[Year Month]: shown and drilled on
+BSC_ACTUAL = meas("BSC Actual")
+
+MUTED, SLICER_BORDER = "#5B6B7D", "#CBD3DC"
+KPI_DETAIL_NAME = "kpi_detail"
+
+PAGE_TITLE = (30, 186, 1200, 54)  # a family or guide page's own title, at the top of the content box
+BODY_TOP = 258  # cards, charts and guide text start here (title + 18 px)
+GAP = 24
 
 
 def select_all_selection() -> dict:
@@ -33,20 +45,28 @@ def select_all_selection() -> dict:
     return {"selection": [{"properties": {"singleSelect": _lit(False), "selectAllCheckboxEnabled": _lit(True)}}]}
 
 
-def back_button(x: float = 16, y: float = 35, w: float = 104, h: float = 50) -> Visual:
-    """A button whose action is Back; for every page reached by drill-through or a link."""
-    return Visual("buttonNavigate", x, y, w, h, props=button_props({"type": _lit("Back")}, "Back", "outline"))
+def back_button(x: float = DETAIL_BACK[0], y: float = DETAIL_BACK[1], w: float = DETAIL_BACK[2],
+                h: float = DETAIL_BACK[3]) -> Visual:
+    """A button whose action is Back, on the left of the filter bar; for every page reached by drill-through."""
+    return Visual("buttonNavigate", x, y, w, h,
+                  props={**button_props({"type": _lit("Back")}, "Back", "outline"), **no_container()})
 
 
 def _hospitals() -> Filter:
     return Filter(IS_HOSPITAL, "in", ["Yes"])
 
 
-# ---- header -------------------------------------------------------------------------------------------------------
+def _container_off() -> dict:
+    """No container background or border: the visual sits on a panel the HNH visual draws (or draws its own)."""
+    return {"background": [{"properties": {"show": _lit(False)}}], "border": [{"properties": {"show": _lit(False)}}]}
 
-# (page name, display name, pillar filter, mode, payload measure)
+
+# ---- scorecard pages ----------------------------------------------------------------------------------------------
+
+# (page name, display name, pillar filter, mode, payload measure). The Overview takes the full payload (spec
+# "Decisions after review"); the comparison keeps the scores payload.
 _SCORECARD = [
-    ("bsc", "BSC", None, "overview", "BSC Visual Payload Scores"),
+    ("bsc", "Overview", None, "overview", "BSC Visual Payload"),
     ("financial", "Financial", "Financial", "board", "BSC Visual Payload"),
     ("customer", "Customer", "Customer", "board", "BSC Visual Payload"),
     ("internal_process", "Internal Process", "Internal Process", "board", "BSC Visual Payload"),
@@ -54,12 +74,13 @@ _SCORECARD = [
     ("owner_view", "Owner view", None, "owner", "BSC Visual Payload"),
     ("hospital_comparison", "Hospital comparison", None, "comparison", "BSC Visual Payload Scores"),
 ]
+# The pillar colours by Pillar Order 1-4 (the visual's format-pane defaults), keyed by the pillar page's filter.
+PILLAR_COLOURS = {"Financial": "#002E5A", "Customer": "#1478BE", "Internal Process": "#13ACE3",
+                  "Learning & Growth": "#6E8196"}
 
-
-NAV_X = 1156  # the first page button
-# The guide pages' buttons, left of the page buttons on every page: (page name, label), outline style.
-HELP = [("guide", "How to use"), ("definitions", "Calculations")]
-HELP_X = NAV_X - 108 * len(HELP)
+# The filter bar: Hospital, BSC Category, Date, then the selection label; How to use and Calculations on the right.
+SLICER_RECTS = [(30, 96, 330, 54), (375, 96, 270, 54), (660, 96, 420, 54)]
+SELECTION_LABEL = (1100, 99, 470, 48)
 
 
 def year_range(build_date: datetime.date) -> tuple[str, str]:
@@ -68,52 +89,92 @@ def year_range(build_date: datetime.date) -> tuple[str, str]:
     return f"{build_date.year}-01-01", f"{build_date.year}-12-31"
 
 
-def _slicers(build_date: datetime.date, x0: float = 16, right: float = HELP_X - 10) -> list[Visual]:
-    """The three header slicers (Branch, BSC Category, Date) spread between x0 and `right` in the ratio 3 : 2 : 4.
-    The Date slicer is a From - To range saved at `year_range(build_date)`.
-    No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but not to the target."""
-    gap, weights = 10, [3, 2, 4]
-    unit = (right - x0 - gap * (len(weights) - 1)) / sum(weights)
-    w = [unit * k for k in weights]
-    xs = [x0, x0 + w[0] + gap, x0 + w[0] + w[1] + 2 * gap]
+def dropdown_look() -> dict:
+    """The design's dropdown slicer: a small grey header (11pt), a #CBD3DC border with radius 6."""
+    return {"header": [{"properties": {"show": _lit(True), "textSize": _num(11), "fontColor": _colour(MUTED)}}],
+            "border": [{"properties": {"show": _lit(True), "color": _colour(SLICER_BORDER), "radius": _num(6),
+                                       "width": _num(1)}}]}
+
+
+def _slicers(build_date: datetime.date) -> list[Visual]:
+    """The three filter-bar slicers (Branch, BSC Category, Date). The Date slicer is a From - To range saved at
+    `year_range(build_date)`. No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but
+    not to the target."""
+    hospital, category, date = SLICER_RECTS
     return [
-        Visual("slicerDropdown", xs[0], 20, w[0], 80, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
-               props=select_all_selection()),
-        Visual("slicerDropdown", xs[1], 20, w[1], 80, roles={"Values": [col("Branch", "BSC Category")]}),
-        Visual("slicerDateRange", xs[2], 20, w[2], 80, roles={"Values": [col("Date", "Date")]},
-               date_range=year_range(build_date)),
+        Visual("slicerDropdown", *hospital, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
+               props={**select_all_selection(), **dropdown_look()}),
+        Visual("slicerDropdown", *category, roles={"Values": [col("Branch", "BSC Category")]}, props=dropdown_look()),
+        Visual("slicerDateRange", *date, roles={"Values": [col("Date", "Date")]}, date_range=year_range(build_date),
+               props=dropdown_look()),
     ]
 
 
-def _help_buttons() -> list[Visual]:
-    """"How to use" and "Calculations": on every page, so the guide pages are one click away."""
-    return [Visual("buttonNavigate", HELP_X + 108 * i, 35, 104, 50, props=button_props(
-                {"type": _lit("PageNavigation"), "navigationSection": _lit(name)}, label, "outline"))
-            for i, (name, label) in enumerate(HELP)]
+def _selection_label() -> Visual:
+    """`[BSC Selection Label]` ("Corporate · Jan 2026 – Sep 2026") as small grey text on the filter bar."""
+    return Visual("card", *SELECTION_LABEL, roles={"Values": [meas("BSC Selection Label")]}, props={
+        "labels": [{"properties": {"fontSize": _num(12), "color": _colour(MUTED)}}],
+        "categoryLabels": [{"properties": {"show": _lit(False)}}], **_container_off()})
 
 
-def _nav_buttons() -> list[Visual]:
-    """The guide buttons, then one button per scorecard page."""
-    out = _help_buttons()
-    for i, (name, display, *_rest) in enumerate(_SCORECARD):
-        out.append(Visual("buttonNavigate", NAV_X + 108 * i, 35, 104, 50, props=button_props(
-            {"type": _lit("PageNavigation"), "navigationSection": _lit(name)}, display, "primary")))
-    return out
+def _hnh_visual(rect: tuple, mode: str, payload: str, extra_roles: dict | None = None,
+                filters: list[Filter] | None = None) -> Visual:
+    """The HNH visual in `mode`, its header band off (the frame is native) and no container box (it draws its own
+    panels; set here as well as by the theme's rule for its guid, which is unconfirmed for a private visual)."""
+    roles = {role: [col("BSC KPI", column)] for role, column in ATTRIBUTE_ROLES.items()}
+    roles["payload"] = [meas(payload)]
+    roles["selectionLabel"] = [meas("BSC Selection Label")]
+    roles.update(extra_roles or {})
+    props = {"scorecard": [{"properties": {"mode": _lit(mode), "showHeader": _lit(False)}}], **_container_off()}
+    return Visual("hnhVisual", *rect, roles=roles, filters=filters or [], props=props)
+
+
+def _card_button(rect: tuple, page_name: str, label: str) -> Visual:
+    """A transparent page-navigation button over an Overview pillar card: no fill, outline or label; the tooltip
+    "Open <pillar>"."""
+    off = [{"properties": {"show": _lit(False)}}]
+    link = {"show": _lit(True), "type": _lit("PageNavigation"), "navigationSection": _lit(page_name),
+            "tooltip": _lit(f"Open {label}")}
+    return Visual("buttonNavigate", *rect, props={"visualLink": [{"properties": link}], "fill": off, "outline": off,
+                                                  "text": off, **no_container()})
+
+
+def _by_hospital(rect: tuple, props: dict | None = None) -> Visual:
+    """`[BSC Actual]` by hospital, largest first."""
+    return Visual("barChart", *rect, roles={"Category": [BRANCH_NAME], "Y": [BSC_ACTUAL]}, title="By hospital",
+                  filters=[_hospitals()], sort=BSC_ACTUAL, sort_dir="desc", props=props or {})
+
+
+def on_panel_chart() -> dict:
+    """The board's by-hospital chart: no axis titles, data labels on, no box (it sits on the visual's panel)."""
+    return {"categoryAxis": [{"properties": {"showAxisTitle": _lit(False)}}],
+            "valueAxis": [{"properties": {"showAxisTitle": _lit(False)}}],
+            "labels": [{"properties": {"show": _lit(True)}}], **_container_off()}
+
+
+def _drill_to_detail(pillar: str) -> Visual:
+    """The board's drill-through button to KPI detail, outlined in the pillar colour; Power BI enables it when one
+    KPI is selected."""
+    link = {"type": _lit("Drillthrough"), "drillthroughSection": _lit(KPI_DETAIL_NAME)}
+    return Visual("buttonDrill", *BOARD_BUTTON, props={
+        **button_props(link, "Drill through to KPI detail →", "outline", PILLAR_COLOURS[pillar]), **no_container()})
 
 
 def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: str | None, mode: str,
                     payload: str) -> Page:
-    roles = {role: [col("BSC KPI", column)] for role, column in ATTRIBUTE_ROLES.items()}
-    roles["payload"] = [meas(payload)]
-    roles["selectionLabel"] = [meas("BSC Selection Label")]
-    filters = []
-    if mode == "comparison":
-        roles["branch"] = [BRANCH_NAME]
-        filters = [_hospitals()]
-    visual = Visual("hnhVisual", 0, 120, 1920, 960, roles=roles, filters=filters,
-                    props={"scorecard": [{"properties": {"mode": _lit(mode)}}]})
+    """The frame (this page's tab current, the slicers and the selection label in the filter bar), the HNH visual in
+    the content box, and the native visuals over it: the Overview's card buttons, a pillar board's chart and button."""
+    comparison = mode == "comparison"
+    visual = _hnh_visual(CONTENT, mode, payload, {"branch": [BRANCH_NAME]} if comparison else None,
+                         [_hospitals()] if comparison else None)
+    visuals = frame(name, _slicers(build_date) + [_selection_label()]) + [visual]
+    if mode == "overview":
+        pillars = [row for row in _SCORECARD if row[3] == "board"]  # in Pillar Order, as the visual draws the cards
+        visuals += [_card_button(r, row[0], row[1]) for r, row in zip(OV_CARDS, pillars)]
+    elif mode == "board":
+        visuals += [_by_hospital(BOARD_CHART, on_panel_chart()), _drill_to_detail(pillar)]
     page_filters = [Filter(col("BSC KPI", "Pillar"), "eq", [pillar])] if pillar else []
-    return Page(name, display, _slicers(build_date) + _nav_buttons() + [visual], filters=page_filters)
+    return Page(name, display, visuals, filters=page_filters)
 
 
 def scorecard_pages(build_date: datetime.date) -> list[Page]:
@@ -131,42 +192,29 @@ def word_wrap() -> dict:
             "columnHeaders": [{"properties": {"wordWrap": _lit(True)}}]}
 
 
-def _kpi_detail(build_date: datetime.date) -> Page:
-    """Drill-through target (KPI Code, keep all filters). Header: Back, the four slicers (synced by field with the
-    scorecard pages), the seven page buttons. The "Open detail" button drills on the matrix's cell selection
-    (Branch Name x Year Month Name, the family pages' drill fields); the matrix is the drill source and sits beside
-    the button. The KPI information and the manual-entry note are tables: a table wraps long text (Definition) where
-    a multi-row card truncates it, and drops the rows whose measures are all blank, so a measure KPI shows an empty
-    note table where a card showed "(Blank)"."""
-    cards = ["BSC Actual", "BSC Target", "BSC Score", "BSC State", "BSC Numerator", "BSC Denominator"]
-    visuals = [back_button()] + _slicers(build_date, 130) + _nav_buttons()
-    visuals += [Visual("card", 16 + 310 * i, 120, 300, 130, roles={"Values": [meas(m)]})
-                for i, m in enumerate(cards)]
+def _kpi_detail() -> Page:
+    """Drill-through target (KPI Code, keep all filters; no slicers: the filters arrive by drill-through). The HNH
+    visual in mode "detail" covers the page under the header and draws the white sub-bar, the profile and the trend;
+    it goes in the frame's filter-bar slot (there is no filter bar), so Back and How to use / Calculations are drawn
+    over its sub-bar. Over its empty lower right: the by-hospital chart, and the matrix with the "Open detail" button
+    under it, which drills on the matrix's cell (Branch Name x Year Month Name, the family pages' drill fields)."""
+    detail = _hnh_visual(DETAIL_VISUAL, "detail", "BSC Visual Payload", DETAIL_ROLES)
+    visuals = frame(None, [detail, back_button()], filter_bar=False)
     visuals += [
-        Visual("lineChart", 16, 270, 940, 300, roles={"Category": [YEAR_MONTH_NAME],
-                                                      "Y": [meas("BSC Actual"), meas("BSC Target")]},
-               title="Actual vs target by month", sort=YEAR_MONTH_NAME, sort_dir="asc"),
-        Visual("barChart", 976, 270, 928, 300, roles={"Category": [BRANCH_NAME], "Y": [meas("BSC Actual")]},
-               title="Actual by hospital", filters=[_hospitals()], sort=meas("BSC Actual"), sort_dir="desc"),
-        Visual("table", 16, 590, 940, 370, title="About this KPI",
-               roles={"Values": [col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"), col("BSC KPI", "Owner"),
-                                 col("BSC KPI", "Co Owners"), meas("BSC Target Basis"), meas("BSC KPI Weight")]},
-               props=word_wrap()),
-        Visual("matrix", 976, 590, 700, 210, title="Select a hospital and month, then Open detail",
-               roles={"Rows": [BRANCH_NAME], "Columns": [YEAR_MONTH_NAME], "Values": [meas("BSC Actual")]},
+        _by_hospital(DETAIL_BY_HOSPITAL),
+        Visual("matrix", *DETAIL_MATRIX, title="Select a hospital and month, then Open detail",
+               roles={"Rows": [BRANCH_NAME], "Columns": [YEAR_MONTH_NAME], "Values": [BSC_ACTUAL]},
                filters=[_hospitals()]),
-        Visual("buttonDrill", 1690, 590, 214, 50, props=button_props(
+        Visual("buttonDrill", *DETAIL_OPEN, props=button_props(
             {"type": _lit("Drillthrough"), "drillthroughSection": {
                 "expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}},
                                      "Property": "BSC Detail Page"}}}},
             "Open detail", "primary")),
-        Visual("table", 976, 810, 928, 150, title="Manual entry note",
-               roles={"Values": [col("BSC KPI", "KPI Name"), meas("BSC Manual Note")]}, props=word_wrap()),
     ]
-    return Page("kpi_detail", "KPI detail", visuals, drill_fields=[col("BSC KPI", "KPI Code")], hidden=True)
+    return Page(KPI_DETAIL_NAME, "KPI detail", visuals, drill_fields=[col("BSC KPI", "KPI Code")], hidden=True)
 
 
-KPI_DETAIL: Page = _kpi_detail(datetime.date.today())
+KPI_DETAIL: Page = _kpi_detail()
 
 # ---- family detail pages --------------------------------------------------------------------------------------------
 
@@ -200,29 +248,45 @@ def _matrix(title: str, rows: list[Field], measures: list[str]) -> dict:
 
 
 def title_text(text: str) -> dict:
-    """The text box content: one paragraph, one text run in Segoe UI 20pt bold (the run's `textStyle` with CSS
-    values, as Desktop's text box reads it: fontFamily, fontSize, fontWeight)."""
-    style = {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
+    """The text box content: one paragraph, one text run in Segoe UI 22pt bold ink (the run's `textStyle` with CSS
+    values, as Desktop's text box reads it: fontFamily, fontSize, fontWeight, color)."""
+    style = {"fontFamily": "Segoe UI", "fontSize": "22pt", "fontWeight": "bold", "color": NAVY}
     return {"general": [{"properties": {"paragraphs": [{"textRuns": [{"value": text, "textStyle": style}]}]}}]}
 
 
+def _page_title(text: str) -> Visual:
+    """A family or guide page's title at the top of the content box, on the page surface (no box)."""
+    return Visual("textbox", *PAGE_TITLE, props={**title_text(text), **no_container()})
+
+
+CARD_H = 110
+CHARTS_TOP = BODY_TOP + CARD_H + GAP  # 392
+CHART_W = (CONTENT[2] - GAP) / 2  # 918: two columns
+CHART_H = (CONTENT[1] + CONTENT[3] - CHARTS_TOP - GAP) / 2  # 320: two rows end at y 1056
+
+
 def _family_page(name: str, display: str, cards: list[str], charts: list[dict]) -> Page:
-    """Drill-through page: Back, a title, a card of the filtered hospital and month, the measure cards, then a
-    2-column grid of charts. No slicers. Keep all filters is off: only the drill fields (Branch Name, Year Month
-    Name) arrive, never KPI detail's 'BSC KPI' drill filter or pillar filter, which every domain measure's guard
-    rejects ("... can't be analysed by "BSC KPI""); the page filters hospitals itself (Review Focus 4)."""
-    visuals = [back_button(),
-               Visual("textbox", 130, 25, HELP_X - 140, 70, props=title_text(display)),
-               *_help_buttons(),
-               Visual("multiRowCard", 1300, 10, 604, 95, roles={"Values": [BRANCH_NAME, YEAR_MONTH_NAME]})]
-    gap = 10
-    w = (1888 - gap * (len(cards) - 1)) / len(cards)
-    visuals += [Visual("card", 16 + (w + gap) * i, 130, w, 110, roles={"Values": [meas(m)]})
+    """Drill-through page: the frame without a current tab, Back in the filter bar; in the content box the title and
+    a card of the filtered hospital and month, the measure cards, then a 2-column grid of charts (two rows at most).
+    Cards and charts keep the theme's white panel. No slicers. Keep all filters is off: only the drill fields
+    (Branch Name, Year Month Name) arrive, never KPI detail's 'BSC KPI' drill filter or pillar filter, which every
+    domain measure's guard rejects ("... can't be analysed by "BSC KPI""); the page filters hospitals itself (Review
+    Focus 4)."""
+    x0, width = CONTENT[0], CONTENT[2]
+    visuals = frame(None, [back_button()])
+    title_end = PAGE_TITLE[0] + PAGE_TITLE[2] + GAP
+    visuals += [_page_title(display),
+                Visual("multiRowCard", title_end, PAGE_TITLE[1], x0 + width - title_end, PAGE_TITLE[3],
+                       roles={"Values": [BRANCH_NAME, YEAR_MONTH_NAME]})]
+    w = (width - GAP * (len(cards) - 1)) / len(cards)
+    visuals += [Visual("card", x0 + (w + GAP) * i, BODY_TOP, w, CARD_H, roles={"Values": [meas(m)]})
                 for i, m in enumerate(cards)]
+    if len(charts) > 4:
+        raise ValueError(f"family page {display}: at most four charts fit (two rows of two)")
     for i, c in enumerate(charts):
-        visuals.append(Visual(c["sample"], 16 + 958 * (i % 2), 260 + 400 * (i // 2), 930, 390, roles=c["roles"],
-                              title=c["title"], sort=c.get("sort"), top_n=c.get("top_n"),
-                              props=c.get("props") or {}))
+        visuals.append(Visual(c["sample"], x0 + (CHART_W + GAP) * (i % 2), CHARTS_TOP + (CHART_H + GAP) * (i // 2),
+                              CHART_W, CHART_H, roles=c["roles"], title=c["title"], sort=c.get("sort"),
+                              top_n=c.get("top_n"), props=c.get("props") or {}))
     return Page(name, display, visuals, filters=[_hospitals()], drill_fields=[BRANCH_NAME, YEAR_MONTH_NAME],
                 hidden=True, keep_filters=False)
 
@@ -281,7 +345,7 @@ FAMILY_PAGES: list[Page] = [
 
 # ---- "How to use" and "How scores are calculated" -------------------------------------------------------------------
 
-HEADING_BLUE, BODY_INK = "#1478BE", "#0A1E32"
+HEADING_BLUE, BODY_INK = "#1478BE", NAVY
 
 
 def text_box(paragraphs: list[tuple[str, str]]) -> dict:
@@ -300,20 +364,28 @@ def text_box(paragraphs: list[tuple[str, str]]) -> dict:
     return {"general": [{"properties": {"paragraphs": out}}]}
 
 
+def white_panel() -> dict:
+    """A text box's container as the theme's data-visual panel: white, 1 px #DCE5EF border, radius 12."""
+    return {"background": [{"properties": {"show": _lit(True), "color": _colour(WHITE), "transparency": _num(0)}}],
+            "border": [{"properties": {"show": _lit(True), "color": _colour(LINE), "radius": _num(12),
+                                       "width": _num(1)}}]}
+
+
 def _text(x: float, y: float, w: float, h: float, paragraphs: list[tuple[str, str]]) -> Visual:
-    return Visual("textbox", x, y, w, h, props=text_box(paragraphs))
-
-
-def _header(title: str) -> list[Visual]:
-    return [Visual("textbox", 16, 25, 900, 70, props=title_text(title))] + _nav_buttons()
+    return Visual("textbox", x, y, w, h, props={**text_box(paragraphs), **white_panel()})
 
 
 def _section(heading: str, bullets: list[str]) -> list[tuple[str, str]]:
     return [("heading", heading)] + [("bullet", b) for b in bullets]
 
 
+COL_W = (CONTENT[2] - 2 * GAP) / 3  # 604: three text columns
+COLS = [CONTENT[0] + (COL_W + GAP) * i for i in range(3)]  # 30, 658, 1286
+FULL_W = CONTENT[2]
+CONTENT_END = CONTENT[1] + CONTENT[3]  # 1056
+
+
 def _guide_page() -> Page:
-    cols = [16, 650, 1284]
     sections = [
         _section("Choose what you see", [
             "Hospital: pick one or more hospitals, or leave it empty for all hospitals together (Corporate).",
@@ -327,10 +399,13 @@ def _guide_page() -> Page:
             "Watch: 70 to 84.",
             "At risk: below 70.",
             "No data yet, No target and Parked KPIs are listed but not scored.",
+            "Needs attention lists the KPIs at risk, lowest score first.",
             "Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, below 85% at risk."]),
         _section("Go deeper", [
-            "The page buttons at the top right move between the scorecard pages.",
+            "The tabs in the dark bar at the top move between the scorecard pages.",
             "Right-click a KPI and choose Drill through › KPI detail for its trend, hospitals and definition.",
+            "On a pillar page, select a KPI in the table to see its monthly trend and hospitals on the right, then "
+            "Drill through to KPI detail.",
             "On KPI detail, select a hospital and month in the table, then Open detail for the detail page behind "
             "it.",
             "Back (top left) returns to the page you came from.",
@@ -339,25 +414,28 @@ def _guide_page() -> Page:
             "Owner view: click an owner's card to list only their KPIs; click it again to list everyone.",
             "Hover over a KPI for its actual, target, variance and owner."]),
     ]
-    visuals = _header("How to use the scorecard")
-    visuals.append(_text(16, 120, 1888, 50, [("body", (
+    path_h, section_h = 54, 420
+    sections_y = BODY_TOP + path_h + GAP  # 336
+    pages_y = sections_y + section_h + GAP  # 780
+    visuals = frame(None, []) + [_page_title("How to use the scorecard")]
+    visuals.append(_text(COLS[0], BODY_TOP, FULL_W, path_h, [("body", (
         "Overall score  ›  4 pillars  ›  objectives  ›  KPIs  ›  KPI detail  ›  detail pages "
         "(Revenue, Finance, Patient volume, Beds & clinical, Revenue cycle, Workforce, Patient experience)"))]))
-    visuals += [_text(x, 185, 620, 440, sec) for x, sec in zip(cols, sections)]
-    visuals.append(_text(16, 640, 1888, 420, [("heading", "Pages")] + [("body", t) for t in [
-        "BSC: how are we doing overall and in each pillar?",
-        "Financial, Customer, Internal Process, Learning & Growth: which KPIs in this pillar are on track, on watch "
-        "or at risk?",
-        "Owner view: how are each executive's KPIs doing?",
-        "Hospital comparison: which hospital leads or lags, and on which pillar, objective or KPI?",
-        "KPI detail: how has this KPI moved by month and by hospital, and how is it defined?",
-        "Detail pages: what is behind a hospital's figures for a month?",
-        "How scores are calculated: how is each score worked out, and what does each KPI measure?"]]))
+    visuals += [_text(x, sections_y, COL_W, section_h, sec) for x, sec in zip(COLS, sections)]
+    visuals.append(_text(COLS[0], pages_y, FULL_W, CONTENT_END - pages_y, [("heading", "Pages")] + [
+        ("body", t) for t in [
+            "Overview: how are we doing overall and in each pillar?",
+            "Financial, Customer, Internal Process, Learning & Growth: which KPIs in this pillar are on track, on "
+            "watch or at risk?",
+            "Owner view: how are each executive's KPIs doing?",
+            "Hospital comparison: which hospital leads or lags, and on which pillar, objective or KPI?",
+            "KPI detail: how has this KPI moved by month and by hospital, and how is it defined?",
+            "Detail pages: what is behind a hospital's figures for a month?",
+            "How scores are calculated: how is each score worked out, and what does each KPI measure?"]]))
     return Page("guide", "How to use", visuals)
 
 
 def _definitions_page() -> Page:
-    cols = [16, 650, 1284]
     sections = [
         _section("KPI score (0 to 100)", [
             "Variance: how far the actual is from the target, as a % of the target. Where lower is better, the sign "
@@ -382,15 +460,21 @@ def _definitions_page() -> Page:
             "On-target: the share of those KPIs at or better than target (on-target KPIs count when On track).",
             "C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO."]),
     ]
-    visuals = _header("How scores are calculated")
-    visuals += [_text(x, 120, 620, 330, sec) for x, sec in zip(cols, sections)]
-    visuals.append(_text(16, 460, 1888, 50, [("body", (
+    section_h, example_h, slicer_h, slicer_w = 300, 54, 60, 300
+    example_y = BODY_TOP + section_h + GAP  # 582
+    slicers_y = example_y + example_h + GAP  # 660
+    table_y = slicers_y + slicer_h + GAP  # 744
+    visuals = frame(None, []) + [_page_title("How scores are calculated")]
+    visuals += [_text(x, BODY_TOP, COL_W, section_h, sec) for x, sec in zip(COLS, sections)]
+    visuals.append(_text(COLS[0], example_y, FULL_W, example_h, [("body", (
         "Example: Net Revenue Achievement, actual SAR 41.2M against a target of SAR 48.0M. Variance −14.2%, so "
         "the score is 85 + 0.6 × (−14.2) = 76.5, rounded to 77: Watch."))]))
-    visuals += [Visual("slicerDropdown", x, 520, 300, 70, roles={"Values": [col("BSC KPI", c)]},
+    xs = [COLS[0] + (slicer_w + GAP) * i for i in range(3)]  # 30, 354, 678
+    visuals += [Visual("slicerDropdown", x, slicers_y, slicer_w, slicer_h, roles={"Values": [col("BSC KPI", c)]},
                        props=select_all_selection())
-                for x, c in zip([16, 326, 636], ["Pillar", "Objective Title", "Owner"])]
-    visuals.append(_text(946, 520, 958, 70, [("body", (
+                for x, c in zip(xs, ["Pillar", "Objective Title", "Owner"])]
+    legend_x = xs[-1] + slicer_w + GAP  # 1002
+    visuals.append(_text(legend_x, slicers_y, COLS[0] + FULL_W - legend_x, slicer_h, [("body", (
         "Better when: higher = higher is better · lower = lower is better · ceiling = must stay at or below "
         "the target · on_target = the closer to the target the better. Weight: the KPI's corporate weight within "
         "its pillar."))]))
@@ -398,9 +482,9 @@ def _definitions_page() -> Page:
     fields = [kpi_num] + [col("BSC KPI", c) for c in ("Pillar", "Objective Title", "KPI Name", "Definition",
                                                        "Direction")]
     fields += [meas("BSC Target Basis"), meas("BSC KPI Weight"), col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners")]
-    visuals.append(Visual("table", 16, 600, 1888, 460, title="Every active KPI", roles={"Values": fields},
-                          filters=[Filter(col("BSC KPI", "Is Active"), "in", ["Yes"])], sort=kpi_num,
-                          sort_dir="asc", props=word_wrap()))
+    visuals.append(Visual("table", COLS[0], table_y, FULL_W, CONTENT_END - table_y, title="Every active KPI",
+                          roles={"Values": fields}, filters=[Filter(col("BSC KPI", "Is Active"), "in", ["Yes"])],
+                          sort=kpi_num, sort_dir="asc", props=word_wrap()))
     return Page("definitions", "How scores are calculated", visuals)
 
 
@@ -411,4 +495,4 @@ PAGES: list[Page] = SCORECARD_PAGES + [KPI_DETAIL] + FAMILY_PAGES + GUIDE_PAGES
 
 def build_pages(build_date: datetime.date) -> list[Page]:
     """The report's pages with the Date slicer saved on `build_date`'s year (`PAGES` is today's)."""
-    return scorecard_pages(build_date) + [_kpi_detail(build_date)] + FAMILY_PAGES + GUIDE_PAGES
+    return scorecard_pages(build_date) + [KPI_DETAIL] + FAMILY_PAGES + GUIDE_PAGES

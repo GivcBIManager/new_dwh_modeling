@@ -233,7 +233,7 @@ def test_family_pages_do_not_accept_filter_context(project):
 TYPES = {"card": "card", "multiRowCard": "multiRowCard", "table": "tableEx", "matrix": "pivotTable",
          "barChart": "clusteredBarChart", "lineChart": "lineChart", "slicerDropdown": "slicer",
          "slicerDateRange": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
-         "buttonDrill": "actionButton", "hnhVisual": GUID}
+         "buttonDrill": "actionButton", "hnhVisual": GUID, "panel": "textbox", "image": "image"}
 
 
 def test_visual_position_type_roles(project):
@@ -256,22 +256,21 @@ def test_visual_position_type_roles(project):
 def test_projection_field_shape(project):
     kpi = next(p for p in PAGES if p.name == "kpi_detail")
     vs = visuals(project, kpi)
-    line = vs[[v.sample for v in kpi.visuals].index("lineChart")]
-    cat, = line["visual"]["query"]["queryState"]["Category"]["projections"]
-    assert cat == {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Date"}},
-                                        "Property": "Year Month Name"}},
-                   "queryRef": "Date.Year Month Name", "nativeQueryRef": "Year Month Name", "active": True}
-    y = line["visual"]["query"]["queryState"]["Y"]["projections"][0]
+    bar = vs[[v.sample for v in kpi.visuals].index("barChart")]
+    cat, = bar["visual"]["query"]["queryState"]["Category"]["projections"]
+    assert cat == {"field": {"Column": {"Expression": {"SourceRef": {"Entity": "Branch"}}, "Property": "Branch Name"}},
+                   "queryRef": "Branch.Branch Name", "nativeQueryRef": "Branch Name", "active": True}
+    y = bar["visual"]["query"]["queryState"]["Y"]["projections"][0]
     assert y["field"] == {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}}, "Property": "BSC Actual"}}
     assert "active" not in y
-    assert line["visual"]["query"]["sortDefinition"] == {"sort": [{"field": cat["field"], "direction": "Ascending"}]}
+    assert bar["visual"]["query"]["sortDefinition"] == {"sort": [{"field": y["field"], "direction": "Descending"}]}
     matrix = vs[[v.sample for v in kpi.visuals].index("matrix")]
     assert all(r.get("active") for r in matrix["visual"]["query"]["queryState"]["Rows"]["projections"])
     assert lit(matrix["visual"]["visualContainerObjects"]["title"][0]["properties"]["text"]) == \
         "'Select a hospital and month, then Open detail'"
-    assert lit(line["visual"]["visualContainerObjects"]["title"][0]["properties"]["text"]) == \
-        "'Actual vs target by month'"
-    card = vs[[v.sample for v in kpi.visuals].index("card")]
+    assert lit(bar["visual"]["visualContainerObjects"]["title"][0]["properties"]["text"]) == "'By hospital'"
+    fam = next(p for p in PAGES if p.name == "fam_revenue")
+    card = visuals(project, fam)[[v.sample for v in fam.visuals].index("card")]
     assert lit(card["visual"]["visualContainerObjects"]["title"][0]["properties"]["show"]) == "false"  # untitled
 
 
@@ -285,10 +284,6 @@ def test_top_n_and_visual_filters(project):
     sub = top["filter"]["From"][0]["Expression"]["Subquery"]["Query"]
     assert sub["Top"] == 15 and sub["OrderBy"][0]["Direction"] == 2
     assert vs[i]["visual"]["query"]["sortDefinition"]["sort"][0]["direction"] == "Descending"
-    kpi = next(p for p in PAGES if p.name == "kpi_detail")
-    vs = visuals(project, kpi)
-    note = vs[[v.title for v in kpi.visuals].index("Manual entry note")]
-    assert note["visual"]["visualType"] == "tableEx" and "filterConfig" not in note
 
 
 def test_nps_department_chart_ranks_by_answers_and_sorts_by_nps(project):
@@ -305,15 +300,25 @@ def test_nps_department_chart_ranks_by_answers_and_sorts_by_nps(project):
     assert lit(objs["labels"][0]["properties"]["show"]) == "true"
 
 
+def _title_box(project, page):
+    """The page's title text box (the one at the top of the content box, x 30, y 186)."""
+    (j,) = [j for v, j in zip(page.visuals, visuals(project, page))
+            if v.sample == "textbox" and (v.x, v.y) == (30, 186)]
+    return j["visual"]
+
+
 def test_table_word_wrap_and_title_style_land_in_objects(project):
-    kpi = next(p for p in PAGES if p.name == "kpi_detail")
-    about = visuals(project, kpi)[[v.title for v in kpi.visuals].index("About this KPI")]["visual"]
-    assert about["visualType"] == "tableEx"
-    assert lit(about["objects"]["values"][0]["properties"]["wordWrap"]) == "true"
-    assert lit(about["objects"]["columnHeaders"][0]["properties"]["wordWrap"]) == "true"
+    defs = next(p for p in PAGES if p.name == "definitions")
+    table = visuals(project, defs)[[v.sample for v in defs.visuals].index("table")]["visual"]
+    assert table["visualType"] == "tableEx"
+    assert lit(table["objects"]["values"][0]["properties"]["wordWrap"]) == "true"
+    assert lit(table["objects"]["columnHeaders"][0]["properties"]["wordWrap"]) == "true"
     fam = next(p for p in PAGES if p.name == "fam_finance")
-    run = visuals(project, fam)[1]["visual"]["objects"]["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]
-    assert run["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "20pt", "fontWeight": "bold"}
+    tb = _title_box(project, fam)
+    run = tb["objects"]["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]
+    assert run["textStyle"] == {"fontFamily": "Segoe UI", "fontSize": "22pt", "fontWeight": "bold",
+                                "color": "#0A1E32"}
+    assert lit(tb["visualContainerObjects"]["background"][0]["properties"]["show"]) == "false"
 
 
 def test_slicers(project):
@@ -339,43 +344,68 @@ def test_slicers(project):
     for c, day in ((lo, f"{year}-01-01"), (hi, f"{year}-12-31")):
         assert c["Left"] == {"Column": {"Expression": {"SourceRef": {"Source": "d"}}, "Property": "Date"}}
         assert c["Right"] == {"Literal": {"Value": f"datetime'{day}T00:00:00'"}}
-    # slicers on the KPI detail page join the same groups (synced by field across pages)
+    # the dropdown look: the header in the slicer's objects, the border on its container
+    for _, j in sl:
+        assert lit(j["visual"]["objects"]["header"][0]["properties"]["textSize"]) == "11D"
+        border = j["visual"]["visualContainerObjects"]["border"][0]["properties"]
+        assert (lit(border["radius"]), lit(border["color"]["solid"]["color"])) == ("6D", "'#CBD3DC'")
+    # every scorecard page's slicers join the same groups (synced by field across pages); KPI detail has none
+    groups = {j["visual"]["syncGroup"]["groupName"] for _, j in sl}
+    for p in PAGES[1:7]:
+        assert {j["visual"]["syncGroup"]["groupName"] for j in visuals(project, p) if "syncGroup" in j["visual"]} \
+            == groups
     kpi = next(p for p in PAGES if p.name == "kpi_detail")
-    groups = {j["visual"]["syncGroup"]["groupName"] for j in visuals(project, kpi) if "syncGroup" in j["visual"]}
-    assert groups == {j["visual"]["syncGroup"]["groupName"] for _, j in sl}
+    assert not [j for j in visuals(project, kpi) if "syncGroup" in j["visual"]]
+
+
+def _link(j):
+    return j["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]
 
 
 def test_buttons(project):
     bsc = PAGES[0]
     vs = visuals(project, bsc)
-    # the page buttons; the two guide-page buttons before them are tested in test_pages
-    navs = [j for v, j in zip(bsc.visuals, vs) if v.sample == "buttonNavigate"][2:]
-    assert len(navs) == 7
-    for j, (name, *_rest) in zip(navs, [(p.name,) for p in PAGES[:7]]):
-        link = j["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]
-        assert (lit(link["type"]), lit(link["navigationSection"])) == ("'PageNavigation'", f"'{name}'")
+    # the tabs: the navigation buttons on the header bar, one per scorecard page, labelled with its display name
+    tabs = [j for v, j in zip(bsc.visuals, vs) if v.sample == "buttonNavigate" and v.y + v.h <= 84]
+    assert len(tabs) == 7
+    for j, page in zip(tabs, PAGES[:7]):
+        link = _link(j)
+        assert (lit(link["type"]), lit(link["navigationSection"])) == ("'PageNavigation'", f"'{page.name}'")
         assert "visualLink" not in j["visual"].get("objects", {})
         (label,) = [e for e in j["visual"]["objects"]["text"] if e.get("selector") == {"id": "default"}]
-        assert lit(label["properties"]["text"]).strip("'") == page_json(project, name)["displayName"]
+        assert lit(label["properties"]["text"]).strip("'") == page_json(project, page.name)["displayName"]
+    # the Overview's buttons over the pillar cards: a tooltip, no label
+    over = [j for v, j in zip(bsc.visuals, vs) if v.sample == "buttonNavigate" and v.y >= 186]
+    assert [lit(_link(j)["navigationSection"]) for j in over] == [f"'{p.name}'" for p in PAGES[1:5]]
+    assert [lit(_link(j)["tooltip"]) for j in over] == [f"'Open {p.display}'" for p in PAGES[1:5]]
+    assert all(lit(j["visual"]["objects"]["text"][0]["properties"]["show"]) == "false" for j in over)
+    # a pillar page's drill-through button: a literal destination page
+    fin = PAGES[1]
+    (drill,) = [j for v, j in zip(fin.visuals, visuals(project, fin)) if v.sample == "buttonDrill"]
+    assert lit(_link(drill)["type"]) == "'Drillthrough'"
+    assert _link(drill)["drillthroughSection"] == {"expr": {"Literal": {"Value": "'kpi_detail'"}}}
     kpi = next(p for p in PAGES if p.name == "kpi_detail")
     kv = visuals(project, kpi)
-    back = kv[0]["visual"]["visualContainerObjects"]["visualLink"][0]["properties"]
-    assert lit(back["type"]) == "'Back'"
-    drill = kv[[v.sample for v in kpi.visuals].index("buttonDrill")]["visual"]["visualContainerObjects"]["visualLink"]
-    props = drill[0]["properties"]
+    backs = [j for v, j in zip(kpi.visuals, kv) if v.sample == "buttonNavigate" and lit(_link(j)["type"]) == "'Back'"]
+    assert len(backs) == 1
+    props = _link(kv[[v.sample for v in kpi.visuals].index("buttonDrill")])
     assert lit(props["type"]) == "'Drillthrough'"
     assert props["drillthroughSection"] == {"expr": {"Measure": {
         "Expression": {"SourceRef": {"Entity": "_Measures"}}, "Property": "BSC Detail Page"}}}
 
 
 def test_hnh_visual_and_textbox(project):
-    for p in PAGES[:7]:
+    for p in PAGES[:8]:
         vs = visuals(project, p)
         (j,) = [j for v, j in zip(p.visuals, vs) if v.sample == "hnhVisual"]
         (v,) = [v for v in p.visuals if v.sample == "hnhVisual"]
+        assert j["visual"]["visualType"] == GUID
         assert j["visual"]["objects"]["scorecard"] == v.props["scorecard"]
+        container = j["visual"]["visualContainerObjects"]
+        assert lit(container["background"][0]["properties"]["show"]) == "false"
+        assert lit(container["border"][0]["properties"]["show"]) == "false"
     fam = next(p for p in PAGES if p.name == "fam_finance")
-    tb = visuals(project, fam)[1]["visual"]
+    tb = _title_box(project, fam)
     assert tb["visualType"] == "textbox"
     assert tb["objects"]["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]["value"] == "Finance detail"
 
