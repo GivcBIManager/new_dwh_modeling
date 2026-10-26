@@ -8,10 +8,19 @@ export function stateClass(key: StateKey): "good" | "warn" | "bad" | "nodata" {
     return key === "good" || key === "warn" || key === "bad" ? key : "nodata";
 }
 
-/** Pill with the state icon, optional text (such as a count) and the state word. */
+/** The state's shape, drawn by CSS: circle on track, diamond watch, square at risk, dash for no score. */
+export function stateMark(key: StateKey): HTMLElement {
+    return el("span", { class: `mark ${stateClass(key)}`, "aria-hidden": "true" });
+}
+
+/** Pill with the state mark, optional text (such as a count) and the state word. */
 export function stateChip(key: StateKey, word: string, text?: string): HTMLElement {
-    const label = text ? `${ICON[key]} ${text} ${word}` : `${ICON[key]} ${word}`;
-    return el("span", { class: `chip ${stateClass(key)}` }, [label]);
+    return el("span", { class: `chip ${stateClass(key)}` }, [stateMark(key), text ? `${text} ${word}` : word]);
+}
+
+/** CSS colour for a pillar by its order (1-4); other orders use the brand blue. */
+export function pillarColourVar(order: number): string {
+    return order >= 1 && order <= 4 && Number.isInteger(order) ? `var(--p${order})` : "var(--blue-dk)";
 }
 
 /** One small square per KPI, coloured by state. */

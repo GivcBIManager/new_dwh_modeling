@@ -7,7 +7,7 @@ import { board, boardPillar } from "./board";
 import { owner, DEFAULT_OWNER_UI, type OwnerUi } from "./owner";
 import { comparison, type CompareLevel } from "./comparison";
 
-export type Mode = "overview" | "board" | "owner" | "comparison";
+export type Mode = "overview" | "board" | "owner" | "comparison" | "detail";
 
 export interface UiState {
     pillar: string | null;
@@ -36,7 +36,7 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
         root.appendChild(el("div", { class: "hint", role: "note" }, [`Showing ${vm.branches[0]} — switch to Hospital comparison to compare hospitals`]));
     }
 
-    const body = mode === "overview" ? overview(vm)
+    const body = mode === "overview" || mode === "detail" ? overview(vm)
         : mode === "board" ? board(vm, ui.pillar, !ui.showHeader)
         : mode === "owner" ? owner(vm, ui.owner ?? DEFAULT_OWNER_UI)
         : comparison(vm, ui.compareLevel);

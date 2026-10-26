@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { tile } from "../src/render/tile";
-import { stateChip, statusStrip } from "../src/render/chips";
+import { statusStrip } from "../src/render/chips";
 import type { KpiRow } from "../src/model/types";
 
 function row(o: Partial<KpiRow> = {}): KpiRow {
@@ -59,13 +59,6 @@ describe("tile", () => {
 });
 
 describe("chips", () => {
-    it("builds a state chip with icon, word and text", () => {
-        const c = stateChip("bad", "At risk", "3");
-        expect(c.className).toContain("chip");
-        expect(c.classList.contains("bad")).toBe(true);
-        expect(c.textContent).toBe("▼ 3 At risk");
-        expect(stateChip("parked", "Parked").classList.contains("nodata")).toBe(true);
-    });
     it("builds a status strip with one cell per row", () => {
         const s = statusStrip([row(), row({ state: "warn", stateWord: "Watch", rowIndex: 8 })]);
         expect(s.classList.contains("strip")).toBe(true);

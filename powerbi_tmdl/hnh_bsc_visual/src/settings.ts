@@ -16,6 +16,7 @@ const MODES: { value: Mode; displayName: string }[] = [
     { value: "board", displayName: "Pillar board" },
     { value: "owner", displayName: "Owner view" },
     { value: "comparison", displayName: "Hospital comparison" },
+    { value: "detail", displayName: "KPI detail" },
 ];
 
 const colour = (name: string, displayName: string, value: string) =>
@@ -25,7 +26,7 @@ class ScorecardCard extends Card {
     mode = new formattingSettings.ItemDropdown({ name: "mode", displayName: "View", items: MODES, value: MODES[0] });
     title = new formattingSettings.TextInput({ name: "title", displayName: "Title", value: DEFAULT_TITLE, placeholder: DEFAULT_TITLE });
     subtitle = new formattingSettings.TextInput({ name: "subtitle", displayName: "Subtitle", value: DEFAULT_SUBTITLE, placeholder: DEFAULT_SUBTITLE });
-    showHeader = new formattingSettings.ToggleSwitch({ name: "showHeader", displayName: "Show header", value: true });
+    showHeader = new formattingSettings.ToggleSwitch({ name: "showHeader", displayName: "Show header", value: false });
     name = "scorecard";
     displayName = "Scorecard";
     slices: Slice[] = [this.mode, this.title, this.subtitle, this.showHeader];
@@ -40,9 +41,13 @@ class ColoursCard extends Card {
     watch = colour("watch", "Watch", "#EF8B00");
     atRisk = colour("atRisk", "At risk", "#DB280A");
     noData = colour("noData", "No data", "#9AA7B5");
+    pillar1 = colour("pillar1", "Pillar 1", "#002E5A");
+    pillar2 = colour("pillar2", "Pillar 2", "#1478BE");
+    pillar3 = colour("pillar3", "Pillar 3", "#13ACE3");
+    pillar4 = colour("pillar4", "Pillar 4", "#6E8196");
     name = "colours";
     displayName = "Colours";
-    slices: Slice[] = [this.headerStart, this.headerMiddle, this.headerEnd, this.data, this.onTrack, this.watch, this.atRisk, this.noData];
+    slices: Slice[] = [this.headerStart, this.headerMiddle, this.headerEnd, this.data, this.onTrack, this.watch, this.atRisk, this.noData, this.pillar1, this.pillar2, this.pillar3, this.pillar4];
 }
 
 export class VisualSettings extends formattingSettings.Model {
@@ -73,6 +78,7 @@ export function toOptions(s: VisualSettings): { mode: Mode; ui: UiState } {
 const VARS: [keyof ColoursCard, string][] = [
     ["headerStart", "--hdr-1"], ["headerMiddle", "--hdr-2"], ["headerEnd", "--hdr-3"], ["data", "--sky"],
     ["onTrack", "--good"], ["watch", "--warn"], ["atRisk", "--bad"], ["noData", "--nodata"],
+    ["pillar1", "--p1"], ["pillar2", "--p2"], ["pillar3", "--p3"], ["pillar4", "--p4"],
 ];
 
 /** Write the colour settings as CSS variables on the visual root. In high contrast the host palette wins. */

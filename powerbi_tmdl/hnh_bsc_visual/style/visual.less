@@ -1,10 +1,13 @@
 // Colours are CSS variables on the visual root (.hnh-bsc). Prototype CSS from docs/superpowers/specs/assets.
-.hnh-bsc{font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+.hnh-bsc{font-family:"Segoe UI",system-ui,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
 .hnh-bsc{
   --navy:#0A1E32; --navy-2:#002E5A; --blue-dk:#1478BE; --blue:#13ACE3; --sky:#32A4E5;
   --surface:#F4F7FB; --card:#FFFFFF; --line:#DCE5EF; --muted:#5B6B7D; --ink:#0A1E32;
   --good:#0E9F8E; --good-bg:#E3F6F3; --warn:#EF8B00; --warn-bg:#FFF2E0; --bad:#DB280A; --bad-bg:#FDE9E5;
   --nodata:#9AA7B5; --nodata-bg:#EEF2F6;
+  --track:#E6EBF0; --tab-text:#C3CEDB; --slicer-border:#CBD3DC; --missed-bar:#F5B865; --row-hl:#E8F2FA;
+  --good-tx:#08776B; --warn-tx:#A35F00; --bad-tx:#A81E06; --nodata-tx:#5B6B7D;
+  --p1:#002E5A; --p2:#1478BE; --p3:#13ACE3; --p4:#6E8196;
   --hdr-1:#13ACE3; --hdr-2:#1478BE; --hdr-3:#0A1E32;
 }
 .hnh-bsc,.hnh-bsc *{box-sizing:border-box}
@@ -40,7 +43,13 @@
 .pillar .body{display:grid;grid-template-columns:minmax(150px,230px) 1fr;gap:18px;padding:12px 20px 14px;flex:1}
 .overall .gauge,.pillar .body .gauge,.pillar .facts .spark{max-width:100%;height:auto}.pillar .facts{min-width:0;display:flex;flex-direction:column;gap:10px;justify-content:center}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;width:max-content}
-.chip.good{background:var(--good-bg);color:#08776B}.chip.warn{background:var(--warn-bg);color:#A35F00}.chip.bad{background:var(--bad-bg);color:#A81E06}.chip.nodata{background:var(--nodata-bg);color:var(--muted)}
+span.mark{display:inline-block;flex:none;width:10.5px;height:10.5px;background:currentColor}
+span.mark.good{border-radius:50%;background:var(--good)}
+span.mark.warn{width:9px;height:9px;transform:rotate(45deg);background:var(--warn)}
+span.mark.bad{border-radius:1px;background:var(--bad)}
+span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
+.hnh-bsc.hc span.mark{background:var(--hc-fg)}
+.chip.good{background:var(--good-bg);color:var(--good-tx)}.chip.warn{background:var(--warn-bg);color:var(--warn-tx)}.chip.bad{background:var(--bad-bg);color:var(--bad-tx)}.chip.nodata{background:var(--nodata-bg);color:var(--nodata-tx)}
 .trendcap{font-size:12px;color:var(--muted)}
 .strip{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .strip i{width:16px;height:16px;border-radius:4px;display:block}

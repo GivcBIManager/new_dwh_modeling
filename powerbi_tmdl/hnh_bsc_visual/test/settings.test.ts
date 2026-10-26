@@ -16,17 +16,24 @@ describe("format pane settings", () => {
         expect(s.scorecard.mode.value.value).toBe("overview");
         expect(s.scorecard.title.value).toBe("Balanced scorecard");
         expect(s.scorecard.subtitle.value).toBe("How the group is performing against its strategy");
-        expect(s.scorecard.showHeader.value).toBe(true);
+        expect(s.scorecard.showHeader.value).toBe(false);
         const c = s.colours;
         expect([c.headerStart, c.headerMiddle, c.headerEnd, c.data, c.onTrack, c.watch, c.atRisk, c.noData].map(x => x.value.value))
             .toEqual(["#13ACE3", "#1478BE", "#0A1E32", "#32A4E5", "#0E9F8E", "#EF8B00", "#DB280A", "#9AA7B5"]);
     });
-    it("offers the four modes with readable names", () => {
-        expect(new VisualSettings().scorecard.mode.items.map(i => i.displayName)).toEqual(["Overview", "Pillar board", "Owner view", "Hospital comparison"]);
+    it("defaults the pillar colours to the brand ramp", () => {
+        const c = new VisualSettings().colours;
+        expect([c.pillar1, c.pillar2, c.pillar3, c.pillar4].map(x => x.value.value)).toEqual(["#002E5A", "#1478BE", "#13ACE3", "#6E8196"]);
+    });
+    it("offers the detail mode", () => {
+        expect(new VisualSettings().scorecard.mode.items.map(i => i.value)).toContain("detail");
+    });
+    it("offers the modes with readable names", () => {
+        expect(new VisualSettings().scorecard.mode.items.map(i => i.displayName)).toEqual(["Overview", "Pillar board", "Owner view", "Hospital comparison", "KPI detail"]);
     });
     it("reads defaults from an empty data view", () => {
         expect(readOptions(undefined).mode).toBe("overview");
-        expect(readOptions({ metadata: { columns: [] } } as never).ui.showHeader).toBe(true);
+        expect(readOptions({ metadata: { columns: [] } } as never).ui.showHeader).toBe(false);
     });
     it("reads the mode and header settings from the data view objects", () => {
         const o = readOptions(withObjects({ scorecard: { mode: "board", title: "Mine", showHeader: false } }));
@@ -44,6 +51,7 @@ describe("format pane settings", () => {
         s.colours.onTrack.value = { value: "#010203" };
         applyColours(root, s);
         expect(root.style.getPropertyValue("--good")).toBe("#010203");
+        expect(root.style.getPropertyValue("--p3")).toBe("#13ACE3");
         for (const v of ["--hdr-1", "--hdr-2", "--hdr-3", "--sky", "--warn", "--bad", "--nodata"]) expect(root.style.getPropertyValue(v)).not.toBe("");
     });
     it("applyColours leaves the variables to the stylesheet in high contrast", () => {
@@ -61,7 +69,7 @@ describe("format pane settings", () => {
             goodFrom: 85, watchFrom: 70, displayOrder: 1, payload: payload({ actual: 0.5, target: 0.5, variance: 0, score: 90, state: "On track", weight: 1 }) };
         const vm = parseDataView(makeDataView([row]));
         const root = document.createElement("div");
-        const o = readOptions(undefined);
+        const o = readOptions(withObjects({ scorecard: { showHeader: true } }));
         renderView(root, vm, "board", o.ui);
         expect(root.querySelector("h1")?.textContent).toBe("Financial");
         renderView(root, vm, "board", { ...o.ui, title: "Custom" });
