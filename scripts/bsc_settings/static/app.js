@@ -66,8 +66,8 @@ function refOptions(table, col) {
   }
   if (col.ref === "objective") return m.objectives.map((o) => [o.objective_code, o.objective_code + " · " + o.objective_title]);
   if (col.ref === "branch" || col.ref === "branch_or_all") {
-    const o = Object.keys(m.hospitals).map(Number).sort((a, b) => a - b).map((i) => [i, m.hospitals[String(i)]]);
-    return col.ref === "branch_or_all" ? [[0, "All hospitals"]].concat(o) : o;
+    const o = Object.keys(m.hospitals).map(Number).sort((a, b) => a - b).map((i) => [i, i + " · " + m.hospitals[String(i)]]);
+    return col.ref === "branch_or_all" ? [[0, "0 · All hospitals"]].concat(o) : o;
   }
   return null;
 }
@@ -157,10 +157,29 @@ function registerView(table, renderFn) { views[table] = renderFn; }
 function renderView() {
   if (!state.view || !state.tables[state.view]) return;
   const s = spec(state.view);
+  const focus = focusOf();
   const box = el("div", {});
   fill($("content"), el("h2", {}, s.label), box);
   if (views[state.view]) views[state.view](box, s); else renderGrid(box, s);
+  restoreFocus(focus);
 }
+
+// A re-render replaces the inputs. Editors carry data-fid (table, key, column) so focus survives it.
+function focusOf() {
+  const a = document.activeElement;
+  if (!a || !a.dataset || !a.dataset.fid || !$("content").contains(a)) return null;
+  let start = null, end = null;
+  try { start = a.selectionStart; end = a.selectionEnd; } catch (e) { /* not a text input */ }
+  return {fid: a.dataset.fid, start, end};
+}
+function restoreFocus(f) {
+  if (!f) return;
+  const n = [...$("content").querySelectorAll("[data-fid]")].find((x) => x.dataset.fid === f.fid);
+  if (!n) return;
+  n.focus();
+  try { if (f.start != null) n.setSelectionRange(f.start, f.end); } catch (e) { /* not a text input */ }
+}
+const fidOf = (s, row, col) => s.name + "|" + JSON.stringify(keyValues(s, row)) + "|" + col.name;
 
 // ---------------------------------------------------------------- generic grid
 function storedRows(table) {
@@ -245,7 +264,7 @@ function dataRow(s, r) {
     const changed = r.stored && !isKey && !sameVal(c, r.row[c.name], r.stored[c.name]);
     if (changed) td.className = "ch";
     if (isKey || gone) td.textContent = label(s.name, c, r.row[c.name]);
-    else td.append(cellEditor(s, c, r));
+    else td.append(cellEditor(s, c, r, tr));
     tr.append(td);
   }
   const last = r.stored || r.row;
@@ -264,27 +283,41 @@ function rowActions(s, r, kv) {
 }
 function keyRow(s, row) { const o = {}; for (const k of s.key) o[k] = row[k]; return o; }
 
-function cellEditor(s, c, r) {
+function cellEditor(s, c, r, tr) {
   const o = options(s.name, c);
   const cur = r.row[c.name];
-  const commit = (v) => editCell(s, r, c, v);
+  const commit = (v) => editCell(s, r, c, v, tr);
   if (o) {
-    const sel = el("select", {onchange: (e) => commit(e.target.value)}, o.map((p) => el("option", {value: String(p[0])}, p[1])));
+    const sel = el("select", {"data-fid": fidOf(s, r.row, c), onchange: (e) => commit(e.target.value)}, o.map((p) => el("option", {value: String(p[0])}, p[1])));
     if (!o.some((p) => String(p[0]) === String(cur))) sel.prepend(el("option", {value: String(cur)}, String(cur)));
     sel.value = String(cur);
     return sel;
   }
-  return el("input", {value: cur == null ? "" : String(cur), onchange: (e) => commit(e.target.value)});
+  return el("input", {"data-fid": fidOf(s, r.row, c), value: cur == null ? "" : String(cur), onchange: (e) => commit(e.target.value)});
 }
 
-function editCell(s, r, col, value) {
+// An edit updates the pending list and this row in place: the inputs are not rebuilt, so the
+// cell the user clicked or tabbed into keeps its focus.
+function editCell(s, r, col, value, tr) {
   const row = {};
   for (const c of s.columns) row[c.name] = r.row[c.name];
   row[col.name] = value;
   const kv = keyValues(s, row), pk = pkey(s.name, kv);
   const base = r.pend ? r.pend.base_changed_at : (r.stored ? r.stored.changed_at : null);
-  if (r.stored && s.columns.every((c) => sameVal(c, row[c.name], r.stored[c.name])) && !r.stored.is_deleted) { discard(pk); return; }
-  addPending({table: s.name, op: "upsert", row, base_changed_at: base});
+  const reverted = r.stored && s.columns.every((c) => sameVal(c, row[c.name], r.stored[c.name])) && !r.stored.is_deleted;
+  if (reverted) state.pending.delete(pk);
+  else state.pending.set(pk, {table: s.name, op: "upsert", row, base_changed_at: base});
+  state.review = null;
+  r.row = row; r.pend = state.pending.get(pk);
+  renderPending();
+  refreshRow(s, r, tr, kv);
+}
+function refreshRow(s, r, tr, kv) {
+  s.columns.forEach((c, i) => {
+    if (s.key.includes(c.name)) return;
+    tr.children[i].className = r.stored && !sameVal(c, r.row[c.name], r.stored[c.name]) ? "ch" : "";
+  });
+  fill(tr.children[s.columns.length + 1], rowActions(s, r, kv));
 }
 
 // draft rows: a new key typed into a full row, added to the pending list when complete
@@ -446,7 +479,10 @@ async function reloadTouched(tables) {
   try {
     state.meta = Object.assign(state.meta, await api("GET", "/api/meta"));
     for (const t of new Set(tables.concat(state.view ? [state.view] : []))) await loadTable(t);
-  } catch (e) { return; }
+  } catch (e) {
+    if (e.status !== 401) fill($("content"), el("p", {class: "bad"}, "Saved, but the table could not be reloaded: " + e.message + ". Pick the table again."));
+    return;
+  }
   renderPending();
   renderView();
 }
