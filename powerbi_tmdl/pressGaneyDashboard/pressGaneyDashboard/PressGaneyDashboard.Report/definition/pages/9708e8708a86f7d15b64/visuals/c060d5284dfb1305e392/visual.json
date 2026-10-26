@@ -1,0 +1,227 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "c060d5284dfb1305e392",
+  "position": {
+    "x": 858,
+    "y": 434,
+    "z": 20000,
+    "height": 274,
+    "width": 405,
+    "tabOrder": 20000
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Survey Responses"
+                    }
+                  },
+                  "Property": "Admitted Via ER"
+                }
+              },
+              "queryRef": "Survey Responses.Admitted Via ER",
+              "nativeQueryRef": "Admitted Via ER",
+              "displayName": "Admitted through the ER"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "NPS (Response Attr)"
+                }
+              },
+              "queryRef": "_Measures.NPS (Response Attr)",
+              "nativeQueryRef": "NPS (Response Attr)",
+              "displayName": "NPS"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Overall Satisfaction (Response Attr)"
+                }
+              },
+              "queryRef": "_Measures.Overall Satisfaction (Response Attr)",
+              "nativeQueryRef": "Overall Satisfaction (Response Attr)",
+              "displayName": "Satisfaction"
+            }
+          ]
+        },
+        "Tooltips": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Respondents (Response Attr)"
+                }
+              },
+              "queryRef": "_Measures.Respondents (Response Attr)",
+              "nativeQueryRef": "Respondents (Response Attr)",
+              "displayName": "Respondents"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "NPS Margin of Error (Response Attr)"
+                }
+              },
+              "queryRef": "_Measures.NPS Margin of Error (Response Attr)",
+              "nativeQueryRef": "NPS Margin of Error (Response Attr)",
+              "displayName": "NPS margin (±)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Reliability (Response Attr)"
+                }
+              },
+              "queryRef": "_Measures.Reliability (Response Attr)",
+              "nativeQueryRef": "Reliability (Response Attr)",
+              "displayName": "Reliability"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Respondents (Response Attr)"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": false
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'By admission through the ER'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "objects": {
+      "dataPoint": [
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#32A5E6'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.NPS (Response Attr)"
+          }
+        },
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#05A591'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Overall Satisfaction (Response Attr)"
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

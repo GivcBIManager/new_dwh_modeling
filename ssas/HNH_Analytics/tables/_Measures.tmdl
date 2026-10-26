@@ -186,14 +186,7 @@ table _Measures
 	/// Responded ÷ primary invitations (Phase 6 spec 7.1 as amended in the receiving notes: not ÷ SMS sent, because a third of submitted surveys have no SMS date).
 	measure 'Response Rate %' =
 			VAR __Value = ( -- measure body
-				VAR Invited = CALCULATE ( COUNTROWS ( 'Survey Responses' ), 'Survey Responses'[Is Primary For Encounter] = "Yes" )
-				VAR Responded =
-					CALCULATE (
-						COUNTROWS ( 'Survey Responses' ),
-						'Survey Responses'[Is Primary For Encounter] = "Yes",
-						'Survey Responses'[Is Responded] = "Yes"
-					)
-				RETURN DIVIDE ( Responded, Invited )
+				DIVIDE ( [Surveys Responded], [Invitations] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Responses]
 			RETURN IF ( __Wrong = "", __Value, """Response Rate %"" can't be analysed by " & __Wrong )
@@ -2174,7 +2167,7 @@ table _Measures
 	/// Primary invitations with an SMS sent ÷ primary invitations (Phase 6 spec 7.1).
 	measure 'SMS Reach %' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Invitations], 'Survey Responses'[Is SMS Sent] = "Yes" ), [Invitations] )
+				DIVIDE ( [Invitations (SMS)], [Invitations] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Responses]
 			RETURN IF ( __Wrong = "", __Value, """SMS Reach %"" can't be analysed by " & __Wrong )
@@ -2183,10 +2176,7 @@ table _Measures
 	/// Submitted ÷ responded primary invitations (Phase 6 spec 7.1).
 	measure 'Completion Rate %' =
 			VAR __Value = ( -- measure body
-				DIVIDE (
-					CALCULATE ( [Invitations], 'Survey Responses'[Is Submitted] = "Yes" ),
-					CALCULATE ( [Invitations], 'Survey Responses'[Is Responded] = "Yes" )
-				)
+				DIVIDE ( [Surveys Submitted], [Surveys Responded] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Responses]
 			RETURN IF ( __Wrong = "", __Value, """Completion Rate %"" can't be analysed by " & __Wrong )
@@ -2269,7 +2259,7 @@ table _Measures
 	/// NPS of any selection (domain, question, doctor, specialty) over scored answers; under 30 answers shows "insufficient sample" (Phase 6 spec 7.2).
 	measure 'NPS (5-point)' =
 			VAR __Value = ( -- measure body
-				VAR Answers = [NPS Answers]
+				VAR Answers = [_Unguarded NPS Answers]
 				VAR Net =
 					CALCULATE (
 						SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ),
@@ -2295,7 +2285,7 @@ table _Measures
 	/// Promoter answers ÷ scored answers (Phase 6 spec 7.2).
 	measure '% Promoters' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ), 'Survey Answers'[Is Scored] = "Yes" ), [NPS Answers] )
+				DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ), 'Survey Answers'[Is Scored] = "Yes" ), [_Unguarded NPS Answers] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Answers]
 			RETURN IF ( __Wrong = "", __Value, """% Promoters"" can't be analysed by " & __Wrong )
@@ -2304,7 +2294,7 @@ table _Measures
 	/// Passive answers ÷ scored answers (Phase 6 spec 7.2).
 	measure '% Passives' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Passive] ), 'Survey Answers'[Is Scored] = "Yes" ), [NPS Answers] )
+				DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Passive] ), 'Survey Answers'[Is Scored] = "Yes" ), [_Unguarded NPS Answers] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Answers]
 			RETURN IF ( __Wrong = "", __Value, """% Passives"" can't be analysed by " & __Wrong )
@@ -2313,12 +2303,1425 @@ table _Measures
 	/// Detractor answers ÷ scored answers (Phase 6 spec 7.2).
 	measure '% Detractors' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[Is Scored] = "Yes" ), [NPS Answers] )
+				DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[Is Scored] = "Yes" ), [_Unguarded NPS Answers] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Answers]
 			RETURN IF ( __Wrong = "", __Value, """% Detractors"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Patient Experience\NPS
+	/// Primary invitations with at least one answer, submitted or partial (Phase 6 spec 7.1).
+	measure 'Surveys Responded' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Invitations], 'Survey Responses'[Is Responded] = "Yes" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Surveys Responded"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+	/// Primary invitations whose survey was completed and submitted (Phase 6 spec 7.1).
+	measure 'Surveys Submitted' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Invitations], 'Survey Responses'[Is Submitted] = "Yes" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Surveys Submitted"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+	/// Primary invitations answered in part and not submitted (response status Partial).
+	measure 'Surveys Partial' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Invitations], 'Survey Responses'[Response Status] = "Partial" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Surveys Partial"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+	/// Primary invitations without any answer (response status Not started).
+	measure 'Surveys Not Started' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Invitations], 'Survey Responses'[Response Status] = "Not started" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Surveys Not Started"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+	/// Distinct known patients behind the primary invitations; an unlinked survey has no patient and is left out.
+	measure 'Patients Invited' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					DISTINCTCOUNT ( 'Survey Responses'[Patient Key] ),
+					'Survey Responses'[Is Primary For Encounter] = "Yes",
+					'Survey Responses'[Patient Key] <> -1
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Patients Invited"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+	/// Distinct known patients who answered at least one question on a primary invitation.
+	measure 'Patients Responded' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					DISTINCTCOUNT ( 'Survey Responses'[Patient Key] ),
+					'Survey Responses'[Is Primary For Encounter] = "Yes",
+					'Survey Responses'[Is Responded] = "Yes",
+					'Survey Responses'[Patient Key] <> -1
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Patients Responded"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Quality
+	/// Primary invitations whose survey SMS was sent (SMS channel).
+	measure 'Invitations (SMS)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Invitations], 'Survey Responses'[Is SMS Sent] = "Yes" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Invitations (SMS)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Channel
+	/// Primary invitations without an SMS: surveys conducted by a call-centre agent.
+	measure 'Invitations (Agent Call)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Invitations], 'Survey Responses'[Is SMS Sent] = "No" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Invitations (Agent Call)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Channel
+	/// Responded primary invitations of the SMS channel.
+	measure 'Responded (SMS)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Surveys Responded], 'Survey Responses'[Is SMS Sent] = "Yes" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Responded (SMS)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Channel
+	/// Responded primary invitations of the call-centre agent channel (no SMS sent).
+	measure 'Responded (Agent Call)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Surveys Responded], 'Survey Responses'[Is SMS Sent] = "No" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Responded (Agent Call)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Survey Channel
+	/// Responded ÷ invited, SMS channel.
+	measure 'Response Rate % (SMS)' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Responded (SMS)], [Invitations (SMS)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Response Rate % (SMS)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Channel
+	/// Responded ÷ invited, call-centre agent channel.
+	measure 'Response Rate % (Agent Call)' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Responded (Agent Call)], [Invitations (Agent Call)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Response Rate % (Agent Call)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Channel
+	/// Submitted ÷ responded, SMS channel.
+	measure 'Completion Rate % (SMS)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Completion Rate %], 'Survey Responses'[Is SMS Sent] = "Yes" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Completion Rate % (SMS)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Channel
+	/// Submitted ÷ responded, call-centre agent channel.
+	measure 'Completion Rate % (Agent Call)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [Completion Rate %], 'Survey Responses'[Is SMS Sent] = "No" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Completion Rate % (Agent Call)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Channel
+	/// Agent-call responses ÷ all responses.
+	measure 'Agent Call Share of Responses %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Responded (Agent Call)], [Surveys Responded] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Agent Call Share of Responses %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Survey Channel
+	/// Partial responses ÷ responded primary invitations.
+	measure 'Partial Rate %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Surveys Partial], [Surveys Responded] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Partial Rate %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Data Quality
+	/// Primary invitations whose patient has no recorded gender (or no patient) ÷ primary invitations.
+	measure 'Unknown Gender %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( CALCULATE ( [Invitations], Patient[Gender] = "Unknown" ), [Invitations] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Unknown Gender %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Data Quality
+	/// 1 for a visit month with 1,000 or more primary invitations network-wide over the whole month, whatever else is selected; the months that count for the sample-vs-visits comparison, so a month whose surveys are still arriving is left out.
+	measure 'Month Has 1000+ Invitations' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					IF ( [Invitations] >= 1000, 1 ),
+					REMOVEFILTERS ( Branch ),
+					REMOVEFILTERS ( Patient ),
+					REMOVEFILTERS ( Payer ),
+					REMOVEFILTERS ( Staff ),
+					REMOVEFILTERS ( Department ),
+					REMOVEFILTERS ( 'Survey Service' ),
+					REMOVEFILTERS ( 'Care Type' ),
+					-- the fact's expanded table includes Date: remove its own columns' filters, then keep the month
+					REMOVEFILTERS ( 'Survey Responses' ),
+					VALUES ( 'Date'[Start Of Month] )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Month Has 1000+ Invitations"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Patient Experience\Sample Size
+	/// Visits of the population the linked surveys in context come from: ER Visits, OP Visits and Admissions for the care types (ER, OP, IP) of the linked primary invitations, in the months with 1,000+ invitations. The survey's care type is the linked encounter's, so a care-setting selection maps itself.
+	measure 'Actual Visits' =
+			VAR __Value = ( -- measure body
+				VAR Months = FILTER ( VALUES ( 'Date'[Start Of Month] ), [Month Has 1000+ Invitations] = 1 )
+				VAR Pools =
+					CALCULATETABLE (
+						DISTINCT ( 'Survey Responses'[Care Type Key] ),
+						'Survey Responses'[Is Primary For Encounter] = "Yes",
+						'Survey Responses'[Link Status] = "Linked"
+					)
+				VAR Codes =
+					CALCULATETABLE ( FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ), TREATAS ( Pools, 'Care Type'[Care Type Key] ) )
+				VAR Visits =
+					SUMX (
+						Codes,
+						VAR Code = 'Care Type'[Care Type]
+						RETURN
+							CALCULATE (
+								SWITCH ( Code, "OP", [_Unguarded OP Visits], "ER", [_Unguarded ER Visits], "IP", [_Unguarded Admissions] ),
+								REMOVEFILTERS ( 'Care Type' ),
+								KEEPFILTERS ( Months )
+							)
+					)
+				RETURN IF ( Visits > 0, Visits )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Actual Visits"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Sample Size
+
+		annotation hnh_guard_allow = Survey Service
+	/// Visit-matched invitations ÷ actual visits: the share of visits that got a survey.
+	measure 'Survey Coverage %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Invitations (Visit-Matched)], [Actual Visits] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Survey Coverage %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Sample Size
+
+		annotation hnh_guard_allow = Survey Service
+	/// Visit-matched respondents ÷ actual visits: responses per visit.
+	measure 'Response Coverage %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Respondents (Visit-Matched)], [Actual Visits] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Response Coverage %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Sample Size
+
+		annotation hnh_guard_allow = Survey Service
+	/// Responses needed for a ±5% margin at 95% confidence (385), reduced for a small population with the finite-population correction on the actual visits; blank without visit-matched invitations.
+	measure 'Required Sample (±5%)' =
+			VAR __Value = ( -- measure body
+				VAR Base = 1.96 ^ 2 * 0.25 / 0.05 ^ 2
+				VAR Visits = [Actual Visits]
+				RETURN
+					IF (
+						NOT ISBLANK ( [Invitations (Visit-Matched)] ),
+						IF ( ISBLANK ( Visits ), CEILING ( Base, 1 ), CEILING ( Base / ( 1 + ( Base - 1 ) / Visits ), 1 ) )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Required Sample (±5%)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Sample Size
+
+		annotation hnh_guard_allow = Survey Service
+	/// Responses still needed to reach the required sample (0 when reached).
+	measure 'Sample Gap' =
+			VAR __Value = ( -- measure body
+				IF ( NOT ISBLANK ( [Required Sample (±5%)] ), MAX ( 0, [Required Sample (±5%)] - [Respondents (Visit-Matched)] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Sample Gap"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Sample Size
+
+		annotation hnh_guard_allow = Survey Service
+	/// Margin of error of a proportion at 95% confidence, 0.98 ÷ √respondents, with the finite-population correction on the actual visits.
+	measure 'Margin of Error (±)' =
+			VAR __Value = ( -- measure body
+				VAR Resp = [Respondents (Visit-Matched)]
+				VAR Visits = [Actual Visits]
+				VAR Moe = DIVIDE ( 0.98, SQRT ( Resp ) )
+				RETURN IF ( Resp > 0, IF ( ISBLANK ( Visits ) || Visits <= Resp, Moe, Moe * SQRT ( ( Visits - Resp ) / ( Visits - 1 ) ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Margin of Error (±)"" can't be analysed by " & __Wrong )
+		formatString: ±0.0%
+		displayFolder: Patient Experience\Sample Size
+
+		annotation hnh_guard_allow = Survey Service
+	/// Primary invitations linked to an ER, OP or IP visit in the months with 1,000+ invitations: the invitations that can be compared with actual visits.
+	measure 'Invitations (Visit-Matched)' =
+			VAR __Value = ( -- measure body
+				VAR Months = FILTER ( VALUES ( 'Date'[Start Of Month] ), [Month Has 1000+ Invitations] = 1 )
+				RETURN
+					CALCULATE ( [Invitations], 'Survey Responses'[Link Status] = "Linked", KEEPFILTERS ( TREATAS ( { "OP", "ER", "IP" }, 'Care Type'[Care Type] ) ), KEEPFILTERS ( Months ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Invitations (Visit-Matched)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Representativeness
+	/// Responded primary invitations linked to an ER, OP or IP visit in the months with 1,000+ invitations.
+	measure 'Respondents (Visit-Matched)' =
+			VAR __Value = ( -- measure body
+				VAR Months = FILTER ( VALUES ( 'Date'[Start Of Month] ), [Month Has 1000+ Invitations] = 1 )
+				RETURN
+					CALCULATE ( [Surveys Responded], 'Survey Responses'[Link Status] = "Linked", KEEPFILTERS ( TREATAS ( { "OP", "ER", "IP" }, 'Care Type'[Care Type] ) ), KEEPFILTERS ( Months ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Respondents (Visit-Matched)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Representativeness
+	/// Visit-matched respondents ÷ visit-matched invitations.
+	measure 'Response Rate % (Visit-Matched)' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Respondents (Visit-Matched)], [Invitations (Visit-Matched)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Response Rate % (Visit-Matched)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+	/// Share of the selection's visit-matched respondents in this group. By care type the share is raw; for any other group the responses are first re-weighted to each care type's share of visits, so inpatient over-sampling does not distort it.
+	measure 'Response Share %' =
+			VAR __Value = ( -- measure body
+				VAR R = CALCULATE ( [Respondents (Visit-Matched)], ALLSELECTED () )
+				VAR V = CALCULATE ( [Actual Visits], ALLSELECTED () )
+				VAR W =
+					CALCULATETABLE (
+						ADDCOLUMNS (
+							FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ),
+							"@w", DIVIDE ( DIVIDE ( [Actual Visits], V ), DIVIDE ( [Respondents (Visit-Matched)], R ) )
+						),
+						ALLSELECTED ()
+					)
+				RETURN
+					IF (
+						ISINSCOPE ( 'Care Type'[Care Type Name] ) || ISINSCOPE ( 'Care Type'[Care Type] ),
+						DIVIDE ( [Respondents (Visit-Matched)], R ),
+						DIVIDE ( SUMX ( W, [Respondents (Visit-Matched)] * [@w] ), R )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Response Share %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Share of the selection's actual visits in this group.
+	measure 'Visit Share %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Actual Visits], CALCULATE ( [Actual Visits], ALLSELECTED () ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Visit Share %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Response share ÷ visit share: 1.00 is a fair share, under 0.80 under-represented, over 1.25 over-represented.
+	measure 'Representation Index' =
+			VAR __Value = ( -- measure body
+				VAR V = [Visit Share %]
+				RETURN IF ( V > 0, DIVIDE ( [Response Share %] + 0, V ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Representation Index"" can't be analysed by " & __Wrong )
+		formatString: 0.00
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Fair share (index 0.80–1.25), Under, Over, or No visit data when there are respondents but no visits.
+	measure 'Representation Status' =
+			VAR __Value = ( -- measure body
+				VAR I = [Representation Index]
+				RETURN
+					SWITCH (
+						TRUE (),
+						ISBLANK ( I ), IF ( [Respondents (Visit-Matched)] > 0, "No visit data" ),
+						I < 0.8, "Under",
+						I > 1.25, "Over",
+						"Fair share"
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Representation Status"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// ½ Σ |response share − visit share| over branches, responses re-weighted to the care-type mix of visits: the share of responses that would have to move for the branch mix to match the visits.
+	measure 'Mismatch (Branch)' =
+			VAR __Value = ( -- measure body
+				VAR R = [Respondents (Visit-Matched)]
+				VAR V = [Actual Visits]
+				VAR W =
+					ADDCOLUMNS (
+						FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ),
+						"@w", DIVIDE ( DIVIDE ( [Actual Visits], V ), DIVIDE ( [Respondents (Visit-Matched)], R ) )
+					)
+				RETURN
+					IF (
+						R > 0 && V > 0,
+						0.5
+							* SUMX (
+								VALUES ( Branch[Branch Name] ),
+								ABS ( DIVIDE ( SUMX ( W, [Respondents (Visit-Matched)] * [@w] ), R ) - DIVIDE ( [Actual Visits], V ) )
+							)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Mismatch (Branch)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// ½ Σ |response share − visit share| over the care types ER, OP and IP.
+	measure 'Mismatch (Care Type)' =
+			VAR __Value = ( -- measure body
+				VAR R = [Respondents (Visit-Matched)]
+				VAR V = [Actual Visits]
+				RETURN
+					IF (
+						R > 0 && V > 0,
+						0.5 * SUMX ( VALUES ( 'Care Type'[Care Type] ), ABS ( DIVIDE ( [Respondents (Visit-Matched)], R ) - DIVIDE ( [Actual Visits], V ) ) )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Mismatch (Care Type)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// ½ Σ |response share − visit share| over patient gender, responses re-weighted to the care-type mix of visits.
+	measure 'Mismatch (Gender)' =
+			VAR __Value = ( -- measure body
+				VAR R = [Respondents (Visit-Matched)]
+				VAR V = [Actual Visits]
+				VAR W =
+					ADDCOLUMNS (
+						FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ),
+						"@w", DIVIDE ( DIVIDE ( [Actual Visits], V ), DIVIDE ( [Respondents (Visit-Matched)], R ) )
+					)
+				RETURN
+					IF (
+						R > 0 && V > 0,
+						0.5
+							* SUMX (
+								VALUES ( Patient[Gender] ),
+								ABS ( DIVIDE ( SUMX ( W, [Respondents (Visit-Matched)] * [@w] ), R ) - DIVIDE ( [Actual Visits], V ) )
+							)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Mismatch (Gender)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// ½ Σ |response share − visit share| over Saudi / non-Saudi patients, responses re-weighted to the care-type mix of visits.
+	measure 'Mismatch (Nationality)' =
+			VAR __Value = ( -- measure body
+				VAR R = [Respondents (Visit-Matched)]
+				VAR V = [Actual Visits]
+				VAR W =
+					ADDCOLUMNS (
+						FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ),
+						"@w", DIVIDE ( DIVIDE ( [Actual Visits], V ), DIVIDE ( [Respondents (Visit-Matched)], R ) )
+					)
+				RETURN
+					IF (
+						R > 0 && V > 0,
+						0.5
+							* SUMX (
+								VALUES ( Patient[Is Saudi] ),
+								ABS ( DIVIDE ( SUMX ( W, [Respondents (Visit-Matched)] * [@w] ), R ) - DIVIDE ( [Actual Visits], V ) )
+							)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Mismatch (Nationality)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// ½ Σ |response share − visit share| over payer categories, responses re-weighted to the care-type mix of visits.
+	measure 'Mismatch (Payer)' =
+			VAR __Value = ( -- measure body
+				VAR R = [Respondents (Visit-Matched)]
+				VAR V = [Actual Visits]
+				VAR W =
+					ADDCOLUMNS (
+						FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ),
+						"@w", DIVIDE ( DIVIDE ( [Actual Visits], V ), DIVIDE ( [Respondents (Visit-Matched)], R ) )
+					)
+				RETURN
+					IF (
+						R > 0 && V > 0,
+						0.5
+							* SUMX (
+								VALUES ( Payer[Category] ),
+								ABS ( DIVIDE ( SUMX ( W, [Respondents (Visit-Matched)] * [@w] ), R ) - DIVIDE ( [Actual Visits], V ) )
+							)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Mismatch (Payer)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Verdict on the worst of the five mismatches: Representative up to 5%, Acceptable up to 10%, else "Skewed by <profile>".
+	measure 'Sample Representativeness' =
+			VAR __Value = ( -- measure body
+				VAR T =
+					UNION (
+						ROW ( "@who", "branch", "@m", [Mismatch (Branch)] ),
+						ROW ( "@who", "care type", "@m", [Mismatch (Care Type)] ),
+						ROW ( "@who", "gender", "@m", [Mismatch (Gender)] ),
+						ROW ( "@who", "nationality", "@m", [Mismatch (Nationality)] ),
+						ROW ( "@who", "payer", "@m", [Mismatch (Payer)] )
+					)
+				VAR Worst = MAXX ( T, [@m] )
+				VAR Who = MAXX ( FILTER ( T, [@m] = Worst ), [@who] )
+				RETURN
+					SWITCH ( TRUE (), ISBLANK ( Worst ), BLANK (), Worst <= 0.05, "Representative", Worst <= 0.1, "Acceptable", "Skewed by " & Who )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Sample Representativeness"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Sample Representativeness in one word: Representative, Acceptable or Skewed.
+	measure 'Sample Mix' =
+			VAR __Value = ( -- measure body
+				VAR Verdict = [Sample Representativeness]
+				RETURN IF ( LEFT ( Verdict, 6 ) = "Skewed", "Skewed", Verdict )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Sample Mix"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// NPS (5-point) of the answers linked to an ER, OP or IP visit: the NPS as surveyed, on the population the weighted NPS re-weights.
+	measure 'NPS (Visit-Matched)' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [NPS (5-point)], 'Survey Answers'[Link Status] = "Linked", KEEPFILTERS ( TREATAS ( { "OP", "ER", "IP" }, 'Care Type'[Care Type] ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS (Visit-Matched)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Representativeness
+	/// NPS (Visit-Matched) of each branch × care type weighted by its actual visits: what the NPS would be if the sample had the visit mix.
+	measure 'Weighted NPS' =
+			VAR __Value = ( -- measure body
+				VAR Strata = CROSSJOIN ( VALUES ( Branch[Branch Name] ), FILTER ( VALUES ( 'Care Type'[Care Type] ), 'Care Type'[Care Type] IN { "OP", "ER", "IP" } ) )
+				VAR T =
+					FILTER (
+						ADDCOLUMNS ( Strata, "@nps", [NPS (Visit-Matched)], "@v", [Actual Visits] ),
+						NOT ISBLANK ( [@nps] ) && [@v] > 0
+					)
+				RETURN DIVIDE ( SUMX ( T, [@nps] * [@v] ), SUMX ( T, [@v] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Answers + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Weighted NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Weighted NPS − NPS (Visit-Matched), in points.
+	measure 'NPS Weighting Effect' =
+			VAR __Value = ( -- measure body
+				VAR W = [Weighted NPS]
+				VAR S = [NPS (Visit-Matched)]
+				RETURN IF ( NOT ISBLANK ( W ) && NOT ISBLANK ( S ), W - S )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Answers + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """NPS Weighting Effect"" can't be analysed by " & __Wrong )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: Patient Experience\Representativeness
+
+		annotation hnh_guard_allow = Survey Service
+	/// Distinct survey responses with at least one scored answer.
+	measure Respondents =
+			VAR __Value = ( -- measure body
+				CALCULATE ( DISTINCTCOUNT ( 'Survey Answers'[Survey Response Key] ), 'Survey Answers'[Is Scored] = "Yes" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Respondents"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\NPS
+	/// Average of the NPS (5-point) of each question with answers, so every question counts the same whatever its volume.
+	measure 'Avg NPS by Question' =
+			VAR __Value = ( -- measure body
+				AVERAGEX ( FILTER ( VALUES ( 'Survey Question'[Question Key] ), [NPS Answers] > 0 ), [NPS (5-point)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Avg NPS by Question"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\NPS
+	/// NPS (5-point) with 30 or more scored answers, else blank: the ranking version of the score.
+	measure 'NPS (n>=30)' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] >= 30, [NPS (5-point)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS (n>=30)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\NPS
+	/// Physician NPS (5-point) with 10 or more physician-question answers, else blank.
+	measure 'Physician NPS (n>=10)' =
+			VAR __Value = ( -- measure body
+				IF ( CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] = "Physician NPS" ) >= 10, [Physician NPS (5-point)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Physician NPS (n>=10)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\NPS
+	/// Average scored answer rescaled to 0–100: 1–5 scales (score − 1) ÷ 4, the 1–4 scale (score − 1) ÷ 3, the 0–10 scale score ÷ 10, each × 100.
+	measure 'Overall Satisfaction (0-100)' =
+			VAR __Value = ( -- measure body
+				VAR Groups =
+					CALCULATETABLE (
+						ADDCOLUMNS (
+							SUMMARIZE ( 'Survey Answers', 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),
+							"@n", CALCULATE ( COUNTROWS ( 'Survey Answers' ) )
+						),
+						'Survey Answers'[Is Scored] = "Yes",
+						NOT ISBLANK ( 'Survey Answers'[Answer Score] )
+					)
+				VAR Num =
+					SUMX (
+						Groups,
+						[@n]
+							* SWITCH (
+								'Survey Answers'[Scale Type],
+								"likelihood_0_10", 'Survey Answers'[Answer Score] * 10,
+								"definitely_1_4", ( 'Survey Answers'[Answer Score] - 1 ) / 3 * 100,
+								( 'Survey Answers'[Answer Score] - 1 ) / 4 * 100
+							)
+					)
+				RETURN DIVIDE ( Num, SUMX ( Groups, [@n] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Overall Satisfaction (0-100)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Satisfaction
+	/// Answers at the top of their scale (5 of 5, 4 of 4, 9–10 of 10) ÷ scored answers.
+	measure 'Top Box %' =
+			VAR __Value = ( -- measure body
+				DIVIDE (
+					CALCULATE (
+						COUNTROWS ( 'Survey Answers' ),
+						'Survey Answers'[Is Scored] = "Yes",
+						KEEPFILTERS (
+							FILTER (
+								ALL ( 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),
+								SWITCH (
+									'Survey Answers'[Scale Type],
+									"likelihood_0_10", 'Survey Answers'[Answer Score] >= 9,
+									"definitely_1_4", 'Survey Answers'[Answer Score] = 4,
+									'Survey Answers'[Answer Score] = 5
+								)
+							)
+						)
+					),
+					[NPS Answers]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Top Box %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Satisfaction
+	/// NPS (5-point) of all branches together, shown only when a branch is in view so the comparison means something.
+	measure 'Network NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] > 0 && ISFILTERED ( Branch ), CALCULATE ( [NPS (5-point)], REMOVEFILTERS ( Branch ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Network NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Benchmark
+	/// NPS (5-point) − Network NPS, in points.
+	measure 'NPS vs Network' =
+			VAR __Value = ( -- measure body
+				VAR Net = [Network NPS]
+				RETURN IF ( NOT ISBLANK ( Net ) && NOT ISBLANK ( [NPS (5-point)] ), [NPS (5-point)] - Net )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS vs Network"" can't be analysed by " & __Wrong )
+		formatString: +0.0;-0.0;0.0
+		displayFolder: Patient Experience\Benchmark
+	/// Overall Satisfaction (0-100) of all branches together, when a branch is in view.
+	measure 'Network Overall Satisfaction (0-100)' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] > 0 && ISFILTERED ( Branch ), CALCULATE ( [Overall Satisfaction (0-100)], REMOVEFILTERS ( Branch ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Network Overall Satisfaction (0-100)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Benchmark
+	/// Response Rate % of all branches together, when there are invitations in context.
+	measure 'Network Response Rate %' =
+			VAR __Value = ( -- measure body
+				IF ( NOT ISBLANK ( [Invitations] ), CALCULATE ( [Response Rate %], REMOVEFILTERS ( Branch ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Network Response Rate %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Benchmark
+	/// NPS (5-point) of the whole specialty of the doctor(s) in context, across every branch and doctor.
+	measure 'Specialty NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] > 0, CALCULATE ( [NPS (5-point)], REMOVEFILTERS ( Staff ), VALUES ( Staff[Specialty] ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Specialty NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Benchmark
+	/// How far the true NPS could be from the measured one at 95% confidence, in points: 1.96 × √((P + D − (P − D)²) ÷ respondents) × 100, with P and D the promoter and detractor shares of scored answers.
+	measure 'NPS Margin of Error' =
+			VAR __Value = ( -- measure body
+				VAR P = [% Promoters]
+				VAR D = [% Detractors]
+				VAR N = [Respondents]
+				RETURN IF ( N > 0, 1.96 * SQRT ( ( P + D - ( P - D ) ^ 2 ) / N ) * 100 )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS Margin of Error"" can't be analysed by " & __Wrong )
+		formatString: ±0.0
+		displayFolder: Patient Experience\Reliability
+	/// High at a margin of ±3 or better, Moderate up to ±7, else Low; No answers without a margin.
+	measure Reliability =
+			VAR __Value = ( -- measure body
+				VAR M = [NPS Margin of Error]
+				RETURN SWITCH ( TRUE (), ISBLANK ( M ), "No answers", M <= 3, "High", M <= 7, "Moderate", "Low" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Reliability"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Reliability
+	/// NPS (5-point) by response attribute. When a Survey Responses attribute (who completed the survey, first visit…) is filtered, the answers are restricted to those responses, since the two facts have no relationship.
+	measure 'NPS (Response Attr)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'Survey Responses' ),
+					CALCULATE (
+						[_Unguarded NPS (5-point)],
+						TREATAS ( VALUES ( 'Survey Responses'[Survey Response Key] ), 'Survey Answers'[Survey Response Key] )
+					),
+					[_Unguarded NPS (5-point)]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """NPS (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Patient Profile
+
+		annotation hnh_guard_allow = Survey Responses
+	/// Overall Satisfaction (0-100) by response attribute. When a Survey Responses attribute (who completed the survey, first visit…) is filtered, the answers are restricted to those responses, since the two facts have no relationship.
+	measure 'Overall Satisfaction (Response Attr)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'Survey Responses' ),
+					CALCULATE (
+						[_Unguarded Overall Satisfaction (0-100)],
+						TREATAS ( VALUES ( 'Survey Responses'[Survey Response Key] ), 'Survey Answers'[Survey Response Key] )
+					),
+					[_Unguarded Overall Satisfaction (0-100)]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Overall Satisfaction (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Patient Profile
+
+		annotation hnh_guard_allow = Survey Responses
+	/// % Promoters by response attribute. When a Survey Responses attribute (who completed the survey, first visit…) is filtered, the answers are restricted to those responses, since the two facts have no relationship.
+	measure '% Promoters (Response Attr)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'Survey Responses' ),
+					CALCULATE (
+						[_Unguarded % Promoters],
+						TREATAS ( VALUES ( 'Survey Responses'[Survey Response Key] ), 'Survey Answers'[Survey Response Key] )
+					),
+					[_Unguarded % Promoters]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """% Promoters (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Patient Profile
+
+		annotation hnh_guard_allow = Survey Responses
+	/// % Detractors by response attribute. When a Survey Responses attribute (who completed the survey, first visit…) is filtered, the answers are restricted to those responses, since the two facts have no relationship.
+	measure '% Detractors (Response Attr)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'Survey Responses' ),
+					CALCULATE (
+						[_Unguarded % Detractors],
+						TREATAS ( VALUES ( 'Survey Responses'[Survey Response Key] ), 'Survey Answers'[Survey Response Key] )
+					),
+					[_Unguarded % Detractors]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """% Detractors (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Patient Profile
+
+		annotation hnh_guard_allow = Survey Responses
+	/// Respondents by response attribute. When a Survey Responses attribute (who completed the survey, first visit…) is filtered, the answers are restricted to those responses, since the two facts have no relationship.
+	measure 'Respondents (Response Attr)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'Survey Responses' ),
+					CALCULATE (
+						[_Unguarded Respondents],
+						TREATAS ( VALUES ( 'Survey Responses'[Survey Response Key] ), 'Survey Answers'[Survey Response Key] )
+					),
+					[_Unguarded Respondents]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Respondents (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Patient Profile
+
+		annotation hnh_guard_allow = Survey Responses
+	/// NPS Margin of Error on the bridged (Response Attr) shares and respondents.
+	measure 'NPS Margin of Error (Response Attr)' =
+			VAR __Value = ( -- measure body
+				VAR P = [% Promoters (Response Attr)]
+				VAR D = [% Detractors (Response Attr)]
+				VAR N = [Respondents (Response Attr)]
+				RETURN IF ( N > 0, 1.96 * SQRT ( ( P + D - ( P - D ) ^ 2 ) / N ) * 100 )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """NPS Margin of Error (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: ±0.0
+		displayFolder: Patient Experience\Reliability
+
+		annotation hnh_guard_allow = Survey Responses
+	/// Reliability on the bridged (Response Attr) margin of error.
+	measure 'Reliability (Response Attr)' =
+			VAR __Value = ( -- measure body
+				VAR M = [NPS Margin of Error (Response Attr)]
+				RETURN SWITCH ( TRUE (), ISBLANK ( M ), "No answers", M <= 3, "High", M <= 7, "Moderate", "Low" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Reliability (Response Attr)"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Reliability
+
+		annotation hnh_guard_allow = Survey Responses
+	/// Minimum scored answers for a question group to be ranked: 30 for the network, 10 for a specialty, 5 for a doctor.
+	measure 'Min Answers (Drivers)' =
+			SWITCH ( TRUE (), ISFILTERED ( Staff[Staff Name] ), 5, ISFILTERED ( Staff[Specialty] ), 10, 30 )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (5-point) when the group has at least Min Answers (Drivers) scored answers, else blank.
+	measure 'NPS (Drivers)' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] >= [Min Answers (Drivers)], [NPS (5-point)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS (Drivers)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// Minimum scored answers for a single question to be ranked: 30 for the network, 10 for a specialty, 2 for a doctor.
+	measure 'Min Answers (Questions)' =
+			SWITCH ( TRUE (), ISFILTERED ( Staff[Staff Name] ), 2, ISFILTERED ( Staff[Specialty] ), 10, 30 )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (5-point) when the question has at least Min Answers (Questions) scored answers, else blank.
+	measure 'NPS (Questions)' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] >= [Min Answers (Questions)], [NPS (5-point)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS (Questions)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (Drivers) of the 8 lowest-scoring question groups in the selection (ties alphabetical); every question when drilled down to questions.
+	measure 'Group NPS (Bottom 8)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISINSCOPE ( 'Survey Question'[Question En] ),
+					[NPS (Drivers)],
+					VAR T =
+						TOPN (
+							8,
+							FILTER ( ALLSELECTED ( 'Survey Question'[Domain En] ), NOT ISBLANK ( [NPS (Drivers)] ) ),
+							[NPS (Drivers)], ASC,
+							'Survey Question'[Domain En], ASC
+						)
+					RETURN IF ( SELECTEDVALUE ( 'Survey Question'[Domain En] ) IN T, [NPS (Drivers)] )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Group NPS (Bottom 8)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (Drivers) of the 8 highest-scoring question groups in the selection (ties alphabetical); every question when drilled down to questions.
+	measure 'Group NPS (Top 8)' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISINSCOPE ( 'Survey Question'[Question En] ),
+					[NPS (Drivers)],
+					VAR T =
+						TOPN (
+							8,
+							FILTER ( ALLSELECTED ( 'Survey Question'[Domain En] ), NOT ISBLANK ( [NPS (Drivers)] ) ),
+							[NPS (Drivers)], DESC,
+							'Survey Question'[Domain En], ASC
+						)
+					RETURN IF ( SELECTEDVALUE ( 'Survey Question'[Domain En] ) IN T, [NPS (Drivers)] )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Group NPS (Top 8)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// 1 when the question in scope is among the 8 lowest-scoring questions (NPS (Questions), ties alphabetical).
+	measure 'Is Weak Question' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISINSCOPE ( 'Survey Question'[Question En] ),
+					VAR T =
+						TOPN (
+							8,
+							FILTER ( ALLSELECTED ( 'Survey Question'[Domain En], 'Survey Question'[Question En] ), NOT ISBLANK ( [NPS (Questions)] ) ),
+							[NPS (Questions)], ASC,
+							'Survey Question'[Domain En], ASC,
+							'Survey Question'[Question En], ASC
+						)
+					RETURN IF ( ( SELECTEDVALUE ( 'Survey Question'[Domain En] ), SELECTEDVALUE ( 'Survey Question'[Question En] ) ) IN T, 1 )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Is Weak Question"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (Questions) of the 8 lowest-scoring questions.
+	measure 'Q NPS (Bottom 8)' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Weak Question] = 1, [NPS (Questions)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Q NPS (Bottom 8)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// % Promoters of the 8 lowest-scoring questions.
+	measure 'Q % Promoters (Bottom 8)' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Weak Question] = 1, [% Promoters] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Q % Promoters (Bottom 8)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Ranking
+	/// % Detractors of the 8 lowest-scoring questions.
+	measure 'Q % Detractors (Bottom 8)' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Weak Question] = 1, [% Detractors] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Q % Detractors (Bottom 8)"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Patient Experience\Ranking
+	/// NPS Answers of the 8 lowest-scoring questions.
+	measure 'Q Answers (Bottom 8)' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Weak Question] = 1, [NPS Answers] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Q Answers (Bottom 8)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Ranking
+	/// Rank of the question group by its network-wide NPS (n>=30), lowest first, among the groups with a network score.
+	measure 'Group Network Rank (Low)' =
+			VAR __Value = ( -- measure body
+				VAR Net = CALCULATE ( [NPS (n>=30)], REMOVEFILTERS ( Branch ) )
+				RETURN
+					IF (
+						NOT ISBLANK ( Net ) && ISINSCOPE ( 'Survey Question'[Domain En] ),
+						RANKX (
+							FILTER ( ALLSELECTED ( 'Survey Question'[Domain En] ), NOT ISBLANK ( CALCULATE ( [NPS (n>=30)], REMOVEFILTERS ( Branch ) ) ) ),
+							CALCULATE ( [NPS (n>=30)], REMOVEFILTERS ( Branch ) ),
+							Net, ASC, SKIP
+						)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Group Network Rank (Low)"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (5-point) of the 5 question groups with the lowest network NPS, by branch; the total when no group is in scope.
+	measure 'Weak Group NPS (Bottom 5)' =
+			VAR __Value = ( -- measure body
+				IF (
+					NOT ISINSCOPE ( 'Survey Question'[Domain En] ),
+					[NPS (5-point)],
+					IF ( NOT ISBLANK ( [Group Network Rank (Low)] ) && [Group Network Rank (Low)] <= 5, [NPS (5-point)] )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Weak Group NPS (Bottom 5)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// Rank of the specialty by scored answers across every branch and doctor, most surveyed first; 1 when no specialty is in scope.
+	measure 'Specialty Volume Rank' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISINSCOPE ( Staff[Specialty] ),
+					RANKX (
+						ALLSELECTED ( Staff[Specialty] ),
+						CALCULATE ( [NPS Answers], REMOVEFILTERS ( Branch ), REMOVEFILTERS ( Staff[Staff Name] ) ),
+						, DESC, SKIP
+					),
+					1
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Specialty Volume Rank"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (5-point) of the 15 most-surveyed specialties (and their doctors).
+	measure 'Specialty NPS (Top 15 by Volume)' =
+			VAR __Value = ( -- measure body
+				IF ( NOT ISBLANK ( [Specialty Volume Rank] ) && [Specialty Volume Rank] <= 15, [NPS (5-point)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Specialty NPS (Top 15 by Volume)"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (5-point) of a doctor with 30+ scored answers, with the answer count as a tie-break (÷ 10,000,000); the ranking key of the top and bottom doctor lists.
+	measure 'Doctor Score' =
+			VAR __Value = ( -- measure body
+				IF ( [NPS Answers] >= 30, [NPS (5-point)] + [NPS Answers] / 10000000 )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Doctor Score"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// 1 when the doctor in scope is among the 8 highest Doctor Scores in the selection.
+	measure 'Is Top Doctor' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISINSCOPE ( Staff[Staff Name] )
+						&& SELECTEDVALUE ( Staff[Staff Name] )
+							IN TOPN ( 8, FILTER ( ALLSELECTED ( Staff[Staff Name] ), NOT ISBLANK ( [Doctor Score] ) ), [Doctor Score], DESC, Staff[Staff Name], ASC ),
+					1
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Is Top Doctor"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// 1 when the doctor in scope is among the 8 lowest Doctor Scores in the selection.
+	measure 'Is Bottom Doctor' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISINSCOPE ( Staff[Staff Name] )
+						&& SELECTEDVALUE ( Staff[Staff Name] )
+							IN TOPN ( 8, FILTER ( ALLSELECTED ( Staff[Staff Name] ), NOT ISBLANK ( [Doctor Score] ) ), [Doctor Score], ASC, Staff[Staff Name], ASC ),
+					1
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Is Bottom Doctor"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (n>=30) of the 8 top doctors.
+	measure 'Top Doctor NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Top Doctor] = 1, [NPS (n>=30)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Top Doctor NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// Specialty NPS of the 8 top doctors.
+	measure 'Top Doctor Specialty NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Top Doctor] = 1, [Specialty NPS] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Top Doctor Specialty NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// Physician NPS (n>=10) of the 8 top doctors.
+	measure 'Top Doctor Physician NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Top Doctor] = 1, [Physician NPS (n>=10)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Top Doctor Physician NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// NPS Answers of the 8 top doctors.
+	measure 'Top Doctor Answers' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Top Doctor] = 1, [NPS Answers] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Top Doctor Answers"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Ranking
+	/// NPS (n>=30) of the 8 bottom doctors.
+	measure 'Bottom Doctor NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Bottom Doctor] = 1, [NPS (n>=30)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Bottom Doctor NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// Specialty NPS of the 8 bottom doctors.
+	measure 'Bottom Doctor Specialty NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Bottom Doctor] = 1, [Specialty NPS] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Bottom Doctor Specialty NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// Physician NPS (n>=10) of the 8 bottom doctors.
+	measure 'Bottom Doctor Physician NPS' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Bottom Doctor] = 1, [Physician NPS (n>=10)] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Bottom Doctor Physician NPS"" can't be analysed by " & __Wrong )
+		formatString: 0.0
+		displayFolder: Patient Experience\Ranking
+	/// NPS Answers of the 8 bottom doctors.
+	measure 'Bottom Doctor Answers' =
+			VAR __Value = ( -- measure body
+				IF ( [Is Bottom Doctor] = 1, [NPS Answers] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Bottom Doctor Answers"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Patient Experience\Ranking
+	/// Brand colour of the NPS band: green (#05A591) at 70 and above, yellow (#FFB900) from 50, red (#DC280A) below.
+	measure 'NPS Color' =
+			VAR __Value = ( -- measure body
+				VAR V = [NPS (5-point)]
+				RETURN SWITCH ( TRUE (), ISBLANK ( V ), BLANK (), V >= 70, "#05A591", V >= 50, "#FFB900", "#DC280A" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """NPS Color"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Formatting
+	/// Green (#05A591) when NPS vs Network is zero or positive, red (#DC280A) when negative.
+	measure 'Gap Color' =
+			VAR __Value = ( -- measure body
+				VAR G = [NPS vs Network]
+				RETURN IF ( ISBLANK ( G ), BLANK (), IF ( G >= 0, "#05A591", "#DC280A" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Gap Color"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Formatting
+	/// Green (#05A591) for a fair share (index 0.80–1.25), orange (#E08A00) between 0.5 and 2, red (#DC280A) beyond.
+	measure 'Representation Color' =
+			VAR __Value = ( -- measure body
+				VAR I = [Representation Index]
+				RETURN SWITCH ( TRUE (), ISBLANK ( I ), BLANK (), I >= 0.8 && I <= 1.25, "#05A591", I >= 0.5 && I <= 2, "#E08A00", "#DC280A" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Representation Color"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Formatting
+
+		annotation hnh_guard_allow = Survey Service
+	/// The selected branch (or All branches) and the first and last visit date with surveys in the selection.
+	measure 'Report Title Context' =
+			VAR __Value = ( -- measure body
+				VAR B =
+					IF ( ISFILTERED ( Branch[Branch Name] ) && HASONEVALUE ( Branch[Branch Name] ), VALUES ( Branch[Branch Name] ), "All branches" )
+				RETURN
+					B & "  |  " & FORMAT ( CALCULATE ( MIN ( 'Date'[Date] ), 'Survey Responses' ), "dd MMM yyyy" ) & " - "
+						& FORMAT ( CALCULATE ( MAX ( 'Date'[Date] ), 'Survey Responses' ), "dd MMM yyyy" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Report Title Context"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Formatting
+	/// One sentence: response rate, responded of invited, completion rate.
+	measure 'Insight Participation' =
+			VAR __Value = ( -- measure body
+				"Response rate " & FORMAT ( [Response Rate %], "0.0%" ) & ": " & FORMAT ( [Surveys Responded], "#,0" ) & " of "
+					& FORMAT ( [Invitations], "#,0" ) & " invited patients answered, and " & FORMAT ( [Completion Rate %], "0%" )
+					& " of them finished the survey."
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Insight Participation"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// One sentence: NPS, promoter and detractor shares, overall satisfaction.
+	measure 'Insight NPS' =
+			VAR __Value = ( -- measure body
+				"NPS " & FORMAT ( [NPS (5-point)], "0.0" ) & ": " & FORMAT ( [% Promoters], "0%" ) & " of answers are promoters and "
+					& FORMAT ( [% Detractors], "0%" ) & " detractors. Overall satisfaction " & FORMAT ( [Overall Satisfaction (0-100)], "0.0" )
+					& " / 100."
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Insight NPS"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// One sentence: highest and lowest branch NPS (100+ answers) and the spread, or the selected branch's NPS.
+	measure 'Insight Branches' =
+			VAR __Value = ( -- measure body
+				VAR T = ADDCOLUMNS ( FILTER ( VALUES ( Branch[Branch Name] ), [NPS Answers] >= 100 ), "@n", [NPS (5-point)] )
+				VAR Best = TOPN ( 1, T, [@n], DESC )
+				VAR Worst = TOPN ( 1, T, [@n], ASC )
+				RETURN
+					IF (
+						COUNTROWS ( T ) > 1,
+						"Highest branch: " & MAXX ( Best, Branch[Branch Name] ) & " (" & FORMAT ( MAXX ( Best, [@n] ), "0.0" ) & "); lowest: "
+							& MAXX ( Worst, Branch[Branch Name] ) & " (" & FORMAT ( MAXX ( Worst, [@n] ), "0.0" ) & "), a "
+							& FORMAT ( MAXX ( Best, [@n] ) - MAXX ( Worst, [@n] ), "0" ) & "-point spread.",
+						"Selected branch NPS: " & FORMAT ( [NPS (5-point)], "0.0" ) & "."
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Insight Branches"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// One sentence: the two lowest and the highest question groups by NPS (Drivers).
+	measure 'Insight Drivers' =
+			VAR __Value = ( -- measure body
+				VAR T = ADDCOLUMNS ( FILTER ( VALUES ( 'Survey Question'[Domain En] ), [NPS Answers] >= [Min Answers (Drivers)] ), "@n", [NPS (5-point)] )
+				VAR Worst = TOPN ( 2, T, [@n], ASC )
+				VAR Best = TOPN ( 1, T, [@n], DESC )
+				RETURN
+					"Biggest drags: "
+						& CONCATENATEX ( Worst, 'Survey Question'[Domain En] & " (" & FORMAT ( [@n], "0.0" ) & ")", " and ", [@n], ASC )
+						& ". Strongest: " & MAXX ( Best, 'Survey Question'[Domain En] ) & " (" & FORMAT ( MAXX ( Best, [@n] ), "0.0" ) & ")."
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Insight Drivers"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// Key takeaway of the Participation page: response rate by channel, the lowest branch (500+ invitations), NPS reliability and the sample-vs-visits verdict.
+	measure 'Story Participation' =
+			VAR __Value = ( -- measure body
+				VAR T = ADDCOLUMNS ( FILTER ( VALUES ( Branch[Branch Name] ), [Invitations] >= 500 ), "@r", [Response Rate %] )
+				VAR Worst = TOPN ( 1, T, [@r], ASC, Branch[Branch Name], ASC )
+				VAR Channels =
+					IF (
+						NOT ISBLANK ( [Response Rate % (Agent Call)] ) && NOT ISBLANK ( [Response Rate % (SMS)] ),
+						" (agent calls " & FORMAT ( [Response Rate % (Agent Call)], "0.0%" ) & ", SMS " & FORMAT ( [Response Rate % (SMS)], "0.0%" ) & ")",
+						""
+					)
+				VAR Rep = [Sample Representativeness]
+				RETURN
+					FORMAT ( [Response Rate %], "0.0%" ) & " responded" & Channels
+						& IF (
+							COUNTROWS ( T ) > 1,
+							"; lowest branch " & MAXX ( Worst, Branch[Branch Name] ) & " (" & FORMAT ( MAXX ( Worst, [@r] ), "0.0%" ) & ").",
+							"."
+						)
+						& " Reliability " & LOWER ( [Reliability] ) & " (±" & FORMAT ( [NPS Margin of Error], "0.0" ) & ")."
+						& IF (
+							NOT ISBLANK ( Rep ),
+							" Sample " & LOWER ( Rep )
+								& IF (
+									NOT ISBLANK ( [Weighted NPS] ),
+									"; weighted NPS " & FORMAT ( [Weighted NPS], "0.0" ) & " vs " & FORMAT ( [NPS (Visit-Matched)], "0.0" )
+								) & ".",
+							""
+						)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Answers + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Story Participation"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+
+		annotation hnh_guard_allow = Survey Service
+	/// Key takeaway of the Satisfaction page: NPS with its margin and reliability, promoters, satisfaction, weakest and strongest care setting (100+ answers).
+	measure 'Story Satisfaction' =
+			VAR __Value = ( -- measure body
+				VAR T = ADDCOLUMNS ( FILTER ( VALUES ( 'Survey Service'[Care Setting] ), [NPS Answers] >= 100 ), "@n", [NPS (5-point)] )
+				VAR Worst = TOPN ( 1, T, [@n], ASC )
+				VAR Best = TOPN ( 1, T, [@n], DESC )
+				RETURN
+					"NPS " & FORMAT ( [NPS (5-point)], "0.0" ) & " (±" & FORMAT ( [NPS Margin of Error], "0.0" ) & ", " & LOWER ( [Reliability] )
+						& " reliability), " & FORMAT ( [% Promoters], "0%" ) & " promoters, satisfaction "
+						& FORMAT ( [Overall Satisfaction (0-100)], "0.0" ) & "/100."
+						& IF (
+							COUNTROWS ( T ) > 1,
+							" Weakest setting " & MAXX ( Worst, 'Survey Service'[Care Setting] ) & " (" & FORMAT ( MAXX ( Worst, [@n] ), "0.0" )
+								& "), strongest " & MAXX ( Best, 'Survey Service'[Care Setting] ) & " (" & FORMAT ( MAXX ( Best, [@n] ), "0.0" ) & ").",
+							""
+						)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Story Satisfaction"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// Key takeaway of the Drivers page: the three lowest question groups (or no weak spots), with reliability when a doctor or specialty is in context.
+	measure 'Story Drivers' =
+			VAR __Value = ( -- measure body
+				VAR Rel =
+					IF (
+						ISFILTERED ( Staff[Staff Name] ) || ISFILTERED ( Staff[Specialty] ),
+						" Reliability: " & [Reliability] & " (±" & FORMAT ( [NPS Margin of Error], "0.0" ) & ").",
+						""
+					)
+				VAR Who =
+					IF (
+						ISFILTERED ( Staff[Staff Name] ) && HASONEVALUE ( Staff[Staff Name] ),
+						VALUES ( Staff[Staff Name] ) & ": ",
+						IF ( ISFILTERED ( Staff[Specialty] ) && HASONEVALUE ( Staff[Specialty] ), VALUES ( Staff[Specialty] ) & ": ", "" )
+					)
+				VAR T = ADDCOLUMNS ( FILTER ( VALUES ( 'Survey Question'[Domain En] ), [NPS Answers] >= [Min Answers (Drivers)] ), "@n", [NPS (5-point)] )
+				VAR Worst = TOPN ( 3, T, [@n], ASC, 'Survey Question'[Domain En], ASC )
+				VAR Lowest = MINX ( T, [@n] )
+				RETURN
+					SWITCH (
+						TRUE (),
+						COUNTROWS ( T ) = 0, Who & "not enough answers yet to rank question groups.",
+						Lowest >= 90, Who & "no weak spots: even the lowest-rated question group scores " & FORMAT ( Lowest, "0.0" ) & "." & Rel,
+						Who & "Biggest drags: "
+							& CONCATENATEX ( Worst, 'Survey Question'[Domain En] & " (" & FORMAT ( [@n], "0.0" ) & ")", ", ", [@n], ASC )
+							& ". Click a bar for its weakest questions." & Rel
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Story Drivers"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// Key takeaway of the Branch Benchmark page: the branch leading and the branch trailing the network (100+ answers), and how many branches are below it.
+	measure 'Story Branches' =
+			VAR __Value = ( -- measure body
+				VAR T =
+					ADDCOLUMNS (
+						FILTER ( VALUES ( Branch[Branch Name] ), [NPS Answers] >= 100 ),
+						"@g", [NPS (5-point)] - CALCULATE ( [NPS (5-point)], REMOVEFILTERS ( Branch ) )
+					)
+				VAR Best = TOPN ( 1, T, [@g], DESC )
+				VAR Worst = TOPN ( 1, T, [@g], ASC )
+				RETURN
+					MAXX ( Best, Branch[Branch Name] ) & " leads the network by " & FORMAT ( MAXX ( Best, [@g] ), "+0.0;-0.0" ) & " points; "
+						& MAXX ( Worst, Branch[Branch Name] ) & " trails by " & FORMAT ( MAXX ( Worst, [@g] ), "+0.0;-0.0" ) & ". "
+						& COUNTROWS ( FILTER ( T, [@g] < 0 ) ) & " of " & COUNTROWS ( T ) & " branches are below the network."
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Story Branches"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// Key takeaway of the Specialties & Doctors page: doctors (30+ answers) under 50 NPS and the lowest busy specialty (200+ answers).
+	measure 'Story Doctors' =
+			VAR __Value = ( -- measure body
+				VAR D = FILTER ( ADDCOLUMNS ( VALUES ( Staff[Staff Name] ), "@d", [NPS (n>=30)] ), NOT ISBLANK ( [@d] ) )
+				VAR S = ADDCOLUMNS ( FILTER ( VALUES ( Staff[Specialty] ), [NPS Answers] >= 200 ), "@n", [NPS (5-point)] )
+				VAR Worst = TOPN ( 1, S, [@n], ASC )
+				RETURN
+					COUNTROWS ( FILTER ( D, [@d] < 50 ) ) & " of " & COUNTROWS ( D ) & " doctors (30+ answers) score below 50 NPS; lowest busy specialty "
+						& MAXX ( Worst, Staff[Specialty] ) & " (" & FORMAT ( MAXX ( Worst, [@n] ), "0.0" )
+						& "). Right-click a doctor or specialty for its drivers."
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """Story Doctors"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+	/// Key takeaway of the Patient Profile page: NPS range by who completed the survey (100+ responses) and female vs male NPS.
+	measure 'Story Profile' =
+			VAR __Value = ( -- measure body
+				VAR T =
+					ADDCOLUMNS (
+						FILTER (
+							VALUES ( 'Survey Responses'[Respondent Type] ),
+							[Surveys Responded] >= 100 && 'Survey Responses'[Respondent Type] <> "Not answered"
+						),
+						"@n", [NPS (Response Attr)]
+					)
+				VAR Best = TOPN ( 1, T, [@n], DESC )
+				VAR Worst = TOPN ( 1, T, [@n], ASC )
+				RETURN
+					"NPS by who completed the survey: " & FORMAT ( MAXX ( Worst, [@n] ), "0.0" ) & " (" & MAXX ( Worst, 'Survey Responses'[Respondent Type] )
+						& ") to " & FORMAT ( MAXX ( Best, [@n] ), "0.0" ) & " (" & MAXX ( Best, 'Survey Responses'[Respondent Type] ) & "). Female "
+						& FORMAT ( CALCULATE ( [NPS (5-point)], Patient[Gender] = "Female" ), "0.0" ) & " vs male "
+						& FORMAT ( CALCULATE ( [NPS (5-point)], Patient[Gender] = "Male" ), "0.0" ) & "."
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers + Survey Responses | Survey Responses]
+			RETURN IF ( __Wrong = "", __Value, """Story Profile"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+
+		annotation hnh_guard_allow = Survey Responses
+	/// Verdict of the sample-vs-visits section: the sample mix and whether weighting by visits moves the NPS beyond its margin.
+	measure 'Story Representativeness' =
+			VAR __Value = ( -- measure body
+				VAR Rep = [Sample Representativeness]
+				VAR E = [NPS Weighting Effect]
+				VAR Moe = [NPS Margin of Error]
+				RETURN
+					IF (
+						NOT ISBLANK ( Rep ),
+						"Sample mix: " & LOWER ( Rep ) & "."
+							& IF (
+								NOT ISBLANK ( E ),
+								" Weighted by actual visits NPS moves " & FORMAT ( E, "+0.0;-0.0;0.0" )
+									& IF (
+										ABS ( E ) <= Moe,
+										", within the ±" & FORMAT ( Moe, "0.0" ) & " margin: the headline NPS holds.",
+										", beyond the ±" & FORMAT ( Moe, "0.0" ) & " margin: read care types separately or use the weighted NPS."
+									),
+								""
+							)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters + Survey Answers + Survey Responses | Survey Service]
+			RETURN IF ( __Wrong = "", __Value, """Story Representativeness"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Patient Experience\Story
+
+		annotation hnh_guard_allow = Survey Service
 	/// Trial balance opening balance in SAR (natural sign: debit +, credit −) at the first period of the selection per branch; under YTD the opening of the year. Posted unless a Balance View is selected (Phase 3 spec section 1, F4).
 	measure 'TB Opening Balance' =
 			VAR __Value = ( -- measure body
@@ -6571,6 +7974,186 @@ table _Measures
 				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
 				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
 				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Admissions, Encounters, Survey Answers, Survey Responses (also allowed: Survey Service), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Admissions + Encounters + Survey Answers + Survey Responses | Survey Service' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Admissions, Encounters, Survey Responses (also allowed: Survey Service), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Admissions + Encounters + Survey Responses | Survey Service' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
 				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
 				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
 				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
@@ -11329,6 +12912,95 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
+	/// Filtered tables that cannot filter Survey Answers, Survey Responses (also allowed: Survey Responses), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Survey Answers + Survey Responses | Survey Responses' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
 	/// Filtered tables that cannot filter Survey Responses, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard Survey Responses' =
 			VAR __Names =
@@ -11686,6 +13358,27 @@ table _Measures
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Guards
+
+	/// The expression of % Detractors without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded % Detractors' =
+			DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[Is Scored] = "Yes" ), [_Unguarded NPS Answers] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of % Promoters without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded % Promoters' =
+			DIVIDE ( CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ), 'Survey Answers'[Is Scored] = "Yes" ), [_Unguarded NPS Answers] )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of Admissions without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded Admissions' =
+			CALCULATE ( COUNTROWS ( Admissions ), Admissions[Is Countable] = "Yes" )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
 
 	/// The expression of BSC ALOS (days) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC ALOS (days)' =
@@ -12239,6 +13932,83 @@ table _Measures
 				)
 			VAR Budgeted = CALCULATE ( SUM ( 'BSC Budgeted FTE'[Budgeted FTE] ), REMOVEFILTERS ( 'Date' ), 'Date'[Year] = YEAR ( PeriodEnd ) )
 			RETURN IF ( NOT ISBLANK ( PeriodEnd ), DIVIDE ( Openings, Budgeted ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of ER Visits without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded ER Visits' =
+			CALCULATE (
+				COUNTROWS ( Encounters ),
+				KEEPFILTERS ( Encounters[Encounter Type] = "ER" ),
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of NPS (5-point) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded NPS (5-point)' =
+			VAR Answers = [_Unguarded NPS Answers]
+			VAR Net =
+				CALCULATE (
+					SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ),
+					'Survey Answers'[Is Scored] = "Yes"
+				)
+			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of NPS Answers without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded NPS Answers' =
+			CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[Is Scored] = "Yes" )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of OP Visits without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded OP Visits' =
+			CALCULATE (
+				COUNTROWS ( Encounters ),
+				KEEPFILTERS ( Encounters[Encounter Type] = "OP" ),
+				Encounters[Is Arrived] = "Yes",
+				Encounters[Is Cancelled] = "No"
+			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of Overall Satisfaction (0-100) without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded Overall Satisfaction (0-100)' =
+			VAR Groups =
+				CALCULATETABLE (
+					ADDCOLUMNS (
+						SUMMARIZE ( 'Survey Answers', 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),
+						"@n", CALCULATE ( COUNTROWS ( 'Survey Answers' ) )
+					),
+					'Survey Answers'[Is Scored] = "Yes",
+					NOT ISBLANK ( 'Survey Answers'[Answer Score] )
+				)
+			VAR Num =
+				SUMX (
+					Groups,
+					[@n]
+						* SWITCH (
+							'Survey Answers'[Scale Type],
+							"likelihood_0_10", 'Survey Answers'[Answer Score] * 10,
+							"definitely_1_4", ( 'Survey Answers'[Answer Score] - 1 ) / 3 * 100,
+							( 'Survey Answers'[Answer Score] - 1 ) / 4 * 100
+						)
+				)
+			RETURN DIVIDE ( Num, SUMX ( Groups, [@n] ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of Respondents without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded Respondents' =
+			CALCULATE ( DISTINCTCOUNT ( 'Survey Answers'[Survey Response Key] ), 'Survey Answers'[Is Scored] = "Yes" )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded

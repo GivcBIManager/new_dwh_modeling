@@ -83,8 +83,15 @@ def test_perspectives_list_their_domain_measures():
     assert stale == [], "run python ssas/tools/sync_perspectives.py"
 
 
+def measure_guards_twin_prefix() -> str:
+    import measure_guards
+    return measure_guards.TWIN_PREFIX
+
+
 def test_nps_measures_show_insufficient_sample():
-    bad = [m.name for m in MEASURES if "NPS (5-point)" in m.name and "insufficient sample" not in m.format_expression]
+    # the unguarded twins (measure_guards.py) are hidden helpers read by other measures, not shown
+    bad = [m.name for m in MEASURES if "NPS (5-point)" in m.name and not m.name.startswith(measure_guards_twin_prefix())
+           and "insufficient sample" not in m.format_expression]
     assert bad == []
 
 

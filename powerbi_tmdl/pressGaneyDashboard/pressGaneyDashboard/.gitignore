@@ -1,0 +1,13 @@
+# Power BI Desktop per-user files
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
+# Custom visual build output (dist/*.pbiviz is kept: build_report.py embeds it)
+custom-visual/**/node_modules/
+custom-visual/**/.tmp/
+custom-visual/**/webpack.statistics.*.html
+
+# Validation caches
+tools/.schema-cache/
+tools/.visual_queries.json
+__pycache__/

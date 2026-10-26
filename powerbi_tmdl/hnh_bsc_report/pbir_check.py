@@ -34,14 +34,15 @@ def _ps(script: str, *args: str, timeout: int = 300) -> str:
     return r.stdout
 
 
-def extract_schemas(dest) -> Path:
+def extract_schemas(dest, bin_dir: Path | None = None) -> Path:
+    """`bin_dir`: another Desktop's bin folder (Desktop for Report Server); the default is DESKTOP_BIN."""
     dest = Path(dest)
-    _ps("extract_schemas.ps1", "-Out", str(dest))
+    _ps("extract_schemas.ps1", "-Out", str(dest), "-Bin", str(bin_dir or DESKTOP_BIN))
     return dest
 
 
-def desktop_open(pbip) -> str:
-    return _ps("open_pbip.ps1", "-Pbip", str(Path(pbip).resolve())).strip()
+def desktop_open(pbip, bin_dir: Path | None = None) -> str:
+    return _ps("open_pbip.ps1", "-Pbip", str(Path(pbip).resolve()), "-Bin", str(bin_dir or DESKTOP_BIN)).strip()
 
 
 # ---- JSON Schema (draft-07 subset) -----------------------------------------------------------------------------------

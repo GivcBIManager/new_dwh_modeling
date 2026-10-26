@@ -1,10 +1,10 @@
-param([Parameter(Mandatory = $true)][string]$Pbip, [switch]$Trace)
+param([Parameter(Mandatory = $true)][string]$Pbip, [switch]$Trace, [string]$Bin = "C:\Program Files\Microsoft Power BI Desktop\bin")
 # Open a PBIP with Power BI Desktop's own project reader (Microsoft.PowerBI.Packaging.dll: PBIProjectShredder and its
 # schema validation of .pbip, definition.pbir, .platform, definition.pbism, modelReference.json). Read only: reads the
 # project's files, writes nothing, starts no Desktop. It does not render pages or check report/page/visual JSON (Desktop
 # does that in its web view; pbir_check.validate_report checks those against the embedded schemas).
 # Prints "opened; ..." lines, "issue: ..." for validation warnings, or "FAIL <exception>: <message>".
-$bin = "C:\Program Files\Microsoft Power BI Desktop\bin"
+$bin = $Bin
 $pkg = "$bin\Microsoft.PowerBI.Packaging.dll"
 # Add-Type reports a ReflectionTypeLoadException for unrelated Desktop types; the types below still compile.
 Add-Type -ErrorAction SilentlyContinue -ReferencedAssemblies @($pkg, "System.Runtime", "System.Threading.Tasks") -TypeDefinition @"
