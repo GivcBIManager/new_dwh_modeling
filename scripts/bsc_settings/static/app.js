@@ -716,6 +716,7 @@ function copyProfile(s, target) {
   for (const r of state.tables[s.name].current) if (r.profile === target) tgtStored.set(r.kpi_code, r);
   let n = 0;
   const codes = new Set([...from.keys(), ...tgtStored.keys()]);
+  for (const c of state.pending.values()) if (c.table === s.name && c.row.profile === target) codes.add(c.row.kpi_code); // the target's own pending keys are replaced too
   for (const code of codes) {
     const pk = pkey(s.name, keyValues(s, {profile: target, kpi_code: code}));
     const st = tgtStored.get(code), base = st ? st.changed_at : null;

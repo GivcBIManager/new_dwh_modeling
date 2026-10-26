@@ -180,6 +180,18 @@ const check = (name, ok, detail) => results.push((ok ? "PASS " : "FAIL ") + name
     copyTo("branch:1");
     check("copy corporate to branch:1: 3 upserts", /3 changes added for branch:1/.test(txt($("content"))) && prof().value === "branch:1" && /1\.0000/.test(txt(total())), txt($("content")));
     btn($("pending"), "Discard all").click();
+
+    // a pending new key on the target that the source lacks is dropped by a copy
+    setv(prof(), "branch:3");
+    const typed = inputs()[2]; // FIN_MEASURE: branch:1 has no weight for it
+    typed.value = "0.3"; fire(typed, "change");
+    check("typed key pending on the target", /1 change waiting/.test(txt($("pending"))) && /0\.3000/.test(txt(total())), txt(total()));
+    setv(prof(), "branch:1");
+    copyTo("branch:3");
+    const pend = [...$("pending").querySelectorAll("li")].map((l) => txt(l));
+    check("copy drops the target's own pending key", pend.length === 2 && !pend.some((x) => /FIN_MEASURE/.test(x)) && /2 changes added for branch:3/.test(txt($("content"))), pend.join("|"));
+    check("target total equals source total", /0\.8000/.test(txt(total())), txt(total()));
+    btn($("pending"), "Discard all").click();
   });
 
   await step("401 to sign-in", async () => {
