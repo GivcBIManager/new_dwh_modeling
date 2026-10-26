@@ -60,8 +60,11 @@ for line in sys.stdin:
         out = {"tables": stub.tables}
     elif cmd["op"] == "fail_select":
         stub.fail_select(cmd["substring"])
+    elif cmd["op"] == "fail_insert_into":
+        stub.fail_insert_into(cmd["table"])
     elif cmd["op"] == "clear_failures":
         stub._fail_selects.clear()
+        stub._fail_insert_tables.clear()
     elif cmd["op"] == "clear_sessions":
         srv.app.sessions.clear()
     print(json.dumps(out, default=str), flush=True)

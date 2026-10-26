@@ -192,6 +192,52 @@ def test_bad_numbers_are_errors():
     err(target(year="20x6"), "year")
 
 
+def test_int_keys_must_be_whole_numbers():
+    for col, bad in (("branch_id", "1.5"), ("branch_id", 1.5), ("year", "2026.5"), ("month", "1.2")):
+        _, issues = run([target(**{col: bad})])
+        errors = msgs(issues, "error")
+        assert any(m == f"{col} is not a whole number" for m in errors), (col, bad, errors)
+    # a removal of a non-integer key is refused too (never truncated to another key)
+    c = ctx(map_bsc_target=[tgt("FIN_DAYS_IN_AR", 1, 2026, 1, 0.5, "2026-01-01 00:00:00.000")])
+    rows, issues = run([Change("map_bsc_target", "remove",
+                               {"kpi_code": "FIN_DAYS_IN_AR", "branch_id": "1.5", "year": 2026, "month": 1})], c=c)
+    assert "branch_id is not a whole number" in msgs(issues, "error") and not rows
+    for ok in ("1", "1.0", 1.0):
+        rows, issues = run([target(branch_id=ok)])
+        assert not msgs(issues, "error") and rows["map_bsc_target"][0]["branch_id"] == 1
+
+
+def test_year_must_be_2020_to_2100():
+    m = dict(kpi_code="FIN_RATE", branch_id=1, month=1, numerator=1, denominator=1, note="")
+    year_changes = {
+        "map_bsc_target": lambda y: target(year=y),
+        "map_bsc_manual_value": lambda y: up("map_bsc_manual_value", year=y, **m),
+        "map_bsc_licensed_beds": lambda y: up("map_bsc_licensed_beds", branch_id=1, year=y, licensed_beds=10),
+        "map_bsc_budgeted_fte": lambda y: up("map_bsc_budgeted_fte", branch_id=1, year=y, budgeted_fte=10),
+    }
+    assert set(year_changes) == {n for n, s in TABLES.items() if any(c.name == "year" for c in s.columns)}
+    for name, make in year_changes.items():
+        for bad in (2019, 2101, 26, 0):
+            _, issues = run([make(bad)])
+            assert "year must be 2020 to 2100" in msgs(issues, "error"), (name, bad)
+        for ok in (2020, 2026, 2100):
+            _, issues = run([make(ok)])
+            assert not msgs(issues, "error"), (name, ok, msgs(issues, "error"))
+
+
+def test_removing_a_whole_branch_profile_is_not_a_total_warning():
+    c = ctx(map_bsc_weight=[weight("branch:3", "FIN_DAYS_IN_AR", 0.6), weight("branch:3", "FIN_RATE", 0.4)])
+    rm = [Change("map_bsc_weight", "remove", {"profile": "branch:3", "kpi_code": k}) for k in ("FIN_DAYS_IN_AR", "FIN_RATE")]
+    rows, issues = run(rm, c=c)
+    assert not msgs(issues, "error") and len(rows["map_bsc_weight"]) == 2
+    w = msgs(issues, "warning")
+    assert not any("should be 1.0000" in x for x in w), w
+    assert "profile branch:3: no weights left, so the hospital uses the corporate profile" in w
+    # removing only one row still warns about the total
+    _, issues = run(rm[:1], c=c)
+    assert any("profile branch:3: total 0.4000, should be 1.0000" in x for x in msgs(issues, "warning"))
+
+
 def test_new_kpi_is_not_an_error_but_needs_its_measure():
     row = kpi("BRAND_NEW")
     for k in ("changed_at", "changed_by", "change_note", "is_deleted"):

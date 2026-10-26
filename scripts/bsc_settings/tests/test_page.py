@@ -1,5 +1,7 @@
+import ast
 import http.client
 import re
+from html.parser import HTMLParser
 import shutil
 import subprocess
 from pathlib import Path
@@ -70,7 +72,46 @@ def test_manual_value_and_weight_views_are_registered():
     assert 'registerView("map_bsc_weight"' in js
 
 
-def test_manual_value_and_weight_views_are_registered():
-    js = (STATIC / "app.js").read_text(encoding="utf-8")
-    assert 'registerView("map_bsc_manual_value"' in js
-    assert 'registerView("map_bsc_weight"' in js
+def test_no_test_is_defined_twice():
+    """A second def of the same name silently replaces the first, so one of them never runs."""
+    for f in sorted(Path(__file__).resolve().parent.glob("test_*.py")):
+        names = [n.name for n in ast.parse(f.read_text(encoding="utf-8")).body
+                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+        twice = sorted({n for n in names if names.count(n) > 1})
+        assert not twice, "%s defines %s twice" % (f.name, ", ".join(twice))
+
+
+class _SignIn(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.form = None
+        self.depth = 0
+        self.inputs = []  # (attrs, inside the sign-in form)
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == "form" and a.get("id") == "signin-form":
+            self.form = a
+            self.depth = 1
+        elif tag == "form" and self.depth:
+            self.depth += 1
+        if tag == "input":
+            self.inputs.append((a, self.depth > 0))
+
+    def handle_endtag(self, tag):
+        if tag == "form" and self.depth:
+            self.depth -= 1
+
+
+def test_sign_in_fields_are_in_a_form_that_asks_not_to_store_them():
+    p = _SignIn()
+    p.feed((STATIC / "index.html").read_text(encoding="utf-8"))
+    assert p.form is not None and p.form.get("autocomplete") == "off"
+    fields = {a.get("id"): (a, inside) for a, inside in p.inputs if a.get("id") in ("signin-user", "signin-pass")}
+    assert set(fields) == {"signin-user", "signin-pass"}
+    for a, inside in fields.values():
+        assert inside and a.get("autocomplete") == "off", a
+    assert fields["signin-pass"][0].get("type") == "password"
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert ("If Edge offers to save the password, choose Never: "
+            "the password must not be stored on this server.") in readme

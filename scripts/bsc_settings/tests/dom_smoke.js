@@ -48,11 +48,21 @@ const check = (name, ok, detail) => results.push((ok ? "PASS " : "FAIL ") + name
   const setv = (n, v, type = "change") => { n.value = v; fire(n, type); };
   const cell = (i) => $("content").querySelector("tbody tr").children[i].querySelector("input,select");
   const step = async (name, fn) => { try { await fn(); } catch (e) { check(name, false, "threw " + e.message); } };
+  const P = () => txt($("pending"));
+  const reviewBtn = () => btn($("pending"), "Review & save");
+  const pendingRows = () => JSON.parse(w.eval("JSON.stringify([...state.pending.values()].map((p) => p.row))"));
+  const unloadAsks = () => { const e = new w.Event("beforeunload", {cancelable: true}); w.dispatchEvent(e); return e.defaultPrevented; };
+  const note = (v) => setv($("pending").querySelector("input.note"), v, "input");
+  const mrows = () => [...$("content").querySelectorAll("tbody tr")];
+  const mtd = (r, h) => mrows()[r].children[h];
+  const mins = (r, h) => [...mtd(r, h).querySelectorAll("input")];
   await until(() => doc.readyState === "complete" && !$("signin").hidden, "sign-in shown");
 
   await step("sign-in", async () => {
     $("signin-user").value = "tester"; $("signin-pass").value = "pw-123";
-    fire($("signin-form"), "submit");
+    const sub = new w.Event("submit", {bubbles: true, cancelable: true});
+    $("signin-form").dispatchEvent(sub);
+    check("sign-in submit is prevented (fetch only, no form post)", sub.defaultPrevented);
     check("password cleared at once", $("signin-pass").value === "");
     await until(() => !$("shell").hidden && $("content").querySelector("h2"), "shell");
     check("banner", txt($("banner")) === "Signed in to ClickHouse as tester. Saved changes show in the report tomorrow morning.");
@@ -94,6 +104,22 @@ const check = (name, ok, detail) => results.push((ok ? "PASS " : "FAIL ") + name
     check("stub got the reviewed row", t.length === 2 && last.target_value === 180 && last.source_basis === "Board" && last.changed_by === "tester", JSON.stringify(last));
     await until(() => /could not be reloaded/.test(txt($("content"))), "reload error");
     check("reload failure is shown", /Saved, but the table could not be reloaded: .*Pick the table again\./.test(txt($("content"))), txt($("content")));
+    btn($("review-dialog"), "Close").click();
+  });
+
+  await step("number cells send the typed text", async () => {
+    await cmd({op: "clear_failures"});
+    btn($("nav"), "Targets").click();
+    await until(() => txt($("content").querySelector("h2")) === "Targets" && $("content").querySelector("tbody tr"), "targets again");
+    setv(cell(4), " 0x10 ");
+    const row = pendingRows()[0];
+    check("target value sent as the trimmed text", row && row.target_value === "0x10", JSON.stringify(row));
+    note("hex");
+    reviewBtn().click();
+    await until(() => /target_value/.test(txt($("review-dialog"))), "review error");
+    check("the server decides: 0x10 is not a number", /target_value is not a number/.test(txt($("review-dialog"))) && btn($("review-dialog"), "Insert").disabled, txt($("review-dialog")));
+    btn($("review-dialog"), "Back").click();
+    btn($("pending"), "Discard all").click();
   });
 
   await step("manual values", async () => {
@@ -131,6 +157,66 @@ const check = (name, ok, detail) => results.push((ok ? "PASS " : "FAIL ") + name
     check("stub got all 7 columns", ["kpi_code", "branch_id", "year", "month", "numerator", "denominator", "note"].every((c) => c in last) && last.numerator === 7 && last.denominator === 70 && last.branch_id === 1 && last.kpi_code === "FIN_DAYS_IN_AR" && last.changed_by === "tester", JSON.stringify(last));
     btn($("review-dialog"), "Close").click();
     await until(() => $("content").querySelector("tbody tr") && !$("content").querySelector("tbody tr").children[1].classList.contains("mt"), "reloaded cell filled");
+  });
+
+  await step("manual values: incomplete cells", async () => {
+    check("nothing waiting: closing the tab is not questioned", /No changes waiting/.test(P()) && !unloadAsks(), P());
+    let [n, d, nt] = mins(1, 3);
+    n.value = "0,7"; fire(n, "change"); d.value = "5"; fire(d, "change");
+    check("0,7 marks the cell incomplete", mtd(1, 3).classList.contains("inc"));
+    check("pending bar counts the incomplete cell", /1 cell incomplete or not a number — fix or clear it/.test(P()) && !/No changes waiting/.test(P()), P());
+    check("review & save disabled while a cell is incomplete", reviewBtn() && reviewBtn().disabled, P());
+    check("closing the tab is questioned while a cell is incomplete", unloadAsks());
+    nt = mins(1, 4)[2];
+    nt.value = "only a note"; fire(nt, "change");
+    check("a note alone on an empty cell is incomplete, not wiped", mtd(1, 4).classList.contains("inc") && mins(1, 4)[2].value === "only a note" && /2 cells incomplete or not numbers — fix or clear them/.test(P()), P());
+    [n, d] = mins(1, 5);
+    n.value = "0x10"; fire(n, "change"); d.value = "1e3"; fire(d, "change");
+    check("0x10 and 1e3 are not numbers", mtd(1, 5).classList.contains("inc") && /3 cells incomplete/.test(P()), P());
+    n = mins(1, 3)[0];
+    n.value = " 0.7 "; fire(n, "change");
+    const row = pendingRows()[0];
+    check("typed numbers are sent trimmed, as text", row && row.numerator === "0.7" && row.denominator === "5", JSON.stringify(row));
+    check("one change and two incomplete cells, still blocked", /1 change waiting/.test(P()) && /2 cells incomplete/.test(P()) && reviewBtn().disabled, P());
+    nt = mins(1, 4)[2]; nt.value = ""; fire(nt, "change");
+    check("clearing the note clears that incomplete cell", !mtd(1, 4).classList.contains("inc") && /1 cell incomplete/.test(P()), P());
+    btn($("pending"), "Discard all").click();
+    check("discard all clears incomplete cells", /No changes waiting/.test(P()) && mins(1, 5)[0].value === "" && !mtd(1, 5).classList.contains("inc") && !unloadAsks(), P());
+
+    [n, d] = mins(1, 3); n.value = "1"; fire(n, "change"); d.value = "2"; fire(d, "change");
+    check("closing the tab is questioned while a change waits", unloadAsks());
+    note("one more");
+    reviewBtn().click();
+    await until(() => btn($("review-dialog"), "Insert"), "review");
+    // an incomplete cell that appears while the review is open (white-box: typing would void the review)
+    w.eval("(() => { const s = spec('map_bsc_manual_value'), row = {kpi_code: 'FIN_OTHER', branch_id: 6, year: state.mv.year, month: state.mv.month};"
+      + " state.mvDrafts[pkey(s.name, keyValues(s, row))] = {row, numerator: '3', denominator: '', note: ''}; renderPending(); })()");
+    check("incomplete cell counted during the review", /1 cell incomplete/.test(P()), P());
+    btn($("review-dialog"), "Insert").click();
+    await until(() => /Saved\./.test(txt($("review-dialog"))), "saved");
+    btn($("review-dialog"), "Close").click();
+    await until(() => mins(1, 3)[0].value === "1" && !mtd(1, 3).classList.contains("ch"), "reloaded");
+    check("a successful save clears incomplete cells", /No changes waiting/.test(P()) && mins(1, 6)[0].value === "" && !mtd(1, 6).classList.contains("inc"), P());
+  });
+
+  await step("manual values: remove", async () => {
+    const rm = btn(mtd(0, 2), "Remove");
+    check("remove offered on a stored cell, out of the Tab order", rm && rm.getAttribute("tabindex") === "-1" && !btn(mtd(1, 7), "Remove"));
+    rm.click();
+    check("removed cell struck through", mtd(0, 2).classList.contains("gone") && !mtd(0, 2).querySelector("input") && /50/.test(txt(mtd(0, 2))), txt(mtd(0, 2)));
+    check("one remove waiting", /1 change waiting/.test(P()) && /remove/.test(P()), P());
+    btn(mtd(0, 2), "Undo remove").click();
+    check("undo remove", /No changes waiting/.test(P()) && mins(0, 2)[0].value === "50", P());
+    btn(mtd(0, 2), "Remove").click();
+    note("drop it");
+    reviewBtn().click();
+    await until(() => btn($("review-dialog"), "Insert"), "remove review");
+    btn($("review-dialog"), "Insert").click();
+    await until(() => /Saved\./.test(txt($("review-dialog"))), "remove saved");
+    const t = (await cmd({op: "dump"})).tables.map_bsc_manual_value, last = t[t.length - 1];
+    check("stub got the removal with every column", last.is_deleted === 1 && last.numerator === 50 && last.denominator === 5 && last.branch_id === 2 && last.note === "seed" && last.change_note === "drop it", JSON.stringify(last));
+    btn($("review-dialog"), "Close").click();
+    await until(() => mtd(0, 2).classList.contains("mt"), "removed cell empty after reload");
   });
 
   await step("weights", async () => {
@@ -191,6 +277,68 @@ const check = (name, ok, detail) => results.push((ok ? "PASS " : "FAIL ") + name
     const pend = [...$("pending").querySelectorAll("li")].map((l) => txt(l));
     check("copy drops the target's own pending key", pend.length === 2 && !pend.some((x) => /FIN_MEASURE/.test(x)) && /2 changes added for branch:3/.test(txt($("content"))), pend.join("|"));
     check("target total equals source total", /0\.8000/.test(txt(total())), txt(total()));
+    btn($("pending"), "Discard all").click();
+
+    // a weight that is not a number blocks saving until fixed or cleared
+    setv(prof(), "branch:1");
+    let bad = inputs()[2];
+    bad.value = "0,7"; fire(bad, "change");
+    check("0,7 weight is incomplete and blocks saving", bad.parentNode.classList.contains("inc") && /1 cell incomplete or not a number/.test(P()) && reviewBtn().disabled && !/No changes waiting/.test(P()), P());
+    bad.value = "0x10"; fire(bad, "change");
+    check("0x10 weight is not a number", bad.parentNode.classList.contains("inc") && !/change waiting/.test(P()), P());
+    bad.value = " 0.25 "; fire(bad, "change");
+    const wrow = pendingRows()[0];
+    check("weight sent as the trimmed text", wrow && wrow.weight === "0.25" && /1 change waiting/.test(P()) && !/incomplete/.test(P()) && !reviewBtn().disabled, JSON.stringify(wrow) + " " + P());
+    bad.value = "abc"; fire(bad, "change");
+    btn($("pending"), "Discard all").click();
+    check("discard all clears a bad weight", /No changes waiting/.test(P()) && inputs()[2].value === "" && !inputs()[2].parentNode.classList.contains("inc"), P());
+
+    // remove one weight row, then undo
+    const rowOf = (code) => [...$("content").querySelectorAll("tbody tr")].find((r) => r.querySelector("b") && txt(r.querySelector("b")) === code);
+    check("no Remove on a KPI without a row", !btn(rowOf("FIN_MEASURE"), "Remove"));
+    btn(rowOf("FIN_OTHER"), "Remove").click();
+    check("removed weight row struck through", rowOf("FIN_OTHER").classList.contains("gone") && !rowOf("FIN_OTHER").querySelector("input") && /0\.6000/.test(txt(total())) && /1 change waiting/.test(P()) && /remove/.test(P()), txt(total()) + " " + P());
+    btn(rowOf("FIN_OTHER"), "Undo remove").click();
+    check("undo weight remove", /No changes waiting/.test(P()) && /0\.8000/.test(txt(total())) && rowOf("FIN_OTHER").querySelector("input").value === "0.2", P());
+
+    // remove a whole hospital profile (never corporate)
+    setv(prof(), "corporate");
+    check("no Remove profile for corporate", !btn($("content"), "Remove profile"));
+    setv(prof(), "branch:1");
+    bad = inputs()[2]; bad.value = "0.3"; fire(bad, "change"); // the profile's own pending key goes too
+    btn($("content"), "Remove profile").click();
+    check("remove profile message", /2 removals added for branch:1; review before saving\./.test(txt($("content"))), txt($("content")));
+    const items2 = [...$("pending").querySelectorAll("li")].map((l) => txt(l));
+    check("two removes waiting, nothing else", items2.length === 2 && items2.every((i) => / - remove\b/.test(i)) && /0\.0000/.test(txt(total())), items2.join("|"));
+    note("drop branch 1 weights");
+    reviewBtn().click();
+    await until(() => btn($("review-dialog"), "Insert"), "remove profile review");
+    check("review says the hospital uses corporate", /no weights left, so the hospital uses the corporate profile/.test(txt($("review-dialog"))), txt($("review-dialog")));
+    btn($("review-dialog"), "Back").click();
+    btn($("pending"), "Discard all").click();
+  });
+
+  await step("partial failure", async () => {
+    btn($("nav"), "Targets").click();
+    await until(() => txt($("content").querySelector("h2")) === "Targets" && $("content").querySelector("tbody tr"), "targets");
+    setv(cell(4), "190");
+    btn($("nav"), "Manual values").click();
+    await until(() => txt($("content").querySelector("h2")) === "Manual values" && $("content").querySelector("tbody tr"), "manual");
+    const [n, d] = mins(1, 7);
+    n.value = "1"; fire(n, "change"); d.value = "4"; fire(d, "change");
+    check("two changes in two tables", /2 changes waiting/.test(P()), P());
+    note("partial");
+    reviewBtn().click();
+    await until(() => btn($("review-dialog"), "Insert"), "review");
+    await cmd({op: "fail_insert_into", table: "map_bsc_target"});
+    await cmd({op: "fail_select", substring: "default.map_bsc_objective"});
+    btn($("review-dialog"), "Insert").click();
+    await until(() => /Only part of the changes were saved/.test(txt($("review-dialog"))), "partial message");
+    await until(() => /could not be reloaded/.test(txt($("content"))), "reload error");
+    check("partial failure reload message", /^Some tables were saved, but the table could not be reloaded: .*\. Pick the table again\.$/.test(txt($("content"))), txt($("content")));
+    check("the failed table's change still waits", /1 change waiting/.test(P()) && /Targets/.test(P()), P());
+    btn($("review-dialog"), "Close").click();
+    await cmd({op: "clear_failures"});
     btn($("pending"), "Discard all").click();
   });
 

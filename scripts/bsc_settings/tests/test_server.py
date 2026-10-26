@@ -1,5 +1,7 @@
 import http.client
 import json
+import socket
+import sys
 import threading
 
 import pytest
@@ -119,6 +121,43 @@ def target_change():
 
 def test_binds_localhost_only(server):
     assert server.server_address[0] == "127.0.0.1"
+
+
+def test_second_server_on_the_same_port_fails(server, stub):
+    port = server.server_address[1]
+    with pytest.raises(OSError):
+        second = make_server(port, stub.url, ClickHouse)
+        second.server_close()
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="SO_EXCLUSIVEADDRUSE is Windows only")
+def test_port_is_exclusive_even_for_a_reuse_socket(server):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        with pytest.raises(OSError):
+            s.bind(("127.0.0.1", server.server_address[1]))
+    finally:
+        s.close()
+
+
+def test_main_reports_a_busy_port_and_opens_no_browser(server, monkeypatch, capsys):
+    import server as server_module
+    opened = []
+    monkeypatch.setattr(server_module.webbrowser, "open", lambda *a, **k: opened.append(a))
+    real = server_module.make_server
+
+    def no_serve(*a, **k):  # if the bind wrongly succeeds, do not block the test run
+        s = real(*a, **k)
+        s.serve_forever = lambda *x, **y: None
+        return s
+    monkeypatch.setattr(server_module, "make_server", no_serve)
+    port = server.server_address[1]
+    code = server_module.main(["--port", str(port), "--url", "http://127.0.0.1:1/"])
+    out = capsys.readouterr().out
+    assert code == 1 and opened == []
+    assert out.strip() == ("The settings page is already running (port %d in use). "
+                           "Close the other window or use --port." % port)
 
 
 def test_api_needs_session(server):

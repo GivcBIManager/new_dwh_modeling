@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import secrets
+import socket
 import sys
 import threading
 import webbrowser
@@ -278,9 +279,22 @@ class Handler(BaseHTTPRequestHandler):
         return {"inserted": done}, ()
 
 
+class LocalServer(ThreadingHTTPServer):
+    """Owns its port alone: a second launch (or another local account) cannot bind it too.
+
+    HTTPServer sets SO_REUSEADDR, which on Windows lets a second socket share a bound port.
+    """
+    allow_reuse_address = False
+    daemon_threads = True
+
+    def server_bind(self):
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):  # Windows
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def make_server(port, ch_url, ch_factory=ClickHouse):
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    server.daemon_threads = True
+    server = LocalServer(("127.0.0.1", port), Handler)
     app = App(ch_url, ch_factory)
     app.port = server.server_address[1]
     server.app = app
@@ -293,7 +307,12 @@ def main(argv=None):
     ap.add_argument("--url", default="http://172.22.25.214:8123/")
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args(argv)
-    server = make_server(args.port, args.url)
+    try:
+        server = make_server(args.port, args.url)
+    except OSError:
+        print("The settings page is already running (port %d in use). "
+              "Close the other window or use --port." % args.port)
+        return 1
     page = "http://127.0.0.1:%d/" % server.server_address[1]
     print("BSC settings page at %s (Ctrl+C to stop)" % page)
     if not args.no_browser:
@@ -304,7 +323,8 @@ def main(argv=None):
         pass
     finally:
         server.server_close()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

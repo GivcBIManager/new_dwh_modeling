@@ -15,6 +15,7 @@ TS_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 _NUMBER = re.compile(r"^-?\d+(\.\d+)?$")
 _INT = re.compile(r"^-?\d+$")
 _BRANCHES = range(1, 9)
+YEARS = (2020, 2100)
 
 
 @dataclass
@@ -85,7 +86,10 @@ def _coerce(col, value):
 def _key_value(col, value):
     if col.kind == "str":
         return "" if value is None else str(value).strip()
-    return int(_number(value))
+    n = _number(value)
+    if n != int(n):  # never truncate 1.5 to the key 1
+        raise _Bad("is not a whole number")
+    return int(n)
 
 
 def key_of(spec: TableSpec, row: dict) -> tuple:
@@ -219,6 +223,9 @@ def prepare(changes: list, note: str, user: str, ctx: Context, server_now: str):
                 if not low <= v <= 12:
                     issue("error", ch.table, key, f"month must be {low} to 12")
                     ok = False
+            if col.name == "year" and not YEARS[0] <= v <= YEARS[1]:
+                issue("error", ch.table, key, f"year must be {YEARS[0]} to {YEARS[1]}")
+                ok = False
         if ok:
             prepared.append((ch, spec, key, values, existing))
 
@@ -283,7 +290,12 @@ def prepare(changes: list, note: str, user: str, ctx: Context, server_now: str):
     if profiles:
         weights = current(TABLES["map_bsc_weight"], applied("map_bsc_weight"))
         for p in sorted(profiles):
-            total = round(sum(r["weight"] for k, r in weights.items() if k[0] == p), 4)
+            mine = [r for k, r in weights.items() if k[0] == p]
+            if not mine and p != "corporate":  # docs/bsc_config.md: a hospital without rows uses corporate
+                issue("warning", "map_bsc_weight", (p,),
+                      f"profile {p}: no weights left, so the hospital uses the corporate profile")
+                continue
+            total = round(sum(r["weight"] for r in mine), 4)
             if total != 1.0:
                 issue("warning", "map_bsc_weight", (p,), f"profile {p}: total {total:.4f}, should be 1.0000")
 

@@ -47,11 +47,18 @@ async function api(method, path, body) {
 }
 
 // ---------------------------------------------------------------- values and labels
+// the number rule of rules.py: typed numbers are sent as this text and the server decides
+const NUM = /^-?\d+(\.\d+)?$/;
+// "" = empty, null = not a number, else the trimmed text
+function numText(v) {
+  const t = v == null ? "" : String(v).trim();
+  return t === "" ? "" : NUM.test(t) ? t : null;
+}
 function norm(col, v) {
   if (col.kind === "str") return v == null ? "" : String(v).trim();
-  if (v === "" || v == null) return "";
-  const n = Number(v);
-  return Number.isNaN(n) ? String(v) : n;
+  if (typeof v === "number") return v;
+  const t = numText(v);
+  return t === "" ? "" : t === null ? String(v).trim() : Number(t);
 }
 const keyCols = (s) => s.columns.filter((c) => s.key.includes(c.name));
 const dataCols = (s) => s.columns.filter((c) => !s.key.includes(c.name));
@@ -94,6 +101,7 @@ const sameVal = (col, a, b) => norm(col, a) === norm(col, b);
 function showSignIn(message) {
   token = null;
   state.meta = null; state.tables = {}; state.pending = new Map(); state.review = null; state.drafts = {};
+  state.mvDrafts = {}; state.wvDrafts = {};
   $("shell").hidden = true;
   $("signin").hidden = false;
   for (const d of document.querySelectorAll("dialog")) if (d.open) d.close();
@@ -301,7 +309,7 @@ function cellEditor(s, c, r, tr) {
 function editCell(s, r, col, value, tr) {
   const row = {};
   for (const c of s.columns) row[c.name] = r.row[c.name];
-  row[col.name] = value;
+  row[col.name] = col.kind === "str" ? value : String(value).trim(); // a number goes as the typed text
   const kv = keyValues(s, row), pk = pkey(s.name, kv);
   const base = r.pend ? r.pend.base_changed_at : (r.stored ? r.stored.changed_at : null);
   const reverted = r.stored && s.columns.every((c) => sameVal(c, row[c.name], r.stored[c.name])) && !r.stored.is_deleted;
@@ -383,20 +391,49 @@ function describe(p) {
   return s.label + ": " + who + " - " + diffs.join("; ");
 }
 
+// Cells of the manual values and weights views typed but not complete or not a number. They are
+// not changes yet, but they are counted and block saving, so nothing typed is silently left out.
+function incompleteCells() {
+  const out = [];
+  for (const [pk, d] of Object.entries(state.mvDrafts)) out.push({pk, table: "map_bsc_manual_value", row: d.row, drafts: state.mvDrafts});
+  for (const [pk, d] of Object.entries(state.wvDrafts)) out.push({pk, table: "map_bsc_weight", row: d.row, drafts: state.wvDrafts});
+  return out;
+}
+function incompleteText(n) {
+  return n === 1 ? "1 cell incomplete or not a number — fix or clear it" : n + " cells incomplete or not numbers — fix or clear them";
+}
+function describeIncomplete(c) {
+  const s = spec(c.table);
+  return s.label + ": " + keyCols(s).map((col) => label(c.table, col, c.row[col.name])).join(" / ") + " - incomplete or not a number";
+}
+function discardAll() {
+  state.pending = new Map(); state.mvDrafts = {}; state.wvDrafts = {}; state.review = null;
+  renderPending(); renderView();
+}
+
 function renderPending() {
   const box = $("pending");
-  const items = [...state.pending.entries()];
-  if (!items.length) { fill(box, el("span", {class: "small"}, "No changes waiting.")); return; }
+  const items = [...state.pending.entries()], inc = incompleteCells();
+  if (!items.length && !inc.length) { fill(box, el("span", {class: "small"}, "No changes waiting.")); return; }
   const noteIn = el("input", {class: "note", value: state.note, placeholder: "Why? (required, saved on every row)",
     oninput: (e) => { state.note = e.target.value; }});
   fill(box,
-    el("b", {}, items.length + (items.length === 1 ? " change waiting" : " changes waiting")),
-    el("ul", {}, items.map(([pk, p]) => el("li", {}, describe(p), " ",
-      el("button", {class: "lnk", onclick: () => discard(pk)}, "Discard")))),
+    items.length ? el("b", {}, items.length + (items.length === 1 ? " change waiting" : " changes waiting")) : null,
+    items.length ? el("ul", {}, items.map(([pk, p]) => el("li", {}, describe(p), " ",
+      el("button", {class: "lnk", onclick: () => discard(pk)}, "Discard")))) : null,
+    inc.length ? el("p", {class: "bad"}, incompleteText(inc.length)) : null,
+    inc.length ? el("ul", {}, inc.map((c) => el("li", {}, describeIncomplete(c), " ",
+      el("button", {class: "lnk", onclick: () => { delete c.drafts[c.pk]; renderPending(); renderView(); }}, "Clear")))) : null,
     el("div", {class: "bar"}, el("span", {class: "small"}, "Note (for every row):"), noteIn,
-      el("button", {class: "btn", onclick: openReview}, "Review & save"),
-      el("button", {class: "o", onclick: () => { state.pending = new Map(); state.review = null; renderPending(); renderView(); }}, "Discard all")));
+      el("button", {class: "btn", disabled: inc.length > 0 || !items.length, onclick: openReview}, "Review & save"),
+      el("button", {class: "o", onclick: discardAll}, "Discard all")));
 }
+// F5 or closing the tab would lose the changes and typed cells: ask first
+window.addEventListener("beforeunload", (e) => {
+  if (!state.pending.size && !incompleteCells().length) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
 
 // ---------------------------------------------------------------- review and insert
 function payload() {
@@ -405,7 +442,7 @@ function payload() {
 
 async function openReview() {
   const dlg = $("review-dialog");
-  if (!state.pending.size) return;
+  if (!state.pending.size || incompleteCells().length) return;
   if (!dlg.open) dlg.showModal();
   if (!state.note.trim()) { showReview(null, "Type a note first: it is saved on every row."); return; }
   fill(dlg, el("p", {class: "small"}, "Checking..."));
@@ -445,7 +482,7 @@ async function doInsert() {
   fill($("review-dialog"), el("p", {class: "small"}, "Saving..."));
   try {
     const r = await api("POST", "/api/insert", {review_id: rev.review_id});
-    state.pending = new Map(); state.note = ""; state.review = null;
+    state.pending = new Map(); state.mvDrafts = {}; state.wvDrafts = {}; state.note = ""; state.review = null;
     showReview(null, null, summary("Saved.", r.inserted));
     await reloadTouched(Object.keys(r.inserted));
   } catch (e) {
@@ -471,16 +508,17 @@ async function partialFailure(p, rev) {
     el("p", {}, "Not saved: " + ((p.not_inserted || []).map(name).join(", ") || "none")),
     el("p", {class: "small"}, "The saved tables' changes are cleared from the list; the rest are still waiting. Review again to retry."));
   showReview(null, null, out);
-  await reloadTouched(Object.keys(rev.rows));
+  await reloadTouched(Object.keys(rev.rows), Object.keys(done).length
+    ? "Some tables were saved, but the table could not be reloaded: " : "Nothing was saved, and the table could not be reloaded: ");
 }
 
-async function reloadTouched(tables) {
+async function reloadTouched(tables, failText = "Saved, but the table could not be reloaded: ") {
   renderPending();
   try {
     state.meta = Object.assign(state.meta, await api("GET", "/api/meta"));
     for (const t of new Set(tables.concat(state.view ? [state.view] : []))) await loadTable(t);
   } catch (e) {
-    if (e.status !== 401) fill($("content"), el("p", {class: "bad"}, "Saved, but the table could not be reloaded: " + e.message + ". Pick the table again."));
+    if (e.status !== 401) fill($("content"), el("p", {class: "bad"}, failText + e.message + ". Pick the table again."));
     return;
   }
   renderPending();
@@ -511,14 +549,9 @@ function showHistory(table, key) {
 
 // ---------------------------------------------------------------- special views
 // Both views follow the generic grid's rule: an edit updates state.pending and the cell in place,
-// the inputs are never rebuilt, so focus and caret stay where the user is typing.
-// null = empty, NaN = not a number, else the number
-function parseNum(text) {
-  const t = String(text).trim();
-  if (t === "") return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : NaN;
-}
+// the inputs are never rebuilt, so focus and caret stay where the user is typing. A number goes to
+// the server as the typed text (trimmed), so rules.py decides. A cell that is incomplete or not a
+// number stays a draft: it is counted in the pending bar and blocks saving until fixed or cleared.
 const showNum = (v) => (v == null ? "" : String(v));
 const hospitalIds = () => Object.keys(state.meta.hospitals).map(Number).sort((a, b) => a - b);
 const hospitalName = (id) => (state.meta.hospitals[String(id)] != null ? state.meta.hospitals[String(id)] : String(id));
@@ -529,7 +562,7 @@ function defaultPeriod() {
   return m === 0 ? {year: d.getFullYear() - 1, month: 12} : {year: d.getFullYear(), month: m};
 }
 state.mv = null;        // {year, month}
-state.mvDrafts = {};    // pkey -> typed values of a cell that is not complete yet
+state.mvDrafts = {};    // pkey -> {row: the key, numerator, denominator, note} as typed, not complete yet
 
 function renderManual(box, s) {
   const mv = state.mv || (state.mv = defaultPeriod());
@@ -557,7 +590,7 @@ function renderManual(box, s) {
   box.append(
     el("div", {class: "bar"}, el("label", {}, "Year ", pick("year", years, String)),
       el("label", {}, "Month ", pick("month", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], String)),
-      el("span", {class: "small"}, "Red = no value yet. Fill numerator and denominator; a cell with only one is not added.")),
+      el("span", {class: "small"}, "Red = no value yet. Fill numerator and denominator; a cell with only one, or with text that is not a number, is marked and blocks saving until you fix or clear it.")),
     el("div", {class: "gridwrap"}, el("table", {class: "g mv"}, el("thead", {}, head), el("tbody", {}, body))));
   if (!kpis.length) box.append(el("p", {class: "small"}, "No active manual KPIs."));
 }
@@ -566,29 +599,44 @@ function manualCell(s, k, b, mv, st) {
   const row0 = {kpi_code: k.kpi_code, branch_id: b, year: mv.year, month: mv.month};
   const kv = keyValues(s, row0), pk = pkey(s.name, kv);
   const p = state.pending.get(pk);
-  const shown = state.mvDrafts[pk] || (p && p.op === "upsert" ? p.row : st) || {};
+  // History and Remove are reached with the mouse; Tab moves from number to number
+  const link = (text, onclick) => el("button", {class: "lnk", tabindex: "-1", onclick}, text);
+  const hist = () => (st ? link("History", () => showHistory(s.name, kv)) : null);
+  if (p && p.op === "remove") {
+    const v = st || {};
+    return el("td", {class: "mc gone", title: "Removed when saved"},
+      el("div", {}, showNum(v.numerator) + " / " + showNum(v.denominator)),
+      v.note ? el("div", {class: "small"}, String(v.note)) : null,
+      el("div", {}, hist(), link("Undo remove", () => discard(pk))));
+  }
+  const shown = state.mvDrafts[pk] || (p ? p.row : st) || {};
   const mk = (col, ph) => el("input", {"data-fid": fidOf(s, row0, {name: col}), value: showNum(shown[col]), placeholder: ph,
     "aria-label": k.kpi_code + " hospital " + b + " " + col, ...(col === "note" ? {tabindex: "-1"} : {}),
     onchange: commit});
   const nIn = mk("numerator", "numerator"), dIn = mk("denominator", "denominator"), noteIn = mk("note", "note");
-  const td = el("td", {class: "mc"}, nIn, dIn, noteIn, st ? el("button", {class: "lnk", tabindex: "-1", onclick: () => showHistory(s.name, kv)}, "History") : null);
+  const remove = () => {
+    delete state.mvDrafts[pk];
+    addPending({table: s.name, op: "remove", row: keyRow(s, row0), base_changed_at: st.changed_at});
+  };
+  const td = el("td", {class: "mc"}, nIn, dIn, noteIn, st ? el("div", {}, hist(), link("Remove", remove)) : null);
   const paint = () => {
-    const empty = !st && nIn.value.trim() === "" && dIn.value.trim() === "";
+    const empty = !st && nIn.value.trim() === "" && dIn.value.trim() === "" && noteIn.value.trim() === "";
     td.className = "mc" + (state.mvDrafts[pk] ? " inc" : state.pending.has(pk) ? " ch" : empty ? " mt" : "");
-    td.title = state.mvDrafts[pk] ? "Needs a numerator and a denominator, both numbers" : "";
+    td.title = state.mvDrafts[pk] ? "Needs a numerator and a denominator, both numbers (like 12 or 0.75)" : "";
   };
   function reset() {
     nIn.value = st ? showNum(st.numerator) : ""; dIn.value = st ? showNum(st.denominator) : ""; noteIn.value = st ? showNum(st.note) : "";
   }
   function commit() {
-    const n = parseNum(nIn.value), d = parseNum(dIn.value), note = noteIn.value.trim();
+    const n = numText(nIn.value), d = numText(dIn.value), note = noteIn.value.trim();
     delete state.mvDrafts[pk];
     state.pending.delete(pk);
-    if (n === null && d === null) reset(); // both cleared: the change is dropped, a stored row stays
-    else if (n === null || d === null || Number.isNaN(n) || Number.isNaN(d)) state.mvDrafts[pk] = {numerator: nIn.value, denominator: dIn.value, note: noteIn.value};
+    // both numbers cleared: the edit is dropped (a stored row stays); a note alone on an empty cell is incomplete
+    if (n === "" && d === "" && (st || note === "")) reset();
+    else if (n === "" || d === "" || n === null || d === null) state.mvDrafts[pk] = {row: row0, numerator: nIn.value, denominator: dIn.value, note: noteIn.value};
     else {
       const stRow = storedAny(s.name, kv);
-      const same = st && !st.is_deleted && Number(st.numerator) === n && Number(st.denominator) === d && String(st.note == null ? "" : st.note).trim() === note;
+      const same = st && !st.is_deleted && Number(st.numerator) === Number(n) && Number(st.denominator) === Number(d) && String(st.note == null ? "" : st.note).trim() === note;
       if (!same) state.pending.set(pk, {table: s.name, op: "upsert", base_changed_at: stRow ? stRow.changed_at : null,
         row: {kpi_code: k.kpi_code, branch_id: b, year: mv.year, month: mv.month, numerator: n, denominator: d, note}});
     }
@@ -603,7 +651,7 @@ registerView("map_bsc_manual_value", renderManual);
 
 // ---- weights
 state.wv = {profile: "corporate", pillar: "", copyOpen: false, msg: ""};
-state.wvDrafts = {};   // pkey -> typed text that is not a number
+state.wvDrafts = {};   // pkey -> {row: the key, text}: typed text that is not a number
 
 // weight per KPI of a profile: stored, with pending changes applied (and one typed value, if given)
 function effectiveWeights(profile, typed) {
@@ -664,13 +712,14 @@ function renderWeights(box, s) {
     el("button", {class: "o", onclick: () => { wv.copyOpen = false; renderView(); }}, "Cancel")) : null;
   box.append(...[
     el("div", {class: "bar"}, el("label", {}, "Profile ", profSel), el("label", {}, "Pillar ", pilSel),
-      el("button", {class: "o", onclick: () => { wv.copyOpen = true; wv.msg = ""; renderView(); }}, "Copy profile to a hospital…")),
+      el("button", {class: "o", onclick: () => { wv.copyOpen = true; wv.msg = ""; renderView(); }}, "Copy profile to a hospital…"),
+      wv.profile !== "corporate" ? el("button", {class: "o", onclick: () => removeProfile(s, wv.profile)}, "Remove profile") : null),
     copyBar,
     wv.msg ? el("p", {class: "ok"}, wv.msg) : null,
     el("div", {class: "gridwrap"}, el("table", {class: "g"}, el("thead", {}, el("tr", {}, el("th", {}, "KPI"), el("th", {}, "Weight"), el("th", {}))),
       el("tbody", {}, rows))),
     el("p", {}, totalNode),
-    el("p", {class: "small"}, "A profile's weights should add up to 1.0000. A blank weight means this profile has no row for the KPI.")].filter((n) => n != null));
+    el("p", {class: "small"}, "A profile's weights should add up to 1.0000. A blank weight means this profile has no row for the KPI. A hospital profile with no rows uses the corporate weights.")].filter((n) => n != null));
 }
 
 function weightRow(s, k, st, totalNode) {
@@ -678,25 +727,39 @@ function weightRow(s, k, st, totalNode) {
   const row0 = {profile: prof, kpi_code: k.kpi_code};
   const kv = keyValues(s, row0), pk = pkey(s.name, kv);
   const p = state.pending.get(pk);
-  const shown = state.wvDrafts[pk] != null ? state.wvDrafts[pk] : p ? (p.op === "upsert" ? showNum(p.row.weight) : "") : st ? showNum(st.weight) : "";
+  const kpiCell = el("td", {}, el("b", {}, k.kpi_code), " ", k.kpi_name);
+  const hist = st ? el("button", {class: "lnk", onclick: () => showHistory(s.name, kv)}, "History") : null;
+  if (p && p.op === "remove") {
+    return el("tr", {class: "gone"}, kpiCell, el("td", {}, st ? showNum(st.weight) : ""),
+      el("td", {class: "small"}, hist, el("button", {class: "lnk", onclick: () => discard(pk)}, "Undo remove")));
+  }
+  const draft = state.wvDrafts[pk];
+  const shown = draft ? draft.text : p ? showNum(p.row.weight) : st ? showNum(st.weight) : "";
   const inp = el("input", {"data-fid": fidOf(s, row0, {name: "weight"}), value: shown, "aria-label": "weight " + k.kpi_code,
     oninput: () => {
-      const v = parseNum(inp.value);
-      if (!Number.isNaN(v)) paintTotal(totalNode, prof, {kpi: k.kpi_code, value: v});
+      const v = numText(inp.value);
+      if (v !== null) paintTotal(totalNode, prof, {kpi: k.kpi_code, value: v === "" ? null : Number(v)});
     },
     onchange: commit});
   const td = el("td", {}, inp);
-  const hist = el("td", {class: "small"}, st ? el("button", {class: "lnk", onclick: () => showHistory(s.name, kv)}, "History") : null);
-  const paint = () => { td.className = state.wvDrafts[pk] != null ? "inc" : state.pending.has(pk) ? "ch" : ""; };
+  const remove = () => {
+    delete state.wvDrafts[pk];
+    addPending({table: s.name, op: "remove", row: {profile: prof, kpi_code: k.kpi_code}, base_changed_at: st.changed_at});
+  };
+  const acts = el("td", {class: "small"}, hist, st ? el("button", {class: "lnk", onclick: remove}, "Remove") : null);
+  const paint = () => {
+    td.className = state.wvDrafts[pk] ? "inc" : state.pending.has(pk) ? "ch" : "";
+    td.title = state.wvDrafts[pk] ? "Not a number: type one like 0.25, or clear the cell" : "";
+  };
   function commit() {
-    const v = parseNum(inp.value);
+    const v = numText(inp.value);
     delete state.wvDrafts[pk];
     state.pending.delete(pk);
-    if (v === null) inp.value = st ? showNum(st.weight) : ""; // cleared: back to what is stored
-    else if (Number.isNaN(v)) state.wvDrafts[pk] = inp.value;
+    if (v === "") inp.value = st ? showNum(st.weight) : ""; // cleared: back to what is stored
+    else if (v === null) state.wvDrafts[pk] = {row: row0, text: inp.value};
     else {
       const stRow = storedAny(s.name, kv);
-      if (!(st && Number(st.weight) === v)) state.pending.set(pk, {table: s.name, op: "upsert", base_changed_at: stRow ? stRow.changed_at : null,
+      if (!(st && Number(st.weight) === Number(v))) state.pending.set(pk, {table: s.name, op: "upsert", base_changed_at: stRow ? stRow.changed_at : null,
         row: {profile: prof, kpi_code: k.kpi_code, weight: v}});
     }
     state.review = null;
@@ -705,7 +768,7 @@ function weightRow(s, k, st, totalNode) {
     paint();
   }
   paint();
-  return el("tr", {}, el("td", {}, el("b", {}, k.kpi_code), " ", k.kpi_name), td, hist);
+  return el("tr", {}, kpiCell, td, acts);
 }
 
 function copyProfile(s, target) {
@@ -735,6 +798,26 @@ function copyProfile(s, target) {
   state.wv.profile = target; state.wv.copyOpen = false;
   state.wv.msg = n ? n + (n === 1 ? " change" : " changes") + " added for " + target + "; review before saving."
     : "No changes: " + target + " already has the weights of " + src + ".";
+  renderPending();
+  renderView();
+}
+
+// every stored weight of a hospital profile becomes a pending remove (undoes a saved copy);
+// the profile's other pending changes and typed cells are dropped. Never offered for corporate.
+function removeProfile(s, prof) {
+  if (!prof.startsWith("branch:")) return;
+  for (const [pk, c] of [...state.pending]) if (c.table === s.name && c.row.profile === prof) state.pending.delete(pk);
+  for (const [pk, d] of Object.entries(state.wvDrafts)) if (d.row.profile === prof) delete state.wvDrafts[pk];
+  let n = 0;
+  for (const r of state.tables[s.name].current) {
+    if (String(r.profile).trim() !== prof) continue;
+    const row = {profile: prof, kpi_code: String(r.kpi_code).trim()};
+    state.pending.set(pkey(s.name, keyValues(s, row)), {table: s.name, op: "remove", base_changed_at: r.changed_at, row});
+    n++;
+  }
+  state.review = null; state.wv.copyOpen = false;
+  state.wv.msg = n ? n + (n === 1 ? " removal" : " removals") + " added for " + prof + "; review before saving."
+    : "Nothing to remove: " + prof + " has no stored weights.";
   renderPending();
   renderView();
 }
