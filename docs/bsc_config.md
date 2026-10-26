@@ -46,7 +46,7 @@ Key: `kpi_code`.
 | `kpi_type` | `Primary`, `Supporting` |
 | `direction` | `higher`, `lower`, `ceiling` (at or under target scores full), `on_target` (closer is better) |
 | `value_format` | `sar`, `pct`, `days`, `mins`, `num` |
-| `chart_hint` | `line`, `bullet`, `bulletN`, `gauge`, `hbar`, `stat` |
+| `chart_hint` | `line`, `bullet`, `bulletN`, `gauge`, `hbar`, `stat`, `signed` |
 | `status` | `active`, `parked` (shown as Parked, not scored) |
 | `target_source` | `fixed` (from `map_bsc_target`), `budget`, `prior_year`, `none` |
 | `value_source` | `measure`, `manual` (read from `map_bsc_manual_value`) |
