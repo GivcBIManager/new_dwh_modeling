@@ -1,0 +1,181 @@
+{
+  "name": "HayatHealthcare",
+  "dataColors": [
+    "#32A5E6", "#0A2D6E", "#23D2C3", "#235F96", "#A0BEFF", "#05A591",
+    "#FFB900", "#EF8D00", "#DC280A", "#E119A0", "#78BE00", "#0A1E32"
+  ],
+  "foreground": "#0A1E32",
+  "foregroundNeutralSecondary": "#5B6B7D",
+  "foregroundNeutralTertiary": "#9AA8B8",
+  "background": "#FFFFFF",
+  "backgroundLight": "#F3F6FA",
+  "backgroundNeutral": "#E3E9F1",
+  "tableAccent": "#32A5E6",
+  "hyperlink": "#235F96",
+  "good": "#05A591",
+  "neutral": "#FFB900",
+  "bad": "#DC280A",
+  "maximum": "#05A591",
+  "center": "#FFB900",
+  "minimum": "#DC280A",
+  "null": "#C8D2DE",
+  "textClasses": {
+    "callout": { "fontFace": "Zain, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif", "fontSize": 26, "color": "#0A1E32" },
+    "title": { "fontFace": "Zain, 'Segoe UI Semibold', wf_segoe-ui_semibold, helvetica, arial, sans-serif", "fontSize": 13, "color": "#0A1E32" },
+    "header": { "fontFace": "Zain, 'Segoe UI Semibold', wf_segoe-ui_semibold, helvetica, arial, sans-serif", "fontSize": 12, "color": "#0A1E32" },
+    "label": { "fontFace": "Zain, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif", "fontSize": 10, "color": "#3C4D60" }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "title": [{
+          "show": true,
+          "fontColor": { "solid": { "color": "#0A1E32" } },
+          "fontSize": 12,
+          "bold": true
+        }],
+        "subTitle": [{
+          "fontColor": { "solid": { "color": "#5B6B7D" } },
+          "fontSize": 9
+        }],
+        "background": [{
+          "show": true,
+          "color": { "solid": { "color": "#FFFFFF" } },
+          "transparency": 0
+        }],
+        "border": [{ "show": false, "radius": 8 }],
+        "dropShadow": [{ "show": false }],
+        "legend": [{
+          "position": "Top",
+          "showTitle": false,
+          "fontSize": 9,
+          "labelColor": { "solid": { "color": "#5B6B7D" } }
+        }],
+        "categoryAxis": [{
+          "showAxisTitle": false,
+          "fontSize": 9,
+          "labelColor": { "solid": { "color": "#5B6B7D" } },
+          "gridlineShow": false
+        }],
+        "valueAxis": [{
+          "showAxisTitle": false,
+          "fontSize": 9,
+          "labelColor": { "solid": { "color": "#9AA8B8" } },
+          "gridlineColor": { "solid": { "color": "#EEF2F7" } }
+        }],
+        "labels": [{
+          "fontSize": 9,
+          "color": { "solid": { "color": "#3C4D60" } }
+        }],
+        "padding": [{ "top": 8, "bottom": 8, "left": 10, "right": 10 }],
+        "visualHeader": [{
+          "foreground": { "solid": { "color": "#5B6B7D" } },
+          "transparency": 0
+        }],
+        "visualTooltip": [{
+          "titleFontColor": { "solid": { "color": "#FFFFFF" } },
+          "valueFontColor": { "solid": { "color": "#FFFFFF" } },
+          "background": { "solid": { "color": "#0A1E32" } }
+        }]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [{ "color": { "solid": { "color": "#F3F6FA" } }, "transparency": 0 }],
+        "outspace": [{ "color": { "solid": { "color": "#E3E9F1" } }, "transparency": 0 }]
+      }
+    },
+    "pivotTable": {
+      "*": {
+        "columnHeaders": [{
+          "fontColor": { "solid": { "color": "#0A1E32" } },
+          "backColor": { "solid": { "color": "#EAF0F6" } },
+          "bold": true,
+          "fontSize": 10
+        }],
+        "rowHeaders": [{
+          "fontColor": { "solid": { "color": "#0A1E32" } },
+          "fontSize": 10
+        }],
+        "grid": [{
+          "gridHorizontal": true,
+          "gridHorizontalColor": { "solid": { "color": "#EEF2F7" } },
+          "gridVertical": false,
+          "rowPadding": 4
+        }],
+        "values": [{
+          "fontSize": 10,
+          "fontColorPrimary": { "solid": { "color": "#0A1E32" } },
+          "backColorPrimary": { "solid": { "color": "#FFFFFF" } },
+          "backColorSecondary": { "solid": { "color": "#FFFFFF" } }
+        }],
+        "subTotals": [{ "fontColor": { "solid": { "color": "#0A1E32" } }, "backColor": { "solid": { "color": "#F3F6FA" } } }],
+        "total": [{ "fontColor": { "solid": { "color": "#0A1E32" } }, "backColor": { "solid": { "color": "#F3F6FA" } } }]
+      }
+    },
+    "tableEx": {
+      "*": {
+        "columnHeaders": [{
+          "fontColor": { "solid": { "color": "#0A1E32" } },
+          "backColor": { "solid": { "color": "#EAF0F6" } },
+          "bold": true,
+          "fontSize": 10
+        }],
+        "grid": [{
+          "gridHorizontal": true,
+          "gridHorizontalColor": { "solid": { "color": "#EEF2F7" } },
+          "gridVertical": false,
+          "rowPadding": 4
+        }],
+        "values": [{
+          "fontSize": 10,
+          "fontColorPrimary": { "solid": { "color": "#0A1E32" } },
+          "backColorPrimary": { "solid": { "color": "#FFFFFF" } },
+          "backColorSecondary": { "solid": { "color": "#FFFFFF" } }
+        }]
+      }
+    },
+    "slicer": {
+      "*": {
+        "header": [{
+          "fontColor": { "solid": { "color": "#5B6B7D" } },
+          "textSize": 9,
+          "outlineStyle": 0
+        }],
+        "items": [{
+          "fontColor": { "solid": { "color": "#0A1E32" } },
+          "textSize": 10,
+          "outlineStyle": 0
+        }]
+      }
+    },
+    "cardVisual": {
+      "*": {
+        "value": [{ "fontColor": { "solid": { "color": "#0A1E32" } }, "bold": true }],
+        "label": [{ "fontColor": { "solid": { "color": "#5B6B7D" } } }],
+        "accentBar": [{ "show": false }]
+      }
+    },
+    "shape": {
+      "*": {
+        "background": [{ "show": false }],
+        "border": [{ "show": false }],
+        "title": [{ "show": false }]
+      }
+    },
+    "image": {
+      "*": {
+        "background": [{ "show": false }],
+        "border": [{ "show": false }],
+        "title": [{ "show": false }]
+      }
+    },
+    "textbox": {
+      "*": {
+        "background": [{ "show": false }],
+        "border": [{ "show": false }],
+        "title": [{ "show": false }]
+      }
+    }
+  }
+}

@@ -1,0 +1,329 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "8d5e2fc3f476bdf50399",
+  "position": {
+    "x": 437,
+    "y": 80,
+    "z": 11000,
+    "height": 628,
+    "width": 405,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Top and bottom lists",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "16px",
+                      "fontWeight": "bold",
+                      "color": "#235F96"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Long lists are shown as fixed Top / Bottom N views so no visual needs to scroll:",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Page 3: ",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  },
+                  {
+                    "value": "8 lowest and 8 highest question groups by NPS, and the 8 lowest-scoring questions. Ties are broken alphabetically.",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Page 4: ",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  },
+                  {
+                    "value": "the 5 question groups with the lowest network NPS, shown by branch.",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Page 5: ",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  },
+                  {
+                    "value": "the 15 most-surveyed specialties (by scored answers); the 8 highest and 8 lowest doctors by NPS (30+ answers), ties broken by answer volume then name.",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "All lists respect the slicers: a list for one branch ranks within that branch.",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontSize": "6px"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Reliability and sample size",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "16px",
+                      "fontWeight": "bold",
+                      "color": "#235F96"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "NPS margin (± pts): ",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  },
+                  {
+                    "value": "how far the true NPS could be from the measured one (95% confidence) = 1.96 × √((P + D − (P − D)²) ÷ respondents) × 100. Each answer scores +1 (promoter), 0 (passive) or −1 (detractor), so NPS = P − D (P, D = promoter and detractor shares). P + D − (P − D)² is the spread of those scores; dividing by respondents and taking √ gives the standard error; × 1.96 × 100 gives ± points. Example: P 0.826, D 0.092, 29,919 respondents → ±0.7. Reliability: High at ±3 or better, Moderate up to ±7, else Low.",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Needed ±5% / Gap / Margin ±: ",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  },
+                  {
+                    "value": "385 responses give a ±5% margin at 95% confidence; Margin ± = 0.98 ÷ √responses, both reduced for small groups using the actual visits (finite-population correction).",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontSize": "6px"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Patient Profile",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "16px",
+                      "fontWeight": "bold",
+                      "color": "#235F96"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Gender, nationality and payer filter NPS directly. Who completed the survey, first visit and admitted-via-ER are answers stored on the survey response, so their NPS measures match each response to its answers before calculating.",
+                    "textStyle": {
+                      "fontFamily": "Zain, Segoe UI",
+                      "fontSize": "13px",
+                      "color": "#3C4D60"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#D5DFEA'"
+                    }
+                  }
+                }
+              }
+            },
+            "radius": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "16D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "16D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

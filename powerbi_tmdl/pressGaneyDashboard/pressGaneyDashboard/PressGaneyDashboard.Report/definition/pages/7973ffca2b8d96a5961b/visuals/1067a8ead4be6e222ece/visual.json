@@ -1,0 +1,292 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "1067a8ead4be6e222ece",
+  "position": {
+    "x": 16,
+    "y": 144,
+    "z": 15000,
+    "height": 296,
+    "width": 300,
+    "tabOrder": 15000
+  },
+  "visual": {
+    "visualType": "hayatNpsScorecard18DE737621AE4B30A6F985EC1773B808",
+    "query": {
+      "queryState": {
+        "nps": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "NPS (5-point)"
+                }
+              },
+              "queryRef": "_Measures.NPS (5-point)",
+              "nativeQueryRef": "NPS (5-point)"
+            }
+          ]
+        },
+        "promoters": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "% Promoters"
+                }
+              },
+              "queryRef": "_Measures.% Promoters",
+              "nativeQueryRef": "% Promoters"
+            }
+          ]
+        },
+        "passives": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "% Passives"
+                }
+              },
+              "queryRef": "_Measures.% Passives",
+              "nativeQueryRef": "% Passives"
+            }
+          ]
+        },
+        "detractors": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "% Detractors"
+                }
+              },
+              "queryRef": "_Measures.% Detractors",
+              "nativeQueryRef": "% Detractors"
+            }
+          ]
+        },
+        "volume": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "NPS Answers"
+                }
+              },
+              "queryRef": "_Measures.NPS Answers",
+              "nativeQueryRef": "NPS Answers"
+            }
+          ]
+        },
+        "margin": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "NPS Margin of Error"
+                }
+              },
+              "queryRef": "_Measures.NPS Margin of Error",
+              "nativeQueryRef": "NPS Margin of Error"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "cardStyle": [
+        {
+          "properties": {
+            "mode": {
+              "expr": {
+                "Literal": {
+                  "Value": "'light'"
+                }
+              }
+            },
+            "maxColumns": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "showLogo": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "cornerRadius": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "scoreBands": [
+        {
+          "properties": {
+            "goodThreshold": {
+              "expr": {
+                "Literal": {
+                  "Value": "70D"
+                }
+              }
+            },
+            "warningThreshold": {
+              "expr": {
+                "Literal": {
+                  "Value": "50D"
+                }
+              }
+            },
+            "colorByBand": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "scoreLabel": {
+              "expr": {
+                "Literal": {
+                  "Value": "'NPS (5-point)'"
+                }
+              }
+            },
+            "benchmarkLabel": {
+              "expr": {
+                "Literal": {
+                  "Value": "'vs network'"
+                }
+              }
+            },
+            "showSplit": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1522 @@
+{
+    "server":  "hnhanalyticssrv\\reportserverdb",
+    "catalog":  "HNH_Analytics_Test",
+    "perspective":  "Patient Experience",
+    "tables":  {
+                   "_Measures":  {
+                                     "columns":  [
+                                                     "Measure"
+                                                 ],
+                                     "measures":  [
+                                                      "% Detractors",
+                                                      "% Passives",
+                                                      "% Promoters",
+                                                      "_Guard 12 facts #8b9401c7",
+                                                      "_Guard 16 facts #e3203857",
+                                                      "_Guard 17 facts #3ba24bc3",
+                                                      "_Guard 19 facts #e451b8cd",
+                                                      "_Guard 20 facts #b6b7dad9",
+                                                      "_Guard Absence Days",
+                                                      "_Guard Absence Days + Headcount",
+                                                      "_Guard Admissions",
+                                                      "_Guard Admissions + Bed Occupancy",
+                                                      "_Guard Admissions + Encounters",
+                                                      "_Guard Admissions + Episodes | Admission Source",
+                                                      "_Guard AP Invoice Lines",
+                                                      "_Guard AP Open Items",
+                                                      "_Guard AP Payments",
+                                                      "_Guard Bed Occupancy",
+                                                      "_Guard Bed Occupancy + GL FS Monthly",
+                                                      "_Guard Bed Occupancy + Income Statement",
+                                                      "_Guard Bed Occupancy + Workforce Monthly",
+                                                      "_Guard BSC Budgeted FTE + Requisitions",
+                                                      "_Guard BSC Licensed Beds",
+                                                      "_Guard BSC Licensed Beds + Bed Occupancy",
+                                                      "_Guard BSC Manual Values | BSC KPI",
+                                                      "_Guard BSC Manual Values + Encounters | BSC KPI",
+                                                      "_Guard BSC Targets",
+                                                      "_Guard BSC Weights | BSC KPI",
+                                                      "_Guard Cash Receipts",
+                                                      "_Guard Charge Lines",
+                                                      "_Guard Charge Lines + Episodes",
+                                                      "_Guard Charge Lines + GL FS Monthly",
+                                                      "_Guard Charge Lines + Revenue Adjustments",
+                                                      "_Guard Claim Lines",
+                                                      "_Guard Claim Payments",
+                                                      "_Guard Clinic Capacity",
+                                                      "_Guard Clinic Capacity + Encounters",
+                                                      "_Guard Encounters",
+                                                      "_Guard Encounters + GL FS Monthly",
+                                                      "_Guard Encounters + Targets",
+                                                      "_Guard Episode Billing",
+                                                      "_Guard Episodes",
+                                                      "_Guard GL Balances",
+                                                      "_Guard GL FS Monthly",
+                                                      "_Guard GL FS Monthly + Income Statement",
+                                                      "_Guard GL FS Monthly + Workforce Monthly",
+                                                      "_Guard Headcount",
+                                                      "_Guard Headcount + Payroll",
+                                                      "_Guard Headcount + Worker Movements",
+                                                      "_Guard Income Statement",
+                                                      "_Guard Income Statement + Targets",
+                                                      "_Guard Income Statement + Workforce Monthly",
+                                                      "_Guard Invoices",
+                                                      "_Guard Leave Balances",
+                                                      "_Guard Order Lines",
+                                                      "_Guard Patient Consumption",
+                                                      "_Guard Payroll",
+                                                      "_Guard Pre-auth Lines",
+                                                      "_Guard Purchase Lines",
+                                                      "_Guard Requisitions",
+                                                      "_Guard Revenue Adjustments",
+                                                      "_Guard Staff Productivity",
+                                                      "_Guard Stock Monthly",
+                                                      "_Guard Stock Monthly + Stock Movements",
+                                                      "_Guard Stock Movements",
+                                                      "_Guard Surgeries",
+                                                      "_Guard Survey Answers",
+                                                      "_Guard Survey Responses",
+                                                      "_Guard Targets",
+                                                      "_Guard Worker Movements",
+                                                      "_Guard Workforce Monthly",
+                                                      "_Unguarded BSC Activated Beds",
+                                                      "_Unguarded BSC ALOS (days)",
+                                                      "_Unguarded BSC Ancillary Utilization",
+                                                      "_Unguarded BSC Approval TAT (min)",
+                                                      "_Unguarded BSC Bed Occupancy",
+                                                      "_Unguarded BSC Claim Initial Rejection",
+                                                      "_Unguarded BSC Clinic Utilization",
+                                                      "_Unguarded BSC Clinical to Doctor",
+                                                      "_Unguarded BSC Consumables Ratio",
+                                                      "_Unguarded BSC Cost Budget Variance",
+                                                      "_Unguarded BSC Cost to Revenue",
+                                                      "_Unguarded BSC Days in AR (days)",
+                                                      "_Unguarded BSC Days Inventory (days)",
+                                                      "_Unguarded BSC EBITDA Margin",
+                                                      "_Unguarded BSC EBITDA per Bed",
+                                                      "_Unguarded BSC EBITDA per Doctor",
+                                                      "_Unguarded BSC ER Growth",
+                                                      "_Unguarded BSC External Referrals",
+                                                      "_Unguarded BSC Fixed Target",
+                                                      "_Unguarded BSC G\u0026A Ratio",
+                                                      "_Unguarded BSC High-Value Census",
+                                                      "_Unguarded BSC High-Value Revenue Share",
+                                                      "_Unguarded BSC KPI Weight",
+                                                      "_Unguarded BSC Manual Value",
+                                                      "_Unguarded BSC Multi-Specialty Revenue Share",
+                                                      "_Unguarded BSC Net Revenue",
+                                                      "_Unguarded BSC New Patient Acquisition",
+                                                      "_Unguarded BSC Non-MoH Revenue Share",
+                                                      "_Unguarded BSC OP Doctor Utilization",
+                                                      "_Unguarded BSC OP Revenue per Episode",
+                                                      "_Unguarded BSC OP to IP Conversion",
+                                                      "_Unguarded BSC OP Waiting Time (min)",
+                                                      "_Unguarded BSC Order Not Done",
+                                                      "_Unguarded BSC Patient Acquisition Cost",
+                                                      "_Unguarded BSC Patient Retention",
+                                                      "_Unguarded BSC Patient Satisfaction",
+                                                      "_Unguarded BSC Patient Volume",
+                                                      "_Unguarded BSC Payer Mix",
+                                                      "_Unguarded BSC Payer Volume",
+                                                      "_Unguarded BSC Readmission 30d",
+                                                      "_Unguarded BSC Readmission 48h Critical",
+                                                      "_Unguarded BSC Return on Assets",
+                                                      "_Unguarded BSC Revenue Leakage",
+                                                      "_Unguarded BSC Revenue per Bed",
+                                                      "_Unguarded BSC Revenue per Doctor",
+                                                      "_Unguarded BSC Revenue per FTE",
+                                                      "_Unguarded BSC Saudization",
+                                                      "_Unguarded BSC Staff to Bed",
+                                                      "_Unguarded BSC Target Ancillary Utilization",
+                                                      "_Unguarded BSC Target Clinic Utilization",
+                                                      "_Unguarded BSC Target Consumables Ratio",
+                                                      "_Unguarded BSC Target Cost to Revenue",
+                                                      "_Unguarded BSC Target Days Inventory (days)",
+                                                      "_Unguarded BSC Target EBITDA Margin",
+                                                      "_Unguarded BSC Target EBITDA per Bed",
+                                                      "_Unguarded BSC Target EBITDA per Doctor",
+                                                      "_Unguarded BSC Target ER Growth",
+                                                      "_Unguarded BSC Target G\u0026A Ratio",
+                                                      "_Unguarded BSC Target Multi-Specialty Share",
+                                                      "_Unguarded BSC Target Net Revenue",
+                                                      "_Unguarded BSC Target Non-MoH Share",
+                                                      "_Unguarded BSC Target OP Revenue per Episode",
+                                                      "_Unguarded BSC Target OP to IP",
+                                                      "_Unguarded BSC Target Patient Volume",
+                                                      "_Unguarded BSC Target Payer Mix",
+                                                      "_Unguarded BSC Target Payer Volume",
+                                                      "_Unguarded BSC Target Revenue per Bed",
+                                                      "_Unguarded BSC Target Revenue per Doctor",
+                                                      "_Unguarded BSC Target Revenue per FTE",
+                                                      "_Unguarded BSC Time to Fill (days)",
+                                                      "_Unguarded BSC Turnover",
+                                                      "_Unguarded BSC Vacancy Rate",
+                                                      "All Invitations",
+                                                      "Answer Completeness %",
+                                                      "Completion Rate %",
+                                                      "Current User",
+                                                      "Doctor Attribution %",
+                                                      "Encounter Link %",
+                                                      "Hospital NPS (5-point)",
+                                                      "Invitations",
+                                                      "Median Days Visit to Answer",
+                                                      "NPS (5-point)",
+                                                      "NPS Answers",
+                                                      "Physician NPS (5-point)",
+                                                      "Repeat Invitation Rate %",
+                                                      "Response Rate %",
+                                                      "SMS Reach %"
+                                                  ]
+                                 },
+                   "Absence Type":  {
+                                        "columns":  [
+                                                        "Absence Category",
+                                                        "Absence Plan Name",
+                                                        "Absence Type ID",
+                                                        "Absence Type Key",
+                                                        "Absence Type Name",
+                                                        "Is Current",
+                                                        "Plan Type"
+                                                    ],
+                                        "measures":  [
+
+                                                     ]
+                                    },
+                   "Absences":  {
+                                    "columns":  [
+                                                    "Absence Status",
+                                                    "Duration UOM",
+                                                    "Is Counted"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "Admission Source":  {
+                                            "columns":  [
+                                                            "Admission Source",
+                                                            "Admission Source Key"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Admission Treating Doctor":  {
+                                                     "columns":  [
+                                                                     "Category",
+                                                                     "Is High Value Specialty",
+                                                                     "Specialty",
+                                                                     "Staff Grade",
+                                                                     "Staff Key",
+                                                                     "Staff Name",
+                                                                     "Staff Name AR",
+                                                                     "Unified Specialty"
+                                                                 ],
+                                                     "measures":  [
+
+                                                                  ]
+                                                 },
+                   "Admissions":  {
+                                      "columns":  [
+                                                      "Admission Type",
+                                                      "Discharge Outcome Group",
+                                                      "Has Bed",
+                                                      "Is Countable",
+                                                      "Is DAMA",
+                                                      "Is Died",
+                                                      "Is ICU Readmission 48h",
+                                                      "Is LTC",
+                                                      "Is LTC To Date",
+                                                      "Is Open",
+                                                      "Is Readmission 30d",
+                                                      "Is Referral Policy",
+                                                      "Is Short Stay",
+                                                      "Is Wrong Admission Outcome",
+                                                      "Referred Type"
+                                                  ],
+                                      "measures":  [
+
+                                                   ]
+                                  },
+                   "Anaesthetist":  {
+                                        "columns":  [
+                                                        "Category",
+                                                        "Is High Value Specialty",
+                                                        "Specialty",
+                                                        "Staff Grade",
+                                                        "Staff Key",
+                                                        "Staff Name",
+                                                        "Staff Name AR",
+                                                        "Unified Specialty"
+                                                    ],
+                                        "measures":  [
+
+                                                     ]
+                                    },
+                   "AP Invoice Lines":  {
+                                            "columns":  [
+                                                            "Invoice Num",
+                                                            "Invoice Type",
+                                                            "Is Cancelled",
+                                                            "Is PO Matched",
+                                                            "Is Posted",
+                                                            "Is Reversal",
+                                                            "Line Type"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "AP Open Items":  {
+                                         "columns":  [
+                                                         "Ageing Bucket",
+                                                         "Approval Status",
+                                                         "Invoice Num",
+                                                         "Invoice Type",
+                                                         "Is Cancelled",
+                                                         "Is On Hold",
+                                                         "Payment Status",
+                                                         "Snapshot Date"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "AP Payments":  {
+                                       "columns":  [
+                                                       "Is Posted",
+                                                       "Is Voided",
+                                                       "Payment Method",
+                                                       "Payment Status"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "Appointment Outcome":  {
+                                               "columns":  [
+                                                               "Branch Key",
+                                                               "Is Cancelled",
+                                                               "Outcome",
+                                                               "Outcome Code",
+                                                               "Outcome Group",
+                                                               "Outcome Key"
+                                                           ],
+                                               "measures":  [
+
+                                                            ]
+                                           },
+                   "Bed":  {
+                               "columns":  [
+                                               "Bed Class",
+                                               "Bed Gender",
+                                               "Bed Key",
+                                               "Bed Location",
+                                               "Branch Key",
+                                               "Classification",
+                                               "Current Slot Status",
+                                               "Current Ward",
+                                               "Is Critical",
+                                               "Is Currently Available"
+                                           ],
+                               "measures":  [
+
+                                            ]
+                           },
+                   "Bed Occupancy":  {
+                                         "columns":  [
+                                                         "Is Excluded Ward",
+                                                         "Is Inpatient Ward"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Booked Doctor":  {
+                                         "columns":  [
+                                                         "Category",
+                                                         "Is High Value Specialty",
+                                                         "Specialty",
+                                                         "Staff Grade",
+                                                         "Staff Key",
+                                                         "Staff Name",
+                                                         "Staff Name AR",
+                                                         "Unified Specialty"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Branch":  {
+                                  "columns":  [
+                                                  "Branch Key",
+                                                  "Branch Name",
+                                                  "BSC Category",
+                                                  "City",
+                                                  "Clinics Count",
+                                                  "Fusion Branch Code",
+                                                  "Fusion Ledger ID",
+                                                  "Is Hospital",
+                                                  "Licensed Beds",
+                                                  "PG Branch Code"
+                                              ],
+                                  "measures":  [
+
+                                               ]
+                              },
+                   "BSC KPI":  {
+                                   "columns":  [
+                                                   "BSC KPI Key",
+                                                   "Chart Hint",
+                                                   "Co Owners",
+                                                   "Corporate Weight",
+                                                   "Definition",
+                                                   "Detail Page",
+                                                   "Direction",
+                                                   "Display Order",
+                                                   "Good From",
+                                                   "Is Active",
+                                                   "KPI Code",
+                                                   "KPI Name",
+                                                   "KPI Num",
+                                                   "KPI Type",
+                                                   "Objective Code",
+                                                   "Objective Order",
+                                                   "Objective Question",
+                                                   "Objective Title",
+                                                   "Owner",
+                                                   "Pillar",
+                                                   "Pillar Objective KPI",
+                                                   "Pillar Order",
+                                                   "Pillar Question",
+                                                   "Pillar Weight",
+                                                   "Score Base",
+                                                   "Score Slope",
+                                                   "Short Label",
+                                                   "Status",
+                                                   "Target Source",
+                                                   "Value Format",
+                                                   "Value Source",
+                                                   "Watch From"
+                                               ],
+                                   "measures":  [
+
+                                                ]
+                               },
+                   "BSC Manual Values":  {
+                                             "columns":  [
+                                                             "Note"
+                                                         ],
+                                             "measures":  [
+
+                                                          ]
+                                         },
+                   "BSC Parameters":  {
+                                          "columns":  [
+                                                          "Ancillary Target Share",
+                                                          "BSC Parameter Key",
+                                                          "Clinic Hours Per Day",
+                                                          "Clinic Patients Per Hour"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "BSC Targets":  {
+                                       "columns":  [
+                                                       "Source Basis"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "Budget":  {
+                                  "columns":  [
+                                                  "Is Subtotal",
+                                                  "Scenario"
+                                              ],
+                                  "measures":  [
+
+                                               ]
+                              },
+                   "Budget Line":  {
+                                       "columns":  [
+                                                       "Budget Line Code",
+                                                       "Budget Line Key",
+                                                       "Budget Line Name",
+                                                       "Is Subtotal",
+                                                       "Natural Side",
+                                                       "Sort Order"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "Care Type":  {
+                                     "columns":  [
+                                                     "Care Type",
+                                                     "Care Type Key",
+                                                     "Care Type Name"
+                                                 ],
+                                     "measures":  [
+
+                                                  ]
+                                 },
+                   "Cash Receipts":  {
+                                         "columns":  [
+                                                         "Receipt Kind",
+                                                         "Receipt Type"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Charge Lines":  {
+                                        "columns":  [
+                                                        "Bill To",
+                                                        "Charge Status",
+                                                        "Encounter Type",
+                                                        "Is Cash Billed",
+                                                        "Is Claimable",
+                                                        "Is LTC",
+                                                        "Is Medication",
+                                                        "Is Package Component",
+                                                        "Is Patient Share",
+                                                        "Is Recognised Revenue",
+                                                        "Resolved Encounter Type"
+                                                    ],
+                                        "measures":  [
+
+                                                     ]
+                                    },
+                   "Claim Lines":  {
+                                       "columns":  [
+                                                       "Adjudication Status",
+                                                       "Is Cancelled Claim",
+                                                       "Is Latest Submission",
+                                                       "Is Sent",
+                                                       "Item Outcome",
+                                                       "Primary Reason Code",
+                                                       "Reason Source"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "Claim Payments":  {
+                                          "columns":  [
+                                                          "Detail Type",
+                                                          "Payment Reference",
+                                                          "Period End",
+                                                          "Period Start"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Claim Status":  {
+                                        "columns":  [
+                                                        "Claim Status",
+                                                        "Claim Status Key",
+                                                        "Detailed Status",
+                                                        "Is Submitted",
+                                                        "Submission Channel",
+                                                        "Submission Status",
+                                                        "Validation Status"
+                                                    ],
+                                        "measures":  [
+
+                                                     ]
+                                    },
+                   "Date":  {
+                                "columns":  [
+                                                "Calendar",
+                                                "Date",
+                                                "Date Key",
+                                                "Day Name",
+                                                "Day Of Month",
+                                                "Day Of Week",
+                                                "Day Offset",
+                                                "End Of Month",
+                                                "Fiscal Year",
+                                                "Hijri Day",
+                                                "Hijri Month",
+                                                "Hijri Month Name",
+                                                "Hijri Year",
+                                                "Holiday Name",
+                                                "Is Clinic Working Day",
+                                                "Is Past",
+                                                "Is Public Holiday",
+                                                "Is Weekend",
+                                                "Iso Week",
+                                                "Month",
+                                                "Month Name",
+                                                "Month Offset",
+                                                "Month Short",
+                                                "Quarter",
+                                                "Quarter Name",
+                                                "Quarter Offset",
+                                                "Start Of Month",
+                                                "Start Of Quarter",
+                                                "Start Of Year",
+                                                "Year",
+                                                "Year Month",
+                                                "Year Month Name",
+                                                "Year Offset",
+                                                "Year Quarter"
+                                            ],
+                                "measures":  [
+
+                                             ]
+                            },
+                   "Department":  {
+                                      "columns":  [
+                                                      "Branch Key",
+                                                      "Care Setting",
+                                                      "Cost Centre ID",
+                                                      "Cost Centre Name",
+                                                      "Department Key",
+                                                      "Department Name",
+                                                      "Entity Type",
+                                                      "Entity Type Name",
+                                                      "Is Excluded Ward",
+                                                      "Is High Value Specialty",
+                                                      "Is Home Care",
+                                                      "Is Non Admitting Specialty",
+                                                      "Is Virtual Clinic",
+                                                      "Max Beds In Ward",
+                                                      "Service Department Name",
+                                                      "Service Department Type",
+                                                      "Service Dept",
+                                                      "Short Name",
+                                                      "Tower",
+                                                      "Unified Department",
+                                                      "Work Entity"
+                                                  ],
+                                      "measures":  [
+
+                                                   ]
+                                  },
+                   "Discharge Outcome":  {
+                                             "columns":  [
+                                                             "Branch Key",
+                                                             "Discharge Outcome Key",
+                                                             "MOH Code",
+                                                             "Outcome",
+                                                             "Outcome Code",
+                                                             "Outcome Group"
+                                                         ],
+                                             "measures":  [
+
+                                                          ]
+                                         },
+                   "Eligibility Type":  {
+                                            "columns":  [
+                                                            "Branch Key",
+                                                            "Care Type",
+                                                            "Description",
+                                                            "Eligibility Type",
+                                                            "Eligibility Type Key",
+                                                            "Free Follow Up Days"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Employee":  {
+                                    "columns":  [
+                                                    "Age Band",
+                                                    "Assignment Status",
+                                                    "Branch Key",
+                                                    "Employee Key",
+                                                    "Gender",
+                                                    "Hire Date",
+                                                    "Is Saudi",
+                                                    "Is Terminated",
+                                                    "Nationality",
+                                                    "Original Hire Date",
+                                                    "Person Number",
+                                                    "Tenure Band",
+                                                    "Termination Date",
+                                                    "Worker Number",
+                                                    "Worker Type",
+                                                    "Worker Type Code"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "Employee Details":  {
+                                            "columns":  [
+                                                            "Branch Key",
+                                                            "Employee Key",
+                                                            "Full Name"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Encounters":  {
+                                      "columns":  [
+                                                      "Booked From",
+                                                      "Encounter Type",
+                                                      "Is Arrived",
+                                                      "Is Cancelled",
+                                                      "Is First Episode",
+                                                      "Is Follow Up",
+                                                      "Is No Show",
+                                                      "Is Online Booking",
+                                                      "Is Referral Policy",
+                                                      "Is Returning",
+                                                      "Is Seen",
+                                                      "Is Virtual",
+                                                      "Is Walk In",
+                                                      "Visit Type"
+                                                  ],
+                                      "measures":  [
+
+                                                   ]
+                                  },
+                   "Episode Billing":  {
+                                           "columns":  [
+                                                           "Is Long Stay Contract"
+                                                       ],
+                                           "measures":  [
+
+                                                        ]
+                                       },
+                   "Episodes":  {
+                                    "columns":  [
+                                                    "Has Arrived Non Follow Up Encounter",
+                                                    "Is First Episode",
+                                                    "Is Referral Policy",
+                                                    "Previous Care Type"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "ER Priority":  {
+                                       "columns":  [
+                                                       "Branch Key",
+                                                       "Colour",
+                                                       "CTAS Level",
+                                                       "Description",
+                                                       "ER Priority Key",
+                                                       "Priority",
+                                                       "Target Minutes"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "FS Line":  {
+                                   "columns":  [
+                                                   "Caption Sort",
+                                                   "Category Sort",
+                                                   "Display Sign",
+                                                   "Element Sort",
+                                                   "FS Caption",
+                                                   "FS Category",
+                                                   "FS Element",
+                                                   "FS Line",
+                                                   "FS Line Key",
+                                                   "FS Type",
+                                                   "Is Not Mapped",
+                                                   "Line Sort",
+                                                   "Statement Group",
+                                                   "Type Sort"
+                                               ],
+                                   "measures":  [
+
+                                                ]
+                               },
+                   "GL Account":  {
+                                      "columns":  [
+                                                      "Account Type",
+                                                      "Balance Side",
+                                                      "Branch Key",
+                                                      "Branch Segment",
+                                                      "Budget Line Code",
+                                                      "Code Combination ID",
+                                                      "FS Line Key",
+                                                      "FS Mapping Source",
+                                                      "GL Account Key",
+                                                      "Intercompany Segment",
+                                                      "Is Enabled",
+                                                      "Is Summary",
+                                                      "Natural Account",
+                                                      "Natural Account Name",
+                                                      "Revenue Care Type",
+                                                      "Service Group Code",
+                                                      "Service Group Name",
+                                                      "Service Location Code",
+                                                      "Service Location Name",
+                                                      "Specialty Code",
+                                                      "Specialty Name",
+                                                      "Unified Department"
+                                                  ],
+                                      "measures":  [
+
+                                                   ]
+                                  },
+                   "GL Balances":  {
+                                       "columns":  [
+                                                       "Balance View",
+                                                       "Is Prior Year Roll"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "GL FS Monthly":  {
+                                         "columns":  [
+                                                         "Account Code",
+                                                         "FS Caption",
+                                                         "FS Category",
+                                                         "FS Element",
+                                                         "FS Line",
+                                                         "FS Type",
+                                                         "Source System"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "GL Journal Lines":  {
+                                            "columns":  [
+                                                            "Doc Sequence Value",
+                                                            "Header Status",
+                                                            "Is Oasis Feed",
+                                                            "Is Opening Balance Journal",
+                                                            "Is Posted",
+                                                            "JE Category",
+                                                            "JE Source",
+                                                            "JE Source Label",
+                                                            "Journal Name"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "GL Period":  {
+                                     "columns":  [
+                                                     "End Date",
+                                                     "End Date Key",
+                                                     "Fiscal Year",
+                                                     "Is Adjustment",
+                                                     "Month Start",
+                                                     "Period Key",
+                                                     "Period Name",
+                                                     "Period Num",
+                                                     "Quarter Num",
+                                                     "Start Date"
+                                                 ],
+                                     "measures":  [
+
+                                                  ]
+                                 },
+                   "Goods Receipts":  {
+                                          "columns":  [
+                                                          "Expiry Date",
+                                                          "Is Free Of Charge",
+                                                          "Is PO Receipt",
+                                                          "Is Supplier Receipt",
+                                                          "Lot Number",
+                                                          "Receipt Type",
+                                                          "Source System"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Grade":  {
+                                 "columns":  [
+                                                 "Grade Code",
+                                                 "Grade ID",
+                                                 "Grade Key",
+                                                 "Grade Name",
+                                                 "Is Current"
+                                             ],
+                                 "measures":  [
+
+                                              ]
+                             },
+                   "Headcount":  {
+                                     "columns":  [
+                                                     "Age Band",
+                                                     "Assignment Status",
+                                                     "Gender",
+                                                     "Is Closed Month",
+                                                     "Is Contingent",
+                                                     "Is New Hire In Month",
+                                                     "Is Saudi",
+                                                     "Tenure Band",
+                                                     "Worker Type Code"
+                                                 ],
+                                     "measures":  [
+
+                                                  ]
+                                 },
+                   "HR Department":  {
+                                         "columns":  [
+                                                         "Branch Key",
+                                                         "Branch Prefix",
+                                                         "Department Base Name",
+                                                         "Department Name",
+                                                         "HR Department Key",
+                                                         "Is Current",
+                                                         "Organization ID",
+                                                         "Unified Department"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Income Statement":  {
+                                            "columns":  [
+                                                            "Revenue Care Type",
+                                                            "Statement Group"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Invoices":  {
+                                    "columns":  [
+                                                    "Account Code",
+                                                    "Approval Status",
+                                                    "Approval Status Code",
+                                                    "Claim Type",
+                                                    "Is Cancelled Statement",
+                                                    "Is Sent",
+                                                    "Is Submission Status Mapped",
+                                                    "Is Verified",
+                                                    "Stat Invoice No",
+                                                    "Submission Status",
+                                                    "Validation Status"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "Item":  {
+                                "columns":  [
+                                                "Branch Key",
+                                                "Category Code",
+                                                "Inventory Item ID",
+                                                "Is Deleted",
+                                                "Is Lot Controlled",
+                                                "Item Description",
+                                                "Item Group",
+                                                "Item Key",
+                                                "Item Number",
+                                                "Item Status",
+                                                "Item Type",
+                                                "Oasis Product Category",
+                                                "Oasis Product Code",
+                                                "Oasis Product Codes",
+                                                "Primary UOM Code",
+                                                "Product Group",
+                                                "Source System"
+                                            ],
+                                "measures":  [
+
+                                             ]
+                            },
+                   "Job":  {
+                               "columns":  [
+                                               "Full Part Time",
+                                               "Is Current",
+                                               "Job Code",
+                                               "Job ID",
+                                               "Job Key",
+                                               "Job Name",
+                                               "Regular Temporary"
+                                           ],
+                               "measures":  [
+
+                                            ]
+                           },
+                   "Leave Balances":  {
+                                          "columns":  [
+                                                          "Absence Plan Name",
+                                                          "Is Annual Plan",
+                                                          "Is Closed Period",
+                                                          "Is Current Balance",
+                                                          "Is Latest In Month"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Location":  {
+                                    "columns":  [
+                                                    "Is Current",
+                                                    "Location Code",
+                                                    "Location ID",
+                                                    "Location Key",
+                                                    "Location Name",
+                                                    "Town Or City"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "Movement Type":  {
+                                         "columns":  [
+                                                         "Direction",
+                                                         "Is Consumption",
+                                                         "Movement Type",
+                                                         "Movement Type Key",
+                                                         "Sort Order"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "NPHIES Reason":  {
+                                         "columns":  [
+                                                         "NPHIES Reason Key",
+                                                         "Reason",
+                                                         "Reason Category",
+                                                         "Reason Code"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Order Lines":  {
+                                       "columns":  [
+                                                       "Fulfilment Status",
+                                                       "Generic Name",
+                                                       "Is Alternative",
+                                                       "Is Excluded Package",
+                                                       "Is In Leak Scope",
+                                                       "Is Inpatient",
+                                                       "Is Lost",
+                                                       "Is Partially Delivered",
+                                                       "Is Unit Outlier",
+                                                       "Line Status",
+                                                       "Order Category",
+                                                       "Urgency Code"
+                                                   ],
+                                       "measures":  [
+
+                                                    ]
+                                   },
+                   "Patient":  {
+                                   "columns":  [
+                                                   "Birth Date",
+                                                   "Branch Key",
+                                                   "Gender",
+                                                   "Is At Risk",
+                                                   "Is Chronic",
+                                                   "Is Merged",
+                                                   "Is Saudi",
+                                                   "Marital Status",
+                                                   "MRN",
+                                                   "Nationality",
+                                                   "Occupation",
+                                                   "Patient ID",
+                                                   "Patient Key",
+                                                   "Person Key",
+                                                   "Person Key Source",
+                                                   "Registered Date",
+                                                   "Registered Dept",
+                                                   "Status"
+                                               ],
+                                   "measures":  [
+
+                                                ]
+                               },
+                   "Patient Consumption":  {
+                                               "columns":  [
+                                                               "Is Cost Mismatch",
+                                                               "Is Fusion Gap",
+                                                               "Is In Fusion",
+                                                               "Is In Oasis",
+                                                               "Is Linked To Charge",
+                                                               "Revenue Basis",
+                                                               "Source System"
+                                                           ],
+                                               "measures":  [
+
+                                                            ]
+                                           },
+                   "Patient Details":  {
+                                           "columns":  [
+                                                           "Border No",
+                                                           "Branch Key",
+                                                           "Email Address",
+                                                           "Full Name",
+                                                           "Full Name AR",
+                                                           "Mobile No",
+                                                           "MRN",
+                                                           "National ID",
+                                                           "Passport No",
+                                                           "Patient ID",
+                                                           "Patient Key"
+                                                       ],
+                                           "measures":  [
+
+                                                        ]
+                                       },
+                   "Pay Category":  {
+                                        "columns":  [
+                                                        "Fusion Sign",
+                                                        "Is Cost",
+                                                        "Is Gross Pay",
+                                                        "Is Recurring",
+                                                        "Pay Category",
+                                                        "Pay Category Key",
+                                                        "Pay Group",
+                                                        "Sort Order"
+                                                    ],
+                                        "measures":  [
+
+                                                     ]
+                                    },
+                   "Payer":  {
+                                 "columns":  [
+                                                 "Account Code",
+                                                 "Billing Type",
+                                                 "Branch Key",
+                                                 "Category",
+                                                 "CCHI No",
+                                                 "Company",
+                                                 "Creditor",
+                                                 "Is Active",
+                                                 "Is MOH",
+                                                 "Is TPA",
+                                                 "Manual Submission",
+                                                 "NPHIES License",
+                                                 "Payer Key",
+                                                 "Purchaser Code",
+                                                 "Purchaser Name",
+                                                 "Purchaser Type"
+                                             ],
+                                 "measures":  [
+
+                                              ]
+                             },
+                   "Payroll":  {
+                                   "columns":  [
+                                                   "Is Closed Payroll",
+                                                   "Is Parallel Run",
+                                                   "Open Run Date",
+                                                   "Payroll Status",
+                                                   "Source"
+                                               ],
+                                   "measures":  [
+
+                                                ]
+                               },
+                   "Position":  {
+                                    "columns":  [
+                                                    "Is Current",
+                                                    "Position Code",
+                                                    "Position ID",
+                                                    "Position Key",
+                                                    "Position Name"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "Pre-auth Lines":  {
+                                          "columns":  [
+                                                          "Advance Reason",
+                                                          "Authorised Flag",
+                                                          "Diagnosis Code",
+                                                          "Episode Link Method",
+                                                          "Has Communication Request",
+                                                          "Has Final Response",
+                                                          "Is Approved",
+                                                          "Is Approved Not Delivered",
+                                                          "Is Delivered",
+                                                          "Is Delivered Not Approved",
+                                                          "Is First Response Approved",
+                                                          "Is Latest Request For Service",
+                                                          "Is Resubmitted",
+                                                          "Is Status Override",
+                                                          "Is Transfer",
+                                                          "Line Source",
+                                                          "NPHIES Final Status",
+                                                          "NPHIES First Status",
+                                                          "NPHIES Last Status",
+                                                          "Payer License",
+                                                          "Preauth Outcome",
+                                                          "Primary Reason Code",
+                                                          "Referring Provider Name",
+                                                          "Request Status",
+                                                          "Treatment Type"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Pre-auth Outcome":  {
+                                            "columns":  [
+                                                            "Is Approved",
+                                                            "Preauth Outcome",
+                                                            "Preauth Outcome Key"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Procedure Type":  {
+                                          "columns":  [
+                                                          "Procedure Type",
+                                                          "Procedure Type Key"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Product Category":  {
+                                            "columns":  [
+                                                            "Branch Key",
+                                                            "Category Code",
+                                                            "High Level Department",
+                                                            "Is BSC Ancillary",
+                                                            "Is Medication Category",
+                                                            "Product Category Key",
+                                                            "Product Department",
+                                                            "Product Group",
+                                                            "Unified Category"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Purchase Lines":  {
+                                          "columns":  [
+                                                          "Is AP Matched",
+                                                          "Is Approved PO",
+                                                          "Line Type",
+                                                          "PO Number",
+                                                          "PO Status",
+                                                          "Requisition Number",
+                                                          "Source System",
+                                                          "UOM Code"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Revenue Adjustments":  {
+                                               "columns":  [
+                                                               "Base Doc No",
+                                                               "Doc No"
+                                                           ],
+                                               "measures":  [
+
+                                                            ]
+                                           },
+                   "Service":  {
+                                   "columns":  [
+                                                   "Branch Key",
+                                                   "High Level Department",
+                                                   "IOS",
+                                                   "IOS Category",
+                                                   "IOS Main",
+                                                   "IOS Type",
+                                                   "IOS User",
+                                                   "Product Category Code",
+                                                   "Product Department",
+                                                   "Product Group",
+                                                   "Service Dept",
+                                                   "Service Key",
+                                                   "Service Name",
+                                                   "Unified Category"
+                                               ],
+                                   "measures":  [
+
+                                                ]
+                               },
+                   "Staff":  {
+                                 "columns":  [
+                                                 "Branch Key",
+                                                 "Category",
+                                                 "Classification",
+                                                 "Clinic Duration Hours",
+                                                 "Contract Status",
+                                                 "Gender",
+                                                 "Is Consultant",
+                                                 "Is High Value Specialty",
+                                                 "Is Non Admitting Specialty",
+                                                 "Is Saudi",
+                                                 "Med Nonmed",
+                                                 "Nationality",
+                                                 "Position Name",
+                                                 "SCFHS Licence No",
+                                                 "Service Start Date",
+                                                 "Slots Per Hour",
+                                                 "Specialty",
+                                                 "Staff Grade",
+                                                 "Staff ID",
+                                                 "Staff Key",
+                                                 "Staff Name",
+                                                 "Staff Name AR",
+                                                 "Termination Date",
+                                                 "Termination Reason",
+                                                 "Unified Specialty"
+                                             ],
+                                 "measures":  [
+
+                                              ]
+                             },
+                   "Staff Productivity":  {
+                                              "columns":  [
+                                                              "Staff Category"
+                                                          ],
+                                              "measures":  [
+
+                                                           ]
+                                          },
+                   "Stock Monthly":  {
+                                         "columns":  [
+                                                         "Has Expired Lot",
+                                                         "Is Closed Month",
+                                                         "Is Expiry Store",
+                                                         "Source System",
+                                                         "Stock Source"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Stock Movements":  {
+                                           "columns":  [
+                                                           "Cost Source",
+                                                           "Is Consumption",
+                                                           "Is Cost Mismatch",
+                                                           "Is Fusion Gap",
+                                                           "Is In Fusion",
+                                                           "Is In Oasis",
+                                                           "Is Opening Balance",
+                                                           "Source System"
+                                                       ],
+                                           "measures":  [
+
+                                                        ]
+                                       },
+                   "Store":  {
+                                 "columns":  [
+                                                 "Branch Key",
+                                                 "Is Expiry Store",
+                                                 "Oasis Store ID",
+                                                 "Organization ID",
+                                                 "Source System",
+                                                 "Store Code",
+                                                 "Store Key",
+                                                 "Store Name",
+                                                 "Store Type",
+                                                 "Subinventory Code",
+                                                 "Unified Department"
+                                             ],
+                                 "measures":  [
+
+                                              ]
+                             },
+                   "Supplier":  {
+                                    "columns":  [
+                                                    "Business Unit ID",
+                                                    "Country",
+                                                    "Site Code",
+                                                    "Source System",
+                                                    "Supplier Code",
+                                                    "Supplier Key",
+                                                    "Supplier Name",
+                                                    "Supplier Number",
+                                                    "Supplier Status",
+                                                    "Supplier Type",
+                                                    "Vendor ID",
+                                                    "Vendor Site ID"
+                                                ],
+                                    "measures":  [
+
+                                                 ]
+                                },
+                   "Surgeries":  {
+                                     "columns":  [
+                                                     "Anaesthesia Type",
+                                                     "Cancel Reason",
+                                                     "Is Cancelled",
+                                                     "Is Rescheduled",
+                                                     "Operation Status",
+                                                     "Operation Type",
+                                                     "Procedure Name"
+                                                 ],
+                                     "measures":  [
+
+                                                  ]
+                                 },
+                   "Survey Answers":  {
+                                          "columns":  [
+                                                          "Answer Code",
+                                                          "Answer Label AR",
+                                                          "Answer Label En",
+                                                          "Band",
+                                                          "Is Option Unknown",
+                                                          "Is Primary For Encounter",
+                                                          "Is Scored",
+                                                          "Link Status",
+                                                          "NPS Role",
+                                                          "Question Class",
+                                                          "Response Status",
+                                                          "Scale Type"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Survey Question":  {
+                                           "columns":  [
+                                                           "Attribute Role",
+                                                           "Domain AR",
+                                                           "Domain En",
+                                                           "Is Scored",
+                                                           "Item No",
+                                                           "Item Type",
+                                                           "NPS Role",
+                                                           "PG Var",
+                                                           "Question AR",
+                                                           "Question Class",
+                                                           "Question Code",
+                                                           "Question En",
+                                                           "Question Key",
+                                                           "Scale En",
+                                                           "Scale Type",
+                                                           "Service Code",
+                                                           "Survey Name AR",
+                                                           "Survey Name En"
+                                                       ],
+                                           "measures":  [
+
+                                                        ]
+                                       },
+                   "Survey Responses":  {
+                                            "columns":  [
+                                                            "Admitted Via ER",
+                                                            "Booking Channel",
+                                                            "Contact Consent",
+                                                            "Dental Service",
+                                                            "Dialysis Done",
+                                                            "First Visit",
+                                                            "HHC Service",
+                                                            "Is Primary For Encounter",
+                                                            "Is Responded",
+                                                            "Is SMS Sent",
+                                                            "Is Submitted",
+                                                            "Link Status",
+                                                            "Meds Delivered",
+                                                            "NPS Band",
+                                                            "Physician NPS Band",
+                                                            "Respondent Type",
+                                                            "Response Status",
+                                                            "Source Status",
+                                                            "Tele Channel",
+                                                            "Tele Spared Visit",
+                                                            "Treatment Complete",
+                                                            "Used Insurance Office",
+                                                            "Used Lab",
+                                                            "Used Pharmacy",
+                                                            "Used Physio",
+                                                            "Used Radiology",
+                                                            "Used Speech"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Survey Service":  {
+                                          "columns":  [
+                                                          "Care Setting",
+                                                          "Is Enabled",
+                                                          "Service Name",
+                                                          "Survey Name AR",
+                                                          "Survey Name En",
+                                                          "Survey Service Key"
+                                                      ],
+                                          "measures":  [
+
+                                                       ]
+                                      },
+                   "Targets":  {
+                                   "columns":  [
+                                                   "Creditor",
+                                                   "Scenario",
+                                                   "Specialty",
+                                                   "Stay Type"
+                                               ],
+                                   "measures":  [
+
+                                                ]
+                               },
+                   "Time":  {
+                                "columns":  [
+                                                "Hour",
+                                                "Minute",
+                                                "Quarter Hour",
+                                                "Shift",
+                                                "Time Key",
+                                                "Time Label"
+                                            ],
+                                "measures":  [
+
+                                             ]
+                            },
+                   "Time Calculation":  {
+                                            "columns":  [
+                                                            "Ordinal",
+                                                            "Time Calculation"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Worker Action":  {
+                                         "columns":  [
+                                                         "Action Code",
+                                                         "Action Name",
+                                                         "Action Reason Code",
+                                                         "Action Reason Name",
+                                                         "Movement Group",
+                                                         "Worker Action Key"
+                                                     ],
+                                         "measures":  [
+
+                                                      ]
+                                     },
+                   "Worker Movements":  {
+                                            "columns":  [
+                                                            "Is Branch Transfer",
+                                                            "Is Grade Changed",
+                                                            "Is Hire",
+                                                            "Is Job Changed",
+                                                            "Is Leaver",
+                                                            "Is Location Changed",
+                                                            "Is Organization Changed",
+                                                            "Is Position Changed",
+                                                            "Is Voluntary Leaver",
+                                                            "Movement Group"
+                                                        ],
+                                            "measures":  [
+
+                                                         ]
+                                        },
+                   "Workforce Monthly":  {
+                                             "columns":  [
+                                                             "Data Source",
+                                                             "Person ID",
+                                                             "Row Type"
+                                                         ],
+                                             "measures":  [
+
+                                                          ]
+                                         }
+               }
+}

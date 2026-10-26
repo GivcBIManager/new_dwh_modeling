@@ -1,0 +1,222 @@
+{
+    "dataRoles": [
+        {
+            "displayName": "Category (one card each)",
+            "name": "category",
+            "kind": "Grouping",
+            "description": "Optional. Branch, specialty, survey service... one scorecard is drawn per value."
+        },
+        {
+            "displayName": "NPS score",
+            "name": "nps",
+            "kind": "Measure",
+            "description": "Headline net score, -100 to 100."
+        },
+        {
+            "displayName": "Promoter %",
+            "name": "promoters",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Passive %",
+            "name": "passives",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Detractor %",
+            "name": "detractors",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "Benchmark",
+            "name": "benchmark",
+            "kind": "Measure",
+            "description": "Comparison score (e.g. network NPS). Shown as a delta chip and a marker on the gauge."
+        },
+        {
+            "displayName": "Volume (n)",
+            "name": "volume",
+            "kind": "Measure",
+            "description": "Number of answers or respondents behind the score."
+        },
+        {
+            "displayName": "Margin of error (\u00b1)",
+            "name": "margin",
+            "kind": "Measure",
+            "description": "Optional \u00b1 margin of error of the score; shown next to n and in the tooltip with a reliability label."
+        }
+    ],
+    "objects": {
+        "cardStyle": {
+            "properties": {
+                "mode": {
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "dark",
+                                "displayName": "Dark blue gradient"
+                            },
+                            {
+                                "value": "light",
+                                "displayName": "Light (white)"
+                            },
+                            {
+                                "value": "blue",
+                                "displayName": "Light blue gradient"
+                            }
+                        ]
+                    }
+                },
+                "showLogo": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "cornerRadius": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "maxColumns": {
+                    "type": {
+                        "numeric": true
+                    }
+                }
+            }
+        },
+        "scoreBands": {
+            "properties": {
+                "goodThreshold": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "warningThreshold": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
+                "colorByBand": {
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
+        "labels": {
+            "properties": {
+                "scoreLabel": {
+                    "type": {
+                        "text": true
+                    }
+                },
+                "benchmarkLabel": {
+                    "type": {
+                        "text": true
+                    }
+                },
+                "showSplit": {
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "conditions": [
+                {
+                    "category": {
+                        "max": 1
+                    },
+                    "nps": {
+                        "max": 1
+                    },
+                    "promoters": {
+                        "max": 1
+                    },
+                    "passives": {
+                        "max": 1
+                    },
+                    "detractors": {
+                        "max": 1
+                    },
+                    "benchmark": {
+                        "max": 1
+                    },
+                    "volume": {
+                        "max": 1
+                    },
+                    "margin": {
+                        "max": 1
+                    }
+                }
+            ],
+            "categorical": {
+                "categories": {
+                    "for": {
+                        "in": "category"
+                    },
+                    "dataReductionAlgorithm": {
+                        "top": {
+                            "count": 60
+                        }
+                    }
+                },
+                "values": {
+                    "select": [
+                        {
+                            "bind": {
+                                "to": "nps"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "promoters"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "passives"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "detractors"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "benchmark"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "volume"
+                            }
+                        },
+                        {
+                            "bind": {
+                                "to": "margin"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "sorting": {
+        "default": {}
+    },
+    "supportsLandingPage": true,
+    "supportsEmptyDataView": true,
+    "supportsMultiVisualSelection": true,
+    "tooltips": {
+        "supportedTypes": {
+            "default": true,
+            "canvas": true
+        }
+    },
+    "privileges": []
+}

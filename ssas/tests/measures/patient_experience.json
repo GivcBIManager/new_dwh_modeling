@@ -1,47 +1,713 @@
 [
-  {"name": "All Invitations, 2026", "tolerance": 0,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([All Invitations], 'Date'[Year] = 2026))",
-   "sql": "select count() from gold.ssas_fact_survey_response where visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "SMS Reach %, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([SMS Reach %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(is_sms_sent = 'Yes') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Completion Rate %, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Completion Rate %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(is_submitted = 'Yes') / countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Answer Completeness %, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Answer Completeness %], 'Date'[Year] = 2026))",
-   "sql": "select sum(scored_questions_answered) / sum(scored_questions_offered) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_responded = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Median Days Visit to Answer, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Median Days Visit to Answer], 'Date'[Year] = 2026))",
-   "sql": "select quantileExactInclusive(0.5)(toFloat64(days_visit_to_answer)) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_responded = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Encounter Link %, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Encounter Link %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(link_status = 'Linked') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Doctor Attribution %, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Doctor Attribution %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(staff_key <> -1) / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_responded = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Repeat Invitation Rate %, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Repeat Invitation Rate %], 'Date'[Year] = 2026))",
-   "sql": "select countIf(is_primary_for_encounter = 'No') / count() from gold.ssas_fact_survey_response where visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "Physician NPS (5-point), 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([Physician NPS (5-point)], 'Date'[Year] = 2026))",
-   "sql": "select (sum(is_promoter) - sum(is_detractor)) * 100 / count() from gold.ssas_fact_survey_answer where nps_role = 'Physician NPS' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "NPS (5-point), all scored answers, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (5-point)], 'Date'[Year] = 2026))",
-   "sql": "select (sum(is_promoter) - sum(is_detractor)) * 100 / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "NPS (5-point), branch 1, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (5-point)], Branch[Branch Key] = 1, 'Date'[Year] = 2026))",
-   "sql": "select (sum(is_promoter) - sum(is_detractor)) * 100 / count() from gold.ssas_fact_survey_answer where branch_key = 1 and is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "NPS Answers, 2026", "tolerance": 0,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS Answers], 'Date'[Year] = 2026))",
-   "sql": "select count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "% Promoters, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([% Promoters], 'Date'[Year] = 2026))",
-   "sql": "select sum(is_promoter) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "% Passives, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([% Passives], 'Date'[Year] = 2026))",
-   "sql": "select sum(is_passive) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"},
-  {"name": "% Detractors, 2026", "tolerance": 0.0001,
-   "dax": "EVALUATE ROW(\"v\", CALCULATE([% Detractors], 'Date'[Year] = 2026))",
-   "sql": "select sum(is_detractor) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"}
+ {
+  "name": "All Invitations, 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([All Invitations], 'Date'[Year] = 2026))",
+  "sql": "select count() from gold.ssas_fact_survey_response where visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "SMS Reach %, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([SMS Reach %], 'Date'[Year] = 2026))",
+  "sql": "select countIf(is_sms_sent = 'Yes') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Completion Rate %, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Completion Rate %], 'Date'[Year] = 2026))",
+  "sql": "select countIf(is_submitted = 'Yes') / countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Answer Completeness %, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Answer Completeness %], 'Date'[Year] = 2026))",
+  "sql": "select sum(scored_questions_answered) / sum(scored_questions_offered) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_responded = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Median Days Visit to Answer, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Median Days Visit to Answer], 'Date'[Year] = 2026))",
+  "sql": "select quantileExactInclusive(0.5)(toFloat64(days_visit_to_answer)) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_responded = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Encounter Link %, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Encounter Link %], 'Date'[Year] = 2026))",
+  "sql": "select countIf(link_status = 'Linked') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Doctor Attribution %, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Doctor Attribution %], 'Date'[Year] = 2026))",
+  "sql": "select countIf(staff_key <> -1) / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and is_responded = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Repeat Invitation Rate %, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Repeat Invitation Rate %], 'Date'[Year] = 2026))",
+  "sql": "select countIf(is_primary_for_encounter = 'No') / count() from gold.ssas_fact_survey_response where visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Physician NPS (5-point), 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Physician NPS (5-point)], 'Date'[Year] = 2026))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) * 100 / count() from gold.ssas_fact_survey_answer where nps_role = 'Physician NPS' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "NPS (5-point), all scored answers, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (5-point)], 'Date'[Year] = 2026))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) * 100 / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "NPS (5-point), branch 1, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (5-point)], Branch[Branch Key] = 1, 'Date'[Year] = 2026))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) * 100 / count() from gold.ssas_fact_survey_answer where branch_key = 1 and is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "NPS Answers, 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS Answers], 'Date'[Year] = 2026))",
+  "sql": "select count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "% Promoters, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([% Promoters], 'Date'[Year] = 2026))",
+  "sql": "select sum(is_promoter) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "% Passives, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([% Passives], 'Date'[Year] = 2026))",
+  "sql": "select sum(is_passive) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "% Detractors, 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([% Detractors], 'Date'[Year] = 2026))",
+  "sql": "select sum(is_detractor) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key >= 20260101 and visit_date_key < 20270101"
+ },
+ {
+  "name": "Surveys Responded, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Surveys Responded], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Surveys Submitted, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Surveys Submitted], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_submitted = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Surveys Partial, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Surveys Partial], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(response_status = 'Partial') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Surveys Not Started, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Surveys Not Started], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(response_status = 'Not started') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Patients Invited, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Patients Invited], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select uniqExactIf(patient_key, patient_key <> -1) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Patients Responded, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Patients Responded], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select uniqExactIf(patient_key, patient_key <> -1 and is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Invitations (SMS), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Invitations (SMS)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Invitations (Agent Call), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Invitations (Agent Call)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'No') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Responded (SMS), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Responded (SMS)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'Yes' and is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Responded (Agent Call), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Responded (Agent Call)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'No' and is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Response Rate % (SMS), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Response Rate % (SMS)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'Yes' and is_responded = 'Yes') / countIf(is_sms_sent = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Response Rate % (Agent Call), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Response Rate % (Agent Call)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'No' and is_responded = 'Yes') / countIf(is_sms_sent = 'No') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Completion Rate % (SMS), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Completion Rate % (SMS)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'Yes' and is_submitted = 'Yes') / countIf(is_sms_sent = 'Yes' and is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Completion Rate % (Agent Call), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Completion Rate % (Agent Call)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'No' and is_submitted = 'Yes') / countIf(is_sms_sent = 'No' and is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Agent Call Share of Responses %, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Agent Call Share of Responses %], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_sms_sent = 'No' and is_responded = 'Yes') / countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Partial Rate %, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Partial Rate %], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(response_status = 'Partial') / countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Unknown Gender %, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Unknown Gender %], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(p.gender = 'Unknown') / count() from gold.ssas_fact_survey_response r0 left join gold.ssas_dim_patient p on p.patient_key = r0.patient_key where r0.is_primary_for_encounter = 'Yes' and r0.visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Network Response Rate %, branch 1, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Network Response Rate %], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Branch[Branch Key] = 1))",
+  "sql": "select countIf(is_responded = 'Yes') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Month Has 1000+ Invitations, 2026-10, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Month Has 1000+ Invitations], 'Date'[Year Month] = 202610))",
+  "sql": "select if(count() >= 1000, 1, 0) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20261001 and 20261031"
+ },
+ {
+  "name": "Month Has 1000+ Invitations, 2025-07 (one invitation), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Month Has 1000+ Invitations], 'Date'[Year Month] = 202507) + 0)",
+  "sql": "select if(count() >= 1000, 1, 0) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and visit_date_key between 20250701 and 20250731",
+  "allow_zero": true
+ },
+ {
+  "name": "Actual Visits, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Actual Visits], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))"
+ },
+ {
+  "name": "Invitations (Visit-Matched), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Invitations (Visit-Matched)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Respondents (Visit-Matched), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Respondents (Visit-Matched)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Response Rate % (Visit-Matched), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Response Rate % (Visit-Matched)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(is_responded = 'Yes') / count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Survey Coverage %, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Survey Coverage %], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (select count() from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))"
+ },
+ {
+  "name": "Response Coverage %, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Response Coverage %], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))"
+ },
+ {
+  "name": "Required Sample (±5%), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Required Sample (±5%)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select ceil(384.16 / (1 + 383.16 / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))))"
+ },
+ {
+  "name": "Sample Gap, unknown gender, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Sample Gap], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Patient[Gender] = \"Unknown\"))",
+  "sql": "with v as (select ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter e left join gold.ssas_dim_patient p on p.patient_key = e.patient_key where p.gender = 'Unknown' and encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission a left join gold.ssas_dim_patient p on p.patient_key = a.patient_key where p.gender = 'Unknown' and admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000))) v), r as (select countIf(r0.is_responded = 'Yes') r from gold.ssas_fact_survey_response r0 left join gold.ssas_dim_patient p on p.patient_key = r0.patient_key where p.gender = 'Unknown' and r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) select greatest(0, ceil(384.16 / (1 + 383.16 / (select v from v))) - (select r from r))"
+ },
+ {
+  "name": "Margin of Error (±), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Margin of Error (±)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) as r, ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000))) as v select 0.98 / sqrt(r) * sqrt((v - r) / (v - 1))"
+ },
+ {
+  "name": "Response Share %, ER row, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", MAXX(FILTER(SUMMARIZECOLUMNS('Care Type'[Care Type], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Response Share %]), 'Care Type'[Care Type] = \"ER\"), [@v]))",
+  "sql": "select (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where care_type_key = 2 and is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) / (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "Visit Share %, ER row, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", MAXX(FILTER(SUMMARIZECOLUMNS('Care Type'[Care Type], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Visit Share %]), 'Care Type'[Care Type] = \"ER\"), [@v]))",
+  "sql": "select (select countIf(encounter_type = 'ER' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))"
+ },
+ {
+  "name": "Representation Index, ER row, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", MAXX(FILTER(SUMMARIZECOLUMNS('Care Type'[Care Type], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Representation Index]), 'Care Type'[Care Type] = \"ER\"), [@v]))",
+  "sql": "select ((select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where care_type_key = 2 and is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) / (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000))))"
+ },
+ {
+  "name": "Representation Status, ER row (1 Under, 2 Over, 3 Fair share), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SWITCH(CONCATENATEX(FILTER(SUMMARIZECOLUMNS('Care Type'[Care Type], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Representation Status]), 'Care Type'[Care Type] = \"ER\"), [@v]), \"Under\", 1, \"Over\", 2, \"Fair share\", 3, \"No visit data\", 4))",
+  "sql": "with ((select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where care_type_key = 2 and is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) / (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))) as i select multiIf(i < 0.8, 1, i > 1.25, 2, 3)"
+ },
+ {
+  "name": "Representation Color, ER row (green = fair share), Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(CONCATENATEX(FILTER(SUMMARIZECOLUMNS('Care Type'[Care Type], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Representation Color]), 'Care Type'[Care Type] = \"ER\"), [@v]) = \"#05A591\"))",
+  "sql": "with ((select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where care_type_key = 2 and is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930) / (select countIf(is_responded = 'Yes') from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) / ((select countIf(encounter_type = 'ER' and is_cancelled = 'No') + countIf(encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No') from gold.ssas_fact_encounter where encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)) + (select countIf(is_countable = 'Yes') from gold.ssas_fact_admission where admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000)))) as i select if(i >= 0.8 and i <= 1.25, 1, 0)"
+ },
+ {
+  "name": "Mismatch (Care Type), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Mismatch (Care Type)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with resp as (select r0.care_type_key g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0  where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select 2 g, 2 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select 1 g, 1 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select 3 g, 3 ct, count() v from gold.ssas_fact_admission a  where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)"
+ },
+ {
+  "name": "Mismatch (Branch), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Mismatch (Branch)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with resp as (select r0.branch_key g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0  where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select e.branch_key g, 2 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select e.branch_key g, 1 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select a.branch_key g, 3 ct, count() v from gold.ssas_fact_admission a  where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r * w.w) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)"
+ },
+ {
+  "name": "Mismatch (Gender), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Mismatch (Gender)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with resp as (select p.gender g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0 left join gold.ssas_dim_patient p on p.patient_key = r0.patient_key where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select p.gender g, 2 ct, count() v from gold.ssas_fact_encounter e left join gold.ssas_dim_patient p on p.patient_key = e.patient_key where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select p.gender g, 1 ct, count() v from gold.ssas_fact_encounter e left join gold.ssas_dim_patient p on p.patient_key = e.patient_key where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select p.gender g, 3 ct, count() v from gold.ssas_fact_admission a left join gold.ssas_dim_patient p on p.patient_key = a.patient_key where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r * w.w) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)"
+ },
+ {
+  "name": "Mismatch (Nationality), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Mismatch (Nationality)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with resp as (select p.is_saudi g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0 left join gold.ssas_dim_patient p on p.patient_key = r0.patient_key where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select p.is_saudi g, 2 ct, count() v from gold.ssas_fact_encounter e left join gold.ssas_dim_patient p on p.patient_key = e.patient_key where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select p.is_saudi g, 1 ct, count() v from gold.ssas_fact_encounter e left join gold.ssas_dim_patient p on p.patient_key = e.patient_key where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select p.is_saudi g, 3 ct, count() v from gold.ssas_fact_admission a left join gold.ssas_dim_patient p on p.patient_key = a.patient_key where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r * w.w) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)"
+ },
+ {
+  "name": "Mismatch (Payer), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Mismatch (Payer)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with resp as (select py.category g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0 left join gold.ssas_dim_payer py on py.payer_key = r0.payer_key where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select py.category g, 2 ct, count() v from gold.ssas_fact_encounter e left join gold.ssas_dim_payer py on py.payer_key = e.payer_key where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select py.category g, 1 ct, count() v from gold.ssas_fact_encounter e left join gold.ssas_dim_payer py on py.payer_key = e.payer_key where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select py.category g, 3 ct, count() v from gold.ssas_fact_admission a left join gold.ssas_dim_payer py on py.payer_key = a.payer_key where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r * w.w) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)"
+ },
+ {
+  "name": "Sample Representativeness, skewed when the care-type mismatch is over 10%, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEFT(CALCULATE([Sample Representativeness], 'Date'[Year] = 2026, 'Date'[Month] <= 9), 6) = \"Skewed\"))",
+  "sql": "select if((with resp as (select r0.care_type_key g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0  where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select 2 g, 2 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select 1 g, 1 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select 3 g, 3 ct, count() v from gold.ssas_fact_admission a  where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)) > 0.1, 1, 0)"
+ },
+ {
+  "name": "Sample Mix, skewed when the care-type mismatch is over 10%, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(CALCULATE([Sample Mix], 'Date'[Year] = 2026, 'Date'[Month] <= 9) = \"Skewed\"))",
+  "sql": "select if((with resp as (select r0.care_type_key g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0  where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select 2 g, 2 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select 1 g, 1 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select 3 g, 3 ct, count() v from gold.ssas_fact_admission a  where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), tot as (select (select sum(r) from resp) R, (select sum(v) from vis) V), wct as (select v.ct, (v.v / (select V from tot)) / (r.r / (select R from tot)) w from (select ct, sum(v) v from vis group by ct) v join (select ct, sum(r) r from resp group by ct) r on r.ct = v.ct) select 0.5 * sum(abs(rs - vs)) from (select r.g, sum(r.r) / (select R from tot) rs, sum(v.v) / (select V from tot) vs from resp r join vis v on v.g = r.g and v.ct = r.ct join wct w on w.ct = r.ct where r.inv > 0 group by r.g)) > 0.1, 1, 0)"
+ },
+ {
+  "name": "NPS (Visit-Matched), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (Visit-Matched)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Weighted NPS, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Weighted NPS], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "with resp as (select r0.branch_key g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0  where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select e.branch_key g, 2 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select e.branch_key g, 1 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select a.branch_key g, 3 ct, count() v from gold.ssas_fact_admission a  where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), nps as (select branch_key g, care_type_key ct, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer where is_scored = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and visit_date_key between 20260101 and 20260930 group by g, ct) select sum(n.n * v.v) / sum(v.v) from nps n join vis v on v.g = n.g and v.ct = n.ct join resp r on r.g = n.g and r.ct = n.ct where v.v > 0 and r.inv > 0"
+ },
+ {
+  "name": "NPS Weighting Effect, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS Weighting Effect], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (with resp as (select r0.branch_key g, r0.care_type_key ct, countIf(r0.is_responded = 'Yes') r, count() inv from gold.ssas_fact_survey_response r0  where r0.is_primary_for_encounter = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and intDiv(visit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and visit_date_key between 20260101 and 20260930 group by g, ct), vis as (select g, ct, sum(v) v from (select e.branch_key g, 2 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'ER' and is_cancelled = 'No' group by g union all select e.branch_key g, 1 ct, count() v from gold.ssas_fact_encounter e  where e.encounter_date_key between 20260101 and 20260930 and intDiv(encounter_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and e.encounter_type = 'OP' and is_arrived = 'Yes' and is_cancelled = 'No' group by g union all select a.branch_key g, 3 ct, count() v from gold.ssas_fact_admission a  where a.admit_date_key between 20260101 and 20260930 and intDiv(admit_date_key, 100) in (select intDiv(visit_date_key, 100) from gold.ssas_fact_survey_response where is_primary_for_encounter = 'Yes' group by 1 having count() >= 1000) and a.is_countable = 'Yes' group by g) group by g, ct), nps as (select branch_key g, care_type_key ct, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer where is_scored = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and visit_date_key between 20260101 and 20260930 group by g, ct) select sum(n.n * v.v) / sum(v.v) from nps n join vis v on v.g = n.g and v.ct = n.ct join resp r on r.g = n.g and r.ct = n.ct where v.v > 0 and r.inv > 0) - (select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and link_status = 'Linked' and care_type_key in (1, 2, 3) and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "Respondents, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Respondents], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select uniqExact(survey_response_key) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Avg NPS by Question, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Avg NPS by Question], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select avg(n) from (select question_key, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by question_key)"
+ },
+ {
+  "name": "NPS (n>=30), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (n>=30)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Physician NPS (n>=10), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Physician NPS (n>=10)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where nps_role = 'Physician NPS' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Overall Satisfaction (0-100), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Overall Satisfaction (0-100)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select avgIf(multiIf(scale_type = 'likelihood_0_10', answer_score * 10, scale_type = 'definitely_1_4', (answer_score - 1) / 3 * 100, (answer_score - 1) / 4 * 100), answer_score is not null) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Top Box %, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Top Box %], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select countIf(multiIf(scale_type = 'likelihood_0_10', answer_score >= 9, scale_type = 'definitely_1_4', answer_score = 4, answer_score = 5)) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Network NPS, branch 1, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Network NPS], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Branch[Branch Key] = 1))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "NPS vs Network, branch 1, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS vs Network], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Branch[Branch Key] = 1))",
+  "sql": "select ((sum(is_promoter) - sum(is_detractor)) / count() * 100) - (select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930) from gold.ssas_fact_survey_answer where branch_key = 1 and is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Network Overall Satisfaction (0-100), branch 1, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Network Overall Satisfaction (0-100)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Branch[Branch Key] = 1))",
+  "sql": "select avgIf(multiIf(scale_type = 'likelihood_0_10', answer_score * 10, scale_type = 'definitely_1_4', (answer_score - 1) / 3 * 100, (answer_score - 1) / 4 * 100), answer_score is not null) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Specialty NPS, Obstetrics & Gyna, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Specialty NPS], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Staff[Specialty] = \"Obstetrics & Gyna\"))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where s.specialty = 'Obstetrics & Gyna' and a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "NPS Margin of Error, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS Margin of Error], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select 1.96 * sqrt((sum(is_promoter) / count() + sum(is_detractor) / count() - pow(sum(is_promoter) / count() - sum(is_detractor) / count(), 2)) / uniqExact(survey_response_key)) * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Reliability, high when the margin is within 3, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(CALCULATE([Reliability], 'Date'[Year] = 2026, 'Date'[Month] <= 9) = \"High\"))",
+  "sql": "select if((1.96 * sqrt((sum(is_promoter) / count() + sum(is_detractor) / count() - pow(sum(is_promoter) / count() - sum(is_detractor) / count(), 2)) / uniqExact(survey_response_key)) * 100) <= 3, 1, 0) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "NPS (Response Attr), respondent Patient, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\"))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "Overall Satisfaction (Response Attr), respondent Patient, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Overall Satisfaction (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\"))",
+  "sql": "select avgIf(multiIf(scale_type = 'likelihood_0_10', answer_score * 10, scale_type = 'definitely_1_4', (answer_score - 1) / 3 * 100, (answer_score - 1) / 4 * 100), answer_score is not null) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "% Promoters (Response Attr), respondent Patient, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([% Promoters (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\"))",
+  "sql": "select sum(is_promoter) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "% Detractors (Response Attr), respondent Patient, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([% Detractors (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\"))",
+  "sql": "select sum(is_detractor) / count() from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "Respondents (Response Attr), respondent Patient, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Respondents (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\"))",
+  "sql": "select uniqExact(survey_response_key) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "NPS Margin of Error (Response Attr), respondent Patient, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS Margin of Error (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\"))",
+  "sql": "select 1.96 * sqrt((sum(is_promoter) / count() + sum(is_detractor) / count() - pow(sum(is_promoter) / count() - sum(is_detractor) / count(), 2)) / uniqExact(survey_response_key)) * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "Reliability (Response Attr), respondent Patient, high when the margin is within 3, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(CALCULATE([Reliability (Response Attr)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, 'Survey Responses'[Respondent Type] = \"Patient\") = \"High\"))",
+  "sql": "select if((1.96 * sqrt((sum(is_promoter) / count() + sum(is_detractor) / count() - pow(sum(is_promoter) / count() - sum(is_detractor) / count(), 2)) / uniqExact(survey_response_key)) * 100) <= 3, 1, 0) from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and survey_response_key in (select survey_response_key from gold.ssas_fact_survey_response where respondent_type = 'Patient' and visit_date_key between 20260101 and 20260930)"
+ },
+ {
+  "name": "Min Answers (Drivers), specialty in context, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Min Answers (Drivers)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Staff[Specialty] = \"Obstetrics & Gyna\"))",
+  "sql": "select 10"
+ },
+ {
+  "name": "Min Answers (Questions), doctor in context, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([Min Answers (Questions)], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Staff[Staff Name] = \"Unknown\"))",
+  "sql": "select 2"
+ },
+ {
+  "name": "NPS (Drivers), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (Drivers)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "NPS (Questions), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", CALCULATE([NPS (Questions)], 'Date'[Year] = 2026, 'Date'[Month] <= 9))",
+  "sql": "select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930"
+ },
+ {
+  "name": "Group NPS (Bottom 8), sum of the 8 lowest groups, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Group NPS (Bottom 8)]), [@v]))",
+  "sql": "select sum(n) from (select * from (select lowerUTF8(trim(q.domain_en)) d, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d having count() >= 30) order by n asc, d asc limit 8)"
+ },
+ {
+  "name": "Group NPS (Top 8), sum of the 8 highest groups, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Group NPS (Top 8)]), [@v]))",
+  "sql": "select sum(n) from (select * from (select lowerUTF8(trim(q.domain_en)) d, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d having count() >= 30) order by n desc, d asc limit 8)"
+ },
+ {
+  "name": "Group Network Rank (Low), one rank per group with 30+ answers, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", COUNTROWS(FILTER(SUMMARIZECOLUMNS('Survey Question'[Domain En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Group Network Rank (Low)]), NOT ISBLANK([@v]))))",
+  "sql": "select count() from (select lowerUTF8(trim(q.domain_en)) d, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d having count() >= 30)"
+ },
+ {
+  "name": "Weak Group NPS (Bottom 5), five groups, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", COUNTROWS(FILTER(SUMMARIZECOLUMNS('Survey Question'[Domain En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Weak Group NPS (Bottom 5)]), NOT ISBLANK([@v]))))",
+  "sql": "select least(5, count()) from (select lowerUTF8(trim(q.domain_en)) d, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d having count() >= 30)"
+ },
+ {
+  "name": "Is Weak Question, eight questions, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], 'Survey Question'[Question En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Is Weak Question]), [@v]))",
+  "sql": "select least(8, count()) from (select lowerUTF8(trim(q.domain_en)) d, lowerUTF8(trim(q.question_en)) qn, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n, sum(a.is_promoter) / count() p, sum(a.is_detractor) / count() dt, count() c from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d, qn having c >= 30)"
+ },
+ {
+  "name": "Q NPS (Bottom 8), sum of the 8 lowest questions, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], 'Survey Question'[Question En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Q NPS (Bottom 8)]), [@v]))",
+  "sql": "select sum(n) from (select * from (select lowerUTF8(trim(q.domain_en)) d, lowerUTF8(trim(q.question_en)) qn, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n, sum(a.is_promoter) / count() p, sum(a.is_detractor) / count() dt, count() c from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d, qn having c >= 30) order by n asc, d asc, qn asc limit 8)"
+ },
+ {
+  "name": "Q % Promoters (Bottom 8), sum, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], 'Survey Question'[Question En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Q % Promoters (Bottom 8)]), [@v]))",
+  "sql": "select sum(p) from (select * from (select lowerUTF8(trim(q.domain_en)) d, lowerUTF8(trim(q.question_en)) qn, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n, sum(a.is_promoter) / count() p, sum(a.is_detractor) / count() dt, count() c from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d, qn having c >= 30) order by n asc, d asc, qn asc limit 8)"
+ },
+ {
+  "name": "Q % Detractors (Bottom 8), sum, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], 'Survey Question'[Question En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Q % Detractors (Bottom 8)]), [@v]))",
+  "sql": "select sum(dt) from (select * from (select lowerUTF8(trim(q.domain_en)) d, lowerUTF8(trim(q.question_en)) qn, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n, sum(a.is_promoter) / count() p, sum(a.is_detractor) / count() dt, count() c from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d, qn having c >= 30) order by n asc, d asc, qn asc limit 8)"
+ },
+ {
+  "name": "Q Answers (Bottom 8), sum, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS('Survey Question'[Domain En], 'Survey Question'[Question En], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Q Answers (Bottom 8)]), [@v]))",
+  "sql": "select sum(c) from (select * from (select lowerUTF8(trim(q.domain_en)) d, lowerUTF8(trim(q.question_en)) qn, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n, sum(a.is_promoter) / count() p, sum(a.is_detractor) / count() dt, count() c from gold.ssas_fact_survey_answer a join gold.ssas_dim_survey_question q on q.question_key = a.question_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d, qn having c >= 30) order by n asc, d asc, qn asc limit 8)"
+ },
+ {
+  "name": "Specialty Volume Rank, the most surveyed specialty ranks 1, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", MINX(SUMMARIZECOLUMNS(Staff[Specialty], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Specialty Volume Rank]), [@v]))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Specialty NPS (Top 15 by Volume), sum over the 15 specialties, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Specialty], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), \"@v\", [Specialty NPS (Top 15 by Volume)]), [@v]))",
+  "sql": "select sum(n) from (select s.specialty sp, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by sp order by c desc, sp asc limit 15)"
+ },
+ {
+  "name": "Doctor Score, sum over doctors with 30+ answers, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Doctor Score]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(n + c / 10000000) from docs"
+ },
+ {
+  "name": "Is Top Doctor, eight doctors, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Is Top Doctor]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select least(8, count()) from docs"
+ },
+ {
+  "name": "Is Bottom Doctor, eight doctors, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Is Bottom Doctor]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select least(8, count()) from docs"
+ },
+ {
+  "name": "Top Doctor NPS, sum of the 8, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Top Doctor NPS]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(n) from docs where name in (select name from docs order by n desc, c desc, name asc limit 8)"
+ },
+ {
+  "name": "Top Doctor Answers, sum of the 8, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Top Doctor Answers]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(c) from docs where name in (select name from docs order by n desc, c desc, name asc limit 8)"
+ },
+ {
+  "name": "Top Doctor Specialty NPS, sum of the 8, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Top Doctor Specialty NPS]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(n) from (select d.name, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from (select name from docs where name in (select name from docs order by n desc, c desc, name asc limit 8)) d join (select distinct staff_name, specialty from gold.ssas_dim_staff) ds on ds.staff_name = d.name join gold.ssas_dim_staff sk on sk.specialty = ds.specialty join gold.ssas_fact_survey_answer a on a.staff_key = sk.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d.name)"
+ },
+ {
+  "name": "Top Doctor Physician NPS, sum of the 8 (blank when none has 10+ physician answers), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Top Doctor Physician NPS]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(pn) from (select d.name, if(countIf(a.nps_role = 'Physician NPS') >= 10, (sumIf(a.is_promoter, a.nps_role = 'Physician NPS') - sumIf(a.is_detractor, a.nps_role = 'Physician NPS')) / countIf(a.nps_role = 'Physician NPS') * 100, null) pn from (select name from docs where name in (select name from docs order by n desc, c desc, name asc limit 8)) d join gold.ssas_dim_staff s on s.staff_name = d.name join gold.ssas_fact_survey_answer a on a.staff_key = s.staff_key where a.visit_date_key between 20260101 and 20260930 group by d.name)",
+  "allow_zero": true
+ },
+ {
+  "name": "Bottom Doctor NPS, sum of the 8, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Bottom Doctor NPS]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(n) from docs where name in (select name from docs order by n asc, c desc, name asc limit 8)"
+ },
+ {
+  "name": "Bottom Doctor Answers, sum of the 8, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Bottom Doctor Answers]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(c) from docs where name in (select name from docs order by n asc, c desc, name asc limit 8)"
+ },
+ {
+  "name": "Bottom Doctor Specialty NPS, sum of the 8, Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Bottom Doctor Specialty NPS]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(n) from (select d.name, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from (select name from docs where name in (select name from docs order by n asc, c desc, name asc limit 8)) d join (select distinct staff_name, specialty from gold.ssas_dim_staff) ds on ds.staff_name = d.name join gold.ssas_dim_staff sk on sk.specialty = ds.specialty join gold.ssas_fact_survey_answer a on a.staff_key = sk.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 group by d.name)"
+ },
+ {
+  "name": "Bottom Doctor Physician NPS, sum of the 8 (blank when none has 10+ physician answers), Jan-Sep 2026",
+  "tolerance": 0.0001,
+  "dax": "EVALUATE ROW(\"v\", SUMX(SUMMARIZECOLUMNS(Staff[Staff Name], TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 'Date'[Month] ), FILTER(VALUES(Staff[Staff Name]), Staff[Staff Name] <> \"Unknown\"), \"@v\", [Bottom Doctor Physician NPS]), [@v]))",
+  "sql": "with docs as (select s.staff_name name, count() c, (sum(is_promoter) - sum(is_detractor)) / count() * 100 n from gold.ssas_fact_survey_answer a join gold.ssas_dim_staff s on s.staff_key = a.staff_key where a.is_scored = 'Yes' and visit_date_key between 20260101 and 20260930 and s.staff_name <> 'Unknown' group by name having c >= 30) select sum(pn) from (select d.name, if(countIf(a.nps_role = 'Physician NPS') >= 10, (sumIf(a.is_promoter, a.nps_role = 'Physician NPS') - sumIf(a.is_detractor, a.nps_role = 'Physician NPS')) / countIf(a.nps_role = 'Physician NPS') * 100, null) pn from (select name from docs where name in (select name from docs order by n asc, c desc, name asc limit 8)) d join gold.ssas_dim_staff s on s.staff_name = d.name join gold.ssas_fact_survey_answer a on a.staff_key = s.staff_key where a.visit_date_key between 20260101 and 20260930 group by d.name)",
+  "allow_zero": true
+ },
+ {
+  "name": "NPS Color, green at 70 and above, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(CALCULATE([NPS Color], 'Date'[Year] = 2026, 'Date'[Month] <= 9) = \"#05A591\"))",
+  "sql": "select if((select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930) >= 70, 1, 0)"
+ },
+ {
+  "name": "Gap Color, branch 1, red when below the network, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(CALCULATE([Gap Color], 'Date'[Year] = 2026, 'Date'[Month] <= 9, Branch[Branch Key] = 1) = \"#DC280A\"))",
+  "sql": "select if((select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where branch_key = 1 and is_scored = 'Yes' and visit_date_key between 20260101 and 20260930) < (select (sum(is_promoter) - sum(is_detractor)) / count() * 100 from gold.ssas_fact_survey_answer where is_scored = 'Yes' and visit_date_key between 20260101 and 20260930), 1, 0)"
+ },
+ {
+  "name": "Report Title Context, all branches, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEFT(CALCULATE([Report Title Context], 'Date'[Year] = 2026, 'Date'[Month] <= 9), 12) = \"All branches\"))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Insight Participation, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Insight Participation], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Insight NPS, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Insight NPS], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Insight Branches, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Insight Branches], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Insight Drivers, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Insight Drivers], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Participation, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Participation], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Satisfaction, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Satisfaction], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Drivers, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Drivers], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Branches, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Branches], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Doctors, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Doctors], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Profile, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Profile], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ },
+ {
+  "name": "Story Representativeness, has text, Jan-Sep 2026",
+  "tolerance": 0,
+  "dax": "EVALUATE ROW(\"v\", INT(LEN(CALCULATE([Story Representativeness], 'Date'[Year] = 2026, 'Date'[Month] <= 9)) > 0))",
+  "sql": "select 1"
+ }
 ]

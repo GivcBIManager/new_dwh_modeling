@@ -1,0 +1,178 @@
+@import (less) "zain-font.less";
+
+// Hayat Healthcare brand tokens
+@dark-blue: #0A1E32;
+@blue: #0A2D6E;
+@middle-blue: #235F96;
+@light-blue: #32A5E6;
+@turquoise: #23D2C3;
+@lila: #A0BEFF;
+@orange: #EF8D00;
+
+.hayat-root {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    box-sizing: border-box;
+    font-family: "Zain", "Segoe UI", "Segoe UI Arabic", Tahoma, sans-serif;
+    overflow-x: hidden;
+}
+
+.hayat-card {
+    --s: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: calc(12px * var(--s)) calc(14px * var(--s));
+    box-sizing: border-box;
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+
+    &.dimmed { opacity: 0.4; }
+    &.selected { transform: translateY(-1px); }
+}
+
+.hayat-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: calc(20px * var(--s));
+}
+
+.hayat-card-label {
+    font-size: calc(15px * var(--s));
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hayat-mark { flex: 0 0 auto; }
+
+.hayat-gauge {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg { width: 100%; height: 100%; max-height: 100%; overflow: visible; }
+}
+
+.hayat-gauge-value { font-size: 38px; font-weight: 800; }
+.hayat-gauge-caption { font-size: 12px; font-weight: 400; letter-spacing: 1.5px; text-transform: uppercase; fill: currentColor; opacity: 0.75; }
+.hayat-gauge-tick { font-size: 9px; fill: currentColor; opacity: 0.5; }
+
+.hayat-split { margin-top: calc(4px * var(--s)); }
+
+.hayat-split-bar {
+    display: flex;
+    height: calc(7px * var(--s));
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.hayat-seg {
+    height: 100%;
+    &.promoters { background: @turquoise; }
+    &.passives { background: @lila; }
+    &.detractors { background: @orange; }
+}
+
+.hayat-split-legend {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3px;
+    font-size: calc(11px * var(--s));
+    opacity: 0.85;
+
+    .lg::before {
+        content: "";
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin-right: 4px;
+        vertical-align: middle;
+    }
+    .lg.promoters::before { background: @turquoise; }
+    .lg.detractors::before { background: @orange; }
+}
+
+.hayat-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: calc(6px * var(--s));
+    font-size: calc(11.5px * var(--s));
+    min-height: calc(18px * var(--s));
+}
+
+.hayat-chip {
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.hayat-volume { opacity: 0.7; white-space: nowrap; }
+
+// Dark blue gradient (brand: 45 degree, Black -> Dark Blue)
+.mode-dark {
+    .hayat-card {
+        color: #FFFFFF;
+        background: linear-gradient(45deg, #050D17 0%, @dark-blue 45%, @blue 100%);
+        box-shadow: 0 1px 2px rgba(10, 30, 50, 0.35);
+        &.selected { box-shadow: 0 0 0 2px @light-blue; }
+    }
+    .hayat-gauge-track { stroke: rgba(255, 255, 255, 0.12); }
+    .hayat-gauge-benchmark { stroke: #FFFFFF; }
+    .hayat-chip.up { background: rgba(35, 210, 195, 0.18); color: @turquoise; }
+    .hayat-chip.down { background: rgba(239, 141, 0, 0.18); color: #FFB54A; }
+}
+
+// Light blue gradient (brand: 45 degree, White -> Light Blue)
+.mode-blue {
+    .hayat-card {
+        color: #FFFFFF;
+        background: linear-gradient(45deg, #1F8FD6 0%, @light-blue 55%, #7CC6F0 100%);
+        &.selected { box-shadow: 0 0 0 2px @dark-blue; }
+    }
+    .hayat-gauge-track { stroke: rgba(255, 255, 255, 0.28); }
+    .hayat-gauge-benchmark { stroke: @dark-blue; }
+    .hayat-chip.up { background: rgba(10, 30, 50, 0.22); color: #FFFFFF; }
+    .hayat-chip.down { background: rgba(220, 40, 10, 0.85); color: #FFFFFF; }
+}
+
+// Light mode (preferred for patient-facing / B2C reading)
+.mode-light {
+    .hayat-card {
+        color: @dark-blue;
+        background: #FFFFFF;
+        border: 1px solid #E3E9F1;
+        border-top: 3px solid @light-blue;
+        &.selected { box-shadow: 0 0 0 2px @light-blue; }
+    }
+    .hayat-gauge-track { stroke: #E8EEF5; }
+    .hayat-gauge-benchmark { stroke: @dark-blue; }
+    .hayat-chip.up { background: rgba(5, 165, 145, 0.12); color: #05806F; }
+    .hayat-chip.down { background: rgba(220, 40, 10, 0.1); color: #B5200A; }
+}
+
+.hayat-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 100%;
+    color: @dark-blue;
+    text-align: center;
+}
+.hayat-empty-title { font-size: 18px; font-weight: 800; }
+.hayat-empty-text { font-size: 12px; opacity: 0.7; max-width: 260px; }

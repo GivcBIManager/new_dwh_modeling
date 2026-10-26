@@ -1,0 +1,264 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "b69ef070bb04fb0870c7",
+  "position": {
+    "x": 16,
+    "y": 2172,
+    "z": 75000,
+    "height": 276,
+    "width": 816,
+    "tabOrder": 75000
+  },
+  "visual": {
+    "visualType": "pivotTable",
+    "query": {
+      "queryState": {
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Care Type"
+                    }
+                  },
+                  "Property": "Care Type Name"
+                }
+              },
+              "queryRef": "Care Type.Care Type Name",
+              "nativeQueryRef": "Care Type Name",
+              "displayName": "Care type"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Branch"
+                    }
+                  },
+                  "Property": "Branch Name"
+                }
+              },
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name"
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Actual Visits"
+                }
+              },
+              "queryRef": "_Measures.Actual Visits",
+              "nativeQueryRef": "Actual Visits",
+              "displayName": "Actual visits"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Invitations (Visit-Matched)"
+                }
+              },
+              "queryRef": "_Measures.Invitations (Visit-Matched)",
+              "nativeQueryRef": "Invitations (Visit-Matched)",
+              "displayName": "Invited"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Survey Coverage %"
+                }
+              },
+              "queryRef": "_Measures.Survey Coverage %",
+              "nativeQueryRef": "Survey Coverage %",
+              "displayName": "Invited per visit"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Respondents (Visit-Matched)"
+                }
+              },
+              "queryRef": "_Measures.Respondents (Visit-Matched)",
+              "nativeQueryRef": "Respondents (Visit-Matched)",
+              "displayName": "Responded"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Response Rate % (Visit-Matched)"
+                }
+              },
+              "queryRef": "_Measures.Response Rate % (Visit-Matched)",
+              "nativeQueryRef": "Response Rate % (Visit-Matched)",
+              "displayName": "Response %"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Required Sample (±5%)"
+                }
+              },
+              "queryRef": "_Measures.Required Sample (±5%)",
+              "nativeQueryRef": "Required Sample (±5%)",
+              "displayName": "Needed ±5%"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Sample Gap"
+                }
+              },
+              "queryRef": "_Measures.Sample Gap",
+              "nativeQueryRef": "Sample Gap",
+              "displayName": "Gap"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Margin of Error (±)"
+                }
+              },
+              "queryRef": "_Measures.Margin of Error (±)",
+              "nativeQueryRef": "Margin of Error (±)",
+              "displayName": "Margin ±"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Sample size by care type'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Expand (+) for branches'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "objects": {
+      "rowHeaders": [
+        {
+          "properties": {
+            "showExpandCollapseButtons": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "wordWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "columnHeaders": [
+        {
+          "properties": {
+            "wordWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

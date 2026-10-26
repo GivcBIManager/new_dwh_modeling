@@ -1,0 +1,71 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.0.0/schema.json",
+  "themeCollection": {
+    "baseTheme": {
+      "name": "CY24SU10",
+      "reportVersionAtImport": {
+        "visual": "2.2.0",
+        "report": "3.0.0",
+        "page": "2.0.0"
+      },
+      "type": "SharedResources"
+    },
+    "customTheme": {
+      "name": "HayatHealthcare-95698850.json",
+      "reportVersionAtImport": {
+        "visual": "2.2.0",
+        "report": "3.0.0",
+        "page": "2.0.0"
+      },
+      "type": "RegisteredResources"
+    }
+  },
+  "resourcePackages": [
+    {
+      "name": "SharedResources",
+      "type": "SharedResources",
+      "items": [
+        {
+          "name": "CY24SU10",
+          "path": "BaseThemes/CY24SU10.json",
+          "type": "BaseTheme"
+        }
+      ]
+    },
+    {
+      "name": "RegisteredResources",
+      "type": "RegisteredResources",
+      "items": [
+        {
+          "name": "HayatHealthcare-95698850.json",
+          "path": "HayatHealthcare-95698850.json",
+          "type": "CustomTheme"
+        },
+        {
+          "name": "HayatLogoWhite20261025.png",
+          "path": "HayatLogoWhite20261025.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "name": "hayatNpsScorecard18DE737621AE4B30A6F985EC1773B808",
+      "type": "CustomVisual",
+      "items": [
+        {
+          "name": "hayatNpsScorecard18DE737621AE4B30A6F985EC1773B808.pbiviz.json",
+          "path": "hayatNpsScorecard18DE737621AE4B30A6F985EC1773B808.pbiviz.json",
+          "type": "CustomVisualMetadata"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "useStylableVisualContainerHeader": true,
+    "defaultDrillFilterOtherVisuals": true,
+    "allowChangeFilterTypes": true,
+    "useEnhancedTooltips": true,
+    "useDefaultAggregateDisplayName": true,
+    "defaultFilterActionIsDataFilter": true
+  }
+}
