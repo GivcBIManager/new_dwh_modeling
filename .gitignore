@@ -6,9 +6,15 @@
 # the scorecard report generator; its output is rebuilt
 !/powerbi_tmdl/hnh_bsc_report/
 /powerbi_tmdl/hnh_bsc_report/dist/
+# how reports reach the Report Server
+!/powerbi_tmdl/README.md
 # the Press Ganey dashboard generator and its PBIP (brand source files stay out)
 !/powerbi_tmdl/pressGaneyDashboard/
 /powerbi_tmdl/pressGaneyDashboard/pressGaneyDashboard/branding/
+# upload files and extractions beside the Press Ganey project (the project is the source)
+/powerbi_tmdl/pressGaneyDashboard/*.pbix
+/powerbi_tmdl/pressGaneyDashboard/**/*.zip
+/powerbi_tmdl/pressGaneyDashboard/PGaney Patient Survey/
 
 # Data exports. Includes static_mappings/_BI_USERS_.csv (contains passwords)
 # and static_mappings/budget_data.csv (260 MB).
