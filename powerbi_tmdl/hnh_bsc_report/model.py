@@ -43,7 +43,11 @@ class Filter:
 
 @dataclass
 class Visual:
-    """One visual: a clone of the template visual titled `sample:<sample>`, rebound to `roles`.
+    """One visual. `sample` is its kind: card, multiRowCard, table, matrix, barChart, lineChart, slicerDropdown,
+    slicerDateRange, textbox, buttonNavigate, buttonDrill, hnhVisual (pbir.VISUAL_TYPES); and two frame kinds
+    (frame.py) without fields: panel (a filled rectangle) and image (the logo). The legacy route clones the template
+    visual titled `sample:<sample>` and rebinds it to `roles`; it has no sample for panel and image and leaves them
+    out (layout.NO_SAMPLE).
 
     `top_n` = (the measure to rank by, N): keeps the top N of the visual's first column. `sort` (one of the visual's
     fields) sorts `sort_dir`: "desc" (default) or "asc" (time axes).

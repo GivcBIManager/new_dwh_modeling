@@ -408,13 +408,23 @@ def rebind(sample: dict, visual: Visual, page: Page, index: int) -> dict:
 
 # The template has no From - To slicer sample: the legacy route keeps the sample's "this calendar year" slicer.
 LEGACY_SAMPLE = {"slicerDateRange": "slicerRelativeDate"}
+# Frame kinds the template has no sample for (spec "Legacy template fallback"): the legacy route leaves them out, so
+# its pages have no header or filter-bar rectangles, tab underline or logo. build.py prints how many.
+NO_SAMPLE = ("panel", "image")
+
+
+def skipped(page: Page) -> list[Visual]:
+    """The page's visuals the legacy route leaves out (`NO_SAMPLE` kinds)."""
+    return [v for v in page.visuals if v.sample in NO_SAMPLE]
 
 
 def page_section(page: Page, index: int, samples: dict, layout: dict, drill_sample: dict | None,
                  base: dict) -> tuple[dict, list[dict]]:
     """(section, pods) for one page. `base` is the template page whose page-level keys are kept."""
     containers = []
-    for i, v in enumerate(page.visuals):
+    for i, v in enumerate(page.visuals):  # i: the visual's index on the page, so names match the PBIP route's
+        if v.sample in NO_SAMPLE:
+            continue
         key = LEGACY_SAMPLE.get(v.sample, v.sample)
         if key not in samples:
             raise ValueError(f"page {page.display}: unknown sample '{v.sample}' (template has: "

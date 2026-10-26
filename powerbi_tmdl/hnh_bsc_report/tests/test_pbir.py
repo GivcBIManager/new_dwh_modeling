@@ -14,6 +14,7 @@ from pbir import (REPORT_NAME, SCHEMAS, connection_string, write_pbip)
 import pbir_check
 
 HERE = Path(__file__).resolve().parents[1]
+REPO = HERE.parents[1]
 GUID = "hnhBscVisual431F658EE9D44EA3BD5E1BEA5FAF899D"
 SERVER = "HNHANALYTICSSRV\\REPORTSERVERDB"
 # Every $schema URL Desktop wrote in the handover project (Hayat_BSC_Full_RS.Report / .pbip / .SemanticModel).
@@ -580,3 +581,142 @@ def test_committed_project_is_current():
         return {k: v.replace(b"\r\n", b"\n") for k, v in d.items()}
     stale = sorted(set(norm(expected).items()) ^ set(norm(committed).items()))
     assert not stale, "project out of date; run build.py and commit: " + ", ".join(sorted({k for k, _ in stale})[:10])
+
+
+# ---- the frame: panel and image visuals, the logo, the theme ----------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def frame_project(tmp_path_factory):
+    """A page with only the frame (Overview current) and a stand-in for the slicers."""
+    import frame
+    out = tmp_path_factory.mktemp("frame")
+    pbiviz = make_pbiviz(out.parent / "fv.pbiviz")
+    slicer = Visual("slicerDropdown", 30, 96, 300, 54, roles={"Values": [col("Branch", "Branch Name")]})
+    page = Page("bsc", "Overview", frame.frame("bsc", [slicer]))
+    pbip = write_pbip([page], out, "HNH_Analytics_Test", SERVER, pbiviz=pbiviz)
+    return out, pbip, page
+
+
+def test_report_registers_the_logo(frame_project):
+    import frame
+    rd = report_dir(frame_project)
+    rep = load(rd / "definition" / "report.json")
+    (reg,) = [p for p in rep["resourcePackages"] if p["name"] == "RegisteredResources"]
+    assert {"name": "hnh_logo_white.png", "path": "hnh_logo_white.png", "type": "Image"} in reg["items"]
+    png = rd / "StaticResources" / "RegisteredResources" / "hnh_logo_white.png"
+    assert png.read_bytes() == frame.LOGO.read_bytes()
+
+
+def test_panel_is_a_textbox_with_a_container_background(frame_project):
+    page = frame_project[2]
+    vs = visuals(frame_project, page)
+    panels = [j for v, j in zip(page.visuals, vs) if v.sample == "panel"]
+    assert len(panels) >= 3  # header, filter bar, rule (+ the current tab's underline)
+    for j in panels:
+        assert j["visual"]["visualType"] == "textbox"
+        assert "general" not in j["visual"].get("objects", {})  # no paragraphs
+        bg = j["visual"]["visualContainerObjects"]["background"][0]["properties"]
+        assert lit(bg["show"]) == "true" and lit(bg["color"]["solid"]["color"]).startswith("'#")
+    header = panels[0]["visual"]["visualContainerObjects"]["background"][0]["properties"]
+    assert lit(header["color"]["solid"]["color"]) == "'#0A1E32'"
+
+
+def test_image_visual_points_at_the_registered_logo(frame_project):
+    page = frame_project[2]
+    (j,) = [j for v, j in zip(page.visuals, visuals(frame_project, page)) if v.sample == "image"]
+    assert j["visual"]["visualType"] == "image"
+    src = j["visual"]["objects"]["image"][0]["properties"]["sourceFile"]["image"]
+    assert src["url"]["expr"]["ResourcePackageItem"] == {
+        "PackageName": "RegisteredResources", "PackageType": 1, "ItemName": "hnh_logo_white.png"}
+    assert "query" not in j["visual"]
+
+
+@needs_desktop
+def test_frame_matches_desktop_schemas(frame_project, schema_dir):
+    assert pbir_check.validate_report(report_dir(frame_project), schema_dir) == []
+
+
+@needs_desktop
+def test_desktop_opens_the_frame_project(frame_project):
+    report = pbir_check.desktop_open(frame_project[1])
+    assert "FAIL" not in report and "issue:" not in report, report
+
+
+def test_theme():
+    theme = load(HERE / "theme" / "hnh_bsc_theme.json")
+    assert theme["dataColors"] == ["#002E5A", "#1478BE", "#13ACE3", "#6E8196",
+                                   "#13ACE3", "#32A4E5", "#0E9F8E", "#EF8B00"]
+    assert (theme["good"], theme["neutral"], theme["bad"]) == ("#0E9F8E", "#EF8B00", "#DB280A")
+    vs = theme["visualStyles"]
+    page = vs["page"]["*"]
+    assert page["background"] == [{"color": {"solid": {"color": "#F4F7FB"}}, "transparency": 0}]
+    assert page["outspace"] == [{"color": {"solid": {"color": "#F4F7FB"}}}]
+    # controller ruling R2: no box on every visual (the navy header's tabs and panels would get white boxes)
+    assert "background" not in vs.get("*", {}).get("*", {}) and "border" not in vs.get("*", {}).get("*", {})
+    for kind in ("card", "multiRowCard", "tableEx", "pivotTable", "clusteredBarChart", "lineChart", "slicer"):
+        style = vs[kind]["*"]
+        assert style["background"] == [{"show": True, "color": {"solid": {"color": "#FFFFFF"}}, "transparency": 0}]
+        assert style["border"] == [{"show": True, "color": {"solid": {"color": "#DCE5EF"}}, "radius": 12,
+                                    "width": 1}]
+    # the HNH visual draws its own panels on the page surface: no container box (keyed by its type, the guid)
+    guid = load(REPO / "powerbi_tmdl" / "hnh_bsc_visual" / "pbiviz.json")["visual"]["guid"]
+    assert vs[guid]["*"]["background"] == [{"show": False}]
+    assert vs[guid]["*"]["border"] == [{"show": False}]
+
+
+def test_pbix_route_skips_panel_and_image(pbix_path, tmp_path, capsys):
+    import frame
+    from build import build
+    from pbix import read_pbix
+    card = Visual("card", 0, 0, 50, 50, roles={"Values": [meas("BSC Actual")]}, title="x")
+    page = Page("p", "P", [frame.panel(0, 0, 1920, 84, "#0A1E32"), card, frame.image(30, 21, 220, 42)])
+    out = tmp_path / "o.pbix"
+    build(pbix_path, [page], "X", out)
+    (section,) = read_pbix(out).layout["sections"]
+    assert len(section["visualContainers"]) == 1
+    note = capsys.readouterr().out
+    assert "2 " in note and "panel" in note and "image" in note
+
+
+def _desktop_theme_schema() -> dict:
+    """Power BI Desktop's report theme schema, as its web bundle embeds it (a JSON.parse('...') string literal)."""
+    src = (pbir_check.DESKTOP_BIN / "WebView2Resources" / "minerva" / "scripts" /
+           "desktop.reportThemeSchema.json.min.js").read_text(encoding="utf-8")
+    raw = src[src.index("JSON.parse('") + len("JSON.parse('"):src.rindex("')}}")]
+    out, i = [], 0
+    while i < len(raw):  # undo the JS string escapes: backslash-backslash, backslash-quote, backslash-xNN
+        if raw[i] == "\\" and raw[i + 1] in ("\\", "'"):
+            out.append(raw[i + 1])
+            i += 2
+        elif raw[i] == "\\" and raw[i + 1] == "x":
+            out.append(chr(int(raw[i + 2:i + 4], 16)))
+            i += 4
+        else:
+            out.append(raw[i])
+            i += 1
+    return json.loads("".join(out))
+
+
+@needs_desktop
+def test_theme_matches_desktop_theme_schema():
+    schema = _desktop_theme_schema()
+    theme = load(HERE / "theme" / "hnh_bsc_theme.json")
+    assert pbir_check._errors(theme, schema, schema, None, "$") == []
+    theme["visualStyles"]["card"]["*"]["border"][0]["radius"] = "12"
+    assert pbir_check._errors(theme, schema, schema, None, "$") != []  # the check bites
+
+
+def test_frame_project_converts_to_the_report_server_package(frame_project, tmp_path):
+    """The Report Server route (pbir_to_pbix.py) carries the panels, the image and the logo resource."""
+    import pbir_to_pbix
+    from pbix import check_upload_rules
+    out = tmp_path / "frame.pbix"
+    layout = pbir_to_pbix.write(frame_project[1], out)
+    assert check_upload_rules(out) == []
+    (section,) = layout["sections"]
+    assert len(section["visualContainers"]) == len(frame_project[2].visuals)
+    (reg,) = [p["resourcePackage"] for p in layout["resourcePackages"]
+              if p["resourcePackage"]["name"] == "RegisteredResources"]
+    assert "hnh_logo_white.png" in {i["name"] for i in reg["items"]}
+    with zipfile.ZipFile(out) as z:
+        assert "Report/StaticResources/RegisteredResources/hnh_logo_white.png" in z.namelist()

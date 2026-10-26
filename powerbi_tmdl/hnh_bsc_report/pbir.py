@@ -18,6 +18,7 @@ import uuid
 import zipfile
 from pathlib import Path
 
+from frame import LOGO
 from layout import DIRECTION, aliases, field_expr, filter_json, lit, source_expr, stable_id, top_n_json
 from model import Field, Filter, Page, Visual
 
@@ -54,6 +55,8 @@ VISUAL_TYPES = {
     "barChart": "clusteredBarChart", "lineChart": "lineChart", "slicerDropdown": "slicer",
     "slicerDateRange": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
     "buttonDrill": "actionButton", "hnhVisual": None,
+    "panel": "textbox",  # frame.panel: a text box without text, filled by its container background
+    "image": "image",  # frame.image: the logo, a RegisteredResources image
 }
 # Container formatting objects (visualContainerObjects in visualConfiguration 2.8.0). `general` stays in `objects`:
 # Visual.props uses it for a text box's paragraphs.
@@ -163,7 +166,8 @@ def custom_visual(pbiviz: Path) -> tuple[str, dict[str, bytes], dict]:
 
 def report_json(visual_package: dict) -> dict:
     """report.json: the handover's settings and objects, the base theme, the brand theme as the custom theme (a
-    RegisteredResources item of type CustomTheme) and the HNH visual's resource package."""
+    RegisteredResources item of type CustomTheme), the logo (a RegisteredResources item of type Image, as the
+    handover registers its header image) and the HNH visual's resource package."""
     return {
         "$schema": SCHEMAS["report"],
         "themeCollection": {
@@ -178,7 +182,8 @@ def report_json(visual_package: dict) -> dict:
              "items": [{"name": BASE_THEME_NAME, "path": f"BaseThemes/{BASE_THEME_NAME}.json",
                         "type": "BaseTheme"}]},
             {"name": "RegisteredResources", "type": "RegisteredResources",
-             "items": [{"name": THEME.name, "path": THEME.name, "type": "CustomTheme"}]},
+             "items": [{"name": THEME.name, "path": THEME.name, "type": "CustomTheme"},
+                       {"name": LOGO.name, "path": LOGO.name, "type": "Image"}]},
             visual_package,
         ],
         "settings": {
@@ -405,6 +410,7 @@ def project_files(pages: list[Page], database: str, server: str = SERVER, perspe
             files[path] = _text(vj)
     files[f"{rep}/StaticResources/SharedResources/BaseThemes/{BASE_THEME_NAME}.json"] = BASE_THEME.read_bytes()
     files[f"{rep}/StaticResources/RegisteredResources/{THEME.name}"] = THEME.read_bytes()
+    files[f"{rep}/StaticResources/RegisteredResources/{LOGO.name}"] = LOGO.read_bytes()
     files.update({f"{rep}/{k}": b for k, b in cv_files.items()})
     return files
 

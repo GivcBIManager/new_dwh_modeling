@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import datetime
 
+from frame import (BUTTON_BLUE, BUTTON_BLUE_DARK, BUTTON_DISABLED_FILL, BUTTON_DISABLED_TEXT,  # noqa: F401
+                   DEFAULT_STATE, DISABLED_STATE, WHITE, _by_selector, _colour, _lit, _num, button_props,
+                   button_style, label_text)
 from model import Field, Filter, Page, Visual, col, meas
 
 # Roles of the HNH visual (capabilities.json) -> 'BSC KPI' column, as the visual README's field-well table.
@@ -25,84 +28,9 @@ IS_HOSPITAL = col("Branch", "Is Hospital")
 YEAR_MONTH_NAME = col("Date", "Year Month Name")  # "Aug 2026", sorted by 'Date'[Year Month]: shown and drilled on
 
 
-def _lit(value: str | bool) -> dict:
-    v = str(value).lower() if isinstance(value, bool) else "'" + value.replace("'", "''") + "'"
-    return {"expr": {"Literal": {"Value": v}}}
-
-
-DEFAULT_STATE, DISABLED_STATE = {"id": "default"}, {"id": "disabled"}
-
-
-def label_text(text: str) -> dict:
-    """The button label object, as Power BI Desktop 2.158's actionButton reads it (BasicShapeVisual bundle): `show`
-    from the entry without a selector, the label per button state (default, hover, selected = press, disabled), so in
-    the default state's entry (selector id "default"); the other states fall back to it. A label in an entry without
-    a selector is never read: the button renders blank."""
-    return {"text": [{"properties": {"show": _lit(True)}},
-                     {"properties": {"text": _lit(text)}, "selector": DEFAULT_STATE}]}
-
-
 def select_all_selection() -> dict:
     """Slicer selection: multi-select with a "Select all" entry (one place to correct the property names)."""
     return {"selection": [{"properties": {"singleSelect": _lit(False), "selectAllCheckboxEnabled": _lit(True)}}]}
-
-
-BUTTON_BLUE, BUTTON_BLUE_DARK, WHITE = "#13ACE3", "#1478BE", "#FFFFFF"
-BUTTON_DISABLED_FILL, BUTTON_DISABLED_TEXT = "#DCE9F2", "#1478BE"  # Open detail before a cell is selected
-
-
-def _num(value: float) -> dict:
-    return {"expr": {"Literal": {"Value": f"{value}D"}}}
-
-
-def _colour(hex_colour: str) -> dict:
-    return {"solid": {"color": _lit(hex_colour)}}
-
-
-def button_style(kind: str) -> dict:
-    """The one place for button looks. As the handover's buttons write them: `show` in an entry without a selector,
-    colours in the default state's entry (selector id "default"). "primary" (page navigation, Open detail):
-    brand-blue fill, white text, no outline; disabled (Open detail until a matrix cell is selected; Desktop's default
-    is a light grey fill with grey text): pale blue fill, blue-dark text. "outline" (Back): no fill, blue-dark
-    outline and text."""
-    default = DEFAULT_STATE
-    if kind == "primary":
-        fill = [{"properties": {"show": _lit(True)}},
-                {"properties": {"fillColor": _colour(BUTTON_BLUE), "transparency": _num(0)}, "selector": default},
-                {"properties": {"fillColor": _colour(BUTTON_DISABLED_FILL), "transparency": _num(0)},
-                 "selector": DISABLED_STATE}]
-        outline = [{"properties": {"show": _lit(False)}}]
-        text = [{"properties": {"fontColor": _colour(WHITE)}, "selector": default},
-                {"properties": {"fontColor": _colour(BUTTON_DISABLED_TEXT)}, "selector": DISABLED_STATE}]
-    elif kind == "outline":
-        fill = [{"properties": {"show": _lit(False)}}]
-        outline = [{"properties": {"show": _lit(True)}},
-                   {"properties": {"lineColor": _colour(BUTTON_BLUE_DARK), "weight": _num(1),
-                                   "transparency": _num(0)}, "selector": default}]
-        text = [{"properties": {"fontColor": _colour(BUTTON_BLUE_DARK)}, "selector": default}]
-    else:
-        raise ValueError(f"button style must be 'primary' or 'outline', got {kind!r}")
-    return {"fill": fill, "outline": outline, "text": text}
-
-
-def _by_selector(*entry_lists: list[dict]) -> list[dict]:
-    """Format object entries merged into one entry per selector (first-seen order)."""
-    out: list[dict] = []
-    for entries in entry_lists:
-        for e in entries:
-            match = next((x for x in out if x.get("selector") == e.get("selector")), None)
-            if match is None:
-                out.append({**e, "properties": dict(e["properties"])})
-            else:
-                match["properties"].update(e["properties"])
-    return out
-
-
-def button_props(link: dict, label: str, kind: str) -> dict:
-    """A button's format objects: the action (`visualLink` properties besides show), the label and the style."""
-    style = button_style(kind)
-    return {"visualLink": [{"properties": {"show": _lit(True), **link}}],
-            "text": _by_selector(label_text(label)["text"], style.pop("text")), **style}
 
 
 def back_button(x: float = 16, y: float = 35, w: float = 104, h: float = 50) -> Visual:

@@ -20,7 +20,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from layout import page_section, show_all_on_branch  # noqa: E402
+from layout import NO_SAMPLE, page_section, show_all_on_branch, skipped  # noqa: E402
 from model import Page  # noqa: E402
 from pbix import (SAMPLES_PAGE, check_upload_rules, read_pbix, samples, set_database, set_server,  # noqa: E402
                   write_pbix)
@@ -61,6 +61,10 @@ def build(template: Path, pages: list[Page], database: str, out: Path, server: s
     base = next(s for s in sections if s.get("displayName") == SAMPLES_PAGE)
     drill_sample = next((s for s in sections if s.get("displayName") == DRILL_SAMPLE_PAGE), None)
 
+    left_out = sum(len(skipped(page)) for page in pages)
+    if left_out:
+        print(f"note: the pbix fallback leaves out {left_out} {' and '.join(NO_SAMPLE)} visuals (the template has no "
+              "shape or image sample): no header or filter-bar rectangles, tab underline or logo")
     new_sections, pods = [], []
     for i, page in enumerate(pages):
         section, page_pods = page_section(page, i, smp, layout, drill_sample, base)
