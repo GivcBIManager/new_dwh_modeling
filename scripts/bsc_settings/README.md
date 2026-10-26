@@ -26,7 +26,7 @@ Saved changes show in the report the next morning, after the nightly build and S
 
 ## Manual values
 
-Menu: Targets & scoring is not used here; pick **Manual values** under Monthly. Choose the year and month (default: the last full month), then fill numerator and denominator for each KPI and hospital. Cells with no value yet are red; edited cells are outlined. A cell needs both numbers: with only one filled it is marked incomplete and is not added to the changes list. Clearing both numbers of a cell that already has a value drops your edit (it does not remove the stored value). Each cell with a stored value has a History link (restore from there). The note box is optional (reach it with the mouse; Tab skips it).
+Menu: **Manual values** under Monthly. Choose the year and month (default: the last full month), then fill numerator and denominator for each KPI and hospital. Cells with no value yet are red; edited cells are outlined. A cell needs both numbers: with only one filled it is marked incomplete and is not added to the changes list. Clearing both numbers of a cell that already has a value drops your edit (it does not remove the stored value). Each cell with a stored value has a History link (restore from there). The note box is optional (reach it with the mouse; Tab skips it).
 
 ## Weights
 
