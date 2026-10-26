@@ -16,13 +16,16 @@ describe("layout rules found in the screenshot review", () => {
     it("KPI cells put actual / target on their own smaller line", () => {
         expect(css).toMatch(/\.cmp td \.at\{[^}]*display:block/);
     });
-    it("gauges and the overview grid shrink instead of overflowing narrow pages", () => {
-        expect(css).toMatch(/\.overall \.gauge,[^{]*\{max-width:100%;height:auto\}/);
-        expect(css).toMatch(/\.pillars\{[^}]*repeat\(2,minmax\(0,1fr\)\)/);
-        expect(css).toMatch(/\.grid\{[^}]*grid-auto-rows:max-content/);
+    it("the overview grid has the report's geometry: 450 px overall panel, four cards, a 348 px top row, 24 px gaps", () => {
+        expect(css).toMatch(/\.ov\{[^}]*grid-template-columns:450px repeat\(4,minmax\(0,1fr\)\)/);
+        expect(css).toMatch(/\.ov\{[^}]*grid-template-rows:348px minmax\(0,1fr\)/);
+        expect(css).toMatch(/\.ov\{[^}]*gap:24px/);
+        expect(css).toMatch(/\.ov-row2\{[^}]*grid-column:1\/-1/);
+        expect(css).toMatch(/\.ov-row2\{[^}]*grid-template-columns:minmax\(0,1fr\) 630px/);
+        expect(css).toMatch(/\.ov-row2\.no-trend\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
     });
-    it("the pillar gauge column is fluid", () => {
-        expect(css).toMatch(/\.pillar \.body\{[^}]*minmax\(150px,230px\)/);
+    it("the board grid keeps its rows to their content", () => {
+        expect(css).toMatch(/\.grid\{[^}]*grid-auto-rows:max-content/);
     });
     it("the comparison table fills the visual", () => {
         expect(css).toMatch(/\.cmp table\{[^}]*width:100%/);

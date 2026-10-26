@@ -155,11 +155,19 @@ describe("wire", () => {
         tileOf(root, 0).dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
         expect(calls[1].fn).toBe("hide");
     });
-    it("a pillar card click selects the pillar's KPI ids", () => {
+    it("a Needs attention row selects its KPI and opens the context menu for it", () => {
         const { root, ids, calls } = setup(true, "overview");
-        (root.querySelector('.pillar[data-pillar="Financial"]') as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        expect(calls[0].fn).toBe("select");
-        expect(calls[0].args[0]).toEqual([ids.get("0:"), ids.get("1:")]);
+        const item = root.querySelector('.ov-att-row[data-key="1"]') as HTMLElement;
+        item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        item.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 3, clientY: 4 }));
+        expect(calls.map(c => c.fn)).toEqual(["select", "showContextMenu"]);
+        expect(calls[0].args[0]).toEqual(ids.get("1:"));
+        expect(calls[1].args).toEqual([ids.get("1:"), { x: 3, y: 4 }]);
+    });
+    it("a pillar card click is not a selection (the report's page button sits over the card)", () => {
+        const { root, calls } = setup(true, "overview");
+        (root.querySelector('.ov-pillar[data-pillar="Financial"]') as HTMLElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(calls.map(c => c.fn)).toEqual(["clear"]);
     });
     it("marks selected and dims the others after a select", async () => {
         const { root } = setup();

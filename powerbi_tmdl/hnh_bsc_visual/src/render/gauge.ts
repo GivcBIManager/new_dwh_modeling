@@ -44,14 +44,6 @@ function dial(d: Dial): SVGSVGElement {
     return s;
 }
 
-/** Half-circle gauge. Score is 0-100, shown rounded; the marker sits at `good`; the arc colour follows the good/watch thresholds. */
-export function gauge(score: number | null, size: number, good: number, label: string, watch = 70): SVGSVGElement {
-    return dial({
-        value: score, size, max: 100, marker: good, good, watch, suffix: "", caption: `target ${good}`,
-        aria: shown => (shown === null ? `${label}: no data` : `${label}: ${shown} out of 100`),
-    });
-}
-
 /** Owner achievement in percent (may pass 100; the arc stops at its end). Marker at 100%; 100+ on track, 85-99 watch, below 85 at risk. */
 export function achievementGauge(value: number | null, size: number, label: string): SVGSVGElement {
     return dial({

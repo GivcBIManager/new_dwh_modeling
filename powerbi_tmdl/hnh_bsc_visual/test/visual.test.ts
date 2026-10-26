@@ -47,7 +47,7 @@ describe("Visual", () => {
         const { visual, element, events, built } = setup();
         visual.update(opts(makeDataView([mk("F1", "Financial", 1), mk("C1", "Customer", 2)])));
         expect(events).toEqual(["started", "finished"]);
-        expect(element.querySelectorAll(".pillar").length).toBe(2);
+        expect(element.querySelectorAll(".ov-pillar").length).toBe(2);
         expect(built.length).toBe(2);
         expect(built[0]).toEqual([["cat", 0]]);
     });
@@ -336,18 +336,23 @@ describe("Visual", () => {
             payload: payload({ actual: 0.5, target: 0.5, variance: 0, score: 90, state: "On track", weight: 1, trend: [0.4, 0.5], targetTrend: [0.5, 0.5], scoreTrend: [80, 90] }) }));
         const view = (mode: Mode): Reader => () => ({ mode, ui: { pillar: null, compareLevel: { pillar: null, objective: null }, title: "t", subtitle: "s", showHeader: false } });
 
-        it("the overview pillar card has no trend block, caption or sparkline", () => {
+        it("the overview leaves out the sparklines, the deltas and the trend panel; Needs attention takes the row", () => {
             const { visual, element } = setup({ read: view("overview") });
             visual.update(opts(makeDataView(rows())));
-            expect(element.querySelectorAll(".pillar").length).toBe(2);
-            expect(element.textContent).not.toContain("Pillar score, by month");
-            expect(element.querySelectorAll(".pillar svg.spark, .pillar .sparkbox").length).toBe(0);
-            expect(element.textContent).toContain("Every KPI in this pillar");
+            expect(element.querySelectorAll(".ov-pillar").length).toBe(2);
+            expect(element.querySelector(".ov-trend")).toBeNull();
+            expect(element.querySelectorAll(".spark").length).toBe(0);
+            expect(element.querySelectorAll(".ov-delta").length).toBe(0);
+            expect(element.querySelector(".ov-row2")!.classList.contains("no-trend")).toBe(true);
+            expect(element.querySelector(".ov-row2 > .ov-attention")).not.toBeNull();
+            expect(element.textContent).toContain("of 100");
         });
-        it("the overview keeps the trend block when the payload carries trends", () => {
+        it("the overview draws the trend panel, sparklines and deltas when the payload carries trends", () => {
             const { visual, element } = setup({ read: view("overview") });
             visual.update(opts(makeDataView(withTrends())));
-            expect(element.textContent).toContain("Pillar score, by month");
+            expect(element.querySelector(".ov-trend")).not.toBeNull();
+            expect(element.querySelectorAll(".ov-pillar svg.spark").length).toBe(2);
+            expect(element.querySelector(".ov-row2")!.classList.contains("no-trend")).toBe(false);
         });
         it("board tiles have no sparkline area but keep value, target and score", () => {
             const { visual, element } = setup({ read: view("board") });

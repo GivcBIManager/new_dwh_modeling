@@ -65,13 +65,8 @@ export function wire(root: HTMLElement, rows: KpiRow[], ids: Map<string, ISelect
     const rowOf = new Map(rows.map(r => [selectionKey(r.rowIndex, r.seriesIndex), r]));
     const keyOf = (c: HTMLElement) => selectionKey(Number(c.dataset.key), c.dataset.series === undefined ? null : Number(c.dataset.series));
     const cellOf = (t: EventTarget | null) => (t instanceof Element ? (t.closest("[data-key]") as HTMLElement | null) : null);
-    const cardOf = (t: EventTarget | null) => (t instanceof Element ? (t.closest(".pillar[data-pillar]") as HTMLElement | null) : null);
     const refresh = () => markSelected(root, ids, sm.getSelectionIds() as ISelectionId[]);
     const select = (target: ISelectionId | ISelectionId[], multi: boolean) => { sm.select(target, multi).then(refresh); };
-    const pillarIds = (name: string): ISelectionId[] => rows
-        .filter(r => r.pillar === name && (r.seriesIndex === null || r.seriesIndex === 0))
-        .map(r => ids.get(selectionKey(r.rowIndex, r.seriesIndex)))
-        .filter((i): i is ISelectionId => !!i);
 
     const onClick = (e: MouseEvent) => {
         if (e.target instanceof Element && e.target.closest(INTERNAL_SELECTOR)) return;
@@ -81,12 +76,6 @@ export function wire(root: HTMLElement, rows: KpiRow[], ids: Map<string, ISelect
             const id = ids.get(keyOf(cell));
             if (id) select(id, multi);
             e.stopPropagation();
-            return;
-        }
-        const card = cardOf(e.target);
-        if (card) {
-            const list = pillarIds(card.dataset.pillar as string);
-            if (list.length) select(list, multi);
             return;
         }
         sm.clear().then(refresh);
@@ -99,19 +88,17 @@ export function wire(root: HTMLElement, rows: KpiRow[], ids: Map<string, ISelect
     };
     const onKey = (e: KeyboardEvent) => {
         const cell = cellOf(e.target);
-        const card = cardOf(e.target);
-        const holder = cell ?? card;
-        if (!holder || (e.target !== holder)) return;
+        if (!cell || e.target !== cell) return;
         if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) {
-            const id = cell ? ids.get(keyOf(cell)) : undefined;
+            const id = ids.get(keyOf(cell));
             if (!id) return;
-            const box = holder.getBoundingClientRect();
+            const box = cell.getBoundingClientRect();
             e.preventDefault();
             sm.showContextMenu(id, { x: box.left + 12, y: box.top + 12 });
         } else if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            if (cell) { const id = ids.get(keyOf(cell)); if (id) select(id, e.ctrlKey || e.metaKey); }
-            else if (card) { const list = pillarIds(card.dataset.pillar as string); if (list.length) select(list, e.ctrlKey || e.metaKey); }
+            const id = ids.get(keyOf(cell));
+            if (id) select(id, e.ctrlKey || e.metaKey);
         }
     };
     const onMove = (e: MouseEvent) => {

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { gauge } from "../src/render/gauge";
+import { achievementGauge } from "../src/render/gauge";
+import { ring } from "../src/render/ring";
+import { lineChart } from "../src/render/linechart";
 import { sparkline } from "../src/render/sparkline";
 import { header } from "../src/render/header";
 import { statusStrip } from "../src/render/chips";
@@ -12,8 +14,12 @@ const vm = { label: "A · B" } as ViewModel;
 
 describe("colours stay out of the SVG so high contrast can replace them", () => {
     it("gauge track, sparkline and header shapes carry classes and no hard-coded colour", () => {
-        const track = gauge(80, 220, 85, "x").querySelector(".gauge-track")!;
+        const track = achievementGauge(80, 220, "x").querySelector(".gauge-track")!;
         expect(track.hasAttribute("stroke")).toBe(false);
+        const r = ring(80, 168, "x");
+        for (const c of ["ring-track", "ring-arc"]) expect(r.querySelector("." + c)!.hasAttribute("stroke")).toBe(false);
+        const lc = lineChart([{ name: "a", colourVar: "var(--p1)", values: [1, 2] }], { months: [], target: 85, width: 400, height: 200 });
+        for (const c of ["lc-grid", "lc-target"]) expect(lc.querySelector("." + c)!.hasAttribute("stroke")).toBe(false);
         const sp = sparkline([1, 2, 3], [2, 2, 2], 100, 40);
         for (const c of ["spark-target", "spark-line", "spark-dot"]) {
             const n = sp.querySelector("." + c)!;
@@ -27,7 +33,7 @@ describe("colours stay out of the SVG so high contrast can replace them", () => 
         expect(h.querySelector("stop")!.hasAttribute("stop-color")).toBe(false);
     });
     it("has a high-contrast rule for each", () => {
-        for (const c of [".gauge-track", ".spark-target", ".spark-line", ".spark-dot", ".mark-shape", ".ribbon-shape"]) {
+        for (const c of [".gauge-track", ".spark-target", ".spark-line", ".spark-dot", ".mark-shape", ".ribbon-shape", ".ring-track", ".ring-arc", ".lc-grid", ".lc-target"]) {
             expect(css).toContain(`.hnh-bsc.hc ${c}`);
         }
     });

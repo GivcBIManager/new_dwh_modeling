@@ -27,21 +27,78 @@
 .band .ctx b{font-size:18px;display:block}
 .band .ctx .period{display:block}
 
-/* overview */
-.ov{display:grid;grid-template-columns:clamp(260px,24%,420px) minmax(0,1fr);gap:20px;padding:20px 24px}
-.overall{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;align-items:center}
-.overall h2{margin:0;font-size:18px;font-weight:600;color:var(--muted);align-self:flex-start}
-.overall .legend{margin-top:auto;width:100%;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;line-height:1.7}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
-.pillars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(240px,1fr);gap:20px}
-.pillar{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;outline-offset:3px}
-.pillar:focus-visible{outline:3px solid var(--blue)}
-.pillar header{padding:16px 20px 12px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
-.pillar header h3{margin:0;font-size:22px;font-weight:800}
-.pillar header p{margin:0;font-size:14px;color:var(--muted);flex:1 1 220px}
-.pillar header .w{font-size:13px;color:var(--muted)}
-.pillar .body{display:grid;grid-template-columns:minmax(150px,230px) 1fr;gap:18px;padding:12px 20px 14px;flex:1}
-.overall .gauge,.pillar .body .gauge,.pillar .facts .spark{max-width:100%;height:auto}.pillar .facts{min-width:0;display:flex;flex-direction:column;gap:10px;justify-content:center}
+/* overview: the report's 1860 x 870 box (design x 1.5); the generator's page buttons sit over the four pillar cards.
+   Below 1600 x 720 the visual scrolls instead of squeezing the cards. */
+.ov{display:grid;grid-template-columns:450px repeat(4,minmax(0,1fr));grid-template-rows:348px minmax(0,1fr);gap:24px;min-width:1600px}
+.hnh-bsc .view>.ov{min-height:720px}
+.ov-overall,.ov-pillar,.ov-trend,.ov-attention{background:var(--card);border:1px solid var(--line);border-radius:12px;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.ov h2{margin:0;font-size:21px;font-weight:600;color:var(--ink);line-height:1.2}
+.ov-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex:none}
+.ov-sub{font-size:16.5px;color:var(--muted);font-weight:400}
+.ov .chip{font-size:16.5px;padding:4.5px 12px;gap:9px;white-space:nowrap}
+.ov-delta{font-size:19.5px;font-weight:600;white-space:nowrap}
+.ov-delta.up{color:var(--good-tx)}.ov-delta.down{color:var(--bad-tx)}.ov-delta.flat{color:var(--muted)}
+.ov-overall{padding:21px 27px;gap:15px}
+.ov-ringrow{display:flex;align-items:center;gap:27px}
+.ov-ringrow .ring{flex:none}
+.ring-track{stroke:var(--track)}
+.ring-arc{stroke:var(--navy)}
+.ring-score{fill:var(--ink);font-weight:600}
+.ring-of{fill:var(--muted);font-weight:400}
+.ov-facts{display:flex;flex-direction:column;gap:12px;align-items:flex-start;min-width:0}
+.ov-overall .chip{font-size:18px}
+.ov-target{font-size:18px;color:var(--muted);font-weight:400}
+.ov-dist{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+.ov-dist-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:3px}
+.ov-dist-bar i{display:block;height:100%}
+.ov-dist-bar i.good{background:var(--good)}.ov-dist-bar i.warn{background:var(--warn)}.ov-dist-bar i.bad{background:var(--bad)}.ov-dist-bar i.nodata{background:var(--nodata)}
+.ov-dist-counts{display:flex;flex-wrap:wrap;gap:6px 21px;font-size:18px;font-weight:400}
+.ov-dist-counts span,.ov-n{display:inline-flex;align-items:center;gap:7.5px;white-space:nowrap}
+.ov-dist-counts b{font-weight:600}
+.ov-pillar{padding:21px 24px;gap:13.5px}
+.ov-phead{display:flex;align-items:flex-start;gap:12px}
+.ov-sq{width:15px;height:15px;border-radius:4.5px;flex:none;margin-top:6px}
+.ov-pname{display:flex;flex-direction:column;min-width:0}
+.ov-phead h3{margin:0;font-size:21px;font-weight:600;line-height:27px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-phead .ov-sub{line-height:21px}
+.ov-scorerow{display:flex;flex-wrap:wrap;align-items:center;gap:9px 15px}
+.ov-score{font-size:51px;font-weight:600;line-height:1}
+.ov-bar{position:relative;height:9px;border-radius:4.5px;background:var(--track);flex:none}
+.ov-bar i{display:block;height:9px;border-radius:4.5px}
+.ov-bar b{position:absolute;top:-4.5px;width:3px;height:18px;margin-left:-1.5px;background:var(--navy)}
+.ov-spark{display:block;flex:none}
+.ov-counts{display:flex;align-items:center;gap:18px;font-size:18px;font-weight:600}
+.ov-counts .ov-delta{margin-left:auto;font-size:18px}
+.ov-drill{margin-top:auto;font-size:18px;font-weight:600}
+.ov-row2{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 630px;gap:24px;min-height:0}
+.ov-row2.no-trend{grid-template-columns:minmax(0,1fr)}
+.ov-trend{padding:21px 24px;gap:15px}
+.ov-trend .ov-head{align-items:center;flex-wrap:wrap;row-gap:6px}
+.ov-legend{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 21px;font-size:18px;font-weight:400}
+.ov-legend span{display:inline-flex;align-items:center;gap:7.5px;white-space:nowrap}
+.ov-legend i{display:block;width:18px;height:4.5px;border-radius:3px}
+.ov-legend i.dash{height:0;border-top:3px dashed var(--muted);border-radius:0}
+.ov-chart{flex:1;min-height:0;position:relative}
+.ov-chart svg.lc{position:absolute;inset:0;width:100%;height:100%}
+.lc-grid{stroke:var(--track)}
+.lc-target{stroke:var(--muted)}
+.lc-y,.lc-month{fill:var(--muted);font-weight:400}
+.lc-name{fill:var(--ink);font-weight:600}
+.ov-attention{padding:18px 24px;gap:6px}
+.ov-attention .ov-head{justify-content:flex-start;align-items:center;gap:15px;height:30px}
+.ov-att-list{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.ov-att-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;height:66px;flex:none;padding:0 6px;border-bottom:1px solid var(--nodata-bg);cursor:context-menu}
+.ov-att-row:hover{background:var(--row-hl)}
+.ov-att-row:focus-visible{outline:3px solid var(--blue);outline-offset:-3px}
+.ov-att-l{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ov-att-name{font-size:19.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-att-pillar{display:flex;align-items:center;gap:9px;font-size:16.5px;color:var(--muted);font-weight:400}
+.ov-att-pillar i{width:12px;height:12px;border-radius:3px;flex:none}
+.ov-att-r{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.ov-att-actual{font-size:24px;font-weight:600;color:var(--bad);line-height:1.1}
+.ov-att-target{font-size:16.5px;color:var(--muted);font-weight:400;white-space:nowrap}
+.ov-foot{margin:auto 0 0;font-size:18px;line-height:22px;color:var(--muted);font-weight:400;flex:none}
+.ov-none{margin:12px 6px;font-size:18px;color:var(--muted);font-weight:400}
 .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600;width:max-content}
 span.mark{display:inline-block;flex:none;width:10.5px;height:10.5px;background:currentColor}
 span.mark.good{border-radius:50%;background:var(--good)}
@@ -50,7 +107,6 @@ span.mark.bad{border-radius:1px;background:var(--bad)}
 span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .hnh-bsc.hc span.mark{background:var(--hc-fg)}
 .chip.good{background:var(--good-bg);color:var(--good-tx)}.chip.warn{background:var(--warn-bg);color:var(--warn-tx)}.chip.bad{background:var(--bad-bg);color:var(--bad-tx)}.chip.nodata{background:var(--nodata-bg);color:var(--nodata-tx)}
-.trendcap{font-size:12px;color:var(--muted)}
 .strip{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .strip i{width:16px;height:16px;border-radius:4px;display:block}
 .strip i.good{background:var(--good)}.strip i.warn{background:var(--warn)}.strip i.bad{background:var(--bad)}.strip i.nodata{background:repeating-linear-gradient(45deg,#D5DDE6 0 3px,#EEF2F6 3px 6px)}
@@ -86,11 +142,6 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .tile .body{display:flex;align-items:flex-end;gap:16px}
 .tile .sparkbox{margin-left:auto}
 .tile .meta .score{margin-left:auto}
-
-/* overview extras */
-.overall .chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
-.dot.good{background:var(--good)}.dot.warn{background:var(--warn);margin-left:10px}.dot.bad{background:var(--bad);margin-left:10px}
-.pillar .risk{color:var(--bad)}
 
 /* owner mode: ownership overview (toggles, achievement strip, then the KPI blocks) */
 .own-ov{display:flex;flex-direction:column;overflow:auto}
@@ -159,6 +210,7 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
   --good:var(--hc-fg); --warn:var(--hc-fg); --bad:var(--hc-fg); --nodata:var(--hc-fg);
   --good-bg:var(--hc-bg); --warn-bg:var(--hc-bg); --bad-bg:var(--hc-bg); --nodata-bg:var(--hc-bg);
   --blue:var(--hc-sel); --blue-dk:var(--hc-sel); --navy:var(--hc-fg); --navy-2:var(--hc-fg);
+  --p1:var(--hc-fg); --p2:var(--hc-fg); --p3:var(--hc-fg); --p4:var(--hc-fg); --track:var(--hc-bg); --row-hl:var(--hc-bg);
 }
 .hnh-bsc.hc .band{background:var(--hc-bg);color:var(--hc-fg);border-bottom:2px solid var(--hc-fg)}
 .hnh-bsc.hc .own-card .own-name{background:var(--hc-bg);color:var(--hc-fg);border-bottom:1px solid var(--hc-fg)}
@@ -184,6 +236,11 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .hnh-bsc.hc .strip i.warn{background:linear-gradient(90deg,var(--hc-fg) 50%,var(--hc-bg) 50%)}
 .hnh-bsc.hc .strip i.nodata{background:var(--hc-bg);border-style:dashed}
 .hnh-bsc.hc .selected{outline-color:var(--hc-sel)}
+.hnh-bsc.hc .ring-track{stroke:var(--hc-fg);stroke-opacity:.35}
+.hnh-bsc.hc .ring-arc{stroke:var(--hc-sel)}
+.hnh-bsc.hc .lc-grid{stroke:var(--hc-fg);stroke-opacity:.35}
+.hnh-bsc.hc .lc-target{stroke:var(--hc-fg)}
+.hnh-bsc.hc .ov-bar{outline:1px solid var(--hc-fg)}
 
 /* branch series outside comparison mode: which hospital the page shows */
 .hnh-bsc .hint{flex:none;padding:6px 24px;font-size:13px;color:var(--muted);background:var(--card);border-bottom:1px solid var(--line)}

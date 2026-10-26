@@ -32,22 +32,92 @@ const emptyVm = (guard: string | null): ViewModel => ({
 });
 
 describe("overview", () => {
-    it("draws the header, the overall gauge, the legend and four pillar cards in order", () => {
+    const labelled = (rs: FixtureRow[], label = "Corporate · Jan 2026 – Sep 2026") => rs.map(r => ({ ...r, selectionLabel: label }));
+    const draw = (rs: FixtureRow[] = labelled(rows)) => {
         const root = mount();
-        renderView(root, parseDataView(makeDataView(rows)), "overview", ui());
+        renderView(root, parseDataView(makeDataView(rs)), "overview", ui({ showHeader: false }));
+        return root;
+    };
+    it("lays out the overall panel, four pillar cards in order, the trend and Needs attention", () => {
+        const root = draw();
         expect(root.classList.contains("hnh-bsc")).toBe(true);
-        expect(root.querySelector(".band h1")!.textContent).toBe("Balanced scorecard");
-        const cards = [...root.querySelectorAll(".pillar")];
-        expect(cards.map(c => c.querySelector("h3")!.textContent)).toEqual(["Financial", "Customer", "Internal Process", "Learning & Growth"]);
-        expect(cards[0].getAttribute("data-pillar")).toBe("Financial");
-        expect(root.querySelectorAll(".overall svg.gauge").length).toBe(1);
-        const legend = root.querySelector(".legend")!.textContent!;
-        expect(legend).toContain("85");
-        expect(legend).toContain("0.6");
-        expect(legend).toContain("Financial 30%");
-        expect(cards[0].textContent).toContain("1 at risk");
-        expect(cards[0].textContent).toContain("3 of 3 KPIs reporting");
-        expect(cards[0].querySelectorAll(".strip i").length).toBe(3);
+        const ov = root.querySelector(".ov")!;
+        expect(ov.querySelectorAll(":scope > section.ov-overall").length).toBe(1);
+        const cards = [...ov.querySelectorAll<HTMLElement>(":scope > article.ov-pillar")];
+        expect(cards.map(c => c.dataset.pillar)).toEqual(["Financial", "Customer", "Internal Process", "Learning & Growth"]);
+        expect(cards[0].textContent).toContain("Weight 30%");
+        expect(cards[0].textContent).toContain("Drill into 3 KPIs →");
+        expect(cards[0].querySelector(".ov-sq")!.getAttribute("style")).toContain("var(--p1)");
+        expect(ov.querySelector(".ov-row2 > section.ov-trend")).not.toBeNull();
+        expect(ov.querySelector(".ov-row2 > section.ov-attention")).not.toBeNull();
+    });
+    it("shows the overall score of 100, the target and the status distribution", () => {
+        const root = draw();
+        const overall = root.querySelector(".ov-overall")!;
+        expect(overall.querySelector("h2")!.textContent).toBe("Overall BSC score");
+        expect(overall.textContent).toContain("Weighted · 4 pillars");
+        expect(overall.textContent).toContain("of 100");
+        expect(overall.textContent).toContain("Target 85");
+        expect(overall.querySelector("svg.ring")).not.toBeNull();
+        const counts = [...overall.querySelectorAll(".ov-dist-counts > span")].map(s => s.textContent);
+        expect(counts).toEqual(["3 On track", "2 Watch", "1 At risk", "0 No data"]);
+        expect(overall.querySelectorAll(".ov-dist-bar > i").length).toBe(3);
+    });
+    it("lists only the At-risk KPIs in Needs attention, as selectable rows", () => {
+        const root = draw();
+        const att = root.querySelector(".ov-attention")!;
+        const items = [...att.querySelectorAll<HTMLElement>(".ov-att-row")];
+        expect(items.map(i => i.querySelector(".ov-att-name")!.textContent)).toEqual(["F1 name"]);
+        expect(items[0].getAttribute("data-key")).not.toBeNull();
+        expect(items[0].getAttribute("tabindex")).toBe("0");
+        expect(items[0].textContent).toContain("Financial");
+        expect(items[0].querySelector(".ov-att-target")!.textContent).toBe("target ≥ 50.0%");
+        expect(att.querySelector(".chip.bad")!.textContent).toBe("1 At risk");
+        expect(att.textContent).toContain("2 more KPIs are on watch. Open a pillar to review them.");
+    });
+    it("never lists a parked or no-data KPI, and orders the at-risk ones by score", () => {
+        const rs = labelled([
+            ...rows,
+            row("F4", "Financial", 1, 0.3, { displayOrder: 4, payload: payload({ state: "Parked" }) }),
+            row("F5", "Financial", 1, 0.3, { displayOrder: 5, payload: payload({ state: "" }) }),
+            row("C2", "Customer", 2, 0.2, { displayOrder: 2, direction: "lower", payload: ok(40, "At risk") }),
+        ]);
+        const names = [...draw(rs).querySelectorAll(".ov-att-row .ov-att-name")].map(n => n.textContent);
+        expect(names).toEqual(["C2 name", "F1 name"]);
+        expect(draw(rs).querySelector('.ov-att-row .ov-att-target')!.textContent).toBe("target ≤ 50.0%");
+    });
+    it("fills the ring at 100 and prints a score above 100 in full", () => {
+        const big = payload({ actual: 1, target: 1, variance: 0, score: 112, state: "On track", weight: 1, trend: [110, 112], scoreTrend: [110, 112] });
+        const root = draw(labelled(rows.map(r => ({ ...r, payload: big }))));
+        const ring = root.querySelector(".ov-overall svg.ring")!;
+        const r = Number(ring.querySelector(".ring-arc")!.getAttribute("r"));
+        const dash = ring.querySelector(".ring-arc")!.getAttribute("stroke-dasharray")!.split(" ").map(Number);
+        expect(dash[0]).toBeCloseTo(2 * Math.PI * r, 1);
+        expect(ring.querySelector(".ring-score")!.textContent).toBe("112");
+        expect(ring.getAttribute("aria-label")).toBe("Overall score 112 of 100");
+        const bar = root.querySelector(".ov-pillar .ov-bar > i")!.getAttribute("style")!;
+        expect(bar).toContain("width:100%");
+    });
+    it("draws the pillar trends and the deltas with the previous month's name", () => {
+        const root = draw();
+        expect(root.querySelectorAll(".ov-trend svg path").length).toBeGreaterThanOrEqual(4);
+        expect(root.querySelector(".ov-overall .ov-delta")!.textContent).toMatch(/[▲▼] \d+\.\d vs [A-Z][a-z]{2}/);
+        expect(root.querySelector(".ov-overall .ov-delta")!.textContent).toBe("▲ 1.0 vs Aug");
+        expect(root.querySelectorAll(".ov-pillar svg.spark").length).toBe(4);
+        expect(root.querySelector(".ov-trend")!.textContent).toContain("Target 85");
+        expect([...root.querySelectorAll(".ov-trend .lc-month")].map(m => m.textContent)).toEqual(["Aug", "Sep"]);
+    });
+    it("leaves out month names when the label has none, and still draws", () => {
+        const root = draw(labelled(rows, "No hospital"));
+        expect(root.querySelectorAll(".ov-trend .lc-month").length).toBe(0);
+        expect(root.querySelectorAll(".ov-trend svg path").length).toBeGreaterThanOrEqual(4);
+        expect(root.querySelector(".ov-overall .ov-delta")!.textContent).toMatch(/^[▲▼] \d+\.\d/);
+    });
+    it("shows 85 as on track in the pillar chip, from the rounded score", () => {
+        const rs = [row("F1", "Financial", 1, 0.3, { payload: payload({ actual: 1, target: 1, variance: 0, score: 84.6, state: "Watch", weight: 1, trend: [80, 82, 84.6], scoreTrend: [80, 82, 84.6] }) })];
+        const card = draw(rs).querySelector(".ov-pillar")!;
+        expect(card.querySelector(".ov-score")!.textContent).toBe("85");
+        expect(card.querySelector(".chip")!.className).toContain("good");
     });
     it("hides the header when showHeader is false", () => {
         const root = mount();
@@ -59,7 +129,7 @@ describe("overview", () => {
         const vm = parseDataView(makeDataView(rows));
         renderView(root, vm, "overview", ui());
         renderView(root, vm, "overview", ui());
-        expect(root.querySelectorAll(".overall").length).toBe(1);
+        expect(root.querySelectorAll(".ov-overall").length).toBe(1);
     });
 });
 
@@ -117,18 +187,6 @@ describe("board", () => {
         const root = mount();
         renderView(root, parseDataView(makeDataView(rows)), "board", ui({ title: "Group view" }));
         expect(root.querySelector(".band h1")!.textContent).toBe("Group view");
-    });
-});
-
-describe("overview rounding and target line", () => {
-    it("shows 85 as on track in the pillar chip and gauge, and draws the good threshold on the pillar trend", () => {
-        const root = mount();
-        const rs = [row("F1", "Financial", 1, 0.3, { payload: payload({ actual: 1, target: 1, variance: 0, score: 84.6, state: "Watch", weight: 1, trend: [80, 82, 84.6], scoreTrend: [80, 82, 84.6] }) })];
-        renderView(root, parseDataView(makeDataView(rs)), "overview", ui());
-        const card = root.querySelector(".pillar")!;
-        expect(card.querySelector(".facts .chip")!.className).toContain("good");
-        expect(card.querySelector(".gauge-arc")!.getAttribute("stroke")).toBe("var(--good)");
-        expect(card.querySelector(".facts .spark-target")).not.toBeNull();
     });
 });
 
