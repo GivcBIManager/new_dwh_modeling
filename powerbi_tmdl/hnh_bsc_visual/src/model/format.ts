@@ -14,6 +14,8 @@ export function formatValue(v: number | null, fmt: string): string {
         case "pct":
             return `${fixed(v * 100, 1)}%`;
         case "sar":
+            // Billions in B (two decimals), so a group figure fits its column: "SAR 1.15B", not "SAR 1,148.6M".
+            if (Math.abs(v) >= 1e9) return `SAR ${fixed(v / 1e9, 2)}B`;
             return Math.abs(v) >= 1e6 ? `SAR ${fixed(v / 1e6, 1)}M` : `SAR ${fixed(v, 0)}`;
         case "days":
             return `${fixed(v, 1)} days`;

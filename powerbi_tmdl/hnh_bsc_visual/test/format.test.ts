@@ -6,6 +6,10 @@ describe("formatValue", () => {
         expect(formatValue(0.1234, "pct")).toBe("12.3%");
         expect(formatValue(12345678, "sar")).toBe("SAR 12.3M");
         expect(formatValue(12345, "sar")).toBe("SAR 12,345");
+        // billions in B with two decimals, so a group revenue fits its column (not "SAR 1,148.6M")
+        expect(formatValue(1148600000, "sar")).toBe("SAR 1.15B");
+        expect(formatValue(-2500000000, "sar")).toBe("SAR -2.50B");
+        expect(formatValue(999000000, "sar")).toBe("SAR 999.0M");
         expect(formatValue(4, "days")).toBe("4.0 days");
         expect(formatValue(12.4, "mins")).toBe("12 min");
         expect(formatValue(73.354, "num")).toBe("73.35");

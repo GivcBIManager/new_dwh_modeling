@@ -135,8 +135,10 @@ export function axisTicks(rawLo: number, rawHi: number, fmt: string): { lo: numb
     const big = (limit: number) => ticks.some(v => Math.abs(v) >= limit);
     let label: (v: number) => string;
     if (fmt === "sar") {
-        const d = Math.max(1, decimalsOf(step / 1e6));
-        label = big(1e6) ? v => `SAR ${fixedText(v / 1e6, d)}M` : v => `SAR ${fixedText(v, 0)}`;
+        // One unit per axis, as formatValue prints it: billions (2+ decimals), millions (1+), or whole riyals.
+        if (big(1e9)) { const d = Math.max(2, decimalsOf(step / 1e9)); label = v => `SAR ${fixedText(v / 1e9, d)}B`; }
+        else if (big(1e6)) { const d = Math.max(1, decimalsOf(step / 1e6)); label = v => `SAR ${fixedText(v / 1e6, d)}M`; }
+        else label = v => `SAR ${fixedText(v, 0)}`;
     } else if (fmt === "pct" || fmt === "days" || fmt === "mins") {
         label = v => formatValue(v, fmt);
     } else {

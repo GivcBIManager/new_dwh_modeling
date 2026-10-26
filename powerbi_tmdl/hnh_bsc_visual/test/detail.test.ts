@@ -191,6 +191,15 @@ describe("bandChart", () => {
         expect(new Set(labels).size).toBe(labels.length);
         for (const t of labels) expect(t).toMatch(/^SAR \d+(\.\d+)?M$/);
     });
+    it("a SAR axis that crosses 1 billion says every tick in billions, none repeated", () => {
+        const trend = [0.9e9, 0.95e9, 1.0e9, 1.02e9, 1.05e9, 1.08e9, 1.1e9, 1.12e9, 1.13e9, 1.14e9, 1.15e9, 1.149e9];
+        const s = bandChart(kpi({ valueFormat: "sar", scoreSlope: 0.6,
+            payload: payload({ actual: 1.149e9, target: 1.47e9, score: 72, state: "Watch", weight: 1, trend, targetTrend: Array(12).fill(1.47e9) }) }), M, 1278, 288);
+        const labels = yLabels(s);
+        expect(labels.length).toBeGreaterThan(1);
+        expect(new Set(labels).size).toBe(labels.length);
+        for (const t of labels) expect(t).toMatch(/^SAR \d+\.\d{2,}B$/);
+    });
     it("a SAR axis under 1 million says every tick in whole riyals", () => {
         const trend = [1799.6, 1800.1, 1799.8, 1800.2, 1800.3, 1799.9, 1800, 1800.1, 1799.8, 1800.2, 1800.3, 1800.1];
         const s = bandChart(kpi({ valueFormat: "sar", direction: "ceiling", scoreSlope: 600,

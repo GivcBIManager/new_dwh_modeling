@@ -4,6 +4,10 @@ import { readFileSync } from "node:fs";
 const css = readFileSync("style/visual.less", "utf8");
 
 describe("layout rules found in the screenshot review", () => {
+    it("table figures and panel figures clip with an ellipsis instead of running into the next column", () => {
+        expect(css).toMatch(/\.c-actual,\.c-target,\.c-var,\.c-score\{[^}]*overflow:hidden;text-overflow:ellipsis/);
+        expect(css).toMatch(/\.bd-fact-v\{[^}]*font-size:33px[^}]*overflow:hidden;text-overflow:ellipsis/);
+    });
     it("owner figures stay on one line", () => {
         expect(css).toMatch(/\.owner td\.num\{[^}]*white-space:nowrap/);
     });
