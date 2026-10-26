@@ -62,3 +62,15 @@ def test_app_js_never_stores_the_token_or_uses_inner_html():
     js = (STATIC / "app.js").read_text(encoding="utf-8")
     for bad in ("localStorage", "sessionStorage", "document.cookie", "innerHTML"):
         assert bad not in js
+
+
+def test_manual_value_and_weight_views_are_registered():
+    js = (STATIC / "app.js").read_text(encoding="utf-8")
+    assert 'registerView("map_bsc_manual_value"' in js
+    assert 'registerView("map_bsc_weight"' in js
+
+
+def test_manual_value_and_weight_views_are_registered():
+    js = (STATIC / "app.js").read_text(encoding="utf-8")
+    assert 'registerView("map_bsc_manual_value"' in js
+    assert 'registerView("map_bsc_weight"' in js

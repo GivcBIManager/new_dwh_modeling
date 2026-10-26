@@ -40,3 +40,12 @@ td.mt{color:var(--red);background:var(--redbg)}
 .issue.error{background:var(--redbg);color:var(--red)}
 .issue.warning{background:var(--amberbg);color:var(--amber)}
 pre{background:var(--grey);padding:8px;border-radius:6px;font-size:12px;white-space:pre-wrap}
+table.mv td.mc{min-width:130px;vertical-align:top}
+table.mv td.mc input{display:block;margin-bottom:2px}
+table.mv td.mc.mt{background:var(--redbg)}
+table.mv td.mc.ch{background:#E8F3FC;outline:2px solid var(--blue)}
+table.mv td.mc.inc{background:var(--amberbg);outline:2px dashed var(--amber)}
+td.inc{background:var(--amberbg);outline:2px dashed var(--amber)}
+tr.pillar th{background:#fff;color:var(--ink);border-bottom:2px solid var(--line)}
+.total{font-weight:700}
+.total.ok{color:var(--green)}.total.bad{color:var(--red)}

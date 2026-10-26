@@ -509,6 +509,236 @@ function showHistory(table, key) {
   dlg.showModal();
 }
 
+// ---------------------------------------------------------------- special views
+// Both views follow the generic grid's rule: an edit updates state.pending and the cell in place,
+// the inputs are never rebuilt, so focus and caret stay where the user is typing.
+// null = empty, NaN = not a number, else the number
+function parseNum(text) {
+  const t = String(text).trim();
+  if (t === "") return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : NaN;
+}
+const showNum = (v) => (v == null ? "" : String(v));
+const hospitalIds = () => Object.keys(state.meta.hospitals).map(Number).sort((a, b) => a - b);
+const hospitalName = (id) => (state.meta.hospitals[String(id)] != null ? state.meta.hospitals[String(id)] : String(id));
+
+// ---- manual values
+function defaultPeriod() {
+  const d = new Date(), m = d.getMonth(); // 0-based, so this is the last full month 1-based
+  return m === 0 ? {year: d.getFullYear() - 1, month: 12} : {year: d.getFullYear(), month: m};
+}
+state.mv = null;        // {year, month}
+state.mvDrafts = {};    // pkey -> typed values of a cell that is not complete yet
+
+function renderManual(box, s) {
+  const mv = state.mv || (state.mv = defaultPeriod());
+  const kpis = state.meta.kpis.filter((k) => k.value_source === "manual" && k.status === "active")
+    .sort((a, b) => Number(a.kpi_num) - Number(b.kpi_num));
+  const stored = new Map();
+  for (const r of state.tables[s.name].current) {
+    if (Number(r.year) === mv.year && Number(r.month) === mv.month) stored.set(r.kpi_code + "|" + Number(r.branch_id), r);
+  }
+  const thisYear = new Date().getFullYear(), years = [];
+  for (let y = thisYear - 3; y <= thisYear + 1; y++) years.push(y);
+  if (!years.includes(mv.year)) years.push(mv.year);
+  const pick = (name, vals, labelFn) => {
+    const sel = el("select", {"data-fid": "mv|" + name, onchange: (e) => { mv[name] = Number(e.target.value); renderView(); }},
+      vals.map((v) => el("option", {value: String(v)}, labelFn(v))));
+    sel.value = String(mv[name]);
+    return sel;
+  };
+  const ids = hospitalIds();
+  const head = el("tr", {}, el("th", {}, "KPI"), ids.map((i) => el("th", {}, i + " · " + hospitalName(i))));
+  const body = kpis.map((k) => el("tr", {},
+    el("td", {}, el("b", {}, k.kpi_code), " ", k.kpi_name,
+      el("div", {class: "small"}, state.meta.manual_hints[k.kpi_code] || state.meta.default_manual_hint)),
+    ids.map((b) => manualCell(s, k, b, mv, stored.get(k.kpi_code + "|" + b) || null))));
+  box.append(
+    el("div", {class: "bar"}, el("label", {}, "Year ", pick("year", years, String)),
+      el("label", {}, "Month ", pick("month", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], String)),
+      el("span", {class: "small"}, "Red = no value yet. Fill numerator and denominator; a cell with only one is not added.")),
+    el("div", {class: "gridwrap"}, el("table", {class: "g mv"}, el("thead", {}, head), el("tbody", {}, body))));
+  if (!kpis.length) box.append(el("p", {class: "small"}, "No active manual KPIs."));
+}
+
+function manualCell(s, k, b, mv, st) {
+  const row0 = {kpi_code: k.kpi_code, branch_id: b, year: mv.year, month: mv.month};
+  const kv = keyValues(s, row0), pk = pkey(s.name, kv);
+  const p = state.pending.get(pk);
+  const shown = state.mvDrafts[pk] || (p && p.op === "upsert" ? p.row : st) || {};
+  const mk = (col, ph) => el("input", {"data-fid": fidOf(s, row0, {name: col}), value: showNum(shown[col]), placeholder: ph,
+    "aria-label": k.kpi_code + " hospital " + b + " " + col, ...(col === "note" ? {tabindex: "-1"} : {}),
+    onchange: commit});
+  const nIn = mk("numerator", "numerator"), dIn = mk("denominator", "denominator"), noteIn = mk("note", "note");
+  const td = el("td", {class: "mc"}, nIn, dIn, noteIn, st ? el("button", {class: "lnk", tabindex: "-1", onclick: () => showHistory(s.name, kv)}, "History") : null);
+  const paint = () => {
+    const empty = !st && nIn.value.trim() === "" && dIn.value.trim() === "";
+    td.className = "mc" + (state.mvDrafts[pk] ? " inc" : state.pending.has(pk) ? " ch" : empty ? " mt" : "");
+    td.title = state.mvDrafts[pk] ? "Needs a numerator and a denominator, both numbers" : "";
+  };
+  function reset() {
+    nIn.value = st ? showNum(st.numerator) : ""; dIn.value = st ? showNum(st.denominator) : ""; noteIn.value = st ? showNum(st.note) : "";
+  }
+  function commit() {
+    const n = parseNum(nIn.value), d = parseNum(dIn.value), note = noteIn.value.trim();
+    delete state.mvDrafts[pk];
+    state.pending.delete(pk);
+    if (n === null && d === null) reset(); // both cleared: the change is dropped, a stored row stays
+    else if (n === null || d === null || Number.isNaN(n) || Number.isNaN(d)) state.mvDrafts[pk] = {numerator: nIn.value, denominator: dIn.value, note: noteIn.value};
+    else {
+      const stRow = storedAny(s.name, kv);
+      const same = st && !st.is_deleted && Number(st.numerator) === n && Number(st.denominator) === d && String(st.note == null ? "" : st.note).trim() === note;
+      if (!same) state.pending.set(pk, {table: s.name, op: "upsert", base_changed_at: stRow ? stRow.changed_at : null,
+        row: {kpi_code: k.kpi_code, branch_id: b, year: mv.year, month: mv.month, numerator: n, denominator: d, note}});
+    }
+    state.review = null;
+    renderPending();
+    paint();
+  }
+  paint();
+  return td;
+}
+registerView("map_bsc_manual_value", renderManual);
+
+// ---- weights
+state.wv = {profile: "corporate", pillar: "", copyOpen: false, msg: ""};
+state.wvDrafts = {};   // pkey -> typed text that is not a number
+
+// weight per KPI of a profile: stored, with pending changes applied (and one typed value, if given)
+function effectiveWeights(profile, typed) {
+  const out = new Map();
+  for (const r of state.tables.map_bsc_weight.current) if (r.profile === profile) out.set(r.kpi_code, Number(r.weight));
+  for (const c of state.pending.values()) {
+    if (c.table !== "map_bsc_weight" || c.row.profile !== profile) continue;
+    if (c.op === "remove") out.delete(c.row.kpi_code); else out.set(c.row.kpi_code, Number(c.row.weight));
+  }
+  if (typed) { if (typed.value == null) out.delete(typed.kpi); else out.set(typed.kpi, typed.value); }
+  return out;
+}
+function totalOf(profile, typed) {
+  let t = 0;
+  for (const v of effectiveWeights(profile, typed).values()) t += v;
+  return t;
+}
+function paintTotal(node, profile, typed) {
+  const t = totalOf(profile, typed);
+  node.textContent = "Profile total: " + t.toFixed(4);
+  node.className = "total " + (t.toFixed(4) === "1.0000" ? "ok" : "bad");
+}
+
+function renderWeights(box, s) {
+  const wv = state.wv, m = state.meta;
+  const profiles = ["corporate"].concat(hospitalIds().map((i) => "branch:" + i));
+  const profLabel = (p) => (p.startsWith("branch:") ? p + " · " + hospitalName(p.slice(7)) : p);
+  const pillarOf = (k) => { const o = m.objectives.find((x) => x.objective_code === k.objective_code); return o || null; };
+  const pillars = [];
+  for (const o of m.objectives.slice().sort((a, b) => Number(a.pillar_order) - Number(b.pillar_order))) if (!pillars.includes(o.pillar)) pillars.push(o.pillar);
+  const profSel = el("select", {"data-fid": "wv|profile", onchange: (e) => { wv.profile = e.target.value; wv.msg = ""; wv.copyOpen = false; renderView(); }},
+    profiles.map((p) => el("option", {value: p}, profLabel(p))));
+  profSel.value = wv.profile;
+  const pilSel = el("select", {"data-fid": "wv|pillar", onchange: (e) => { wv.pillar = e.target.value; renderView(); }},
+    el("option", {value: ""}, "All pillars"), pillars.map((p) => el("option", {value: p}, p)));
+  pilSel.value = wv.pillar;
+  const totalNode = el("span", {});
+  paintTotal(totalNode, wv.profile);
+
+  const stored = new Map();
+  for (const r of state.tables[s.name].current) if (r.profile === wv.profile) stored.set(r.kpi_code, r);
+  const rows = [];
+  const kpis = m.kpis.slice().sort((a, b) => Number(a.kpi_num) - Number(b.kpi_num));
+  for (const pillar of pillars.concat([null])) {
+    if (wv.pillar && pillar !== wv.pillar) continue;
+    const mine = kpis.filter((k) => { const o = pillarOf(k); return (o ? o.pillar : null) === pillar; });
+    if (!mine.length) continue;
+    rows.push(el("tr", {class: "pillar"}, el("th", {colspan: "3"}, pillar == null ? "No pillar" : pillar)));
+    for (const k of mine) rows.push(weightRow(s, k, stored.get(k.kpi_code) || null, totalNode));
+  }
+  const copyBar = wv.copyOpen ? el("div", {class: "bar"}, el("span", {}, "Copy " + wv.profile + " to"),
+    (() => {
+      const sel = el("select", {class: "copyto", "data-fid": "wv|copyto"},
+        hospitalIds().map((i) => "branch:" + i).filter((p) => p !== wv.profile).map((p) => el("option", {value: p}, profLabel(p))));
+      return sel;
+    })(),
+    el("button", {class: "btn", onclick: () => copyProfile(s, $("content").querySelector("select.copyto").value)}, "Copy"),
+    el("button", {class: "o", onclick: () => { wv.copyOpen = false; renderView(); }}, "Cancel")) : null;
+  box.append(...[
+    el("div", {class: "bar"}, el("label", {}, "Profile ", profSel), el("label", {}, "Pillar ", pilSel),
+      el("button", {class: "o", onclick: () => { wv.copyOpen = true; wv.msg = ""; renderView(); }}, "Copy profile to a hospital…")),
+    copyBar,
+    wv.msg ? el("p", {class: "ok"}, wv.msg) : null,
+    el("div", {class: "gridwrap"}, el("table", {class: "g"}, el("thead", {}, el("tr", {}, el("th", {}, "KPI"), el("th", {}, "Weight"), el("th", {}))),
+      el("tbody", {}, rows))),
+    el("p", {}, totalNode),
+    el("p", {class: "small"}, "A profile's weights should add up to 1.0000. A blank weight means this profile has no row for the KPI.")].filter((n) => n != null));
+}
+
+function weightRow(s, k, st, totalNode) {
+  const prof = state.wv.profile;
+  const row0 = {profile: prof, kpi_code: k.kpi_code};
+  const kv = keyValues(s, row0), pk = pkey(s.name, kv);
+  const p = state.pending.get(pk);
+  const shown = state.wvDrafts[pk] != null ? state.wvDrafts[pk] : p ? (p.op === "upsert" ? showNum(p.row.weight) : "") : st ? showNum(st.weight) : "";
+  const inp = el("input", {"data-fid": fidOf(s, row0, {name: "weight"}), value: shown, "aria-label": "weight " + k.kpi_code,
+    oninput: () => {
+      const v = parseNum(inp.value);
+      if (!Number.isNaN(v)) paintTotal(totalNode, prof, {kpi: k.kpi_code, value: v});
+    },
+    onchange: commit});
+  const td = el("td", {}, inp);
+  const hist = el("td", {class: "small"}, st ? el("button", {class: "lnk", onclick: () => showHistory(s.name, kv)}, "History") : null);
+  const paint = () => { td.className = state.wvDrafts[pk] != null ? "inc" : state.pending.has(pk) ? "ch" : ""; };
+  function commit() {
+    const v = parseNum(inp.value);
+    delete state.wvDrafts[pk];
+    state.pending.delete(pk);
+    if (v === null) inp.value = st ? showNum(st.weight) : ""; // cleared: back to what is stored
+    else if (Number.isNaN(v)) state.wvDrafts[pk] = inp.value;
+    else {
+      const stRow = storedAny(s.name, kv);
+      if (!(st && Number(st.weight) === v)) state.pending.set(pk, {table: s.name, op: "upsert", base_changed_at: stRow ? stRow.changed_at : null,
+        row: {profile: prof, kpi_code: k.kpi_code, weight: v}});
+    }
+    state.review = null;
+    renderPending();
+    paintTotal(totalNode, prof);
+    paint();
+  }
+  paint();
+  return el("tr", {}, el("td", {}, el("b", {}, k.kpi_code), " ", k.kpi_name), td, hist);
+}
+
+function copyProfile(s, target) {
+  const src = state.wv.profile;
+  if (!target || target === src) return;
+  const from = effectiveWeights(src), to = new Map();
+  const tgtStored = new Map();
+  for (const r of state.tables[s.name].current) if (r.profile === target) tgtStored.set(r.kpi_code, r);
+  let n = 0;
+  const codes = new Set([...from.keys(), ...tgtStored.keys()]);
+  for (const code of codes) {
+    const pk = pkey(s.name, keyValues(s, {profile: target, kpi_code: code}));
+    const st = tgtStored.get(code), base = st ? st.changed_at : null;
+    state.pending.delete(pk);
+    delete state.wvDrafts[pk];
+    if (from.has(code)) {
+      if (st && Number(st.weight) === from.get(code)) continue; // already the same: no change
+      state.pending.set(pk, {table: s.name, op: "upsert", base_changed_at: base, row: {profile: target, kpi_code: code, weight: from.get(code)}});
+      n++;
+    } else if (st) {
+      state.pending.set(pk, {table: s.name, op: "remove", base_changed_at: base, row: {profile: target, kpi_code: code}});
+      n++;
+    }
+  }
+  state.review = null;
+  state.wv.profile = target; state.wv.copyOpen = false;
+  state.wv.msg = n ? n + (n === 1 ? " change" : " changes") + " added for " + target + "; review before saving."
+    : "No changes: " + target + " already has the weights of " + src + ".";
+  renderPending();
+  renderView();
+}
+registerView("map_bsc_weight", renderWeights);
+
 // ---------------------------------------------------------------- boot
 $("signin-form").addEventListener("submit", signIn);
 showSignIn("");
