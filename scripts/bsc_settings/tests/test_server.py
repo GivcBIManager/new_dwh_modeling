@@ -130,7 +130,7 @@ def test_api_needs_session(server):
 def test_static_and_unknown_paths(server):
     c = Client(server)
     status, body, r = c.call("GET", "/")
-    assert status == 200 and b'id="app"' in body
+    assert status == 200 and b'id="shell"' in body
     assert r.getheader("Content-Type").startswith("text/html")
     assert c.call("GET", "/static/../server.py")[0] == 404
     assert c.call("GET", "/static/nope.js")[0] == 404
