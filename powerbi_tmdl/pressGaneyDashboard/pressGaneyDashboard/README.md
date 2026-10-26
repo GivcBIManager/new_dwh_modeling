@@ -146,20 +146,24 @@ The report is built for Power BI Report Server (PBIRS 15.0.1121, May 2026) on `H
 buttons, text boxes, one private custom visual packaged in the file (API 5.11.1, as the scorecard visual), a live
 connection and no report-level measures, field parameters, visual calculations or bookmarks.
 
-1. Deploy the model measures first: `ssas\scripts\deploy.ps1 -Stage TestMeasures` (test database) or `-Stage All`
-   (production); the measure checks of `tests/measures/patient_experience.json` run as part of it.
+**The server reads the legacy package only.** A `.pbix` saved by Power BI Desktop 2.158 *or* by Desktop for Report
+Server (May 2026) from this project holds the PBIR folder `Report/definition`; the server's parser
+(`PbixParserV1.GetReportDocumentFromPowerBIPackage`) looks for the legacy part `Report/Layout`, finds nothing and
+answers 400 (RSPowerBI log, 2026-10-26 12:56). Neither Desktop converts a PBIR report back. `tools/pbir_to_pbix.py`
+writes the legacy package from the generated definition folder instead.
+
+1. Deploy the model measures first: `ssas\scripts\deploy.ps1 -Stage Test` (refreshes the test data, then runs the
+   checks) or `-Stage All` (production).
 2. `python tools/build_report.py` (default `HNH_Analytics_Test`; `--database HNH_Analytics` for production), then
    `python tools/validate_pbir.py --desktop-rs` and the smoke test.
-3. Open `PressGaneyDashboard.pbip` in **Power BI Desktop for Report Server** (May 2026, `C:\Program Files\Microsoft
-   Power BI Desktop RS`). Check Home, page 1 and a drillthrough. File > Save As > `.pbix` (for example
-   `C:\HNH\report\PressGaneyDashboard.pbix`). Desktop for Report Server writes the legacy `Report/Layout` package the
-   server needs. If it refuses the project, open it in Desktop 2.158 first, Save As `.pbix`, then open that file in
-   Desktop for Report Server and Save (the route of `powerbi_tmdl/hnh_bsc_report/README.md`).
-4. Check the file from `powerbi_tmdl/hnh_bsc_report`:
-   `python -c "from pbix import check_upload_rules; print(check_upload_rules(r'C:\HNH\report\PressGaneyDashboard.pbix'))"`
-   → `[]`.
-5. Upload in the web portal. A live connection needs no stored credentials: the viewer's Windows identity flows to
-   SSAS, which applies the row filters. Custom visuals must be allowed on the server so the Hayat NPS Scorecard loads.
+3. `python tools/pbir_to_pbix.py` writes `dist/PGaney Patient Survey.pbix` (git-ignored; `--out` for another name):
+   `Report/Layout` from the pages and visuals, the theme, logo and packaged custom visual as resource packages, the
+   live connection as Desktop for Report Server writes it. It passes `hnh_bsc_report/pbix.check_upload_rules`.
+4. Open that file in **Power BI Desktop for Report Server** (`C:\Program Files\Microsoft Power BI Desktop RS`) and
+   check Home, page 1, page 6 and a drillthrough; it reads the legacy package. Do not save from there.
+5. Upload in the web portal (Patient Experience folder), or File > Save as > Power BI Report Server from Desktop for
+   Report Server. A live connection needs no stored credentials: the viewer's Windows identity flows to SSAS, which
+   applies the row filters. Custom visuals must be allowed on the server so the Hayat NPS Scorecard loads.
 6. Sign in as a one-branch user (a non-admin member of `HNH_BI_Users`) and check that every page shows that branch only.
 
 Leave the `.pbip` and its folders off the server. Desktop writes its local state to `.pbi/` folders, which are git-ignored.

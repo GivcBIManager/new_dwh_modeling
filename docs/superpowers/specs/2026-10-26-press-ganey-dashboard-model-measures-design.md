@@ -133,6 +133,15 @@ Found on the way:
   closed period January–September 2026 (`gen_checks.py`), which narrows the drift to a few rows but does not remove
   it; a stage that refreshes the test data first (`-Stage Test`, the Daily refresh) makes them exact, as the H1
   comparison on the same load was.
+- **The Report Server takes only the legacy package.** The user's two uploads (12:56, 12:58) failed with a 400: the
+  server's `PbixParserV1.GetReportDocumentFromPowerBIPackage` found no `Report/Layout`, because a `.pbix` saved from
+  this project by Desktop 2.158 or by Desktop for Report Server (May 2026) carries the PBIR folder `Report/definition`
+  (D11's assumption that Desktop for Report Server rewrites the legacy format was wrong; its package library knows
+  PBIR, so it keeps it). `tools/pbir_to_pbix.py` now writes the legacy package from the generated definition folder
+  (shapes from `powerbi_tmdl/test isual.pbix`, the handover pbix and `hnh_bsc_report/LAYOUT_FORMAT.md`); it passes
+  the upload rules and Desktop for Report Server opens it without a dialog. Unverified from this session: the custom
+  theme item type (201) and the numeric `visualInteractions` type (NoFilter = 3) are inferred; a render check in
+  Desktop for Report Server or on the server settles both. The same route applies to the scorecard report.
 - **Guards chain.** A measure allowed to be filtered by a table (`hnh_guard_allow`) must call the measures it wraps
   through their `_Unguarded` twins, and those twins must not call guarded measures themselves: the first screenshot
   round showed page 6 failing because `NPS (Response Attr)` called `[NPS (5-point)]`, whose guard fired on the
