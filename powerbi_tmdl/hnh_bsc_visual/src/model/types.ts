@@ -18,6 +18,14 @@ export interface KpiRow {
     manual: boolean;
     parkedInCatalogue: boolean;
     owner: string;
+    definition: string;
+    targetBasis: string;
+    manualNote: string;
+    /** The KPI's own scoring rule (blank in the model falls back to 85 / 0.6 / 85 / 70). */
+    scoreBase: number;
+    scoreSlope: number;
+    goodFrom: number;
+    watchFrom: number;
     /** Other people accountable for the KPI, from 'BSC KPI'[Co Owners] ("|" separated); never the owner. */
     coOwners: string[];
     actual: number | null;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pillarScore, overallScore, pillarTrend, objectiveScore } from "../src/model/score";
+import { pillarScore, overallScore, pillarTrend, objectiveScore, overallTrend } from "../src/model/score";
 import type { KpiRow, PillarSummary } from "../src/model/types";
 
 const r = (score: number | null, weight: number | null, scoreTrend: (number | null)[] = []) =>
@@ -26,5 +26,10 @@ describe("score", () => {
         const t = pillarTrend([r(0, 1, [10, null, 30]), r(0, 1, [20, null, null])]);
         expect(t).toEqual([15, null, 30]);
         expect(pillarTrend([])).toEqual([]);
+    });
+    it("overallTrend is the pillar-weighted mean month by month", () => {
+        const p = (weight: number, trend: (number | null)[]) => ({ weight, trend }) as unknown as PillarSummary;
+        expect(overallTrend([p(0.3, [80, 90]), p(0.7, [60, null])])).toEqual([66, 90]);
+        expect(overallTrend([])).toEqual([]);
     });
 });

@@ -6,6 +6,8 @@ export interface FixtureRow {
     [role: string]: unknown;
     payload?: string | (string | null)[] | null;
     selectionLabel?: string | (string | null)[] | null;
+    targetBasis?: string | (string | null)[] | null;
+    manualNote?: string | (string | null)[] | null;
 }
 
 export interface FixtureOpts {
@@ -15,7 +17,7 @@ export interface FixtureOpts {
 export const CATEGORY_ROLES = [
     "kpi", "kpiName", "shortLabel", "pillar", "pillarOrder", "pillarWeight", "pillarQuestion",
     "objectiveCode", "objectiveTitle", "objectiveOrder", "kpiType", "direction", "valueFormat",
-    "displayOrder", "kpiStatus", "valueSource", "owner", "coOwners", "scoreBase", "scoreSlope", "goodFrom", "watchFrom",
+    "displayOrder", "kpiStatus", "valueSource", "owner", "definition", "coOwners", "scoreBase", "scoreSlope", "goodFrom", "watchFrom",
 ];
 
 /** Build the payload text: fields 1-9 in the measure's order. */
@@ -41,7 +43,15 @@ export function makeDataView(rows: FixtureRow[], opts: FixtureOpts = {}): DataVi
         });
         const pay = (r: FixtureRow) => (Array.isArray(r.payload) ? r.payload[gi] ?? null : (r.payload ?? null));
         const lab = (r: FixtureRow) => (Array.isArray(r.selectionLabel) ? r.selectionLabel[gi] ?? null : (r.selectionLabel ?? null));
-        return { name: b, values: [col("payload", pay), col("selectionLabel", lab)] };
+        const pick = (role: "targetBasis" | "manualNote") => (r: FixtureRow) => {
+            const v = r[role];
+            return Array.isArray(v) ? v[gi] ?? null : (v ?? null);
+        };
+        const vals = [col("payload", pay), col("selectionLabel", lab)];
+        for (const role of ["targetBasis", "manualNote"] as const) {
+            if (rows.some(r => r[role] !== undefined)) vals.push(col(role, pick(role)));
+        }
+        return { name: b, values: vals };
     });
     const flat = groups.flatMap(g => g.values);
     const values: Record<string, unknown> = Object.assign([...flat], { grouped: () => groups });

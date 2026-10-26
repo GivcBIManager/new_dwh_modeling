@@ -101,6 +101,8 @@ export function parseDataView(dv: DataView): ViewModel {
         if (branch !== null) branches.push(branch);
         const payloadCol = find(g, "payload");
         const labelCol = find(g, "selectionLabel");
+        const basisCol = find(g, "targetBasis");
+        const noteCol = find(g, "manualNote");
         for (let i = 0; i < kpiCol.values.length; i++) {
             if (!labels[gi] && labelCol && labelCol.values[i]) labels[gi] = asStr(labelCol.values[i]);
             const p = parsePayload(payloadCol ? (payloadCol.values[i] as string | null) : null) as Payload;
@@ -125,6 +127,13 @@ export function parseDataView(dv: DataView): ViewModel {
                 manual: valueSource === "manual",
                 parkedInCatalogue: kpiStatus === "parked",
                 owner: asStr(attr("owner", i)),
+                definition: asStr(attr("definition", i)),
+                targetBasis: basisCol ? asStr(basisCol.values[i]) : "",
+                manualNote: noteCol ? asStr(noteCol.values[i]) : "",
+                scoreBase: asNum(attr("scoreBase", i)) ?? 85,
+                scoreSlope: asNum(attr("scoreSlope", i)) ?? 0.6,
+                goodFrom: asNum(attr("goodFrom", i)) ?? 85,
+                watchFrom: asNum(attr("watchFrom", i)) ?? 70,
                 coOwners: splitCoOwners(asStr(attr("coOwners", i)), asStr(attr("owner", i))),
                 actual: p.actual,
                 target: p.target,

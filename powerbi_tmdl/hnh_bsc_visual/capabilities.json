@@ -86,6 +86,11 @@
       "kind": "Grouping"
     },
     {
+      "displayName": "Definition",
+      "name": "definition",
+      "kind": "Grouping"
+    },
+    {
       "displayName": "Co-owners",
       "name": "coOwners",
       "kind": "Grouping"
@@ -123,6 +128,16 @@
     {
       "displayName": "Selection Label",
       "name": "selectionLabel",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Target basis",
+      "name": "targetBasis",
+      "kind": "Measure"
+    },
+    {
+      "displayName": "Manual note",
+      "name": "manualNote",
       "kind": "Measure"
     }
   ],
@@ -182,6 +197,9 @@
           "owner": {
             "max": 1
           },
+          "definition": {
+            "max": 1
+          },
           "coOwners": {
             "max": 1
           },
@@ -204,6 +222,12 @@
             "max": 1
           },
           "selectionLabel": {
+            "max": 1
+          },
+          "targetBasis": {
+            "max": 1
+          },
+          "manualNote": {
             "max": 1
           }
         }
@@ -298,6 +322,11 @@
             },
             {
               "bind": {
+                "to": "definition"
+              }
+            },
+            {
+              "bind": {
                 "to": "coOwners"
               }
             },
@@ -340,6 +369,16 @@
               {
                 "bind": {
                   "to": "selectionLabel"
+                }
+              },
+              {
+                "bind": {
+                  "to": "targetBasis"
+                }
+              },
+              {
+                "bind": {
+                  "to": "manualNote"
                 }
               }
             ],

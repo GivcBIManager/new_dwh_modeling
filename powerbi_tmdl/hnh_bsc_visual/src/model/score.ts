@@ -34,3 +34,13 @@ export function pillarTrend(rows: KpiRow[]): (number | null)[] {
     }
     return out;
 }
+
+/** Overall score month by month: the pillar-weighted mean of each pillar's trend. */
+export function overallTrend(pillars: PillarSummary[]): (number | null)[] {
+    const len = pillars.reduce((m, p) => Math.max(m, p.trend.length), 0);
+    const out: (number | null)[] = [];
+    for (let i = 0; i < len; i++) {
+        out.push(weighted(pillars.map(p => ({ score: p.trend[i] ?? null, weight: p.weight }))));
+    }
+    return out;
+}

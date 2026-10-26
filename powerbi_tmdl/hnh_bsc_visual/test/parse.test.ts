@@ -201,3 +201,21 @@ describe("co-owners", () => {
         expect(parse(null)).toEqual([]);
     });
 });
+
+describe("definition, notes and per-row thresholds", () => {
+    it("reads definition, target basis, manual note and the four thresholds per row", () => {
+        const vm = parseDataView(makeDataView([row("K1", "Financial", 1, 1, {
+            definition: "Share of claims paid", targetBasis: "Board 2026", manualNote: "Entered by Finance",
+            scoreBase: 80, scoreSlope: 0.5, goodFrom: 90, watchFrom: 60, payload: ok(90, 1),
+        })]));
+        const k = vm.pillars[0].kpis[0];
+        expect(k).toMatchObject({ definition: "Share of claims paid", targetBasis: "Board 2026", manualNote: "Entered by Finance",
+            scoreBase: 80, scoreSlope: 0.5, goodFrom: 90, watchFrom: 60 });
+    });
+    it("missing wells give blank text and blank thresholds fall back to 85 / 0.6 / 85 / 70", () => {
+        const vm = parseDataView(makeDataView([row("K1", "Financial", 1, 1, {
+            scoreBase: null, scoreSlope: "", goodFrom: null, watchFrom: null, payload: ok(90, 1) })]));
+        expect(vm.pillars[0].kpis[0]).toMatchObject({ definition: "", targetBasis: "", manualNote: "",
+            scoreBase: 85, scoreSlope: 0.6, goodFrom: 85, watchFrom: 70 });
+    });
+});
