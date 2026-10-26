@@ -199,6 +199,67 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .bd-months span{flex:1;text-align:center}
 .bd-tline{stroke:var(--ink)}
 
+/* KPI detail: the report's 1920 x 996 box under the header bar (design x 1.5). The sub-bar's text stays between x 150
+   and x 1570, clear of the native Back button on its left and the guide buttons on its right; the profile sits at
+   (30, 102, 510, 870) and the trend panel at (564, 102, 1326, 390). The lower right is left empty and transparent for
+   the native by-hospital chart and matrix. */
+.hnh-bsc.detail{background:transparent}
+.dt{display:flex;flex-direction:column;min-width:1600px}
+.hnh-bsc .view>.dt{min-height:840px}
+.dt-sub{height:78px;flex:none;display:flex;align-items:center;gap:24px;padding:0 350px 0 150px;background:var(--card);border-bottom:1px solid var(--line);overflow:hidden}
+.dt-where{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.dt-crumb{font-size:19.5px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-up{color:var(--blue-dk);font-weight:600}
+.dt-here{color:var(--ink);font-weight:600}
+.dt-hint{margin:0;font-size:16.5px;color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-filters{flex:none;max-width:60%;display:flex;align-items:center;gap:12px;min-width:0}
+.dt-filters-l{font-size:16.5px;color:var(--muted);font-weight:400;white-space:nowrap}
+.dt-chip{font-size:18px;font-weight:600;padding:6px 12px;border-radius:6px;background:var(--nodata-bg);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:390px}
+.dt-body{flex:1;min-height:0;display:grid;grid-template-columns:510px minmax(0,1fr);grid-template-rows:390px minmax(0,1fr);gap:24px;padding:24px 30px}
+.dt-profile,.dt-trend{background:var(--card);border:1px solid var(--line);border-radius:12px;min-width:0;min-height:0}
+.dt-profile{grid-row:1/-1;display:flex;flex-direction:column;gap:21px;padding:24px 27px;overflow-y:auto}
+.dt-head{display:flex;flex-direction:column;gap:9px}
+.dt-eyebrow{display:flex;align-items:center;gap:9px;font-size:16.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.dt-sq{width:13.5px;height:13.5px;border-radius:3px;flex:none}
+.dt-profile h1{margin:0;font-size:30px;font-weight:600;line-height:1.15}
+.dt-figure{display:flex;align-items:flex-end;gap:21px}
+.dt-actual{font-size:66px;font-weight:600;line-height:.9;white-space:nowrap}
+.dt-actual.good,.dt-tline-text strong.good{color:var(--good-tx)}.dt-actual.warn,.dt-tline-text strong.warn{color:var(--warn-tx)}
+.dt-actual.bad,.dt-tline-text strong.bad{color:var(--bad-tx)}.dt-actual.nodata{color:var(--nodata-tx)}
+.dt-figure-r{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dt-profile .chip{font-size:16.5px;padding:3px 12px;gap:9px;white-space:nowrap}
+.dt-tline-text{font-size:18px;color:var(--ink);font-weight:400}
+.dt-tline-text strong{font-weight:600}
+.dt-why{margin:0;font-size:19.5px;line-height:1.4;color:var(--muted);font-weight:400}
+.dt-facts{margin:0;display:grid;grid-template-columns:138px minmax(0,1fr);row-gap:12px;column-gap:15px;font-size:18px;line-height:1.35}
+.dt-facts dt{color:var(--muted);font-weight:400}
+.dt-facts dd{margin:0;font-weight:400;overflow-wrap:anywhere}
+.dt-bandlist{display:flex;flex-direction:column;gap:9px}
+.dt-profile h2{margin:0;font-size:18px;font-weight:600}
+.dt-bands{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;font-size:18px;font-weight:400}
+.dt-bands li{display:grid;grid-template-columns:12px 111px auto;align-items:center;column-gap:12px;white-space:nowrap}
+.dt-bands li .mark{justify-self:center}
+.dt-bands b{font-weight:600}
+.dt-note{margin-top:auto;padding-top:18px;border-top:1px solid var(--nodata-bg);display:flex;flex-direction:column;gap:4.5px}
+.dt-note-l{font-size:16.5px;color:var(--muted);font-weight:400}
+.dt-note p{margin:0;font-size:19.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.dt-trend{display:flex;flex-direction:column;gap:15px;padding:21px 24px;overflow:hidden}
+.dt-thead{display:flex;align-items:center;gap:21px;flex:none}
+.dt-trend h2{margin:0;font-size:21px;font-weight:600;white-space:nowrap}
+.dt-keys{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;font-size:16.5px;color:var(--muted);font-weight:400}
+.dt-key{display:inline-flex;align-items:center;gap:7.5px;white-space:nowrap}
+.dt-key i{display:block;width:18px;height:4.5px;border-radius:3px}
+.dt-key i.line{background:var(--blue-dk)}
+.dt-key i.dash{height:0;border-top:3px dashed var(--ink);border-radius:0}
+.dt-key i.swatch{height:13.5px;border:1px solid var(--line)}
+.dt-key i.swatch.good{background:var(--good-bg)}.dt-key i.swatch.warn{background:var(--warn-bg)}.dt-key i.swatch.bad{background:var(--bad-bg)}
+.dt-chart{flex:1;min-height:0;position:relative}
+.dt-chart svg{position:absolute;inset:0;width:100%;height:100%}
+.dt-none{margin:auto;font-size:19.5px;color:var(--muted);font-weight:400}
+.dt-grid{stroke:var(--line)}
+.dt-tline{stroke:var(--ink)}
+.dt-y,.dt-month{fill:var(--muted);font-weight:400}
+
 @media (prefers-reduced-motion:no-preference){.gauge-arc{transition:stroke-dashoffset .9s cubic-bezier(.2,.7,.2,1)}}
 
 /* owner mode: ownership overview (toggles, achievement strip, then the KPI blocks) */
@@ -300,6 +361,14 @@ span.mark.nodata{width:10px;height:3px;background:var(--nodata)}
 .hnh-bsc.hc .bd-tline{stroke:var(--hc-fg)}
 .hnh-bsc.hc .bd-key i.missed{background:var(--hc-bg);border:2px solid var(--hc-fg)}
 .hnh-bsc.hc .bd-row.selected{outline:3px solid var(--hc-sel);outline-offset:-3px}
+.hnh-bsc.hc .dt-band{fill:var(--hc-bg)}
+.hnh-bsc.hc .dt-band.good{fill:var(--hc-fg);fill-opacity:.22}
+.hnh-bsc.hc .dt-band.warn{fill:var(--hc-fg);fill-opacity:.1}
+.hnh-bsc.hc .dt-grid{stroke:var(--hc-fg);stroke-opacity:.35}
+.hnh-bsc.hc .dt-tline{stroke:var(--hc-fg)}
+.hnh-bsc.hc .dt-chip{border:1px solid var(--hc-fg)}
+.hnh-bsc.hc .dt-key i.swatch.good{background:var(--hc-fg);opacity:.22}
+.hnh-bsc.hc .dt-key i.swatch.warn{background:var(--hc-fg);opacity:.1}
 
 /* branch series outside comparison mode: which hospital the page shows */
 .hnh-bsc .hint{flex:none;padding:6px 24px;font-size:13px;color:var(--muted);background:var(--card);border-bottom:1px solid var(--line)}

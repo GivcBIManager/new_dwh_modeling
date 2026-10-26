@@ -6,6 +6,7 @@ import { overview } from "./overview";
 import { board, boardPillar } from "./board";
 import { owner, DEFAULT_OWNER_UI, type OwnerUi } from "./owner";
 import { comparison, type CompareLevel } from "./comparison";
+import { detail } from "./detail";
 
 export type Mode = "overview" | "board" | "owner" | "comparison" | "detail";
 
@@ -28,6 +29,8 @@ export interface UiState {
 export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiState): void {
     root.replaceChildren();
     root.classList.add("hnh-bsc");
+    // KPI detail leaves its lower right to native visuals: the page surface shows through there.
+    root.classList.toggle("detail", mode === "detail");
     if (vm.guardMessage) { root.appendChild(empty(vm.guardMessage)); return; }
     if (vm.pillars.every(p => p.kpis.length === 0)) { root.appendChild(empty("No KPIs in this selection")); return; }
 
@@ -40,7 +43,8 @@ export function renderView(root: HTMLElement, vm: ViewModel, mode: Mode, ui: UiS
         root.appendChild(el("div", { class: "hint", role: "note" }, [`Showing ${vm.branches[0]} — switch to Hospital comparison to compare hospitals`]));
     }
 
-    const body = mode === "overview" || mode === "detail" ? overview(vm)
+    const body = mode === "overview" ? overview(vm)
+        : mode === "detail" ? detail(vm)
         : mode === "board" ? board(vm, ui.pillar, ui.objective ?? null, ui.selectedKey ?? null)
         : mode === "owner" ? owner(vm, ui.owner ?? DEFAULT_OWNER_UI)
         : comparison(vm, ui.compareLevel);
