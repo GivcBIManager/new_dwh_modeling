@@ -99,7 +99,7 @@ function card(p: PillarSummary, vm: ViewModel, trends: boolean): HTMLElement {
     const st = scoreState(p.score, t) as Group;
     const fill = isNum(p.score) ? Math.min(Math.max(p.score, 0), 100) : 0;
     const counts = (["good", "warn", "bad"] as Group[]).map(g =>
-        el("span", { class: "ov-n", title: `${p.counts[g]} ${GROUP_WORD[g]}`, "aria-label": `${p.counts[g]} ${GROUP_WORD[g]}` }, [stateMark(g), String(p.counts[g])]));
+        el("span", { class: "ov-n", title: `${p.counts[g]} ${GROUP_WORD[g]}` }, [stateMark(g), String(p.counts[g]), el("span", { class: "sr-only" }, [` ${GROUP_WORD[g]}`])]));
     const kpis = firstRows(p).length;
     return el("article", { class: "ov-pillar", "data-pillar": p.name, "aria-label": `${p.name} pillar` }, [
         // The weight sits under the name: in Segoe UI "Learning & Growth" and its weight do not fit one line of the card.

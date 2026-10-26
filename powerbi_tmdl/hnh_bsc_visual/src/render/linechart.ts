@@ -46,7 +46,8 @@ export function lineChart(series: LineSeries[], opts: LineChartOpts): SVGSVGElem
     const top = 12, bottom = months.length ? 36 : 12;
     const plotW = Math.max(1, W - left - right), plotH = Math.max(1, H - top - bottom);
     const X = (i: number) => (n <= 1 ? left + plotW / 2 : left + 9 + (i * (plotW - 18)) / (n - 1));
-    const Y = (v: number) => top + ((hi - v) / (hi - lo)) * plotH;
+    // Values outside the axis (below 0) are drawn at its edge, so nothing leaves the plot.
+    const Y = (v: number) => top + ((hi - Math.min(Math.max(v, lo), hi)) / (hi - lo)) * plotH;
     const f = (v: number) => v.toFixed(1);
 
     const s = svg("svg", {

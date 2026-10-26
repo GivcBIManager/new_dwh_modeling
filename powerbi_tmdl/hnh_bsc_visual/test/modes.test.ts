@@ -48,6 +48,10 @@ describe("overview", () => {
         expect(cards[0].textContent).toContain("Weight 30%");
         expect(cards[0].textContent).toContain("Drill into 3 KPIs →");
         expect(cards[0].querySelector(".ov-sq")!.getAttribute("style")).toContain("var(--p1)");
+        const counts = [...cards[0].querySelectorAll(".ov-counts .ov-n")].map(n => n.textContent);
+        expect(counts).toEqual(["1 On track", "1 Watch", "1 At risk"]);
+        expect(cards[0].querySelector(".ov-n .sr-only")!.textContent).toBe(" On track");
+        expect(cards[0].querySelector(".ov-n")!.hasAttribute("aria-label")).toBe(false);
         expect(ov.querySelector(".ov-row2 > section.ov-trend")).not.toBeNull();
         expect(ov.querySelector(".ov-row2 > section.ov-attention")).not.toBeNull();
     });

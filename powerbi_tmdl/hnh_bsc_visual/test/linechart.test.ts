@@ -41,4 +41,16 @@ describe("lineChart", () => {
         expect(ys(s)).toEqual([70, 80, 90, 100]);
         expect(s.outerHTML).not.toContain("NaN");
     });
+    it("keeps a value below 0 inside the plot (the axis stops at 0)", () => {
+        const s = lineChart([{ name: "A", colourVar: "var(--p1)", values: [-25, 40, -12] }], opts());
+        const top = 12, bottom = 300 - 36;
+        expect(ys(s)[0]).toBe(0);
+        const pathYs = [...s.querySelectorAll(".lc-line")].flatMap(p => [...p.getAttribute("d")!.matchAll(/[ML][\d.-]+ ([\d.-]+)/g)].map(m => Number(m[1])));
+        const dotYs = [...s.querySelectorAll(".lc-dot")].map(d => Number(d.getAttribute("cy")));
+        expect(pathYs.length).toBe(3);
+        for (const y of [...pathYs, ...dotYs]) {
+            expect(y).toBeGreaterThanOrEqual(top);
+            expect(y).toBeLessThanOrEqual(bottom);
+        }
+    });
 });
