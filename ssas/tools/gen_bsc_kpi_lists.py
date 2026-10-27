@@ -91,6 +91,7 @@ BUDGETS = [
     ("CUS_PAYER_MIX", "BSC Target Payer Mix"),
     ("CUS_NON_MOH_SHARE", "BSC Target Non-MoH Share"),
     ("CUS_PAYER_VOLUME", "BSC Target Payer Volume"),
+    ("CUS_ACQUISITION_COST", "BSC Target Patient Acquisition Cost"),
     ("INT_OP_UTILIZATION", "BSC Target Clinic Utilization"),
     ("INT_OP_TO_IP", "BSC Target OP to IP"),
     ("INT_PATIENT_VOLUME", "BSC Target Patient Volume"),

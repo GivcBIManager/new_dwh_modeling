@@ -58,9 +58,9 @@ PARTS = {
     "CUS_MULTI_SPECIALTY_SHARE": (
         "CALCULATE ( [Revenue], 'Care Type'[Care Type] = \"OP\" )\n"
         "\t+ CALCULATE ( [Revenue], 'Care Type'[Care Type] = \"IP\", 'Charge Lines'[Is LTC] = \"No\" )",
-        "[BSC GL Net Revenue]", "ratio"),
+        "[Revenue]", "ratio"),
     "CUS_PAYER_MIX": ("CALCULATE ( [Revenue by Episode Payer], Payer[Category] = \"Insurance\" )",
-                      "[BSC GL Net Revenue]", "ratio"),
+                      "[Revenue by Episode Payer]", "ratio"),
     "CUS_PATIENT_RETENTION": (
         f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_OP_SEEN}, Encounters[Is Returning] = \"Yes\" )",
         f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_OP_SEEN} )", "ratio"),
@@ -68,7 +68,7 @@ PARTS = {
     "CUS_OP_WAIT": (f"CALCULATE ( SUM ( Encounters[Wait Minutes] ), {_OP_SEEN} )",
                     f"CALCULATE ( COUNT ( Encounters[Wait Minutes] ), {_OP_SEEN} )", "ratio"),
     "CUS_NON_MOH_SHARE": ("CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = \"No\" )",
-                          "[BSC GL Net Revenue]", "ratio"),
+                          "[Revenue by Episode Payer]", "ratio"),
     "CUS_PAYER_VOLUME": ("CALCULATE ( [Census], Payer[Category] = \"Insurance\" )", "", "value"),
     "CUS_ACQUISITION_COST": ("[BSC GL Marketing]",
                              f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_NEW_PATIENT} )", "ratio"),
@@ -86,7 +86,7 @@ PARTS = {
     "INT_DOCTOR_UTILIZATION": ("[OP Visits]", "SUM ( 'Clinic Capacity'[BSC Capacity Slots] )", "ratio"),
     "INT_ACTIVATED_BEDS": ("[BSC Available Beds]", "[BSC Licensed Beds]", "ratio"),
     "INT_HIGH_VALUE_REVENUE": ("CALCULATE ( [Revenue], Staff[Is High Value Specialty] = \"Yes\" )",
-                               "[BSC GL Net Revenue]", "ratio"),
+                               "[Revenue]", "ratio"),
     "INT_HIGH_VALUE_CENSUS": (
         "CALCULATE ( [Census], 'Booked Doctor'[Is High Value Specialty] = \"Yes\" )\n"
         "\t+ CALCULATE ( [Admissions], Staff[Is High Value Specialty] = \"Yes\" )",

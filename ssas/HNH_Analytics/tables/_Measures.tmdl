@@ -4015,6 +4015,15 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget Consumables"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
+	/// Budgeted selling and marketing expense in SAR (budget line GA_MARKETING, most likely), the budget of BSC GL Marketing.
+	measure 'BSC Budget Marketing' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "GA_MARKETING" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Income Statement]
+			RETURN IF ( __Wrong = "", __Value, """BSC Budget Marketing"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Balanced Scorecard\Building Blocks
 	/// Budgeted cost of medicines in SAR (budget line DC_MEDICINES, most likely).
 	measure 'BSC Budget Medicines' =
 			VAR __Value = ( -- measure body
@@ -4249,25 +4258,25 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC EBITDA per Doctor"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Financial
-	/// KPI 11: outpatient revenue plus non-LTC inpatient revenue (charge lines) / GL net revenue.
+	/// KPI 11: outpatient revenue plus non-LTC inpatient revenue / revenue, both from charge lines (GL net revenue lags the charges by the months the GL is not posted).
 	measure 'BSC Multi-Specialty Revenue Share' =
 			VAR __Value = ( -- measure body
 				DIVIDE (
 					CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" )
 						+ CALCULATE ( [Revenue], 'Care Type'[Care Type] = "IP", 'Charge Lines'[Is LTC] = "No" ),
-					[BSC GL Net Revenue]
+					[Revenue]
 				)
 			) -- end of measure body
-			VAR __Wrong = [_Guard Charge Lines + GL FS Monthly]
+			VAR __Wrong = [_Guard Charge Lines]
 			RETURN IF ( __Wrong = "", __Value, """BSC Multi-Specialty Revenue Share"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 12: revenue of insurance payers (episode payer) / GL net revenue.
+	/// KPI 12: revenue of insurance payers / revenue, both by episode payer from charge lines.
 	measure 'BSC Payer Mix' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Category] = "Insurance" ), [BSC GL Net Revenue] )
+				DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Category] = "Insurance" ), [Revenue by Episode Payer] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Charge Lines + GL FS Monthly]
+			VAR __Wrong = [_Guard Charge Lines]
 			RETURN IF ( __Wrong = "", __Value, """BSC Payer Mix"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
@@ -4314,12 +4323,12 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC OP Waiting Time (min)"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 18: revenue of non-MoH payers (episode payer) / GL net revenue.
+	/// KPI 18: revenue of non-MoH payers / revenue, both by episode payer from charge lines.
 	measure 'BSC Non-MoH Revenue Share' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ), [BSC GL Net Revenue] )
+				DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ), [Revenue by Episode Payer] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Charge Lines + GL FS Monthly]
+			VAR __Wrong = [_Guard Charge Lines]
 			RETURN IF ( __Wrong = "", __Value, """BSC Non-MoH Revenue Share"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
@@ -4420,12 +4429,12 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Activated Beds"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 25: revenue of high-value specialty doctors / GL net revenue.
+	/// KPI 25: revenue of high-value specialty doctors / revenue, both from charge lines.
 	measure 'BSC High-Value Revenue Share' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Revenue], Staff[Is High Value Specialty] = "Yes" ), [BSC GL Net Revenue] )
+				DIVIDE ( CALCULATE ( [Revenue], Staff[Is High Value Specialty] = "Yes" ), [Revenue] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Charge Lines + GL FS Monthly]
+			VAR __Wrong = [_Guard Charge Lines]
 			RETURN IF ( __Wrong = "", __Value, """BSC High-Value Revenue Share"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
@@ -4729,32 +4738,41 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Target EBITDA per Doctor"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Targets
-	/// Target of KPI 11: target revenue of OP and non-LTC IP / budgeted net revenue.
+	/// Target of KPI 11: target revenue of OP and non-LTC IP / target revenue.
 	measure 'BSC Target Multi-Specialty Share' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ) + CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "IP", Targets[Stay Type] <> "LTC" ), [BSC Budget Net Revenue] )
+				DIVIDE ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ) + CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "IP", Targets[Stay Type] <> "LTC" ), [Target Revenue] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Income Statement + Targets]
+			VAR __Wrong = [_Guard Targets]
 			RETURN IF ( __Wrong = "", __Value, """BSC Target Multi-Specialty Share"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Targets
-	/// Target of KPI 12: target revenue of insurance / budgeted net revenue.
+	/// Target of KPI 12: target revenue of insurance / target revenue.
 	measure 'BSC Target Payer Mix' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] = "Insurance" ), [BSC Budget Net Revenue] )
+				DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] = "Insurance" ), [Target Revenue] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Income Statement + Targets]
+			VAR __Wrong = [_Guard Targets]
 			RETURN IF ( __Wrong = "", __Value, """BSC Target Payer Mix"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Targets
-	/// Target of KPI 18: target revenue of non-government creditors / budgeted net revenue.
+	/// Target of KPI 18: target revenue of non-government creditors / target revenue.
 	measure 'BSC Target Non-MoH Share' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] <> "Government" ), [BSC Budget Net Revenue] )
+				DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] <> "Government" ), [Target Revenue] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Income Statement + Targets]
+			VAR __Wrong = [_Guard Targets]
 			RETURN IF ( __Wrong = "", __Value, """BSC Target Non-MoH Share"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Targets
+	/// Target of KPI 62: budgeted marketing / distinct new outpatients (the budget has no new-patient figures).
+	measure 'BSC Target Patient Acquisition Cost' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [BSC Budget Marketing], CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Encounters + Income Statement]
+			RETURN IF ( __Wrong = "", __Value, """BSC Target Patient Acquisition Cost"" can't be analysed by " & __Wrong )
+		formatString: #,0
 		displayFolder: Balanced Scorecard\Targets
 	/// Target of KPI 20: target census of insurance.
 	measure 'BSC Target Payer Volume' =
@@ -5123,12 +5141,12 @@ table _Measures
 								"FIN_EBITDA_PER_BED", [BSC Available Beds],
 								"FIN_REVENUE_PER_DOCTOR", [BSC Average Doctors],
 								"FIN_EBITDA_PER_DOCTOR", [BSC Average Doctors],
-								"CUS_MULTI_SPECIALTY_SHARE", [BSC GL Net Revenue],
-								"CUS_PAYER_MIX", [BSC GL Net Revenue],
+								"CUS_MULTI_SPECIALTY_SHARE", [Revenue],
+								"CUS_PAYER_MIX", [Revenue by Episode Payer],
 								"CUS_PATIENT_RETENTION", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
 								"CUS_NEW_PATIENTS", [OP Visits],
 								"CUS_OP_WAIT", CALCULATE ( COUNT ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
-								"CUS_NON_MOH_SHARE", [BSC GL Net Revenue],
+								"CUS_NON_MOH_SHARE", [Revenue by Episode Payer],
 								"CUS_ACQUISITION_COST", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ),
 								"INT_BED_OCCUPANCY", CALCULATE ( SUM ( 'Bed Occupancy'[Is Available] ), 'Bed Occupancy'[Is Inpatient Ward] = "Yes", 'Bed Occupancy'[Is Excluded Ward] = "No" ),
 								"INT_OP_UTILIZATION", [BSC Clinic Capacity],
@@ -5137,7 +5155,7 @@ table _Measures
 								"INT_ER_GROWTH", CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) ),
 								"INT_DOCTOR_UTILIZATION", SUM ( 'Clinic Capacity'[BSC Capacity Slots] ),
 								"INT_ACTIVATED_BEDS", [BSC Licensed Beds],
-								"INT_HIGH_VALUE_REVENUE", [BSC GL Net Revenue],
+								"INT_HIGH_VALUE_REVENUE", [Revenue],
 								"INT_HIGH_VALUE_CENSUS", [Census],
 								"INT_OP_REVENUE_PER_EPISODE", CALCULATE ( [Episodes], 'Care Type'[Care Type] = "OP" ),
 								"INT_ANCILLARY_UTILIZATION", CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" ),
@@ -5206,6 +5224,7 @@ table _Measures
 							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
 							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
 							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@CUS_ACQUISITION_COST", [BSC Target Patient Acquisition Cost],
 							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
 							"@INT_OP_TO_IP", [BSC Target OP to IP],
 							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
@@ -5243,6 +5262,7 @@ table _Measures
 								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
 								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
 								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"CUS_ACQUISITION_COST", MAXX ( Budgeted, [@CUS_ACQUISITION_COST] ),
 								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
 								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
 								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
@@ -5440,6 +5460,7 @@ table _Measures
 							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
 							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
 							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@CUS_ACQUISITION_COST", [BSC Target Patient Acquisition Cost],
 							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
 							"@INT_OP_TO_IP", [BSC Target OP to IP],
 							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
@@ -5476,6 +5497,7 @@ table _Measures
 								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
 								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
 								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"CUS_ACQUISITION_COST", MAXX ( Budgeted, [@CUS_ACQUISITION_COST] ),
 								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
 								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
 								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
@@ -5668,6 +5690,7 @@ table _Measures
 							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
 							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
 							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@CUS_ACQUISITION_COST", [BSC Target Patient Acquisition Cost],
 							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
 							"@INT_OP_TO_IP", [BSC Target OP to IP],
 							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
@@ -5704,6 +5727,7 @@ table _Measures
 								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
 								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
 								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"CUS_ACQUISITION_COST", MAXX ( Budgeted, [@CUS_ACQUISITION_COST] ),
 								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
 								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
 								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
@@ -5925,6 +5949,7 @@ table _Measures
 							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
 							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
 							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@CUS_ACQUISITION_COST", [BSC Target Patient Acquisition Cost],
 							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
 							"@INT_OP_TO_IP", [BSC Target OP to IP],
 							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
@@ -5961,6 +5986,7 @@ table _Measures
 								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
 								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
 								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"CUS_ACQUISITION_COST", MAXX ( Budgeted, [@CUS_ACQUISITION_COST] ),
 								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
 								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
 								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
@@ -6330,6 +6356,7 @@ table _Measures
 									"@CUS_PAYER_MIX", [_Unguarded BSC Target Payer Mix],
 									"@CUS_NON_MOH_SHARE", [_Unguarded BSC Target Non-MoH Share],
 									"@CUS_PAYER_VOLUME", [_Unguarded BSC Target Payer Volume],
+									"@CUS_ACQUISITION_COST", [_Unguarded BSC Target Patient Acquisition Cost],
 									"@INT_OP_UTILIZATION", [_Unguarded BSC Target Clinic Utilization],
 									"@INT_OP_TO_IP", [_Unguarded BSC Target OP to IP],
 									"@INT_PATIENT_VOLUME", [_Unguarded BSC Target Patient Volume],
@@ -6373,6 +6400,7 @@ table _Measures
 											"CUS_PAYER_MIX", MAXX ( PeriodBudgets, [@CUS_PAYER_MIX] ),
 											"CUS_NON_MOH_SHARE", MAXX ( PeriodBudgets, [@CUS_NON_MOH_SHARE] ),
 											"CUS_PAYER_VOLUME", MAXX ( PeriodBudgets, [@CUS_PAYER_VOLUME] ),
+											"CUS_ACQUISITION_COST", MAXX ( PeriodBudgets, [@CUS_ACQUISITION_COST] ),
 											"INT_OP_UTILIZATION", MAXX ( PeriodBudgets, [@INT_OP_UTILIZATION] ),
 											"INT_OP_TO_IP", MAXX ( PeriodBudgets, [@INT_OP_TO_IP] ),
 											"INT_PATIENT_VOLUME", MAXX ( PeriodBudgets, [@INT_PATIENT_VOLUME] ),
@@ -6614,6 +6642,7 @@ table _Measures
 							"@CUS_PAYER_MIX", [BSC Target Payer Mix],
 							"@CUS_NON_MOH_SHARE", [BSC Target Non-MoH Share],
 							"@CUS_PAYER_VOLUME", [BSC Target Payer Volume],
+							"@CUS_ACQUISITION_COST", [BSC Target Patient Acquisition Cost],
 							"@INT_OP_UTILIZATION", [BSC Target Clinic Utilization],
 							"@INT_OP_TO_IP", [BSC Target OP to IP],
 							"@INT_PATIENT_VOLUME", [BSC Target Patient Volume],
@@ -6650,6 +6679,7 @@ table _Measures
 								"CUS_PAYER_MIX", MAXX ( Budgeted, [@CUS_PAYER_MIX] ),
 								"CUS_NON_MOH_SHARE", MAXX ( Budgeted, [@CUS_NON_MOH_SHARE] ),
 								"CUS_PAYER_VOLUME", MAXX ( Budgeted, [@CUS_PAYER_VOLUME] ),
+								"CUS_ACQUISITION_COST", MAXX ( Budgeted, [@CUS_ACQUISITION_COST] ),
 								"INT_OP_UTILIZATION", MAXX ( Budgeted, [@INT_OP_UTILIZATION] ),
 								"INT_OP_TO_IP", MAXX ( Budgeted, [@INT_OP_TO_IP] ),
 								"INT_PATIENT_VOLUME", MAXX ( Budgeted, [@INT_PATIENT_VOLUME] ),
@@ -9579,103 +9609,6 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
-	/// Filtered tables that cannot filter Charge Lines, GL FS Monthly, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard Charge Lines + GL FS Monthly' =
-			VAR __Names =
-				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
-				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
-				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
-				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
-				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
-				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
-				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
-				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
-				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
-				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
-				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
-				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
-				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
-				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
-				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
-				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
-				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
-				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
-				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
-				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
-				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
-				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
-				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
-				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
-				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
-				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
-				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
-				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
-				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
-				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
-				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
-				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
-				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
-				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
-				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
-				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
-				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
-				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
-				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
-				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
-				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
-				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
-				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
-				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
-				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
-				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
-				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
-				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
-				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
-				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
-				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
-				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
-				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
-				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
-				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
-				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
-				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
-				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
-				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
-				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
-				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
-				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
-				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
-				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
-				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
-				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
-				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
-				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
-				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
-				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
-				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
-				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
-				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
-				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
-				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
-				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
-				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
-				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
-				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
-				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
-				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
-				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
-				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
-				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
-				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
-				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
-				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
-				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
-				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
-			RETURN MID ( __Names, 3, 4000 )
-		formatString: General
-		isHidden
-		displayFolder: Diagnostics\Guards
-
 	/// Filtered tables that cannot filter Charge Lines, Revenue Adjustments, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard Charge Lines + Revenue Adjustments' =
 			VAR __Names =
@@ -10226,6 +10159,103 @@ table _Measures
 
 	/// Filtered tables that cannot filter Encounters, GL FS Monthly, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard Encounters + GL FS Monthly' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Encounters, Income Statement, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Encounters + Income Statement' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -11303,103 +11333,6 @@ table _Measures
 				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
 				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
 				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
-				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
-				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
-				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
-				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
-				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
-				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
-				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
-				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
-				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
-				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
-				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
-				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
-				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
-				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
-				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
-				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
-				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
-				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
-				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
-				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
-				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
-				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
-				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
-				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
-				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
-				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
-				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
-				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
-				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
-				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
-				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
-				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
-				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
-				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
-				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
-				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
-				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
-				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
-				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
-			RETURN MID ( __Names, 3, 4000 )
-		formatString: General
-		isHidden
-		displayFolder: Diagnostics\Guards
-
-	/// Filtered tables that cannot filter Income Statement, Targets, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard Income Statement + Targets' =
-			VAR __Names =
-				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
-				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
-				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
-				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
-				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
-				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
-				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
-				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
-				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
-				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
-				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
-				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
-				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
-				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
-				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
-				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
-				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
-				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
-				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
-				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
-				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
-				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
-				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
-				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
-				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
-				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
-				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
-				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
-				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
-				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
-				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
-				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
-				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
-				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
-				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
-				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
-				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
-				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
-				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
-				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
-				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
-				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
-				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
-				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
-				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
-				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
-				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
-				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
-				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
-				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
 				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
 				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
 				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
@@ -13543,7 +13476,7 @@ table _Measures
 
 	/// The expression of BSC High-Value Revenue Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC High-Value Revenue Share' =
-			DIVIDE ( CALCULATE ( [Revenue], Staff[Is High Value Specialty] = "Yes" ), [BSC GL Net Revenue] )
+			DIVIDE ( CALCULATE ( [Revenue], Staff[Is High Value Specialty] = "Yes" ), [Revenue] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13569,7 +13502,7 @@ table _Measures
 			DIVIDE (
 				CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" )
 					+ CALCULATE ( [Revenue], 'Care Type'[Care Type] = "IP", 'Charge Lines'[Is LTC] = "No" ),
-				[BSC GL Net Revenue]
+				[Revenue]
 			)
 		formatString: General
 		isHidden
@@ -13591,7 +13524,7 @@ table _Measures
 
 	/// The expression of BSC Non-MoH Revenue Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Non-MoH Revenue Share' =
-			DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ), [BSC GL Net Revenue] )
+			DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ), [Revenue by Episode Payer] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13665,7 +13598,7 @@ table _Measures
 
 	/// The expression of BSC Payer Mix without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Payer Mix' =
-			DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Category] = "Insurance" ), [BSC GL Net Revenue] )
+			DIVIDE ( CALCULATE ( [Revenue by Episode Payer], Payer[Category] = "Insurance" ), [Revenue by Episode Payer] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13828,7 +13761,7 @@ table _Measures
 
 	/// The expression of BSC Target Multi-Specialty Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Target Multi-Specialty Share' =
-			DIVIDE ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ) + CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "IP", Targets[Stay Type] <> "LTC" ), [BSC Budget Net Revenue] )
+			DIVIDE ( CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "OP" ) + CALCULATE ( [Target Revenue], 'Care Type'[Care Type] = "IP", Targets[Stay Type] <> "LTC" ), [Target Revenue] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13842,7 +13775,7 @@ table _Measures
 
 	/// The expression of BSC Target Non-MoH Share without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Target Non-MoH Share' =
-			DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] <> "Government" ), [BSC Budget Net Revenue] )
+			DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] <> "Government" ), [Target Revenue] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13861,6 +13794,13 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Unguarded
 
+	/// The expression of BSC Target Patient Acquisition Cost without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Target Patient Acquisition Cost' =
+			DIVIDE ( [BSC Budget Marketing], CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
 	/// The expression of BSC Target Patient Volume without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Target Patient Volume' =
 			CALCULATE ( [Target Census], 'Care Type'[Care Type] IN { "OP", "ER", "IP" } )
@@ -13870,7 +13810,7 @@ table _Measures
 
 	/// The expression of BSC Target Payer Mix without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Target Payer Mix' =
-			DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] = "Insurance" ), [BSC Budget Net Revenue] )
+			DIVIDE ( CALCULATE ( [Target Revenue], Targets[Creditor] = "Insurance" ), [Target Revenue] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
