@@ -205,6 +205,9 @@ def test_mode_size_and_no_container(display):
     # padding 0 on every side: the visual's own box is its rect (the geometry contract with visual.less)
     pad = _obj(v, "padding")
     assert {side: lit(pad[side]) for side in ("top", "bottom", "left", "right")} ==         {"top": "0D", "bottom": "0D", "left": "0D", "right": "0D"}
+    # Maintain layer order: a click in the visual (a KPI row) must not bring it to the front over the native visuals
+    # drawn on its panels (the by-hospital chart, the drill button)
+    assert lit(_obj(v, "general")["keepLayerOrder"]) == "true"
 
 
 def test_native_charts_keep_their_visual_header():

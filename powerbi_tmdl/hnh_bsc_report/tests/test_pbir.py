@@ -464,6 +464,9 @@ def test_hnh_visual_and_textbox(project):
         assert lit(container["visualHeader"][0]["properties"]["show"]) == "false"
         assert {k: lit(x) for k, x in container["padding"][0]["properties"].items()} ==             {"top": "0D", "bottom": "0D", "left": "0D", "right": "0D"}
         assert "padding" not in j["visual"].get("objects", {}) and "visualHeader" not in j["visual"]["objects"]
+        # the HNH visual has no `general` object of its own: its `general` is the container's (Maintain layer order)
+        assert lit(container["general"][0]["properties"]["keepLayerOrder"]) == "true"
+        assert "general" not in j["visual"]["objects"]
     fam = next(p for p in PAGES if p.name == "fam_finance")
     tb = _title_box(project, fam)
     assert tb["visualType"] == "textbox"

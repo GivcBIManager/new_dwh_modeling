@@ -66,10 +66,13 @@ def _container_off() -> dict:
 def hnh_container() -> dict:
     """The HNH visual's container: frame.no_container (no background or border: it draws its own panels; no visual
     header, whose icons would pop over the tabs and the help buttons) and padding 0 on every side, so the visual's
-    box is its rect and the geometry visual.less shares with frame.py holds."""
+    box is its rect and the geometry visual.less shares with frame.py holds. Maintain layer order on: by default a
+    click in a visual (a KPI row) brings it to the front, over the native visuals on its panels (the board's chart
+    and button, KPI detail's chart and matrix)."""
     zero = _num(0)
     return {**no_container(),
-            "padding": [{"properties": {"top": zero, "bottom": zero, "left": zero, "right": zero}}]}
+            "padding": [{"properties": {"top": zero, "bottom": zero, "left": zero, "right": zero}}],
+            "general": [{"properties": {"keepLayerOrder": _lit(True)}}]}
 
 
 # ---- scorecard pages ----------------------------------------------------------------------------------------------

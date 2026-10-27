@@ -58,8 +58,8 @@ VISUAL_TYPES = {
     "panel": "textbox",  # frame.panel: a text box without text, filled by its container background
     "image": "image",  # frame.image: the logo, a RegisteredResources image
 }
-# Container formatting objects (visualContainerObjects in visualConfiguration 2.8.0). `general` stays in `objects`:
-# Visual.props uses it for a text box's paragraphs.
+# Container formatting objects (visualContainerObjects in visualConfiguration 2.8.0). `general` stays in `objects`
+# (Visual.props uses it for a text box's paragraphs), except on the HNH visual (write_visual).
 CONTAINER_OBJECTS = {"title", "subTitle", "divider", "spacing", "background", "padding", "lockAspect", "border",
                      "dropShadow", "visualLink", "visualTooltip", "stylePreset", "visualHeader",
                      "visualHeaderTooltip"}
@@ -329,8 +329,11 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
     title = ({"show": _value(True), "text": _value(visual.title)} if visual.title is not None
              else {"show": _value(False)})
     container["title"] = [{"properties": title}]
-    _merge(objects, {k: e for k, e in visual.props.items() if k not in CONTAINER_OBJECTS})
-    _merge(container, {k: e for k, e in visual.props.items() if k in CONTAINER_OBJECTS})
+    # The HNH visual has no `general` object of its own (capabilities: scorecard, colours), so its `general` is the
+    # container's (keepLayerOrder)
+    container_keys = CONTAINER_OBJECTS | ({"general"} if visual.sample == "hnhVisual" else set())
+    _merge(objects, {k: e for k, e in visual.props.items() if k not in container_keys})
+    _merge(container, {k: e for k, e in visual.props.items() if k in container_keys})
     if objects:
         v["objects"] = objects
     v["visualContainerObjects"] = container
