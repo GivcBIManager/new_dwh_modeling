@@ -61,6 +61,47 @@ PARTS = {
         "[Revenue]", "ratio"),
     "CUS_PAYER_MIX": ("CALCULATE ( [Revenue by Episode Payer], Payer[Category] = \"Insurance\" )",
                       "[Revenue by Episode Payer]", "ratio"),
+    # Overall Satisfaction (0-100) is the rescaled scored answers summed over their count
+    "CUS_PATIENT_SATISFACTION": (
+        "VAR Groups =\n"
+        "\tCALCULATETABLE (\n"
+        "\t\tADDCOLUMNS (\n"
+        "\t\t\tSUMMARIZE ( 'Survey Answers', 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),\n"
+        "\t\t\t\"@n\", CALCULATE ( COUNTROWS ( 'Survey Answers' ) )\n"
+        "\t\t),\n"
+        "\t\t'Survey Answers'[Is Scored] = \"Yes\",\n"
+        "\t\tNOT ISBLANK ( 'Survey Answers'[Answer Score] )\n"
+        "\t)\n"
+        "RETURN\n"
+        "\tSUMX (\n"
+        "\t\tGroups,\n"
+        "\t\t[@n] * SWITCH (\n"
+        "\t\t\t'Survey Answers'[Scale Type],\n"
+        "\t\t\t\"likelihood_0_10\", 'Survey Answers'[Answer Score] * 10,\n"
+        "\t\t\t\"definitely_1_4\", ( 'Survey Answers'[Answer Score] - 1 ) / 3 * 100,\n"
+        "\t\t\t( 'Survey Answers'[Answer Score] - 1 ) / 4 * 100\n"
+        "\t\t)\n"
+        "\t)",
+        "CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[Is Scored] = \"Yes\", NOT ISBLANK ( 'Survey Answers'[Answer Score] ) )",
+        "ratio"),
+    # Top Box %: top-of-scale answers over the scored answers
+    "CUS_PREMS": (
+        "CALCULATE (\n"
+        "\tCOUNTROWS ( 'Survey Answers' ),\n"
+        "\t'Survey Answers'[Is Scored] = \"Yes\",\n"
+        "\tKEEPFILTERS (\n"
+        "\t\tFILTER (\n"
+        "\t\t\tALL ( 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),\n"
+        "\t\t\tSWITCH (\n"
+        "\t\t\t\t'Survey Answers'[Scale Type],\n"
+        "\t\t\t\t\"likelihood_0_10\", 'Survey Answers'[Answer Score] >= 9,\n"
+        "\t\t\t\t\"definitely_1_4\", 'Survey Answers'[Answer Score] = 4,\n"
+        "\t\t\t\t'Survey Answers'[Answer Score] = 5\n"
+        "\t\t\t)\n"
+        "\t\t)\n"
+        "\t)\n"
+        ")",
+        "[NPS Answers]", "ratio"),
     "CUS_PATIENT_RETENTION": (
         f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_OP_SEEN}, Encounters[Is Returning] = \"Yes\" )",
         f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_OP_SEEN} )", "ratio"),
@@ -142,6 +183,4 @@ PARTS = {
     "LRN_CLINICAL_TO_DOCTOR": ("[BSC Average Medical]", "[BSC Average Doctors]", "ratio"),
 }
 
-NO_PARTS = {
-    "CUS_PATIENT_SATISFACTION": "an NPS score: (promoters - detractors) ÷ answers × 100, not a plain ratio",
-}
+NO_PARTS: dict[str, str] = {}

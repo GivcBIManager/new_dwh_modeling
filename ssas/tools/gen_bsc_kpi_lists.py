@@ -42,6 +42,7 @@ KPIS = [
     ("CUS_PATIENT_SATISFACTION", "BSC Patient Satisfaction"),
     ("CUS_PATIENT_RETENTION", "BSC Patient Retention"),
     ("CUS_NEW_PATIENTS", "BSC New Patient Acquisition"),
+    ("CUS_PREMS", "BSC PREMs Score"),
     ("CUS_OP_WAIT", "BSC OP Waiting Time (min)"),
     ("CUS_NON_MOH_SHARE", "BSC Non-MoH Revenue Share"),
     ("CUS_PAYER_VOLUME", "BSC Payer Volume"),

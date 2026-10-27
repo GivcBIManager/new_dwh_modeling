@@ -36,7 +36,8 @@ def test_rebuild_checks_use_the_parts_kinds():
     rebuild = [c for c in CHECKS if c["name"].startswith("BSC Numerator and BSC Denominator rebuild BSC Actual")]
     assert len(rebuild) == 2
     want = {kind: sorted(c for c, (_, _, k) in p.PARTS.items() if k == kind) for kind in ("growth", "value")}
-    want["none"] = sorted(p.NO_PARTS)
+    if p.NO_PARTS:
+        want["none"] = sorted(p.NO_PARTS)
     for check in rebuild:
         lists = dict(re.findall(r'c IN \{([^}]*)\}, "(\w+)"', check["dax"]))
         assert {kind: sorted(re.findall(r'"([^"]+)"', codes)) for codes, kind in lists.items()} == want

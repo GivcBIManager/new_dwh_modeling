@@ -4280,20 +4280,24 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Payer Mix"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 13: NPS over the pooled answers of the Hospital NPS and Physician NPS questions: (promoters - detractors) / answers x 100.
+	/// KPI 13: the Patient Experience perspective's Overall Satisfaction (0-100): the average scored answer rescaled to 0-100.
 	measure 'BSC Patient Satisfaction' =
 			VAR __Value = ( -- measure body
-				VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
-				VAR Net = CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
-				RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+				[Overall Satisfaction (0-100)]
 			) -- end of measure body
 			VAR __Wrong = [_Guard Survey Answers]
 			RETURN IF ( __Wrong = "", __Value, """BSC Patient Satisfaction"" can't be analysed by " & __Wrong )
+		formatString: 0.0
 		displayFolder: Balanced Scorecard\Customer
-
-		formatStringDefinition =
-				VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
-				RETURN IF ( Answers < 30, """insufficient sample""", "0.0" )
+	/// KPI 16: the Patient Experience perspective's Top Box %: answers at the top of their scale / scored answers.
+	measure 'BSC PREMs Score' =
+			VAR __Value = ( -- measure body
+				[Top Box %]
+			) -- end of measure body
+			VAR __Wrong = [_Guard Survey Answers]
+			RETURN IF ( __Wrong = "", __Value, """BSC PREMs Score"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Customer
 	/// KPI 14: distinct returning outpatients / distinct outpatients (arrived, not cancelled; ER excluded).
 	measure 'BSC Patient Retention' =
 			VAR __Value = ( -- measure body
@@ -4896,6 +4900,7 @@ table _Measures
 							"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
 							"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
 							"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+							"@CUS_PREMS", [BSC PREMs Score],
 							"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
 							"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 							"@CUS_PAYER_VOLUME", [BSC Payer Volume],
@@ -4957,6 +4962,7 @@ table _Measures
 							"CUS_PATIENT_SATISFACTION", MAXX ( Measured, [@CUS_PATIENT_SATISFACTION] ),
 							"CUS_PATIENT_RETENTION", MAXX ( Measured, [@CUS_PATIENT_RETENTION] ),
 							"CUS_NEW_PATIENTS", MAXX ( Measured, [@CUS_NEW_PATIENTS] ),
+							"CUS_PREMS", MAXX ( Measured, [@CUS_PREMS] ),
 							"CUS_OP_WAIT", MAXX ( Measured, [@CUS_OP_WAIT] ),
 							"CUS_NON_MOH_SHARE", MAXX ( Measured, [@CUS_NON_MOH_SHARE] ),
 							"CUS_PAYER_VOLUME", MAXX ( Measured, [@CUS_PAYER_VOLUME] ),
@@ -5040,6 +5046,42 @@ table _Measures
 									CALCULATE ( [Revenue], 'Care Type'[Care Type] = "OP" )
 										+ CALCULATE ( [Revenue], 'Care Type'[Care Type] = "IP", 'Charge Lines'[Is LTC] = "No" ),
 								"CUS_PAYER_MIX", CALCULATE ( [Revenue by Episode Payer], Payer[Category] = "Insurance" ),
+								"CUS_PATIENT_SATISFACTION",
+									VAR Groups =
+										CALCULATETABLE (
+											ADDCOLUMNS (
+												SUMMARIZE ( 'Survey Answers', 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),
+												"@n", CALCULATE ( COUNTROWS ( 'Survey Answers' ) )
+											),
+											'Survey Answers'[Is Scored] = "Yes",
+											NOT ISBLANK ( 'Survey Answers'[Answer Score] )
+										)
+									RETURN
+										SUMX (
+											Groups,
+											[@n] * SWITCH (
+												'Survey Answers'[Scale Type],
+												"likelihood_0_10", 'Survey Answers'[Answer Score] * 10,
+												"definitely_1_4", ( 'Survey Answers'[Answer Score] - 1 ) / 3 * 100,
+												( 'Survey Answers'[Answer Score] - 1 ) / 4 * 100
+											)
+										),
+								"CUS_PREMS",
+									CALCULATE (
+										COUNTROWS ( 'Survey Answers' ),
+										'Survey Answers'[Is Scored] = "Yes",
+										KEEPFILTERS (
+											FILTER (
+												ALL ( 'Survey Answers'[Scale Type], 'Survey Answers'[Answer Score] ),
+												SWITCH (
+													'Survey Answers'[Scale Type],
+													"likelihood_0_10", 'Survey Answers'[Answer Score] >= 9,
+													"definitely_1_4", 'Survey Answers'[Answer Score] = 4,
+													'Survey Answers'[Answer Score] = 5
+												)
+											)
+										)
+									),
 								"CUS_PATIENT_RETENTION", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No", Encounters[Is Returning] = "Yes" ),
 								"CUS_NEW_PATIENTS", CALCULATE ( COUNTROWS ( Encounters ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ),
 								"CUS_OP_WAIT", CALCULATE ( SUM ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
@@ -5101,7 +5143,7 @@ table _Measures
 						)
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 12 facts #8b9401c7]
+			VAR __Wrong = [_Guard 13 facts #02b6bbc4]
 			RETURN IF ( __Wrong = "", __Value, """BSC Numerator"" can't be analysed by " & __Wrong )
 		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
@@ -5143,6 +5185,8 @@ table _Measures
 								"FIN_EBITDA_PER_DOCTOR", [BSC Average Doctors],
 								"CUS_MULTI_SPECIALTY_SHARE", [Revenue],
 								"CUS_PAYER_MIX", [Revenue by Episode Payer],
+								"CUS_PATIENT_SATISFACTION", CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[Is Scored] = "Yes", NOT ISBLANK ( 'Survey Answers'[Answer Score] ) ),
+								"CUS_PREMS", [NPS Answers],
 								"CUS_PATIENT_RETENTION", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
 								"CUS_NEW_PATIENTS", [OP Visits],
 								"CUS_OP_WAIT", CALCULATE ( COUNT ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
@@ -5193,7 +5237,7 @@ table _Measures
 						)
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 16 facts #e3203857]
+			VAR __Wrong = [_Guard 17 facts #3ba24bc3]
 			RETURN IF ( __Wrong = "", __Value, """BSC Denominator"" can't be analysed by " & __Wrong )
 		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
@@ -5332,6 +5376,7 @@ table _Measures
 									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
 									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
 									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_PREMS", [BSC PREMs Score],
 									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
@@ -5406,6 +5451,7 @@ table _Measures
 										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
 										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
 										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_PREMS", MAXX ( PeriodMeasures, [@CUS_PREMS] ),
 										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
@@ -5562,6 +5608,7 @@ table _Measures
 									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
 									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
 									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_PREMS", [BSC PREMs Score],
 									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
@@ -5636,6 +5683,7 @@ table _Measures
 										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
 										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
 										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_PREMS", MAXX ( PeriodMeasures, [@CUS_PREMS] ),
 										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
@@ -5816,6 +5864,7 @@ table _Measures
 									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
 									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
 									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_PREMS", [BSC PREMs Score],
 									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
@@ -5894,6 +5943,7 @@ table _Measures
 										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
 										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
 										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_PREMS", MAXX ( PeriodMeasures, [@CUS_PREMS] ),
 										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
@@ -6157,6 +6207,7 @@ table _Measures
 									"@CUS_PATIENT_SATISFACTION", [_Unguarded BSC Patient Satisfaction],
 									"@CUS_PATIENT_RETENTION", [_Unguarded BSC Patient Retention],
 									"@CUS_NEW_PATIENTS", [_Unguarded BSC New Patient Acquisition],
+									"@CUS_PREMS", [_Unguarded BSC PREMs Score],
 									"@CUS_OP_WAIT", [_Unguarded BSC OP Waiting Time (min)],
 									"@CUS_NON_MOH_SHARE", [_Unguarded BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [_Unguarded BSC Payer Volume],
@@ -6221,6 +6272,7 @@ table _Measures
 							"@CUS_PATIENT_SATISFACTION", [_Unguarded BSC Patient Satisfaction],
 							"@CUS_PATIENT_RETENTION", [_Unguarded BSC Patient Retention],
 							"@CUS_NEW_PATIENTS", [_Unguarded BSC New Patient Acquisition],
+							"@CUS_PREMS", [_Unguarded BSC PREMs Score],
 							"@CUS_OP_WAIT", [_Unguarded BSC OP Waiting Time (min)],
 							"@CUS_NON_MOH_SHARE", [_Unguarded BSC Non-MoH Revenue Share],
 							"@CUS_PAYER_VOLUME", [_Unguarded BSC Payer Volume],
@@ -6299,6 +6351,7 @@ table _Measures
 										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
 										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
 										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_PREMS", MAXX ( PeriodMeasures, [@CUS_PREMS] ),
 										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
@@ -6509,6 +6562,7 @@ table _Measures
 									"@CUS_PATIENT_SATISFACTION", [BSC Patient Satisfaction],
 									"@CUS_PATIENT_RETENTION", [BSC Patient Retention],
 									"@CUS_NEW_PATIENTS", [BSC New Patient Acquisition],
+									"@CUS_PREMS", [BSC PREMs Score],
 									"@CUS_OP_WAIT", [BSC OP Waiting Time (min)],
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
@@ -6587,6 +6641,7 @@ table _Measures
 										"CUS_PATIENT_SATISFACTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_SATISFACTION] ),
 										"CUS_PATIENT_RETENTION", MAXX ( PeriodMeasures, [@CUS_PATIENT_RETENTION] ),
 										"CUS_NEW_PATIENTS", MAXX ( PeriodMeasures, [@CUS_NEW_PATIENTS] ),
+										"CUS_PREMS", MAXX ( PeriodMeasures, [@CUS_PREMS] ),
 										"CUS_OP_WAIT", MAXX ( PeriodMeasures, [@CUS_OP_WAIT] ),
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
@@ -6794,104 +6849,8 @@ table _Measures
 
 		annotation hnh_guard_allow = BSC KPI
 
-	/// Filtered tables that cannot filter Admissions, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 12 facts #8b9401c7' =
-			VAR __Names =
-				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
-				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
-				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
-				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
-				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
-				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
-				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
-				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
-				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
-				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
-				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
-				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
-				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
-				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
-				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
-				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
-				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
-				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
-				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
-				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
-				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
-				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
-				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
-				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
-				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
-				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
-				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
-				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
-				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
-				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
-				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
-				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
-				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
-				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
-				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
-				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
-				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
-				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
-				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
-				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
-				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
-				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
-				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
-				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
-				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
-				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
-				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
-				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
-				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
-				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
-				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
-				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
-				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
-				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
-				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
-				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
-				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
-				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
-				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
-				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
-				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
-				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
-				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
-				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
-				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
-				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
-				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
-				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
-				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
-				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
-				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
-				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
-				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
-				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
-				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
-				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
-				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
-				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
-				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
-				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
-				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
-				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
-				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
-				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
-				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
-				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
-				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
-				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
-			RETURN MID ( __Names, 3, 4000 )
-		formatString: General
-		isHidden
-		displayFolder: Diagnostics\Guards
-
-	/// Filtered tables that cannot filter Admissions, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 16 facts #e3203857' =
+	/// Filtered tables that cannot filter Admissions, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 13 facts #02b6bbc4' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -13564,6 +13523,13 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Unguarded
 
+	/// The expression of BSC PREMs Score without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC PREMs Score' =
+			[Top Box %]
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
 	/// The expression of BSC Patient Acquisition Cost without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Patient Acquisition Cost' =
 			DIVIDE ( [BSC GL Marketing], CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ) )
@@ -13582,9 +13548,7 @@ table _Measures
 
 	/// The expression of BSC Patient Satisfaction without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Patient Satisfaction' =
-			VAR Answers = CALCULATE ( COUNTROWS ( 'Survey Answers' ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
-			VAR Net = CALCULATE ( SUM ( 'Survey Answers'[Is Promoter] ) - SUM ( 'Survey Answers'[Is Detractor] ), 'Survey Answers'[NPS Role] IN { "Hospital NPS", "Physician NPS" } )
-			RETURN IF ( Answers > 0, DIVIDE ( Net, Answers ) * 100 )
+			[Overall Satisfaction (0-100)]
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded

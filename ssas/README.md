@@ -69,9 +69,8 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
   (ratio), numerator ÷ denominator − 1 (growth: `INT_ER_GROWTH`) or the numerator alone (value: `FIN_NET_REVENUE`,
   `FIN_REVENUE_GROWTH`, whose actual is the revenue, `CUS_PAYER_VOLUME`, `INT_PATIENT_VOLUME`,
   `INT_EXTERNAL_REFERRALS`; no denominator). An average (`CUS_OP_WAIT`, `INT_ALOS`, `INT_APPROVAL_TAT`,
-  `LRN_TIME_TO_FILL`) is the sum over the count of the same column. KPIs without parts (blank numerator and
-  denominator):
-  - `CUS_PATIENT_SATISFACTION`: an NPS score, (promoters − detractors) ÷ answers × 100, not a plain ratio.
+  `LRN_TIME_TO_FILL`) is the sum over the count of the same column, and `CUS_PATIENT_SATISFACTION` (Overall
+  Satisfaction (0-100)) the rescaled scored answers over their count. Every KPI has parts (`NO_PARTS` is empty).
 - **Settings** (catalogue, targets, weights, thresholds, owners, categories, parameters, manual values) are rows in the
   ClickHouse `default.map_bsc_*` tables, edited by the BI manager (`docs/bsc_config.md`). They reach the model through
   the nightly build and `process.ps1 -Mode Daily`; no deploy is needed.

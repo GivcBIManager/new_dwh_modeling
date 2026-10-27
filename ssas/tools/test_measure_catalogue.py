@@ -185,7 +185,8 @@ def bsc_kpi_list_problems(measures) -> list:
         if name not in measures:
             problems.append(f"{name}: missing")
             continue
-        lookups = [re.findall(rf'(?m)^{indent}"([^"]+)",', block) for indent, block in
+        # a KPI code is upper case: a multi-line part's own string lines ("@n", "likelihood_0_10") are not codes
+        lookups = [re.findall(rf'(?m)^{indent}"([A-Z][A-Z0-9_]*)",', block) for indent, block in
                    re.findall(r"SWITCH \(\n([ \t]*)Code,\n(.*?)\n\1BLANK \(\)", measures[name].expression, re.S)]
         if len(lookups) != 1:
             problems.append(f"{name}: {len(lookups)} SWITCH ( Code, ... ) lookups, expected 1")
