@@ -211,11 +211,22 @@ function Get-HnhReadyPartitionCount {
     return $count
 }
 
+function Test-HnhSameMember {
+    # A Windows account can be a member as 'HNH_BI_Users' or 'HNHANALYTICSSRV\HNH_BI_Users'; SSAS refuses both in one
+    # role ("resolved to the same member-id"), so a member also matches by its SID.
+    param([Parameter(Mandatory = $true)]$RoleMember, [Parameter(Mandatory = $true)][string]$Member)
+    if ($RoleMember.MemberName -eq $Member) { return $true }
+    try {
+        $sid = (New-Object System.Security.Principal.NTAccount $Member).Translate([System.Security.Principal.SecurityIdentifier]).Value
+    } catch { return $false }
+    return ($RoleMember.MemberID -eq $sid)
+}
+
 function Add-HnhRoleMember {
     param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][string]$Role, [Parameter(Mandatory = $true)][string]$Member)
     $r = $Model.Roles.Find($Role)
     if ($r -eq $null) { throw "Role $Role not found" }
-    foreach ($m in $r.Members) { if ($m.MemberName -eq $Member) { return $false } }
+    foreach ($m in $r.Members) { if (Test-HnhSameMember -RoleMember $m -Member $Member) { return $false } }
     $wm = New-Object Microsoft.AnalysisServices.Tabular.WindowsModelRoleMember
     $wm.MemberName = $Member
     [void]$r.Members.Add($wm)
@@ -228,7 +239,7 @@ function Remove-HnhRoleMember {
     param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][string]$Role, [Parameter(Mandatory = $true)][string]$Member)
     $r = $Model.Roles.Find($Role)
     if ($r -eq $null) { throw "Role $Role not found" }
-    $found = @($r.Members | Where-Object { $_.MemberName -eq $Member })
+    $found = @($r.Members | Where-Object { Test-HnhSameMember -RoleMember $_ -Member $Member })
     if ($found.Count -eq 0) { return $false }
     foreach ($m in $found) { [void]$r.Members.Remove($m) }
     [void]$Model.SaveChanges()

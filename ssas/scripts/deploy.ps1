@@ -72,7 +72,8 @@ try {
             Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-R', '-E', '-V')
         }
         $srv = Connect-HnhServer $Server
-        [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
+        # Remove the readers group after the tests only if this deploy added it: members put there on purpose stay.
+        $readersAdded = Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group
         Add-Admins (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
         $srv.Disconnect()
         Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
@@ -88,9 +89,11 @@ try {
         try {
             Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir }
         } finally {
-            $srv = Connect-HnhServer $Server
-            if (Remove-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group removed from HNH_Analytics_Test" }
-            $srv.Disconnect()
+            if ($readersAdded) {
+                $srv = Connect-HnhServer $Server
+                if (Remove-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group removed from HNH_Analytics_Test" }
+                $srv.Disconnect()
+            }
         }
     }
     if (Want 'Promote') {
@@ -135,7 +138,7 @@ try {
         if (-not $exists) { throw 'HNH_Analytics_Test does not exist: run deploy.ps1 -Stage Test first' }
         Invoke-TabularEditor @($modelDir, '-D', $Server, 'HNH_Analytics_Test', '-O', '-R', '-E', '-V')
         $srv = Connect-HnhServer $Server
-        [void](Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group)
+        $readersAdded = Add-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group
         Add-Admins (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model
         $srv.Disconnect()
         Invoke-Step 'partitions.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; TabularEditorDir = $TabularEditorDir; NoRefresh = $true }
@@ -146,9 +149,11 @@ try {
         try {
             Invoke-Step 'test.ps1' @{ Server = $Server; Database = 'HNH_Analytics_Test'; Dsn = $Dsn; TabularEditorDir = $TabularEditorDir; Stage = @('Measures') }
         } finally {
-            $srv = Connect-HnhServer $Server
-            if (Remove-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group removed from HNH_Analytics_Test" }
-            $srv.Disconnect()
+            if ($readersAdded) {
+                $srv = Connect-HnhServer $Server
+                if (Remove-HnhRoleMember -Model (Get-HnhDatabase $srv 'HNH_Analytics_Test').Model -Role 'HNH Readers' -Member $group) { Write-Host "role member $group removed from HNH_Analytics_Test" }
+                $srv.Disconnect()
+            }
         }
     }
     if ($Stage -eq 'Rollback') {
