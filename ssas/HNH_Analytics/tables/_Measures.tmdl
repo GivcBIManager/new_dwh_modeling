@@ -4354,6 +4354,15 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Patient Acquisition Cost"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Customer
+	/// KPI 61: admissions under a referral policy / episodes under a referral policy (KPI 41: visits and admissions).
+	measure 'BSC Referral Conversion Rate' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" ), [BSC External Referrals] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters]
+			RETURN IF ( __Wrong = "", __Value, """BSC Referral Conversion Rate"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Customer
 	/// KPI 21: occupied / available bed-days in inpatient wards (the model's Bed Occupancy %).
 	measure 'BSC Bed Occupancy' =
 			VAR __Value = ( -- measure body
@@ -4424,10 +4433,17 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC OP Doctor Utilization"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 60: average available beds / licensed beds (the BI manager's licensed beds).
+	/// KPI 60: average available beds, capped at each hospital's licensed beds, / licensed beds (the BI manager's licensed
+	/// beds): at most 100%, and a hospital over its licence does not cover another one under it.
 	measure 'BSC Activated Beds' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( [BSC Available Beds], [BSC Licensed Beds] )
+				VAR Activated =
+					SUMX (
+						VALUES ( Branch[Branch Key] ),
+						VAR Licensed = [BSC Licensed Beds]
+						RETURN IF ( NOT ISBLANK ( Licensed ), MIN ( [BSC Available Beds], Licensed ) )
+					)
+				RETURN DIVIDE ( Activated, [BSC Licensed Beds] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard BSC Licensed Beds + Bed Occupancy]
 			RETURN IF ( __Wrong = "", __Value, """BSC Activated Beds"" can't be analysed by " & __Wrong )
@@ -4905,6 +4921,7 @@ table _Measures
 							"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 							"@CUS_PAYER_VOLUME", [BSC Payer Volume],
 							"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+							"@CUS_REFERRAL_CONVERSION", [BSC Referral Conversion Rate],
 							"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
 							"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
 							"@INT_ALOS", [BSC ALOS (days)],
@@ -4967,6 +4984,7 @@ table _Measures
 							"CUS_NON_MOH_SHARE", MAXX ( Measured, [@CUS_NON_MOH_SHARE] ),
 							"CUS_PAYER_VOLUME", MAXX ( Measured, [@CUS_PAYER_VOLUME] ),
 							"CUS_ACQUISITION_COST", MAXX ( Measured, [@CUS_ACQUISITION_COST] ),
+							"CUS_REFERRAL_CONVERSION", MAXX ( Measured, [@CUS_REFERRAL_CONVERSION] ),
 							"INT_BED_OCCUPANCY", MAXX ( Measured, [@INT_BED_OCCUPANCY] ),
 							"INT_OP_UTILIZATION", MAXX ( Measured, [@INT_OP_UTILIZATION] ),
 							"INT_ALOS", MAXX ( Measured, [@INT_ALOS] ),
@@ -5088,6 +5106,7 @@ table _Measures
 								"CUS_NON_MOH_SHARE", CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ),
 								"CUS_PAYER_VOLUME", CALCULATE ( [Census], Payer[Category] = "Insurance" ),
 								"CUS_ACQUISITION_COST", [BSC GL Marketing],
+								"CUS_REFERRAL_CONVERSION", CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" ),
 								"INT_BED_OCCUPANCY", CALCULATE ( SUM ( 'Bed Occupancy'[Is Occupied] ), 'Bed Occupancy'[Is Inpatient Ward] = "Yes", 'Bed Occupancy'[Is Excluded Ward] = "No" ),
 								"INT_OP_UTILIZATION", [OP Visits],
 								"INT_ALOS", CALCULATE ( SUM ( Admissions[LOS Days] ), Admissions[Is Countable] = "Yes", Admissions[Is LTC] = "No", USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] ) ),
@@ -5095,7 +5114,12 @@ table _Measures
 								"INT_PATIENT_VOLUME", [OP Visits] + [ER Visits] + [Admissions],
 								"INT_ER_GROWTH", [ER Visits],
 								"INT_DOCTOR_UTILIZATION", [OP Visits],
-								"INT_ACTIVATED_BEDS", [BSC Available Beds],
+								"INT_ACTIVATED_BEDS",
+									SUMX (
+										VALUES ( Branch[Branch Key] ),
+										VAR Licensed = [BSC Licensed Beds]
+										RETURN IF ( NOT ISBLANK ( Licensed ), MIN ( [BSC Available Beds], Licensed ) )
+									),
 								"INT_HIGH_VALUE_REVENUE", CALCULATE ( [Revenue], Staff[Is High Value Specialty] = "Yes" ),
 								"INT_HIGH_VALUE_CENSUS",
 									CALCULATE ( [Census], 'Booked Doctor'[Is High Value Specialty] = "Yes" )
@@ -5143,7 +5167,7 @@ table _Measures
 						)
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 13 facts #02b6bbc4]
+			VAR __Wrong = [_Guard 14 facts #797d2218]
 			RETURN IF ( __Wrong = "", __Value, """BSC Numerator"" can't be analysed by " & __Wrong )
 		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
@@ -5192,6 +5216,7 @@ table _Measures
 								"CUS_OP_WAIT", CALCULATE ( COUNT ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
 								"CUS_NON_MOH_SHARE", [Revenue by Episode Payer],
 								"CUS_ACQUISITION_COST", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ),
+								"CUS_REFERRAL_CONVERSION", [BSC External Referrals],
 								"INT_BED_OCCUPANCY", CALCULATE ( SUM ( 'Bed Occupancy'[Is Available] ), 'Bed Occupancy'[Is Inpatient Ward] = "Yes", 'Bed Occupancy'[Is Excluded Ward] = "No" ),
 								"INT_OP_UTILIZATION", [BSC Clinic Capacity],
 								"INT_ALOS", CALCULATE ( COUNT ( Admissions[LOS Days] ), Admissions[Is Countable] = "Yes", Admissions[Is LTC] = "No", USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] ) ),
@@ -5381,6 +5406,7 @@ table _Measures
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
 									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@CUS_REFERRAL_CONVERSION", [BSC Referral Conversion Rate],
 									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
 									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
 									"@INT_ALOS", [BSC ALOS (days)],
@@ -5456,6 +5482,7 @@ table _Measures
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
 										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"CUS_REFERRAL_CONVERSION", MAXX ( PeriodMeasures, [@CUS_REFERRAL_CONVERSION] ),
 										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
 										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
 										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
@@ -5613,6 +5640,7 @@ table _Measures
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
 									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@CUS_REFERRAL_CONVERSION", [BSC Referral Conversion Rate],
 									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
 									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
 									"@INT_ALOS", [BSC ALOS (days)],
@@ -5688,6 +5716,7 @@ table _Measures
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
 										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"CUS_REFERRAL_CONVERSION", MAXX ( PeriodMeasures, [@CUS_REFERRAL_CONVERSION] ),
 										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
 										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
 										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
@@ -5869,6 +5898,7 @@ table _Measures
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
 									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@CUS_REFERRAL_CONVERSION", [BSC Referral Conversion Rate],
 									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
 									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
 									"@INT_ALOS", [BSC ALOS (days)],
@@ -5948,6 +5978,7 @@ table _Measures
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
 										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"CUS_REFERRAL_CONVERSION", MAXX ( PeriodMeasures, [@CUS_REFERRAL_CONVERSION] ),
 										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
 										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
 										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
@@ -6212,6 +6243,7 @@ table _Measures
 									"@CUS_NON_MOH_SHARE", [_Unguarded BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [_Unguarded BSC Payer Volume],
 									"@CUS_ACQUISITION_COST", [_Unguarded BSC Patient Acquisition Cost],
+									"@CUS_REFERRAL_CONVERSION", [_Unguarded BSC Referral Conversion Rate],
 									"@INT_BED_OCCUPANCY", [_Unguarded BSC Bed Occupancy],
 									"@INT_OP_UTILIZATION", [_Unguarded BSC Clinic Utilization],
 									"@INT_ALOS", [_Unguarded BSC ALOS (days)],
@@ -6277,6 +6309,7 @@ table _Measures
 							"@CUS_NON_MOH_SHARE", [_Unguarded BSC Non-MoH Revenue Share],
 							"@CUS_PAYER_VOLUME", [_Unguarded BSC Payer Volume],
 							"@CUS_ACQUISITION_COST", [_Unguarded BSC Patient Acquisition Cost],
+							"@CUS_REFERRAL_CONVERSION", [_Unguarded BSC Referral Conversion Rate],
 							"@INT_BED_OCCUPANCY", [_Unguarded BSC Bed Occupancy],
 							"@INT_OP_UTILIZATION", [_Unguarded BSC Clinic Utilization],
 							"@INT_ALOS", [_Unguarded BSC ALOS (days)],
@@ -6356,6 +6389,7 @@ table _Measures
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
 										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"CUS_REFERRAL_CONVERSION", MAXX ( PeriodMeasures, [@CUS_REFERRAL_CONVERSION] ),
 										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
 										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
 										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
@@ -6567,6 +6601,7 @@ table _Measures
 									"@CUS_NON_MOH_SHARE", [BSC Non-MoH Revenue Share],
 									"@CUS_PAYER_VOLUME", [BSC Payer Volume],
 									"@CUS_ACQUISITION_COST", [BSC Patient Acquisition Cost],
+									"@CUS_REFERRAL_CONVERSION", [BSC Referral Conversion Rate],
 									"@INT_BED_OCCUPANCY", [BSC Bed Occupancy],
 									"@INT_OP_UTILIZATION", [BSC Clinic Utilization],
 									"@INT_ALOS", [BSC ALOS (days)],
@@ -6646,6 +6681,7 @@ table _Measures
 										"CUS_NON_MOH_SHARE", MAXX ( PeriodMeasures, [@CUS_NON_MOH_SHARE] ),
 										"CUS_PAYER_VOLUME", MAXX ( PeriodMeasures, [@CUS_PAYER_VOLUME] ),
 										"CUS_ACQUISITION_COST", MAXX ( PeriodMeasures, [@CUS_ACQUISITION_COST] ),
+										"CUS_REFERRAL_CONVERSION", MAXX ( PeriodMeasures, [@CUS_REFERRAL_CONVERSION] ),
 										"INT_BED_OCCUPANCY", MAXX ( PeriodMeasures, [@INT_BED_OCCUPANCY] ),
 										"INT_OP_UTILIZATION", MAXX ( PeriodMeasures, [@INT_OP_UTILIZATION] ),
 										"INT_ALOS", MAXX ( PeriodMeasures, [@INT_ALOS] ),
@@ -6849,8 +6885,8 @@ table _Measures
 
 		annotation hnh_guard_allow = BSC KPI
 
-	/// Filtered tables that cannot filter Admissions, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 13 facts #02b6bbc4' =
+	/// Filtered tables that cannot filter Admissions, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 14 facts #797d2218' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -13284,7 +13320,13 @@ table _Measures
 
 	/// The expression of BSC Activated Beds without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Activated Beds' =
-			DIVIDE ( [BSC Available Beds], [BSC Licensed Beds] )
+			VAR Activated =
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR Licensed = [BSC Licensed Beds]
+					RETURN IF ( NOT ISBLANK ( Licensed ), MIN ( [BSC Available Beds], Licensed ) )
+				)
+			RETURN DIVIDE ( Activated, [BSC Licensed Beds] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13584,6 +13626,13 @@ table _Measures
 	/// The expression of BSC Readmission 48h Critical without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Readmission 48h Critical' =
 			DIVIDE ( [ICU Readmissions 48h], CALCULATE ( [Discharges], Bed[Is Critical] = "Yes" ) )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Referral Conversion Rate without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Referral Conversion Rate' =
+			DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" ), [BSC External Referrals] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded

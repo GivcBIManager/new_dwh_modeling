@@ -113,6 +113,8 @@ PARTS = {
     "CUS_PAYER_VOLUME": ("CALCULATE ( [Census], Payer[Category] = \"Insurance\" )", "", "value"),
     "CUS_ACQUISITION_COST": ("[BSC GL Marketing]",
                              f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_NEW_PATIENT} )", "ratio"),
+    "CUS_REFERRAL_CONVERSION": ("CALCULATE ( [Admissions], Admissions[Is Referral Policy] = \"Yes\" )",
+                                "[BSC External Referrals]", "ratio"),
     "INT_BED_OCCUPANCY": (f"CALCULATE ( SUM ( 'Bed Occupancy'[Is Occupied] ), {_OCCUPANCY} )",
                           f"CALCULATE ( SUM ( 'Bed Occupancy'[Is Available] ), {_OCCUPANCY} )", "ratio"),
     "INT_OP_UTILIZATION": ("[OP Visits]", "[BSC Clinic Capacity]", "ratio"),
@@ -125,7 +127,14 @@ PARTS = {
         "CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( "
         "CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) )", "growth"),
     "INT_DOCTOR_UTILIZATION": ("[OP Visits]", "SUM ( 'Clinic Capacity'[BSC Capacity Slots] )", "ratio"),
-    "INT_ACTIVATED_BEDS": ("[BSC Available Beds]", "[BSC Licensed Beds]", "ratio"),
+    # available beds capped at each hospital's licensed beds
+    "INT_ACTIVATED_BEDS": (
+        "SUMX (\n"
+        "\tVALUES ( Branch[Branch Key] ),\n"
+        "\tVAR Licensed = [BSC Licensed Beds]\n"
+        "\tRETURN IF ( NOT ISBLANK ( Licensed ), MIN ( [BSC Available Beds], Licensed ) )\n"
+        ")",
+        "[BSC Licensed Beds]", "ratio"),
     "INT_HIGH_VALUE_REVENUE": ("CALCULATE ( [Revenue], Staff[Is High Value Specialty] = \"Yes\" )",
                                "[Revenue]", "ratio"),
     "INT_HIGH_VALUE_CENSUS": (

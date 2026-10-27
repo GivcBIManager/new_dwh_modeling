@@ -47,6 +47,7 @@ KPIS = [
     ("CUS_NON_MOH_SHARE", "BSC Non-MoH Revenue Share"),
     ("CUS_PAYER_VOLUME", "BSC Payer Volume"),
     ("CUS_ACQUISITION_COST", "BSC Patient Acquisition Cost"),
+    ("CUS_REFERRAL_CONVERSION", "BSC Referral Conversion Rate"),
     ("INT_BED_OCCUPANCY", "BSC Bed Occupancy"),
     ("INT_OP_UTILIZATION", "BSC Clinic Utilization"),
     ("INT_ALOS", "BSC ALOS (days)"),
