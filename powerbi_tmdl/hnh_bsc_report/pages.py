@@ -178,7 +178,9 @@ def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: 
     """The frame (this page's tab current, the slicers and the selection label in the filter bar), the HNH visual in
     the content box, and the native visuals over it: the Overview's card buttons, a pillar board's chart and button.
     On a board, a click on a hospital bar filters neither the HNH visual (Power BI would clear its KPI selection, so
-    the panel and the chart would empty) nor the selection label: NoFilter interactions."""
+    the panel and the chart would empty) nor the selection label: NoFilter interactions. A KPI selected in the HNH
+    visual filters the chart (DataFilter): a bar chart's default is to highlight, which keeps every KPI in the chart's
+    query, where `[BSC Actual]` is blank, so the chart would draw nothing."""
     comparison = mode == "comparison"
     visual = _hnh_visual(CONTENT, mode, payload, {"branch": [BRANCH_NAME]} if comparison else None,
                          [_hospitals()] if comparison else None)
@@ -193,7 +195,8 @@ def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: 
     elif mode == "board":
         chart = _by_hospital(BOARD_CHART, on_panel_chart())
         visuals += [chart, _drill_to_detail(pillar)]
-        interactions = [Interaction(chart, visual, "NoFilter"), Interaction(chart, label, "NoFilter")]
+        interactions = [Interaction(chart, visual, "NoFilter"), Interaction(chart, label, "NoFilter"),
+                        Interaction(visual, chart, "DataFilter")]
     page_filters = [Filter(col("BSC KPI", "Pillar"), "eq", [pillar])] if pillar else []
     return Page(name, display, visuals, filters=page_filters, interactions=interactions)
 

@@ -219,7 +219,8 @@ PILLAR_PAGE_NAMES = ["financial", "customer", "internal_process", "learning_grow
 
 def test_pillar_pages_write_no_filter_interactions(project):
     """page.json `visualInteractions` (page schema 2.1.0): from the by-hospital chart to the HNH visual and to the
-    selection label, NoFilter, by the generated visual names. Other pages write none."""
+    selection label, NoFilter; from the HNH visual to the chart, DataFilter; by the generated visual names. Other
+    pages write none."""
     for p in PAGES:
         pj = page_json(project, p.name)
         if p.name not in PILLAR_PAGE_NAMES:
@@ -229,7 +230,8 @@ def test_pillar_pages_write_no_filter_interactions(project):
                 if v.sample in ("barChart", "hnhVisual", "card")}
         assert pj["visualInteractions"] == [
             {"source": name["barChart"], "target": name["hnhVisual"], "type": "NoFilter"},
-            {"source": name["barChart"], "target": name["card"], "type": "NoFilter"}], p.display
+            {"source": name["barChart"], "target": name["card"], "type": "NoFilter"},
+            {"source": name["hnhVisual"], "target": name["barChart"], "type": "DataFilter"}], p.display
 
 
 def test_interactions_name_visuals_of_the_page(tmp_path):
@@ -252,14 +254,16 @@ def test_interactions_name_visuals_of_the_page(tmp_path):
 
 
 def test_project_converts_with_the_interactions(project, tmp_path):
-    """The Report Server package (pbir_to_pbix.py) carries the pillar pages' NoFilter interactions (legacy type 3)."""
+    """The Report Server package (pbir_to_pbix.py) carries the pillar pages' interactions (legacy NoFilter 3,
+    DataFilter 1)."""
     import pbir_to_pbix
     layout = pbir_to_pbix.write(project[1], tmp_path / "r.pbix")
     for s in layout["sections"]:
         got = json.loads(s["config"]).get("visualInteractions")
         if s["name"] in PILLAR_PAGE_NAMES:
-            assert [i["type"] for i in got] == [3, 3]
-            assert got == [{**i, "type": 3} for i in page_json(project, s["name"])["visualInteractions"]]
+            assert [i["type"] for i in got] == [3, 3, 1]
+            legacy = {"NoFilter": 3, "DataFilter": 1}
+            assert got == [{**i, "type": legacy[i["type"]]} for i in page_json(project, s["name"])["visualInteractions"]]
         else:
             assert got is None, s["name"]
 

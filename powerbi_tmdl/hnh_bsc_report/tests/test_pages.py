@@ -313,9 +313,18 @@ def test_pillar_page_chart_does_not_filter_the_board_or_the_label(display):
     (chart,) = [v for v in page.visuals if v.sample == "barChart"]
     (label,) = [v for v in page.visuals if v.sample == "card"]
     pairs = [(i.source, i.target, i.type) for i in page.interactions]
-    assert len(pairs) == 2
+    assert len(pairs) == 3
     assert pairs[0][0] is chart and pairs[0][1] is hnh(page) and pairs[0][2] == "NoFilter"
     assert pairs[1][0] is chart and pairs[1][1] is label and pairs[1][2] == "NoFilter"
+
+
+@pytest.mark.parametrize("display", list(PILLARS))
+def test_pillar_page_kpi_selection_filters_the_chart(display):
+    """A selected KPI must filter the by-hospital chart, not highlight it: `[BSC Actual]` is blank over several KPIs,
+    so under a bar chart's default (highlight) every bar is blank and the chart draws nothing."""
+    page = by_display(display)
+    (chart,) = [v for v in page.visuals if v.sample == "barChart"]
+    assert [(i.source, i.target, i.type) for i in page.interactions][2] == (hnh(page), chart, "DataFilter")
 
 
 def test_only_pillar_pages_set_interactions():
