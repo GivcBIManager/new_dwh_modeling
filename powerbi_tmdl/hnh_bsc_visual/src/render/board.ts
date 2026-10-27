@@ -1,4 +1,4 @@
-import type { KpiRow, PillarSummary, ViewModel } from "../model/types";
+import type { KpiRow, PillarSummary, StateKey, ViewModel } from "../model/types";
 import { DASH, deltaDirection, formatDelta, isNum } from "../model/format";
 import { lastDelta, monthLabels } from "../model/months";
 import { selectionKey } from "../interactions";
@@ -15,17 +15,23 @@ export function boardPillar(vm: ViewModel, wanted: string | null): PillarSummary
     return vm.pillars.find(p => p.name === wanted) ?? vm.pillars[0];
 }
 
-/** The board's rows: the pillar's first hospital, by objective order (objectives with the same order kept apart by
- * code), then primary first, then display order. */
+/** Board order of the states: At risk first, then Watch, On track, and the KPIs without a judged state. */
+const STATE_RANK: Record<StateKey, number> = { bad: 0, warn: 1, good: 2, notarget: 3, nodata: 4, parked: 5 };
+
+/** Objective order (objectives with the same order kept apart by code), then primary first, then display order. */
+const byObjective = (a: KpiRow, b: KpiRow) => (a.objectiveOrder - b.objectiveOrder) || a.objectiveCode.localeCompare(b.objectiveCode)
+    || (Number(b.primary) - Number(a.primary)) || (a.displayOrder - b.displayOrder);
+
+/** The board's rows: the pillar's first hospital, At risk first, then Watch, On track and the rest, each state in
+ * objective order. */
 export function boardRows(p: PillarSummary): KpiRow[] {
-    return [...firstRows(p)].sort((a, b) => (a.objectiveOrder - b.objectiveOrder) || a.objectiveCode.localeCompare(b.objectiveCode)
-        || (Number(b.primary) - Number(a.primary)) || (a.displayOrder - b.displayOrder));
+    return [...firstRows(p)].sort((a, b) => (STATE_RANK[a.state] - STATE_RANK[b.state]) || byObjective(a, b));
 }
 
 /** The pillar's objectives in objective order: [code, title]. */
 export function objectivesOf(p: PillarSummary): [string, string][] {
     const seen = new Map<string, string>();
-    for (const r of boardRows(p)) if (!seen.has(r.objectiveCode)) seen.set(r.objectiveCode, r.objectiveTitle || r.objectiveCode);
+    for (const r of [...firstRows(p)].sort(byObjective)) if (!seen.has(r.objectiveCode)) seen.set(r.objectiveCode, r.objectiveTitle || r.objectiveCode);
     return [...seen];
 }
 

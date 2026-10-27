@@ -218,7 +218,7 @@ describe("board", () => {
         expect(o2.querySelector(".bd-pscore")!.textContent).toBe(all.querySelector(".bd-pscore")!.textContent);
         expect(o2.querySelector(".bd-counts")!.textContent).toBe(all.querySelector(".bd-counts")!.textContent);
         expect(names(o2)).toEqual(["F3 name"]);
-        expect(names(all)).toEqual(["F1 name", "F2 name", "F3 name"]);
+        expect(names(all)).toEqual(["F1 name", "F3 name", "F2 name"]);
     });
     it("the picker lists All objectives and the pillar's objectives in objective order, the pick selected", () => {
         const rs = [...rows, row("F9", "Financial", 1, 0.3, { objectiveCode: "O0", objectiveTitle: "First", objectiveOrder: 0, payload: ok(90) })];
@@ -231,7 +231,21 @@ describe("board", () => {
         expect(head.querySelector("h2")!.textContent).toBe("KPI scorecard");
         expect(head.textContent).toContain("Select a KPI to update the panel · right-click › Drill through for full detail");
     });
-    it("orders rows by objective, primary first, then display order", () => {
+    it("orders rows At risk, Watch, On track, then the rest, whatever their objective", () => {
+        const rs = [
+            row("G", "Financial", 1, 0.3, { objectiveCode: "O0", objectiveOrder: 0, payload: ok(95) }),
+            row("N", "Financial", 1, 0.3, { objectiveCode: "O0", objectiveOrder: 0, payload: ok(0, "No target") }),
+            row("W", "Financial", 1, 0.3, { objectiveCode: "O1", objectiveOrder: 1, payload: ok(80, "Watch") }),
+            row("P", "Financial", 1, 0.3, { objectiveCode: "O0", objectiveOrder: 0, payload: ok(0, "Parked") }),
+            row("R", "Financial", 1, 0.3, { objectiveCode: "O2", objectiveOrder: 2, payload: ok(60, "At risk") }),
+            row("D", "Financial", 1, 0.3, { objectiveCode: "O0", objectiveOrder: 0, payload: ok(0, "No data yet") }),
+        ];
+        expect(names(draw(rs))).toEqual(["R name", "W name", "G name", "N name", "D name", "P name"]);
+        // the picker keeps objective order
+        const sel = draw(rs).querySelector<HTMLSelectElement>("select[data-objective-picker]")!;
+        expect([...sel.options].map(o => o.value)).toEqual(["", "O0", "O1", "O2"]);
+    });
+    it("within a state orders rows by objective, primary first, then display order", () => {
         const rs = [
             row("A", "Financial", 1, 0.3, { objectiveCode: "O2", objectiveOrder: 2, displayOrder: 1, kpiType: "Supporting", payload: ok(90) }),
             row("B", "Financial", 1, 0.3, { objectiveCode: "O2", objectiveOrder: 2, displayOrder: 5, payload: ok(90) }),
@@ -274,7 +288,8 @@ describe("board", () => {
         const rs = [row("L1", "Financial", 1, 0.3, { direction: "lower", payload: payload({ actual: 0.3, target: 0.4, variance: 0.25, score: 100, state: "On track", weight: 1, trend: [0.35, 0.3], targetTrend: [0.4, 0.4] }) }),
             row("L2", "Financial", 1, 0.3, { direction: "on_target", displayOrder: 2, payload: payload({ actual: 0.3, target: 0.4, variance: -0.25, score: 70, state: "Watch", weight: 1 }) })];
         const b = draw(rs);
-        const [r1, r2] = [...b.querySelectorAll(".bd-row")];
+        // the Watch row (L2) goes above the On track one (L1)
+        const [r2, r1] = [...b.querySelectorAll(".bd-row")];
         expect(r1.querySelector(".c-target")!.textContent).toBe("≤ 40.0%");
         expect(r1.querySelector(".c-var")!.textContent).toBe("+25.0%");
         expect(r1.querySelector(".c-var")!.classList.contains("good")).toBe(true);
