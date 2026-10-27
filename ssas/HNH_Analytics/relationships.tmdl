@@ -929,6 +929,10 @@ relationship revenue_adjustments_patient_key
 	fromColumn: 'Revenue Adjustments'.'Patient Key'
 	toColumn: Patient.'Patient Key'
 
+relationship revenue_adjustments_staff_key
+	fromColumn: 'Revenue Adjustments'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
 relationship staff_productivity_branch_key
 	fromColumn: 'Staff Productivity'.'Branch Key'
 	toColumn: Branch.'Branch Key'

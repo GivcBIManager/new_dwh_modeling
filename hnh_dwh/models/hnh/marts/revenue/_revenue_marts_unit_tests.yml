@@ -141,13 +141,13 @@ unit_tests:
         rows: |
           select toUInt8(1) as branch_key, toNullable(inv) as invoice_doc_no, toInt64(ep) as episode_key,
                  toInt64(21) as patient_key, toInt64(31) as billed_payer_key, toInt8(1) as care_type_key,
-                 'Live' as charge_status, toFloat64(net) as net_amount
-          from values('inv String, ep Int64, net Float64',
-              ('CRD100', 11, 100), ('CRD100', 11, 100), ('CRD100', 12, 50), ('CRD200', 41, 30), ('CRD200', 40, 30))
+                 toInt64(st) as staff_key, 'Live' as charge_status, toFloat64(net) as net_amount
+          from values('inv String, ep Int64, st Int64, net Float64',
+              ('CRD100', 11, 51, 100), ('CRD100', 11, 51, 100), ('CRD100', 12, 52, 50), ('CRD200', 41, 61, 30), ('CRD200', 40, 60, 30))
     expect:
       rows:
-        - {doc_id: 2, base_doc_no: CRD100, adjustment_amount: -30, base_invoice_net_amount: 250, episode_key: 11, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
-        - {doc_id: 5, base_doc_no: CRD200, adjustment_amount: -20, base_invoice_net_amount: 60, episode_key: 40, patient_key: 21, billed_payer_key: 31, care_type_key: 1}
+        - {doc_id: 2, base_doc_no: CRD100, adjustment_amount: -30, base_invoice_net_amount: 250, episode_key: 11, patient_key: 21, billed_payer_key: 31, care_type_key: 1, staff_key: 51}
+        - {doc_id: 5, base_doc_no: CRD200, adjustment_amount: -20, base_invoice_net_amount: 60, episode_key: 40, patient_key: 21, billed_payer_key: 31, care_type_key: 1, staff_key: 60}
 
   - name: fact_preauth_line_counts_delivery_after_request_only
     description: >

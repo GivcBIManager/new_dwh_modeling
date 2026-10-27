@@ -19,18 +19,19 @@ invoice_docs as (
 ),
 
 base_lines as (
-    select branch_key, invoice_doc_no, episode_key, patient_key, billed_payer_key, care_type_key,
+    select branch_key, invoice_doc_no, episode_key, patient_key, billed_payer_key, care_type_key, staff_key,
            count() as n, sum(net_amount) as net
     from {{ ref('fact_charge_line') }}
     where charge_status = 'Live' and invoice_doc_no in (select base_doc_no from credit_docs)
-    group by branch_key, invoice_doc_no, episode_key, patient_key, billed_payer_key, care_type_key
+    group by branch_key, invoice_doc_no, episode_key, patient_key, billed_payer_key, care_type_key, staff_key
 ),
 
 base_picked as (
-    -- The most frequent key combination on the invoice (ties go to the lowest episode, patient, payer, care type keys).
+    -- The most frequent key combination on the invoice (ties go to the lowest episode, patient, payer, care type, staff keys).
     select
         branch_key, invoice_doc_no,
-        argMax(tuple(episode_key, patient_key, billed_payer_key, care_type_key), tuple(n, -episode_key, -patient_key, -billed_payer_key, -care_type_key)) as keys,
+        argMax(tuple(episode_key, patient_key, billed_payer_key, care_type_key, staff_key),
+               tuple(n, -episode_key, -patient_key, -billed_payer_key, -care_type_key, -staff_key)) as keys,
         sum(net) as base_invoice_net_amount
     from base_lines
     group by branch_key, invoice_doc_no
@@ -43,6 +44,7 @@ base as (
         tupleElement(keys, 2) as patient_key,
         tupleElement(keys, 3) as billed_payer_key,
         tupleElement(keys, 4) as care_type_key,
+        tupleElement(keys, 5) as staff_key,
         base_invoice_net_amount
     from base_picked
 )
@@ -55,6 +57,7 @@ select
     ifNull(b.patient_key, toInt64(-1))                   as patient_key,
     ifNull(b.billed_payer_key, toInt64(-1))              as billed_payer_key,
     toInt8(ifNull(b.care_type_key, -1))                  as care_type_key,
+    ifNull(b.staff_key, toInt64(-1))                     as staff_key,
     c.doc_id                                             as doc_id,
     c.doc_no                                             as doc_no,
     c.base_doc_no                                        as base_doc_no,

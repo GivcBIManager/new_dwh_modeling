@@ -49,7 +49,8 @@ models:
   - name: fact_revenue_adjustment
     description: >
       Post-invoice discounts (CREDITAR documents numbered <charge invoice>D), dated on the credit date.
-      Keys are -1 when the base invoice has no live charge line in the window.
+      Keys are -1 when the base invoice has no live charge line in the window. staff_key is the doctor of the
+      base invoice's charge lines, so the discount follows its invoice to the doctor and specialty.
     columns:
       - name: adjustment_key
         tests: [unique, not_null]
@@ -68,6 +69,9 @@ models:
       - name: care_type_key
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
   - name: fact_cash_receipt
     description: >
       Oasis patient receipts: account CASHACC, none, or the patient's own account. Insurer and contract
