@@ -4354,41 +4354,39 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Patient Acquisition Cost"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 61: countable admissions from OP or ER under a referral policy / census under a referral policy (arrived
-	/// outpatient visits + ER visits).
+	/// KPI 61: countable admissions from OP or ER under a referral policy / OP and ER episodes under a referral policy.
 	measure 'BSC Referral Conversion Rate' =
 			VAR __Value = ( -- measure body
 				DIVIDE (
 					CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
-					CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" )
+					CALCULATE ( [Episodes], Episodes[Is Referral Policy] = "Yes", 'Care Type'[Care Type] IN { "OP", "ER" } )
 				)
 			) -- end of measure body
-			VAR __Wrong = [_Guard Admissions + Encounters]
+			VAR __Wrong = [_Guard Admissions + Episodes]
 			RETURN IF ( __Wrong = "", __Value, """BSC Referral Conversion Rate"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 61, outpatient part: countable admissions from OP under a referral policy / arrived outpatient visits under a
-	/// referral policy.
+	/// KPI 61, outpatient part: countable admissions from OP under a referral policy / OP episodes under a referral policy.
 	measure 'BSC OP Referral Conversion Rate' =
 			VAR __Value = ( -- measure body
 				DIVIDE (
 					CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] = "OP" ),
-					CALCULATE ( [OP Visits], Encounters[Is Referral Policy] = "Yes" )
+					CALCULATE ( [Episodes], Episodes[Is Referral Policy] = "Yes", 'Care Type'[Care Type] = "OP" )
 				)
 			) -- end of measure body
-			VAR __Wrong = [_Guard Admissions + Encounters]
+			VAR __Wrong = [_Guard Admissions + Episodes]
 			RETURN IF ( __Wrong = "", __Value, """BSC OP Referral Conversion Rate"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 61, ER part: countable admissions from ER under a referral policy / ER visits under a referral policy.
+	/// KPI 61, ER part: countable admissions from ER under a referral policy / ER episodes under a referral policy.
 	measure 'BSC ER Referral Conversion Rate' =
 			VAR __Value = ( -- measure body
 				DIVIDE (
 					CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] = "ER" ),
-					CALCULATE ( [ER Visits], Encounters[Is Referral Policy] = "Yes" )
+					CALCULATE ( [Episodes], Episodes[Is Referral Policy] = "Yes", 'Care Type'[Care Type] = "ER" )
 				)
 			) -- end of measure body
-			VAR __Wrong = [_Guard Admissions + Encounters]
+			VAR __Wrong = [_Guard Admissions + Episodes]
 			RETURN IF ( __Wrong = "", __Value, """BSC ER Referral Conversion Rate"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
@@ -4424,30 +4422,30 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC ALOS (days)"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 24: countable admissions from OP or ER / census (arrived outpatient visits + ER visits).
+	/// KPI 24: countable admissions from OP or ER / OP and ER episodes (as in the Episodes measure).
 	measure 'BSC OP to IP Conversion' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ), [Census] )
+				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ), CALCULATE ( [Episodes], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Admissions + Encounters]
+			VAR __Wrong = [_Guard Admissions + Episodes]
 			RETURN IF ( __Wrong = "", __Value, """BSC OP to IP Conversion"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 24, outpatient part: countable admissions from OP / arrived outpatient visits.
+	/// KPI 24, outpatient part: countable admissions from OP / OP episodes.
 	measure 'BSC OP Visit to IP Conversion' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] = "OP" ), [OP Visits] )
+				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] = "OP" ), CALCULATE ( [Episodes], 'Care Type'[Care Type] = "OP" ) )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Admissions + Encounters]
+			VAR __Wrong = [_Guard Admissions + Episodes]
 			RETURN IF ( __Wrong = "", __Value, """BSC OP Visit to IP Conversion"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 24, ER part: countable admissions from ER / ER visits.
+	/// KPI 24, ER part: countable admissions from ER / ER episodes.
 	measure 'BSC ER Visit to IP Conversion' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] = "ER" ), [ER Visits] )
+				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] = "ER" ), CALCULATE ( [Episodes], 'Care Type'[Care Type] = "ER" ) )
 			) -- end of measure body
-			VAR __Wrong = [_Guard Admissions + Encounters]
+			VAR __Wrong = [_Guard Admissions + Episodes]
 			RETURN IF ( __Wrong = "", __Value, """BSC ER Visit to IP Conversion"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
@@ -4859,10 +4857,10 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Target Clinic Utilization"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Targets
-	/// Target of KPI 24: target IP census / target OP and ER census.
+	/// Target of KPI 24: target IP episodes / target OP and ER episodes.
 	measure 'BSC Target OP to IP' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
+				DIVIDE ( CALCULATE ( [Target Episodes], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Episodes], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Targets]
 			RETURN IF ( __Wrong = "", __Value, """BSC Target OP to IP"" can't be analysed by " & __Wrong )
@@ -5263,11 +5261,11 @@ table _Measures
 								"CUS_OP_WAIT", CALCULATE ( COUNT ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
 								"CUS_NON_MOH_SHARE", [Revenue by Episode Payer],
 								"CUS_ACQUISITION_COST", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ),
-								"CUS_REFERRAL_CONVERSION", CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" ),
+								"CUS_REFERRAL_CONVERSION", CALCULATE ( [Episodes], Episodes[Is Referral Policy] = "Yes", 'Care Type'[Care Type] IN { "OP", "ER" } ),
 								"INT_BED_OCCUPANCY", CALCULATE ( SUM ( 'Bed Occupancy'[Is Available] ), 'Bed Occupancy'[Is Inpatient Ward] = "Yes", 'Bed Occupancy'[Is Excluded Ward] = "No" ),
 								"INT_OP_UTILIZATION", [BSC Clinic Capacity],
 								"INT_ALOS", CALCULATE ( COUNT ( Admissions[LOS Days] ), Admissions[Is Countable] = "Yes", Admissions[Is LTC] = "No", USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] ) ),
-								"INT_OP_TO_IP", [Census],
+								"INT_OP_TO_IP", CALCULATE ( [Episodes], 'Care Type'[Care Type] IN { "OP", "ER" } ),
 								"INT_ER_GROWTH", CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) ),
 								"INT_DOCTOR_UTILIZATION", SUM ( 'Clinic Capacity'[BSC Capacity Slots] ),
 								"INT_ACTIVATED_BEDS", [BSC Licensed Beds],
@@ -8242,6 +8240,97 @@ table _Measures
 				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
 				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
 				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Admissions, Episodes, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Admissions + Episodes' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
 				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
 				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
 				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
@@ -13618,7 +13707,7 @@ table _Measures
 
 	/// The expression of BSC OP to IP Conversion without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC OP to IP Conversion' =
-			DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ), [Census] )
+			DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ), CALCULATE ( [Episodes], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13699,7 +13788,7 @@ table _Measures
 	measure '_Unguarded BSC Referral Conversion Rate' =
 			DIVIDE (
 				CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
-				CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" )
+				CALCULATE ( [Episodes], Episodes[Is Referral Policy] = "Yes", 'Care Type'[Care Type] IN { "OP", "ER" } )
 			)
 		formatString: General
 		isHidden
@@ -13870,7 +13959,7 @@ table _Measures
 
 	/// The expression of BSC Target OP to IP without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Target OP to IP' =
-			DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
+			DIVIDE ( CALCULATE ( [Target Episodes], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Episodes], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
