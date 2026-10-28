@@ -346,7 +346,7 @@ describe("board", () => {
         expect(bars.length).toBe(3);
         expect(bars.map(r => r.getAttribute("fill") === "#F5B865")).toEqual([true, false, true]);
         expect(main.querySelector("svg.bd-bars path.bd-tline")!.getAttribute("stroke-dasharray")).not.toBeNull();
-        expect([...main.querySelectorAll(".bd-months > span")].map(m => m.textContent)).toEqual(["J", "A", "S"]);
+        expect([...main.querySelectorAll(".bd-months > span")].map(m => m.textContent)).toEqual(["Jul", "Aug", "Sep"]);
     });
     it("the panel describes a KPI without a score by its chip and reason, with – values and no bars", () => {
         const rs = [row("N1", "Financial", 1, 0.3, { valueSource: "manual", payload: payload({ state: "" }) })];
@@ -377,6 +377,11 @@ describe("board", () => {
         const d = s.querySelector("path.bd-tline")!.getAttribute("d")!;
         expect(d.startsWith("M")).toBe(true);
         expect(s.outerHTML).not.toContain("NaN");
+        // one value label per bar, above it
+        const labels = [...s.querySelectorAll("text.bd-bar-label")];
+        expect(labels.map(l => l.textContent)).toEqual(["50.0%", "30.0%", "60.0%"]);
+        labels.forEach((l, i) => expect(Number(l.getAttribute("y"))).toBeLessThan(Number(bars[i].getAttribute("y"))));
+        expect(Math.min(...labels.map(l => Number(l.getAttribute("y"))))).toBeGreaterThan(12);
         for (const r of bars) {
             const y = Number(r.getAttribute("y")), h = Number(r.getAttribute("height"));
             expect(y).toBeGreaterThanOrEqual(0);

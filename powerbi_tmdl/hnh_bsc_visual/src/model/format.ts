@@ -26,6 +26,25 @@ export function formatValue(v: number | null, fmt: string): string {
     }
 }
 
+/** A short label for a chart value, without the unit words: "84.6%", "7.4M", "565K", "117.1", "24". */
+export function formatShort(v: number | null, fmt: string): string {
+    if (v === null || v === undefined || !Number.isFinite(v)) return DASH;
+    const a = Math.abs(v);
+    switch (fmt) {
+        case "pct":
+            return `${fixed(v * 100, 1)}%`;
+        case "days":
+            return fixed(v, 1);
+        case "mins":
+            return fixed(v, 0);
+        default:
+            if (a >= 1e9) return `${fixed(v / 1e9, 2)}B`;
+            if (a >= 1e6) return `${fixed(v / 1e6, 1)}M`;
+            if (a >= 1e4) return `${fixed(v / 1e3, 0)}K`;
+            return fmt === "sar" || a >= 1000 ? fixed(v, 0) : fixed(v, 2);
+    }
+}
+
 export function formatVariance(v: number | null): string {
     if (v === null || v === undefined || !Number.isFinite(v)) return DASH;
     const text = fixed(Math.abs(v) * 100, 1);

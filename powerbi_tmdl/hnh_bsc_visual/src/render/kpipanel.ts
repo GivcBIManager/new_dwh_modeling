@@ -7,7 +7,7 @@ import { monthlyBars } from "./bars";
 import { hasValue } from "./scorecard";
 
 /** Bars size inside the panel's 432 px at the report's 1860 x 870 box (the SVG scales down in a smaller one). */
-const BARS_W = 606, BARS_H = 126;
+const BARS_W = 606, BARS_H = 150;
 export const EMPTY_PANEL = "Select a KPI in the table to see its monthly trend and hospitals";
 
 
@@ -31,7 +31,7 @@ function trend(row: KpiRow, months: string[], colourVar: string): HTMLElement {
             el("span", { class: "bd-key" }, [el("i", { class: "dash" }), "Target"]),
         ]),
         el("div", { class: "bd-chart" }, [monthlyBars(row, BARS_W, BARS_H, colourVar)]),
-        names.length === n ? el("div", { class: "bd-months", "aria-hidden": "true" }, names.map(m => el("span", {}, [m.charAt(0)]))) : null,
+        names.length === n ? el("div", { class: "bd-months", "aria-hidden": "true" }, names.map(m => el("span", {}, [m]))) : null,
     ]);
 }
 

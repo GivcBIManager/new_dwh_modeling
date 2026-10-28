@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { deltaDirection, formatDelta, formatValue, formatVariance } from "../src/model/format";
+import { deltaDirection, formatDelta, formatShort, formatValue, formatVariance } from "../src/model/format";
 
 describe("formatValue", () => {
     it("formats each value format", () => {
@@ -17,6 +17,21 @@ describe("formatValue", () => {
     });
     it("shows a dash for a missing value", () => {
         expect(formatValue(null, "pct")).toBe("–");
+    });
+});
+
+describe("formatShort", () => {
+    it("labels chart values without unit words", () => {
+        expect(formatShort(0.8456, "pct")).toBe("84.6%");
+        expect(formatShort(7_400_000, "sar")).toBe("7.4M");
+        expect(formatShort(1_148_600_000, "sar")).toBe("1.15B");
+        expect(formatShort(565_169, "sar")).toBe("565K");
+        expect(formatShort(1_800, "sar")).toBe("1,800");
+        expect(formatShort(117.08, "days")).toBe("117.1");
+        expect(formatShort(24.4, "mins")).toBe("24");
+        expect(formatShort(5.774, "num")).toBe("5.77");
+        expect(formatShort(66_012, "num")).toBe("66K");
+        expect(formatShort(null, "pct")).toBe("–");
     });
 });
 

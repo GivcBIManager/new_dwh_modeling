@@ -1,22 +1,25 @@
 import type { KpiRow } from "../model/types";
 import { met } from "../model/bands";
-import { isNum } from "../model/format";
+import { formatShort, isNum } from "../model/format";
 import { svg } from "./dom";
 
 /** The design's missed-month colour (the Watch tint, token --missed-bar). */
 export const MISSED_FILL = "#F5B865";
-const TOP = 6;
+/** Room above the tallest bar (and below the lowest) for its value label. */
+const TOP = 24, BOTTOM_LABEL = 20, LABEL_GAP = 6;
 
 /** "Monthly trend vs target": one bar per month of the actual trend, from zero, in the pillar colour when that month
  * met its target (`targetTrend`) by the KPI's own scoring rule and in the Watch tint when it missed; a month without a
- * target is grey. The monthly targets are a dashed step line. Months without an actual leave their slot empty. */
+ * target is grey. Each bar carries its value (`formatShort`) above it, or below it when negative. The monthly targets
+ * are a dashed step line. Months without an actual leave their slot empty. */
 export function monthlyBars(row: KpiRow, width: number, height: number, colourVar: string): SVGSVGElement {
     const n = row.trend.length;
     const values = [...row.trend, ...row.targetTrend.slice(0, n)].filter(isNum);
     let lo = Math.min(0, ...values), hi = Math.max(0, ...values);
     if (hi === lo) hi = lo + 1;
     hi += (hi - lo) * 0.06;
-    const Y = (v: number) => TOP + ((hi - v) / (hi - lo)) * (height - TOP);
+    const bottom = lo < 0 ? BOTTOM_LABEL : 0;
+    const Y = (v: number) => TOP + ((hi - v) / (hi - lo)) * (height - TOP - bottom);
     const f = (v: number) => v.toFixed(1);
     const slot = n > 0 ? width / n : width;
     const barW = slot * 0.62;
@@ -33,6 +36,12 @@ export function monthlyBars(row: KpiRow, width: number, height: number, colourVa
         const attrs = { x: f(i * slot + (slot - barW) / 2), y: f(y), width: f(barW), height: f(h), rx: 3 };
         if (ok === false) s.appendChild(svg("rect", { ...attrs, class: "bd-bar missed", fill: MISSED_FILL }));
         else s.appendChild(svg("rect", { ...attrs, class: ok ? "bd-bar met" : "bd-bar nt", style: `fill:${ok ? colourVar : "var(--nodata)"}` }));
+        const label = svg("text", {
+            x: f(i * slot + slot / 2), y: f(a < 0 ? y + h + LABEL_GAP : y - LABEL_GAP),
+            "text-anchor": "middle", "dominant-baseline": a < 0 ? "hanging" : "auto", class: "bd-bar-label",
+        });
+        label.textContent = formatShort(a, row.valueFormat);
+        s.appendChild(label);
     });
 
     let d = "";
