@@ -2290,6 +2290,8 @@ models:
         data_type: "Nullable(Decimal(18, 4))"
       - name: gross_pay
         data_type: "Nullable(Decimal(18, 4))"
+      - name: oasis_payment_amount
+        data_type: "Nullable(Decimal(18, 4))"
   - name: ssas_fact_preauth_line
     config:
       contract: {enforced: true}

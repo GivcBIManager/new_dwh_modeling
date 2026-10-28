@@ -99,6 +99,14 @@ table Payroll
 		summarizeBy: none
 		sourceColumn: gross_pay
 
+	column 'Oasis Payment Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: oasis_payment_amount
+
 	partition 'Payroll template' = m
 		source =
 				let

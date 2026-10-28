@@ -23,3 +23,5 @@ models:
     columns:
       - name: open_run_date
         description: Latest calculation date of the staff for open (status P) lines; null for closed lines.
+      - name: is_payroll_payment
+        description: 1 for a line paid through the payroll (pay in payroll Y, payment method C or R); 0 for QuickPay and off-payroll lines.

@@ -6,6 +6,8 @@ select
     upper(trimBoth(ifNull(trx_type, '')))       as trx_type,
     upper(trimBoth(ifNull(payable_type, '')))   as payable_type,
     {{ hnh_code('status') }}                    as status,
+    upper(trimBoth(ifNull(pay_in_payroll, ''))) as pay_in_payroll,
+    upper(trimBoth(ifNull(payment_method, ''))) as payment_method,
     toFloat64(ifNull(amount, 0))                as amount,
     toDate(transaction_date)                    as transaction_date
 from {{ hnh_oasis_source('account_transactions') }} final

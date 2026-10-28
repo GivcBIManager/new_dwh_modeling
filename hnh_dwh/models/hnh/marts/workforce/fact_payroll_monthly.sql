@@ -8,6 +8,8 @@ oasis_lines as (
     -- closed and open Oasis payroll, open lines reduced to each staff's latest run (spec 12.2, int_oasis_payroll_line)
     select t.branch_id as branch_key, 'oasis' as source, t.staff_id as staff_id, cast(null as Nullable(Int64)) as person_id,
            t.payroll_month as payroll_month, ifNull(m.pay_category, 'Unmapped') as pay_category, t.amount as raw_amount,
+           -- the payroll team's payment rule: a positive line paid through the payroll; a negative line is a deduction
+           if(t.payable_type = 'P' and t.is_payroll_payment = 1 and t.amount > 0, t.amount, 0) as oasis_payment,
            toUInt8(k.first_fusion_month is not null and t.payroll_month >= k.first_fusion_month) as is_parallel_run,
            t.is_closed_payroll as is_closed_payroll, t.open_run_date as open_run_date
     from {{ ref('int_oasis_payroll_line') }} as t
@@ -58,7 +60,7 @@ fusion_results as (
 fusion_lines as (
     select ifNull(b.branch_key, toUInt8(0)) as branch_key, 'fusion' as source, cast(null as Nullable(String)) as staff_id, r.person_id as person_id,
            toInt32(toYYYYMM(assumeNotNull(r.effective_date))) as payroll_month, ifNull(m.pay_category, 'Unmapped') as pay_category,
-           assumeNotNull(r.result_value) as raw_amount, toUInt8(0) as is_parallel_run,
+           assumeNotNull(r.result_value) as raw_amount, toFloat64(0) as oasis_payment, toUInt8(0) as is_parallel_run,
            toUInt8(1) as is_closed_payroll, cast(null as Nullable(Date)) as open_run_date  -- completed actions only
     from fusion_results as r
     inner join (select input_value_id from {{ ref('stg_fusion__payroll_input_values') }} where input_value_base_name = 'Pay Value') as i
@@ -85,6 +87,7 @@ aggregated as (
            l.payroll_month as payroll_month, l.pay_category as pay_category, l.is_parallel_run as is_parallel_run,
            l.is_closed_payroll as is_closed_payroll, max(l.open_run_date) as open_run_date,
            sum(if(l.source = 'fusion', l.raw_amount * c.fusion_sign, l.raw_amount)) as amount,
+           sum(l.oasis_payment) as oasis_payment_amount,
            any(c.pay_category_key) as pay_category_key, any(c.is_cost) as is_cost, any(c.is_gross_pay) as is_gross_pay
     from lines as l
     inner join categories as c on c.pay_category = l.pay_category
@@ -136,6 +139,7 @@ select
     r.amount                                                            as amount,
     if(r.is_parallel_run = 0 and r.is_cost = 1, r.amount, 0)            as cost_amount,
     if(r.is_parallel_run = 0 and r.is_gross_pay = 1, r.amount, 0)       as gross_pay,
+    if(r.is_parallel_run = 0, r.oasis_payment_amount, 0)                as oasis_payment_amount,
     now()                                                               as _loaded_at
 from resolved as r
 left join (select employee_key, month_end, hr_department_key from {{ ref('fact_headcount_monthly') }}) as h

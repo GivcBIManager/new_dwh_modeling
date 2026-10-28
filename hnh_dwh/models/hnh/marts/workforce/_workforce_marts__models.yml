@@ -136,6 +136,12 @@ models:
               values: ['Closed', 'Open', 'Partly closed']
       - name: open_run_date
         description: Latest Oasis calculation date of the payee's open lines in the month; null when the payee is closed.
+      - name: oasis_payment_amount
+        description: >
+          Oasis pay before deductions, by the payroll team's salary report: the positive lines paid through the payroll
+          (payable type P, pay in payroll Y, payment method C or R). Every negative Oasis line is a deduction, on any pay
+          code (a recovery or reversal on an earnings code too), and QuickPay lines are not payroll payments. 0 for Fusion
+          rows and parallel-run rows; amount and gross_pay still net the negative lines.
   - name: fact_absence
     columns:
       - name: absence_key

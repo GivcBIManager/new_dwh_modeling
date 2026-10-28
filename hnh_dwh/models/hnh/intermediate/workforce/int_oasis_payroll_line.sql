@@ -9,13 +9,16 @@
 -- Closed lines are always kept. Open lines are kept when the staff is not closed and its latest calculation is on or after the
 -- branch's last full run (else the staff is a leftover of a trial run), and only from the latest calculation date or from
 -- dates that are not calculation dates (one-off entries: loans, bank charges, adjustments).
+-- is_payroll_payment marks lines paid through the payroll (pay in payroll Y, payment method C or R), as the payroll team's
+-- salary report counts them; QuickPay and other off-payroll lines are 0.
 
 {% set first_month = "toInt32(toYYYYMM(toDate('" ~ var('hnh_history_start_date') ~ "')))" %}
 
 with raw as (
     select branch_id, account_transaction_no, staff_id, ifNull(staff_id, '') as staff_join_id, payroll_month, trx_type,
            payable_type, status, amount, ifNull(transaction_date, toDate('1970-01-01')) as txn_date,
-           toUInt8(trx_type = 'BASIC' and amount > 0) as is_basic
+           toUInt8(trx_type = 'BASIC' and amount > 0) as is_basic,
+           toUInt8(pay_in_payroll = 'Y' and payment_method in ('C', 'R')) as is_payroll_payment
     from {{ ref('stg_oasis__payroll_transactions') }}
     where status in ('C', 'P') and payroll_month >= {{ first_month }} and payroll_month % 100 between 1 and 12
 ),
@@ -50,6 +53,7 @@ select
     r.trx_type                                                          as trx_type,
     r.payable_type                                                      as payable_type,
     r.amount                                                            as amount,
+    r.is_payroll_payment                                                as is_payroll_payment,
     r.txn_date                                                          as transaction_date,
     toUInt8(r.status = 'C')                                             as is_closed_payroll,
     if(r.status = 'P', toNullable(s.last_calc_date), cast(null as Nullable(Date))) as open_run_date
