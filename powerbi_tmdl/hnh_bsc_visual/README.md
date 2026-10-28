@@ -14,7 +14,7 @@
 npm install
 npm test                 # Vitest, jsdom
 npm run lint
-npx pbiviz package       # writes dist/hnhBscVisual431F658EE9D44EA3BD5E1BEA5FAF899D.1.1.4.0.pbiviz (dist is not committed)
+npx pbiviz package       # writes dist/hnhBscVisual431F658EE9D44EA3BD5E1BEA5FAF899D.1.1.5.0.pbiviz (dist is not committed)
 ```
 
 Screenshots without Power BI: `powershell -ExecutionPolicy Bypass -File dev\screenshot.ps1` bundles `dev/harness.ts` (the real `Visual` class, a fake host and 70 synthetic KPIs; for the comparison 8 hospitals over 14 objectives) and has headless Edge write one PNG per view into `dev/out/` (git-ignored), at the box the report gives the visual: 1860 × 870 for `overview`, `overview-scores`, `board` (Financial), `board-select` (Financial with a KPI selected), `board-ip` (Internal Process, 26 KPIs), `owner` (and `owner-ontarget-all`, `owner-owned-pick`) and `comparison` (and `comparison-pillar`, `comparison-objective`); 1920 × 996 for `detail`. It then prints the geometry the report's native visuals rely on (the four pillar cards, the board's chart and button slots, the detail panels). The harness takes `?mode=`, and on the board `?pillar=<name>` (the page filter), `?select=<KPI code>` (the host selection the panel shows) and `?objective=<code>` (the objective picker); in detail `?kpi=<KPI code>`.

@@ -997,8 +997,9 @@ def test_guide_copy_names_the_overview():
 def test_definitions_page_copy():
     page = by_display(DEFS)
     score = texts_at(page, 30, 258)
-    assert score[0] == "KPI score (0 to 100)" and len(score) == 5
-    assert score[2] == "• Score = score base + score slope × variance, rounded and kept between 0 and 100."
+    assert score[0] == "KPI score" and len(score) == 5
+    assert score[2] == ("• Score = score base + score slope × variance, rounded; not capped, so it can fall below 0 "
+                        "or rise above 100.")
     assert score[4] == "• Status: On track from 85, Watch from 70, At risk below 70."
     pillar = texts_at(page, 658, 258)
     assert pillar[0] == "Pillar and overall scores" and len(pillar) == 6

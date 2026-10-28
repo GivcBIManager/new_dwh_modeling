@@ -22,12 +22,13 @@ const ceil10 = (v: number) => Math.ceil(v / 10) * 10;
 const FONT = 16.5;
 const LABEL_GAP = 21;
 
-/** The y range: from the lower ten under the lowest value (or ten under the target), never below 0, to 100 or the
- * upper ten above the highest value. */
+/** The y range: from the lower ten under the lowest value (or ten under the target), not below 0 unless a score is,
+ * to 100 or the upper ten above the highest value. Scores are not capped, so either end can pass 0 or 100. */
 function yRange(values: number[], target: number): { lo: number; hi: number } {
     const t = isNum(target) ? [target - 10] : [];
     const low = [...values, ...t];
-    const lo = low.length ? Math.max(0, floor10(Math.min(...low))) : 0;
+    const floor = values.length ? Math.min(0, ...values) : 0;
+    const lo = low.length ? Math.max(floor10(floor), floor10(Math.min(...low))) : 0;
     let hi = Math.max(100, ...(values.length ? [ceil10(Math.max(...values))] : []), ...(isNum(target) ? [ceil10(target)] : []));
     if (hi <= lo) hi = lo + 10;
     return { lo, hi };

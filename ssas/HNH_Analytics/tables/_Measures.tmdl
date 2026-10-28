@@ -5643,7 +5643,7 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
-	/// KPI score 0-100: score base + score slope x variance in points, from the KPI's thresholds.
+	/// KPI score: score base + score slope x variance in points, from the KPI's thresholds; not capped (it can fall below 0 or rise above 100).
 	measure 'BSC Score' =
 			VAR __Value = ( -- measure body
 				-- BSC Actual and BSC Target inlined: one table of the KPI measures for every period this measure needs
@@ -5871,7 +5871,7 @@ table _Measures
 				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
 				VAR ScoreBase = SELECTEDVALUE ( 'BSC KPI'[Score Base] )
 				VAR ScoreSlope = SELECTEDVALUE ( 'BSC KPI'[Score Slope] )
-				VAR S = IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+				VAR S = IF ( NOT ISBLANK ( V ), ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) )
 				RETURN S
 			) -- end of measure body
 			VAR __Wrong = [_Guard 19 facts #e451b8cd]
@@ -6134,7 +6134,7 @@ table _Measures
 				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
 				VAR ScoreBase = SELECTEDVALUE ( 'BSC KPI'[Score Base] )
 				VAR ScoreSlope = SELECTEDVALUE ( 'BSC KPI'[Score Slope] )
-				VAR S = IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+				VAR S = IF ( NOT ISBLANK ( V ), ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) )
 				VAR GoodFrom = SELECTEDVALUE ( 'BSC KPI'[Good From] )
 				VAR WatchFrom = SELECTEDVALUE ( 'BSC KPI'[Watch From] )
 				VAR Rating = IF ( NOT ISBLANK ( S ), IF ( S >= GoodFrom, "On track", IF ( S >= WatchFrom, "Watch", "At risk" ) ) )
@@ -6583,7 +6583,7 @@ table _Measures
 				VAR Scores =
 					ADDCOLUMNS (
 						Scored,
-						"@Score", VAR V = [@Variance] RETURN IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+						"@Score", VAR V = [@Variance] RETURN IF ( NOT ISBLANK ( V ), ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) )
 					)
 				VAR A = MAXX ( FILTER ( Scores, [@Period] = 0 ), [@Actual] )
 				VAR T = MAXX ( FILTER ( Scores, [@Period] = 0 ), [@Target] )
@@ -6855,7 +6855,7 @@ table _Measures
 				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
 				VAR ScoreBase = SELECTEDVALUE ( 'BSC KPI'[Score Base] )
 				VAR ScoreSlope = SELECTEDVALUE ( 'BSC KPI'[Score Slope] )
-				VAR S = IF ( NOT ISBLANK ( V ), MIN ( 100, MAX ( 0, ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) ) ) )
+				VAR S = IF ( NOT ISBLANK ( V ), ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) )
 				VAR GoodFrom = SELECTEDVALUE ( 'BSC KPI'[Good From] )
 				VAR WatchFrom = SELECTEDVALUE ( 'BSC KPI'[Watch From] )
 				VAR Rating = IF ( NOT ISBLANK ( S ), IF ( S >= GoodFrom, "On track", IF ( S >= WatchFrom, "Watch", "At risk" ) ) )

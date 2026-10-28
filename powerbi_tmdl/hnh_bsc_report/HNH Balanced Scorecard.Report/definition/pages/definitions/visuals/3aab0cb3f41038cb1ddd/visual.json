@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "KPI score (0 to 100)",
+                    "value": "KPI score",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "14pt",
@@ -44,7 +44,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Score = score base + score slope × variance, rounded and kept between 0 and 100.",
+                    "value": "• Score = score base + score slope × variance, rounded; not capped, so it can fall below 0 or rise above 100.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

@@ -421,7 +421,8 @@ def _guide_page() -> Page:
             "stop at today, so it reads as year to date. The report holds this year and last year only.",
             "Your choices carry over to every scorecard page and to KPI detail."]),
         _section("Read the scores and colours", [
-            "Every KPI gets a score from 0 to 100. Scores are points, not percentages.",
+            "Every KPI gets a score: 85 on target, more above it, less below it, without a floor or a cap. Scores "
+            "are points, not percentages.",
             "On track: 85 or more.",
             "Watch: 70 to 84.",
             "At risk: below 70.",
@@ -464,11 +465,12 @@ def _guide_page() -> Page:
 
 def _definitions_page() -> Page:
     sections = [
-        _section("KPI score (0 to 100)", [
+        _section("KPI score", [
             "Variance: how far the actual is from the target, as a % of the target. Where lower is better, the sign "
             "is flipped, so beating the target is always positive. For on-target KPIs, any distance from the target "
             "counts against.",
-            "Score = score base + score slope × variance, rounded and kept between 0 and 100.",
+            "Score = score base + score slope × variance, rounded; not capped, so it can fall below 0 or rise "
+            "above 100.",
             "Every KPI today uses base 85 and slope 0.6: a KPI exactly on target scores 85, and each point of "
             "variance moves the score by 0.6.",
             "Status: On track from 85, Watch from 70, At risk below 70."]),

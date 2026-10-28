@@ -14,7 +14,7 @@ describe("lineChart", () => {
         const t = lineChart([{ name: "A", colourVar: "var(--p1)", values: [88, 90, 92] }], opts());
         expect(ys(t)[0]).toBe(70);
     });
-    it("extends above 100 to the upper ten and never below 0", () => {
+    it("extends above 100 to the upper ten, and below 0 only for a score under 0", () => {
         expect(ys(lineChart([{ name: "A", colourVar: "var(--p1)", values: [40, 131, 90] }], opts())).at(-1)).toBe(140);
         expect(ys(lineChart([{ name: "A", colourVar: "var(--p1)", values: [3, 5, 4] }], opts({ target: 5 })))[0]).toBe(0);
     });
@@ -41,10 +41,10 @@ describe("lineChart", () => {
         expect(ys(s)).toEqual([70, 80, 90, 100]);
         expect(s.outerHTML).not.toContain("NaN");
     });
-    it("keeps a value below 0 inside the plot (the axis stops at 0)", () => {
+    it("keeps a value below 0 inside the plot (the axis goes down to its lower ten; scores are not capped)", () => {
         const s = lineChart([{ name: "A", colourVar: "var(--p1)", values: [-25, 40, -12] }], opts());
         const top = 12, bottom = 300 - 36;
-        expect(ys(s)[0]).toBe(0);
+        expect(ys(s)[0]).toBe(-30);
         const pathYs = [...s.querySelectorAll(".lc-line")].flatMap(p => [...p.getAttribute("d")!.matchAll(/[ML][\d.-]+ ([\d.-]+)/g)].map(m => Number(m[1])));
         const dotYs = [...s.querySelectorAll(".lc-dot")].map(d => Number(d.getAttribute("cy")));
         expect(pathYs.length).toBe(3);
