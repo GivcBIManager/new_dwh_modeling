@@ -274,7 +274,7 @@ describe("board", () => {
         expect(r.querySelector(".c-target")!.textContent).toBe("≥ 50.0%");
         expect(r.querySelector(".c-score")!.textContent).toBe("60");
         const spark = r.querySelector(".c-trend svg.spark")!;
-        expect(spark.getAttribute("width")).toBe("156");
+        expect(spark.getAttribute("width")).toBe("132");
         expect(spark.getAttribute("height")).toBe("42");
     });
     it("with a branch series the rows are the first hospital's, carrying their series index", () => {

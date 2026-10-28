@@ -25,7 +25,7 @@ const BASE = 85, SLOPE = 0.6, GOOD = 85, WATCH = 70;
 interface Spec { name: string; fmt: string; dir: string; target: number }
 const SPECS: Spec[] = [
     { name: "Net patient revenue", fmt: "sar", dir: "higher", target: 5_200_000 },
-    { name: "Operating cost per bed day", fmt: "sar", dir: "ceiling", target: 1_800 },
+    { name: "Revenue per bed", fmt: "sar", dir: "higher", target: 712_450 },
     { name: "Pharmacy cost", fmt: "sar", dir: "ceiling", target: 2_400_000 },
     { name: "Outstanding insurance receivables", fmt: "sar", dir: "lower", target: 7_900_000 },
     { name: "Claim rejection rate", fmt: "pct", dir: "lower", target: 0.06 },
@@ -35,7 +35,7 @@ const SPECS: Spec[] = [
     { name: "Readmission within 30 days", fmt: "pct", dir: "lower", target: 0.045 },
     { name: "Theatre utilisation rate", fmt: "pct", dir: "higher", target: 0.82 },
     { name: "Average length of stay", fmt: "days", dir: "on_target", target: 3.8 },
-    { name: "Days in accounts receivable", fmt: "days", dir: "lower", target: 62 },
+    { name: "Days in accounts receivable", fmt: "days", dir: "lower", target: 180 },
     { name: "Inventory days on hand", fmt: "days", dir: "on_target", target: 24 },
     { name: "ER door-to-doctor time", fmt: "mins", dir: "lower", target: 18 },
     { name: "Lab turnaround time", fmt: "mins", dir: "lower", target: 45 },
@@ -130,9 +130,9 @@ const CMP: { pillar: string; order: number; weight: number; q: string; objective
     { pillar: "Financial", order: 1, weight: 0.3, q: PILLARS[0].q, objectives: [
         ["F1", "Revenue", [{ name: "Net revenue achievement", fmt: "sar", dir: "higher", target: 48_000_000 }, { name: "Net revenue growth vs last year", fmt: "pct", dir: "higher", target: 0.06 }]],
         ["F2", "Profitability", [{ name: "EBITDA margin", fmt: "pct", dir: "higher", target: 0.18 }, { name: "Cost-to-revenue ratio", fmt: "num", dir: "ceiling", target: 0.88 }]],
-        ["F3", "Cash & Collections", [{ name: "Collection rate", fmt: "pct", dir: "higher", target: 0.92 }, { name: "Days in accounts receivable", fmt: "days", dir: "lower", target: 62 }, { name: "Claim rejection rate", fmt: "pct", dir: "lower", target: 0.06 }]],
+        ["F3", "Cash & Collections", [{ name: "Collection rate", fmt: "pct", dir: "higher", target: 0.92 }, { name: "Days in accounts receivable", fmt: "days", dir: "lower", target: 180 }, { name: "Claim rejection rate", fmt: "pct", dir: "lower", target: 0.06 }]],
         ["F4", "Asset Productivity", [{ name: "Bed occupancy rate", fmt: "pct", dir: "on_target", target: 0.78 }, { name: "Theatre utilisation rate", fmt: "pct", dir: "higher", target: 0.82 }]],
-        ["F5", "Cost", [{ name: "Operating cost per bed day", fmt: "sar", dir: "ceiling", target: 1_800 }, { name: "Pharmacy cost", fmt: "sar", dir: "ceiling", target: 2_400_000 }]],
+        ["F5", "Cost", [{ name: "Revenue per bed", fmt: "sar", dir: "higher", target: 712_450 }, { name: "Pharmacy cost", fmt: "sar", dir: "ceiling", target: 2_400_000 }]],
     ] },
     { pillar: "Customer", order: 2, weight: 0.25, q: PILLARS[1].q, objectives: [
         ["C1", "Patient Experience", [{ name: "Patient satisfaction (NPS)", fmt: "num", dir: "higher", target: 72 }, { name: "Complaints per 1,000 visits", fmt: "num", dir: "lower", target: 2.5 }]],

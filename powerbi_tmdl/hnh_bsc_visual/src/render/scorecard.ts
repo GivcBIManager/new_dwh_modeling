@@ -6,7 +6,7 @@ import { stateChip, stateClass } from "./chips";
 import { comparator } from "./rows";
 import { sparkline } from "./sparkline";
 
-const SPARK_W = 156, SPARK_H = 42;
+const SPARK_W = 132, SPARK_H = 42;
 export const COLUMNS = ["Status", "KPI · objective", "Actual", "Target", "Variance", "Score", "Trend"];
 
 
