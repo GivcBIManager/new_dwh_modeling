@@ -4354,13 +4354,42 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Patient Acquisition Cost"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Customer
-	/// KPI 61: admissions under a referral policy / episodes under a referral policy (KPI 41: visits and admissions).
+	/// KPI 61: countable admissions from OP or ER under a referral policy / census under a referral policy (arrived
+	/// outpatient visits + ER visits).
 	measure 'BSC Referral Conversion Rate' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" ), [BSC External Referrals] )
+				DIVIDE (
+					CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
+					CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" )
+				)
 			) -- end of measure body
 			VAR __Wrong = [_Guard Admissions + Encounters]
 			RETURN IF ( __Wrong = "", __Value, """BSC Referral Conversion Rate"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Customer
+	/// KPI 61, outpatient part: countable admissions from OP under a referral policy / arrived outpatient visits under a
+	/// referral policy.
+	measure 'BSC OP Referral Conversion Rate' =
+			VAR __Value = ( -- measure body
+				DIVIDE (
+					CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] = "OP" ),
+					CALCULATE ( [OP Visits], Encounters[Is Referral Policy] = "Yes" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters]
+			RETURN IF ( __Wrong = "", __Value, """BSC OP Referral Conversion Rate"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Customer
+	/// KPI 61, ER part: countable admissions from ER under a referral policy / ER visits under a referral policy.
+	measure 'BSC ER Referral Conversion Rate' =
+			VAR __Value = ( -- measure body
+				DIVIDE (
+					CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] = "ER" ),
+					CALCULATE ( [ER Visits], Encounters[Is Referral Policy] = "Yes" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters]
+			RETURN IF ( __Wrong = "", __Value, """BSC ER Referral Conversion Rate"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Customer
 	/// KPI 21: occupied / available bed-days in inpatient wards (the model's Bed Occupancy %).
@@ -4395,13 +4424,31 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC ALOS (days)"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Internal Process
-	/// KPI 24: countable admissions / arrived outpatient visits.
+	/// KPI 24: countable admissions from OP or ER / census (arrived outpatient visits + ER visits).
 	measure 'BSC OP to IP Conversion' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( [Admissions], [OP Visits] )
+				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ), [Census] )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Admissions + Encounters]
 			RETURN IF ( __Wrong = "", __Value, """BSC OP to IP Conversion"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Internal Process
+	/// KPI 24, outpatient part: countable admissions from OP / arrived outpatient visits.
+	measure 'BSC OP Visit to IP Conversion' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] = "OP" ), [OP Visits] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters]
+			RETURN IF ( __Wrong = "", __Value, """BSC OP Visit to IP Conversion"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Balanced Scorecard\Internal Process
+	/// KPI 24, ER part: countable admissions from ER / ER visits.
+	measure 'BSC ER Visit to IP Conversion' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] = "ER" ), [ER Visits] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Admissions + Encounters]
+			RETURN IF ( __Wrong = "", __Value, """BSC ER Visit to IP Conversion"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Internal Process
 	/// KPI 42: outpatient visits + ER visits + admissions.
@@ -4812,10 +4859,10 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Target Clinic Utilization"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Targets
-	/// Target of KPI 24: target IP census / target OP census.
+	/// Target of KPI 24: target IP census / target OP and ER census.
 	measure 'BSC Target OP to IP' =
 			VAR __Value = ( -- measure body
-				DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] = "OP" ) )
+				DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Targets]
 			RETURN IF ( __Wrong = "", __Value, """BSC Target OP to IP"" can't be analysed by " & __Wrong )
@@ -5106,11 +5153,11 @@ table _Measures
 								"CUS_NON_MOH_SHARE", CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = "No" ),
 								"CUS_PAYER_VOLUME", CALCULATE ( [Census], Payer[Category] = "Insurance" ),
 								"CUS_ACQUISITION_COST", [BSC GL Marketing],
-								"CUS_REFERRAL_CONVERSION", CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" ),
+								"CUS_REFERRAL_CONVERSION", CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
 								"INT_BED_OCCUPANCY", CALCULATE ( SUM ( 'Bed Occupancy'[Is Occupied] ), 'Bed Occupancy'[Is Inpatient Ward] = "Yes", 'Bed Occupancy'[Is Excluded Ward] = "No" ),
 								"INT_OP_UTILIZATION", [OP Visits],
 								"INT_ALOS", CALCULATE ( SUM ( Admissions[LOS Days] ), Admissions[Is Countable] = "Yes", Admissions[Is LTC] = "No", USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] ) ),
-								"INT_OP_TO_IP", [Admissions],
+								"INT_OP_TO_IP", CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
 								"INT_PATIENT_VOLUME", [OP Visits] + [ER Visits] + [Admissions],
 								"INT_ER_GROWTH", [ER Visits],
 								"INT_DOCTOR_UTILIZATION", [OP Visits],
@@ -5216,11 +5263,11 @@ table _Measures
 								"CUS_OP_WAIT", CALCULATE ( COUNT ( Encounters[Wait Minutes] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", Encounters[Is Cancelled] = "No" ),
 								"CUS_NON_MOH_SHARE", [Revenue by Episode Payer],
 								"CUS_ACQUISITION_COST", CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), KEEPFILTERS ( Encounters[Encounter Type] = "OP" ), Encounters[Is Arrived] = "Yes", KEEPFILTERS ( Encounters[Visit Type] = "New patient" ) ),
-								"CUS_REFERRAL_CONVERSION", [BSC External Referrals],
+								"CUS_REFERRAL_CONVERSION", CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" ),
 								"INT_BED_OCCUPANCY", CALCULATE ( SUM ( 'Bed Occupancy'[Is Available] ), 'Bed Occupancy'[Is Inpatient Ward] = "Yes", 'Bed Occupancy'[Is Excluded Ward] = "No" ),
 								"INT_OP_UTILIZATION", [BSC Clinic Capacity],
 								"INT_ALOS", CALCULATE ( COUNT ( Admissions[LOS Days] ), Admissions[Is Countable] = "Yes", Admissions[Is LTC] = "No", USERELATIONSHIP ( Admissions[Physical Discharge Date Key], 'Date'[Date Key] ) ),
-								"INT_OP_TO_IP", [OP Visits],
+								"INT_OP_TO_IP", [Census],
 								"INT_ER_GROWTH", CALCULATE ( [ER Visits], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) ),
 								"INT_DOCTOR_UTILIZATION", SUM ( 'Clinic Capacity'[BSC Capacity Slots] ),
 								"INT_ACTIVATED_BEDS", [BSC Licensed Beds],
@@ -13571,7 +13618,7 @@ table _Measures
 
 	/// The expression of BSC OP to IP Conversion without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC OP to IP Conversion' =
-			DIVIDE ( [Admissions], [OP Visits] )
+			DIVIDE ( CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { "OP", "ER" } ), [Census] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13650,7 +13697,10 @@ table _Measures
 
 	/// The expression of BSC Referral Conversion Rate without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Referral Conversion Rate' =
-			DIVIDE ( CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes" ), [BSC External Referrals] )
+			DIVIDE (
+				CALCULATE ( [Admissions], Admissions[Is Referral Policy] = "Yes", 'Admission Source'[Admission Source] IN { "OP", "ER" } ),
+				CALCULATE ( [Census], Encounters[Is Referral Policy] = "Yes" )
+			)
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded
@@ -13820,7 +13870,7 @@ table _Measures
 
 	/// The expression of BSC Target OP to IP without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Target OP to IP' =
-			DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] = "OP" ) )
+			DIVIDE ( CALCULATE ( [Target Census], 'Care Type'[Care Type] = "IP" ), CALCULATE ( [Target Census], 'Care Type'[Care Type] IN { "OP", "ER" } ) )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded

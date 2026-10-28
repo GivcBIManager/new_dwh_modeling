@@ -113,14 +113,17 @@ PARTS = {
     "CUS_PAYER_VOLUME": ("CALCULATE ( [Census], Payer[Category] = \"Insurance\" )", "", "value"),
     "CUS_ACQUISITION_COST": ("[BSC GL Marketing]",
                              f"CALCULATE ( DISTINCTCOUNT ( Encounters[Patient Key] ), {_NEW_PATIENT} )", "ratio"),
-    "CUS_REFERRAL_CONVERSION": ("CALCULATE ( [Admissions], Admissions[Is Referral Policy] = \"Yes\" )",
-                                "[BSC External Referrals]", "ratio"),
+    "CUS_REFERRAL_CONVERSION": (
+        "CALCULATE ( [Admissions], Admissions[Is Referral Policy] = \"Yes\", "
+        "'Admission Source'[Admission Source] IN { \"OP\", \"ER\" } )",
+        "CALCULATE ( [Census], Encounters[Is Referral Policy] = \"Yes\" )", "ratio"),
     "INT_BED_OCCUPANCY": (f"CALCULATE ( SUM ( 'Bed Occupancy'[Is Occupied] ), {_OCCUPANCY} )",
                           f"CALCULATE ( SUM ( 'Bed Occupancy'[Is Available] ), {_OCCUPANCY} )", "ratio"),
     "INT_OP_UTILIZATION": ("[OP Visits]", "[BSC Clinic Capacity]", "ratio"),
     "INT_ALOS": (f"CALCULATE ( SUM ( Admissions[LOS Days] ), {_ALOS} )",
                  f"CALCULATE ( COUNT ( Admissions[LOS Days] ), {_ALOS} )", "ratio"),
-    "INT_OP_TO_IP": ("[Admissions]", "[OP Visits]", "ratio"),
+    "INT_OP_TO_IP": ("CALCULATE ( [Admissions], 'Admission Source'[Admission Source] IN { \"OP\", \"ER\" } )", "[Census]",
+                     "ratio"),
     "INT_PATIENT_VOLUME": ("[OP Visits] + [ER Visits] + [Admissions]", "", "value"),
     "INT_ER_GROWTH": (
         "[ER Visits]",
