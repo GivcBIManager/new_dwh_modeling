@@ -142,6 +142,11 @@ models:
           (payable type P, pay in payroll Y, payment method C or R). Every negative Oasis line is a deduction, on any pay
           code (a recovery or reversal on an earnings code too), and QuickPay lines are not payroll payments. 0 for Fusion
           rows and parallel-run rows; amount and gross_pay still net the negative lines.
+      - name: oasis_deduction_amount
+        description: >
+          Oasis deductions by the same rule: the negative lines paid through the payroll (payable type P, pay in payroll Y,
+          payment method C or R), on any pay code. oasis_payment_amount + oasis_deduction_amount is the net salary of the
+          payroll team's report. 0 for Fusion rows and parallel-run rows.
   - name: fact_absence
     columns:
       - name: absence_key

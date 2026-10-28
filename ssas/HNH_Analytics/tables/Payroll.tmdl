@@ -107,6 +107,14 @@ table Payroll
 		summarizeBy: none
 		sourceColumn: oasis_payment_amount
 
+	column 'Oasis Deduction Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: oasis_deduction_amount
+
 	partition 'Payroll template' = m
 		source =
 				let

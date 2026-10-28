@@ -100,7 +100,7 @@ unit_tests:
   - name: fact_payroll_monthly_switches_at_cutover
     description: >
       Branch 3 cuts over in 202607. Oasis June (202606): basic 1,000, a basic recovery of −200 and a QuickPay basic of 300
-      (basic nets to 1,100; the Oasis payment is the 1,000 paid through the payroll, the recovery being a deduction) and
+      (basic nets to 1,100; the Oasis payment is the 1,000 paid through the payroll and the −200 recovery its deduction) and
       staff GOSI −90 (an employee deduction, not cost).
       Oasis July is a parallel-run month: kept with is_parallel_run = 1 and zero cost. Fusion July: basic 1,100 and
       a delay deduction of 50 stored positive (amount −50, an earnings adjustment that lowers cost) and a GOSI
@@ -180,10 +180,10 @@ unit_tests:
           select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(7)), '|')), 1)) as employee_key, toDate('2026-07-31') as month_end, toInt64(-1) as hr_department_key
     expect:
       rows:
-        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1100, cost_amount: 1100, gross_pay: 1100, oasis_payment_amount: 1000, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Partly closed, open_run_date: '2026-06-25'}
-        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0, oasis_payment_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 0, payroll_status: Partly closed, open_run_date: '2026-06-25'}
-        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0, oasis_payment_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
-        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150, oasis_payment_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: oasis, payroll_month: 202606, pay_category: Basic, is_parallel_run: 0, amount: 1100, cost_amount: 1100, gross_pay: 1100, oasis_payment_amount: 1000, oasis_deduction_amount: -200, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Partly closed, open_run_date: '2026-06-25'}
+        - {source: oasis, payroll_month: 202606, pay_category: GOSI employee deduction, is_parallel_run: 0, amount: -90, cost_amount: 0, gross_pay: 0, oasis_payment_amount: 0, oasis_deduction_amount: -90, paid_person_key: 7559343772374295452, is_closed_payroll: 0, payroll_status: Partly closed, open_run_date: '2026-06-25'}
+        - {source: oasis, payroll_month: 202607, pay_category: Basic, is_parallel_run: 1, amount: 1000, cost_amount: 0, gross_pay: 0, oasis_payment_amount: 0, oasis_deduction_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
+        - {source: fusion, payroll_month: 202607, pay_category: Basic, is_parallel_run: 0, amount: 1150, cost_amount: 1150, gross_pay: 1150, oasis_payment_amount: 0, oasis_deduction_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
         - {source: fusion, payroll_month: 202607, pay_category: Absence and lateness deduction, is_parallel_run: 0, amount: -50, cost_amount: -50, gross_pay: -50, oasis_payment_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
         - {source: fusion, payroll_month: 202607, pay_category: Not pay, is_parallel_run: 0, amount: 9000, cost_amount: 0, gross_pay: 0, oasis_payment_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
         - {source: fusion, payroll_month: 202607, pay_category: Provisions, is_parallel_run: 0, amount: 700, cost_amount: 0, gross_pay: 0, oasis_payment_amount: 0, paid_person_key: 7559343772374295452, is_closed_payroll: 1, payroll_status: Closed, open_run_date: null}
