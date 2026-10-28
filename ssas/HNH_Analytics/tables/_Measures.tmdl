@@ -4140,7 +4140,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Average Doctors"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Average monthly nurses and doctors by the scorecard rules (part-time doctors included), with the same last-closed-month fallback.
+	/// Average monthly clinical staff (categories NURSE, NURSE IN OTHER DEPT, NURSE W/O LICENSE, PARAMEDICAL DEPT, PHYSICAL THERAPY; doctors not included) by the scorecard rules, with the same last-closed-month fallback.
 	measure 'BSC Average Medical' =
 			VAR __Value = ( -- measure body
 				SUMX (
@@ -4703,7 +4703,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC Time to Fill (days)"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Learning & Growth
-	/// KPI 68: average nurses and doctors / average doctors (part-time doctors included).
+	/// KPI 68: average clinical staff (nursing, paramedical and physical therapy categories) / average doctors (part-time doctors included).
 	measure 'BSC Clinical to Doctor' =
 			VAR __Value = ( -- measure body
 				DIVIDE ( [BSC Average Medical], [BSC Average Doctors] )

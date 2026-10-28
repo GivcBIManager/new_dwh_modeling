@@ -6,7 +6,9 @@
 --   head:        Fusion month-end headcount (employees, not contingent) from hnh_hr_snapshot_start, paid people
 --                (gross pay > 0, no parallel run) before it. fte = Fusion FTE or 1 per paid person.
 --   pt_doctor:   a doctor with revenue in the month who is neither in that month's headcount nor paid. Counted as
---                a head, a doctor and medical, 0.5 FTE, never Saudi (user decision of 2026-10-13).
+--                a head and a doctor, 0.5 FTE, never Saudi (user decision of 2026-10-13).
+-- is_medical marks clinical staff for the clinical staff to doctors ratio: staff category NURSE, NURSE IN OTHER DEPT,
+-- NURSE W/O LICENSE, PARAMEDICAL DEPT or PHYSICAL THERAPY (user decision of 2026-10-28; doctors are not included).
 --   resignation: Oasis staff termination with reason Resignation (branches 1-5, and every branch before Fusion HR),
 --                Fusion voluntary leavers for branches 6-8 from hnh_hr_snapshot_start. headcount 0.
 with
@@ -49,7 +51,8 @@ heads as (
         any(p.employee_key)                                           as employee_key_,
         sum(p.fte)                                                    as fte_,
         max(toUInt8(ifNull(s.category = 'DOCTORS', 0)))              as doctor_,
-        max(toUInt8(ifNull(s.classification in ('NURSE', 'DOC'), 0))) as medical_,
+        max(toUInt8(ifNull(s.category in ('NURSE', 'NURSE IN OTHER DEPT', 'NURSE W/O LICENSE', 'PARAMEDICAL DEPT',
+                                          'PHYSICAL THERAPY'), 0)))           as medical_,
         max(ifNull(p.saudi, 0))                                       as saudi_,
         any(p.source_)                                                as source__,
         any(p.hr_department_key)                                      as hr_department_key_,
@@ -108,7 +111,7 @@ all_rows as (
     from heads
     union all
     select branch_key, period, concat('pt-', toString(staff_key)), 'pt_doctor', staff_key, toInt64(-1),
-           toUInt8(1), toFloat64(0.5), toUInt8(1), toUInt8(1), toUInt8(0), toUInt8(0), 'oasis',
+           toUInt8(1), toFloat64(0.5), toUInt8(1), toUInt8(0), toUInt8(0), toUInt8(0), 'oasis',
            toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1)
     from part_time
     union all

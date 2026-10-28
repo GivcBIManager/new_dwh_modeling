@@ -151,16 +151,17 @@ Describe 'dim_branch (scorecard columns)' {
 
 Describe 'fact_bsc_workforce_monthly against bsc.vw_work_force' {
     # Sum the person-month fact per branch-month and compare with the reconciled view for its window
-    # (January of last year to the last closed month). Any returned row is a difference.
+    # (January of last year to the last closed month). Any returned row is a difference. Medical heads are not
+    # compared: is_medical is the clinical staff categories of 2026-10-28, not the view's NURSE and DOC classes.
     $wrap = "with f as (select branch_key, toStartOfMonth(toDate(toString(month_date_key))) as period, " +
             "sum(headcount) as hc, sumIf(headcount, row_type = 'pt_doctor') as pt, sum(fte) as fte, sum(resignations) as rs, " +
-            "sum(is_saudi * headcount) as sa, sumIf(headcount, is_doctor = 1) as dc, sumIf(headcount, is_medical = 1) as md " +
+            "sum(is_saudi * headcount) as sa, sumIf(headcount, is_doctor = 1) as dc " +
             "from ({model}) group by branch_key, period) " +
             "select v.branch_id, v.period, v.headcount, f.hc, v.pt_doctors_headcount, f.pt, v.FTE, f.fte, v.resignations, f.rs, " +
-            "v.saudi_headcount, f.sa, v.doctors_headcount, f.dc, v.medical_headcount, f.md " +
+            "v.saudi_headcount, f.sa, v.doctors_headcount, f.dc " +
             "from bsc.vw_work_force as v left join f on f.branch_key = v.branch_id and f.period = v.period " +
             "where v.headcount != f.hc or v.pt_doctors_headcount != f.pt or abs(v.FTE - f.fte) > 0.001 or v.resignations != f.rs " +
-            "or v.saudi_headcount != f.sa or v.doctors_headcount != f.dc or v.medical_headcount != f.md " +
+            "or v.saudi_headcount != f.sa or v.doctors_headcount != f.dc " +
             "order by 1, 2 settings join_use_nulls = 0"
     $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') fact_bsc_workforce_monthly --wrap $wrap) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw 'render failed: fact_bsc_workforce_monthly' }

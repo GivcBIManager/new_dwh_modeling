@@ -63,7 +63,8 @@ unit_tests:
       Same people as the bsc_vw_work_force unit test, as of 2026-10-12: paid 501 in December 2025; Fusion employees
       101, 102 (no staff link) and 103 in September 2026 (contingent 104 and the open October left out); revenue-only
       doctor 14 as a part-time doctor (0.5 FTE, not Saudi); resignations of Khamis staff 31 (Oasis), Abha staff 33
-      before Fusion HR (Oasis) and Abha employee 701 (Fusion voluntary leaver).
+      before Fusion HR (Oasis) and Abha employee 701 (Fusion voluntary leaver). Only nurse 101 (category NURSE) is
+      clinical staff (is_medical); doctors are not.
     model: fact_bsc_workforce_monthly
     overrides:
       vars: {hnh_bsc_as_of: '2026-10-12'}
@@ -74,7 +75,7 @@ unit_tests:
           select toInt64(k) as staff_key, toUInt8(b) as branch_key, toNullable(c) as classification, toNullable(g) as category,
                  toDate32OrNull(t) as termination_date, if(r = '', null, toNullable(r)) as termination_reason, toUInt8(k in (14, 21)) as is_saudi
           from values('k UInt32, b UInt8, c String, g String, t String, r String',
-              (11, 1, 'NURSE', 'NURSING', '', ''), (13, 1, 'DOC', 'DOCTORS', '', ''), (14, 1, 'DOC', 'DOCTORS', '', ''),
+              (11, 1, 'NURSE', 'NURSE', '', ''), (13, 1, 'DOC', 'DOCTORS', '', ''), (14, 1, 'DOC', 'DOCTORS', '', ''),
               (15, 1, 'DOC', 'DOCTORS', '', ''), (16, 1, 'NURSE', 'NURSING', '', ''), (17, 1, 'DOC', 'DOCTORS', '', ''),
               (21, 1, 'DOC', 'DOCTORS', '', ''), (22, 1, 'ADMIN', 'ADMIN', '', ''),
               (31, 2, 'ADMIN', 'ADMIN', '2026-09-15', 'Resignation'), (32, 6, 'ADMIN', 'ADMIN', '2026-09-10', 'Resignation'),
@@ -120,11 +121,11 @@ unit_tests:
                toInt64(hd) as hr_department_key, toInt64(j) as job_key, toInt64(g) as grade_key, toInt64(po) as position_key,
                toInt64(lo) as location_key, toInt64(wa) as worker_action_key
         from values('b UInt8, m Int32, p String, t String, s Int64, e Int64, h UInt8, f Float64, d UInt8, md UInt8, sa UInt8, r UInt8, ds String, hd Int64, j Int64, g Int64, po Int64, lo Int64, wa Int64',
-            (1, 20251231, 'paid-501', 'head', 21, -1, 1, 1, 1, 1, 1, 0, 'oasis', -1, -1, -1, -1, -1, -1),
+            (1, 20251231, 'paid-501', 'head', 21, -1, 1, 1, 1, 0, 1, 0, 'oasis', -1, -1, -1, -1, -1, -1),
             (1, 20260930, '101', 'head', 11, 101, 1, 1, 0, 1, 1, 0, 'fusion', 901, 10, 20, 30, 40, -1),
             (1, 20260930, '102', 'head', -1, 102, 1, 1, 0, 0, 0, 0, 'fusion', 902, 10, 20, 30, 40, -1),
-            (1, 20260930, '103', 'head', 13, 103, 1, 1, 1, 1, 1, 0, 'fusion', 903, 10, 20, 30, 40, -1),
-            (1, 20260930, 'pt-14', 'pt_doctor', 14, -1, 1, 0.5, 1, 1, 0, 0, 'oasis', -1, -1, -1, -1, -1, -1),
+            (1, 20260930, '103', 'head', 13, 103, 1, 1, 1, 0, 1, 0, 'fusion', 903, 10, 20, 30, 40, -1),
+            (1, 20260930, 'pt-14', 'pt_doctor', 14, -1, 1, 0.5, 1, 0, 0, 0, 'oasis', -1, -1, -1, -1, -1, -1),
             (2, 20260930, 'staff-31', 'resignation', 31, -1, 0, 0, 0, 0, 0, 1, 'oasis', -1, -1, -1, -1, -1, -1),
             (6, 20251231, 'staff-33', 'resignation', 33, -1, 0, 0, 0, 0, 0, 1, 'oasis', -1, -1, -1, -1, -1, -1),
             (6, 20260930, 'emp-701', 'resignation', -1, 701, 0, 0, 0, 0, 0, 1, 'fusion', 906, 11, 21, 31, 41, 7))
