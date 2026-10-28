@@ -167,7 +167,7 @@ PARTS = {
                                      "ratio"),
     "INT_EXTERNAL_REFERRALS": (
         "CALCULATE ( [Census], Encounters[Is Referral Policy] = \"Yes\" ) "
-        "+ CALCULATE ( [Admissions], Admissions[Is Referral Policy] = \"Yes\" )", "", "value"),
+        "+ CALCULATE ( [Admissions], Admissions[Is Referral Policy] = \"Yes\" )", "[Census] + [Admissions]", "ratio"),
     "LRN_TURNOVER": ("SUM ( 'Workforce Monthly'[Resignations] )", "[BSC Average Headcount]", "ratio"),
     "LRN_REVENUE_PER_FTE": ("[BSC GL Net Revenue]", "[BSC Average FTE]", "ratio"),
     "LRN_STAFF_TO_BED": ("[BSC Average FTE]", "[BSC Available Beds]", "ratio"),
