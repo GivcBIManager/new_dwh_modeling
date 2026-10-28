@@ -287,6 +287,9 @@ def convert(pbip: Path, base_theme: Path = DEFAULT_BASE_THEME) -> tuple[list[tup
     }
     layout = {"id": 0, "resourcePackages": resource_packages, "sections": sections, "config": dump(config),
               "layoutOptimization": 0}
+    report_filters = report.get("filterConfig", {}).get("filters", [])
+    if report_filters:  # the report-level filters, as the legacy layout's own `filters`
+        layout["filters"] = dump(convert_filters(report_filters, "report.json"))
 
     ref = model_reference_of(report_dir)
     if ref.get("connectionType") != "analysisServicesDatabaseLive":

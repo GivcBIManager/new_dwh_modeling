@@ -20,8 +20,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from layout import NO_SAMPLE, page_section, show_all_on_branch, skipped  # noqa: E402
-from model import Page  # noqa: E402
+from layout import NO_SAMPLE, page_section, report_filters_json, show_all_on_branch, skipped  # noqa: E402
+from model import Filter, Page  # noqa: E402
 from pbix import (SAMPLES_PAGE, check_upload_rules, read_pbix, samples, set_database, set_server,  # noqa: E402
                   write_pbix)
 
@@ -50,9 +50,11 @@ def _drop_bookmarks(marks: list, sections: set) -> list:
     return out
 
 
-def build(template: Path, pages: list[Page], database: str, out: Path, server: str = SERVER) -> None:
-    """Read the template, write `pages` (in order) in place of its `Samples` and `Drill sample` pages, point the live
-    connection at `server` / `database`, write `out` and raise if it breaks the Report Server upload rules."""
+def build(template: Path, pages: list[Page], database: str, out: Path, server: str = SERVER,
+          report_filters: list[Filter] = ()) -> None:
+    """Read the template, write `pages` (in order) in place of its `Samples` and `Drill sample` pages, set the
+    report-level filters (locked; none when empty), point the live connection at `server` / `database`, write `out`
+    and raise if it breaks the Report Server upload rules."""
     _check_unique(pages)
     p = read_pbix(template)
     smp = samples(p)
@@ -71,6 +73,11 @@ def build(template: Path, pages: list[Page], database: str, out: Path, server: s
         new_sections.append(section)
         pods += page_pods
     layout["sections"] = new_sections
+    if report_filters:
+        layout["filters"] = json.dumps(report_filters_json(list(report_filters)), separators=(",", ":"),
+                                       ensure_ascii=False)
+    else:
+        layout.pop("filters", None)  # the template's own report filters would name its fields
     if pods:
         layout["pods"] = pods
     else:
@@ -110,23 +117,25 @@ def main(argv=None) -> int:
     ap.add_argument("--pbiviz", type=Path, help="pbip only: the HNH visual package (default: hnh_bsc_visual/dist)")
     args = ap.parse_args(argv)
     try:
-        from pages import PAGES
-    except ImportError as e:
+        import pages as pages_module
+        PAGES = pages_module.PAGES
+    except (ImportError, AttributeError) as e:
         print(f"cannot load the page list (pages.py): {e}")
         return 1
+    REPORT_FILTERS = getattr(pages_module, "REPORT_FILTERS", [])
     from fields import unknown_fields
-    unknown = unknown_fields(PAGES)
+    unknown = unknown_fields(PAGES, report_filters=REPORT_FILTERS)
     if unknown:
         print("fields not in the Balanced Scorecard perspective: " + ", ".join(unknown))
         return 1
     if args.format == "pbip":
-        return _main_pbip(args, PAGES)
+        return _main_pbip(args, PAGES, REPORT_FILTERS)
     if args.out is None:
         print("--format pbix needs --out <file.pbix>")
         return 1
     args.out.parent.mkdir(parents=True, exist_ok=True)
     try:
-        build(args.template, PAGES, args.database, args.out, args.server)
+        build(args.template, PAGES, args.database, args.out, args.server, REPORT_FILTERS)
     except (ValueError, OSError) as e:
         print(f"build failed: {e}")
         return 1
@@ -136,7 +145,7 @@ def main(argv=None) -> int:
     return 1 if problems else 0
 
 
-def _main_pbip(args, pages: list[Page]) -> int:
+def _main_pbip(args, pages: list[Page], report_filters: list[Filter] = ()) -> int:
     from pbir import write_pbip
     import pbir_check
     out = args.out or HERE
@@ -147,7 +156,7 @@ def _main_pbip(args, pages: list[Page]) -> int:
         print(f"warning: the committed Date slicer is saved on {year}; this build moves it to "
               f"{datetime.date.today().year}")
     try:
-        pbip = write_pbip(pages, out, args.database, args.server, pbiviz=args.pbiviz)
+        pbip = write_pbip(pages, out, args.database, args.server, pbiviz=args.pbiviz, report_filters=report_filters)
     except (ValueError, OSError) as e:
         print(f"build failed: {e}")
         return 1

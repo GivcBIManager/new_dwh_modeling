@@ -34,6 +34,16 @@ def test_package_passes_the_upload_rules_and_keeps_every_page_and_visual(pbip, t
     assert "Provider" not in pbix.connection["Connections"][0]["ConnectionString"]
 
 
+def test_scorecard_report_filter_becomes_the_layout_filter_locked(tmp_path):
+    layout = pbir_to_pbix.write(SCORECARD, tmp_path / "r.pbix")
+    flts = json.loads(layout["filters"])
+    assert len(flts) == 1
+    f = flts[0]
+    assert f["expression"] == {"Column": {"Expression": {"SourceRef": {"Entity": "Date"}}, "Property": "Year Offset"}}
+    assert f["isLockedInViewMode"] is True and f["howCreated"] == 1
+    assert [v[0]["Literal"]["Value"] for v in f["filter"]["Where"][0]["Condition"]["In"]["Values"]] == ["0L", "1L"]
+
+
 @pytest.mark.skipif(not PRESS_GANEY.exists(), reason="Press Ganey report not checked out")
 def test_press_ganey_shapes(tmp_path):
     layout = pbir_to_pbix.write(PRESS_GANEY, tmp_path / "r.pbix")

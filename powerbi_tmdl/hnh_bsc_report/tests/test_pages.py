@@ -13,7 +13,7 @@ from frame import (BOARD_BUTTON, BOARD_CHART, CONTENT, DETAIL_BACK, DETAIL_BY_HO
 from layout import page_section, skipped
 from model import col, meas, page_fields
 from frame import button_style, label_text
-from pages import ATTRIBUTE_ROLES, PAGES, back_button, select_all_selection
+from pages import ATTRIBUTE_ROLES, PAGES, REPORT_FILTERS, back_button, select_all_selection
 
 # The visual README's field-well table (powerbi_tmdl/hnh_bsc_visual/README.md): role -> 'BSC KPI' column.
 README_ROLES = {
@@ -113,6 +113,11 @@ def text_runs(v):
 
 
 # ---- page list and the frame ----------------------------------------------------------------------------------------
+
+def test_report_filter_is_this_year_and_last_on_a_perspective_column():
+    assert [(f.field, f.op, f.values) for f in REPORT_FILTERS] == [(col("Date", "Year Offset"), "in", [0, 1])]
+    assert unknown_fields(PAGES, report_filters=REPORT_FILTERS) == []
+
 
 def test_page_names_and_order():
     shown = [p.display for p in PAGES]

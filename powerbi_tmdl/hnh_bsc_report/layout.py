@@ -117,6 +117,12 @@ def filter_json(name: str, flt: Filter) -> dict:
             "type": ftype, "howCreated": 1}
 
 
+def report_filters_json(filters: list[Filter]) -> list[dict]:
+    """The report-level filters (the layout's own `filters`), locked in view mode so a viewer cannot widen them."""
+    return [{**filter_json(stable_id("report", "filter", j), f), "isLockedInViewMode": True}
+            for j, f in enumerate(filters)]
+
+
 def top_n_json(name: str, column: Field, by: Field, n: int) -> dict:
     """Top N filter on `column` by `by` descending (standard format: an In over a Top-N subquery)."""
     al = aliases([column.table, by.table])

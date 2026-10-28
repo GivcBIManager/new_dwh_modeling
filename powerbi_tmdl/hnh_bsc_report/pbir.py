@@ -19,7 +19,8 @@ import zipfile
 from pathlib import Path
 
 from frame import LOGO
-from layout import DIRECTION, aliases, field_expr, filter_json, lit, source_expr, stable_id, top_n_json
+from layout import (DIRECTION, aliases, field_expr, filter_json, lit, report_filters_json, source_expr, stable_id,
+                    top_n_json)
 from model import Field, Filter, Page, Visual, interaction_indexes
 
 HERE = Path(__file__).resolve().parent
@@ -164,11 +165,11 @@ def custom_visual(pbiviz: Path) -> tuple[str, dict[str, bytes], dict]:
 
 # ---- report --------------------------------------------------------------------------------------------------------
 
-def report_json(visual_package: dict) -> dict:
+def report_json(visual_package: dict, report_filters: list[Filter] = ()) -> dict:
     """report.json: the handover's settings and objects, the base theme, the brand theme as the custom theme (a
     RegisteredResources item of type CustomTheme), the logo (a RegisteredResources item of type Image, as the
-    handover registers its header image) and the HNH visual's resource package."""
-    return {
+    handover registers its header image), the HNH visual's resource package and the report-level filters (locked)."""
+    out = {
         "$schema": SCHEMAS["report"],
         "themeCollection": {
             "baseTheme": {"name": BASE_THEME_NAME, "reportVersionAtImport": THEME_VERSION,
@@ -192,6 +193,9 @@ def report_json(visual_package: dict) -> dict:
             "useDefaultAggregateDisplayName": True,
         },
     }
+    if report_filters:
+        out["filterConfig"] = {"filters": [_pbir_filter(f) for f in report_filters_json(list(report_filters))]}
+    return out
 
 
 # ---- filters -------------------------------------------------------------------------------------------------------
@@ -202,6 +206,8 @@ def _pbir_filter(legacy: dict) -> dict:
     if "filter" in legacy:
         out["filter"] = legacy["filter"]
     out["howCreated"] = HOW_CREATED[legacy["howCreated"]]
+    if legacy.get("isLockedInViewMode"):
+        out["isLockedInViewMode"] = True
     return out
 
 
@@ -391,7 +397,7 @@ def _check_unique(pages: list[Page]) -> None:
 # ---- project -------------------------------------------------------------------------------------------------------
 
 def project_files(pages: list[Page], database: str, server: str = SERVER, perspective: str = PERSPECTIVE,
-                  pbiviz: Path | None = None) -> dict[str, bytes]:
+                  pbiviz: Path | None = None, report_filters: list[Filter] = ()) -> dict[str, bytes]:
     """{path relative to the output folder: bytes} of the whole project."""
     _check_unique(pages)
     guid, cv_files, cv_package = custom_visual(pbiviz or find_pbiviz())
@@ -405,7 +411,7 @@ def project_files(pages: list[Page], database: str, server: str = SERVER, perspe
     }
     files.update({k: _text(v) for k, v in live_connection(server, database, perspective).items()})
     files[f"{rep}/definition/version.json"] = _text({"$schema": SCHEMAS["version"], "version": "2.0.0"})
-    files[f"{rep}/definition/report.json"] = _text(report_json(cv_package))
+    files[f"{rep}/definition/report.json"] = _text(report_json(cv_package, report_filters))
     files[f"{rep}/definition/pages/pages.json"] = _text({"$schema": SCHEMAS["pages"],
                                                          "pageOrder": [p.name for p in pages],
                                                          "activePageName": pages[0].name if pages else ""})
@@ -426,13 +432,13 @@ def project_files(pages: list[Page], database: str, server: str = SERVER, perspe
 
 
 def write_pbip(pages: list[Page], out_dir, database: str, server: str = SERVER, perspective: str = PERSPECTIVE,
-               pbiviz: Path | None = None) -> Path:
+               pbiviz: Path | None = None, report_filters: list[Filter] = ()) -> Path:
     """Write the project into `out_dir` and return the .pbip path. The report's generated folders (`definition`,
     `StaticResources`, `CustomVisuals`) are replaced, so pages that are gone do not linger; every other file is
     overwritten, except `.gitignore`, which is written only when missing. Desktop's local state (`.pbi` folders,
     git-ignored) is kept."""
     out = Path(out_dir)
-    files = project_files(pages, database, server, perspective, pbiviz)  # everything checked before writing
+    files = project_files(pages, database, server, perspective, pbiviz, report_filters)  # everything checked first
     rep = out / f"{REPORT_NAME}.Report"
     for d in (rep / "definition", rep / "StaticResources", rep / "CustomVisuals"):
         if d.exists():

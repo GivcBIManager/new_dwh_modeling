@@ -9,7 +9,7 @@ import pytest
 
 from fields import perspective_fields
 from model import Filter, Interaction, Page, Visual, col, meas
-from pages import build_pages
+from pages import REPORT_FILTERS, build_pages
 from pbir import (REPORT_NAME, SCHEMAS, connection_string, write_pbip)
 import pbir_check
 
@@ -56,7 +56,7 @@ def load(path: Path):
 def project(tmp_path_factory):
     out = tmp_path_factory.mktemp("pbip")
     pbiviz = make_pbiviz(out.parent / "v.pbiviz")
-    pbip = write_pbip(PAGES, out, "HNH_Analytics_Test", SERVER, pbiviz=pbiviz)
+    pbip = write_pbip(PAGES, out, "HNH_Analytics_Test", SERVER, pbiviz=pbiviz, report_filters=REPORT_FILTERS)
     return out, pbip
 
 
@@ -84,6 +84,22 @@ def proj_refs(v):
 
 
 # ---- tree, connection, resources -----------------------------------------------------------------------------------
+
+def test_report_filter_keeps_this_year_and_last_locked(project):
+    flts = load(report_dir(project) / "definition" / "report.json")["filterConfig"]["filters"]
+    assert len(flts) == 1
+    f = flts[0]
+    assert f["field"] == {"Column": {"Expression": {"SourceRef": {"Entity": "Date"}}, "Property": "Year Offset"}}
+    assert f["type"] == "Categorical" and f["howCreated"] == "User" and f["isLockedInViewMode"] is True
+    cond = f["filter"]["Where"][0]["Condition"]["In"]
+    assert [v[0]["Literal"]["Value"] for v in cond["Values"]] == ["0L", "1L"]
+
+
+def test_no_report_filter_without_report_filters(tmp_path):
+    pbiviz = make_pbiviz(tmp_path / "v.pbiviz")
+    write_pbip(PAGES[:1], tmp_path, "HNH_Analytics_Test", SERVER, pbiviz=pbiviz)
+    assert "filterConfig" not in load(tmp_path / f"{REPORT_NAME}.Report" / "definition" / "report.json")
+
 
 def test_tree_and_live_connection(project):
     out, pbip = project
@@ -508,7 +524,8 @@ def test_no_field_outside_the_perspective(project):
 
 def test_two_writes_are_identical(project, tmp_path):
     out, _ = project
-    write_pbip(PAGES, tmp_path, "HNH_Analytics_Test", SERVER, pbiviz=out.parent / "v.pbiviz")
+    write_pbip(PAGES, tmp_path, "HNH_Analytics_Test", SERVER, pbiviz=out.parent / "v.pbiviz",
+               report_filters=REPORT_FILTERS)
 
     def tree(root):
         return {str(f.relative_to(root)): f.read_bytes() for f in root.rglob("*") if f.is_file()}
@@ -661,7 +678,7 @@ def test_committed_project_is_current():
     real = sorted(VISUAL_DIST.glob("hnhBscVisual*.pbiviz"))
     with tempfile.TemporaryDirectory() as tmp:
         pbiviz = find_pbiviz() if real else make_pbiviz(Path(tmp) / "v.pbiviz")
-        files = project_files(pages, "HNH_Analytics_Test", pbiviz=pbiviz)
+        files = project_files(pages, "HNH_Analytics_Test", pbiviz=pbiviz, report_filters=REPORT_FILTERS)
     skip = () if real else (f"{REPORT_NAME}.Report/CustomVisuals/",)
     expected = {k: v for k, v in files.items() if not k.startswith(skip) and k != ".gitignore"}
     roots = [HERE / f"{REPORT_NAME}.Report", HERE / f"{REPORT_NAME}.SemanticModel"]

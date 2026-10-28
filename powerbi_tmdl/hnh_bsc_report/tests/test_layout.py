@@ -20,6 +20,18 @@ def run(tmp_path, template, pages, database="HNH_Analytics"):
     return read_pbix(out)
 
 
+def test_report_filters_go_into_the_layout_locked(tmp_path, pbix_path):
+    out = tmp_path / "out.pbix"
+    build(pbix_path, [Page("a", "A", [])], "HNH_Analytics", out,
+          report_filters=[Filter(col("Date", "Year Offset"), "in", [0, 1])])
+    flts = json.loads(read_pbix(out).layout["filters"])
+    assert len(flts) == 1 and flts[0]["isLockedInViewMode"] is True and flts[0]["type"] == "Categorical"
+    assert flts[0]["expression"]["Column"]["Property"] == "Year Offset"
+    values = flts[0]["filter"]["Where"][0]["Condition"]["In"]["Values"]
+    assert [v[0]["Literal"]["Value"] for v in values] == ["0L", "1L"]
+    assert "filters" not in run(tmp_path, pbix_path, [Page("a", "A", [])]).layout
+
+
 def containers(layout):
     for s in layout["sections"]:
         for vc in s["visualContainers"]:

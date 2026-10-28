@@ -48,7 +48,7 @@ After the production SSAS deploy of `HNH_Analytics`: run `python powerbi_tmdl/hn
 
 ## Re-run after a change
 
-The Date slicer on the scorecard pages is a From - To range that opens on 1 January - 31 December of the year of the build; rebuild in January to move it to the new year (the measures and the header label stop at today, so the page reads as year to date).
+The Date slicer on the scorecard pages is a From - To range that opens on 1 January - 31 December of the year of the build; rebuild in January to move it to the new year (the measures and the header label stop at today, so the page reads as year to date). A locked report-level filter (`REPORT_FILTERS` in `pages.py`) keeps the current year and the previous one: `'Date'[Year Offset]` in 0 (this year) and 1 (last year). The offset is recomputed with each refresh, so the window moves on in January by itself; both legacy routes write it as the layout's report filter.
 
 After a change to `pages.py`, the measures or the visual: run the tests, rebuild, commit the project, then open, save and upload again. A change made in Desktop and saved to the PBIP is overwritten by the next build. Carry the change into `pages.py` instead.
 

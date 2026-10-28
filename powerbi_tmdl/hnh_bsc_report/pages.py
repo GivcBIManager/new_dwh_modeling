@@ -418,7 +418,7 @@ def _guide_page() -> Page:
             "Hospital: pick one or more hospitals, or leave it empty for all hospitals together (Corporate).",
             "BSC Category: pick a group of hospitals (Scale & Optimize, Anchor & Protect, Ramp-Up & Prove).",
             "Date: set the From and To dates. The report opens on 1 January to 31 December of this year; figures "
-            "stop at today, so it reads as year to date.",
+            "stop at today, so it reads as year to date. The report holds this year and last year only.",
             "Your choices carry over to every scorecard page and to KPI detail."]),
         _section("Read the scores and colours", [
             "Every KPI gets a score from 0 to 100. Scores are points, not percentages.",
@@ -518,6 +518,11 @@ def _definitions_page() -> Page:
 GUIDE_PAGES: list[Page] = [_guide_page(), _definitions_page()]
 
 PAGES: list[Page] = SCORECARD_PAGES + [KPI_DETAIL] + FAMILY_PAGES + GUIDE_PAGES
+
+# Report-level filter, locked: the current year and the previous one only. 'Date'[Year Offset] counts years back (0
+# this year, 1 last year, -1 next year), recomputed with each refresh, so the window moves on in January without a
+# rebuild.
+REPORT_FILTERS: list[Filter] = [Filter(col("Date", "Year Offset"), "in", [0, 1])]
 
 
 def build_pages(build_date: datetime.date) -> list[Page]:

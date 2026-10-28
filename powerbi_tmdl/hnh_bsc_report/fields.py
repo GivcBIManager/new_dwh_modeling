@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from model import Field, Page, page_fields
+from model import Field, Filter, Page, page_fields
 
 REPO = Path(__file__).resolve().parents[2]
 MODEL_DIR = REPO / "ssas" / "HNH_Analytics"
@@ -66,12 +66,13 @@ def prop_fields(obj) -> list[Field]:
     return out
 
 
-def unknown_fields(pages: list[Page], model_dir: Path = MODEL_DIR) -> list[str]:
-    """The fields the pages use that the perspective does not show, as `'Table'[Column]` / `[Measure]`, sorted."""
+def unknown_fields(pages: list[Page], model_dir: Path = MODEL_DIR, report_filters: list[Filter] = ()) -> list[str]:
+    """The fields the pages and the report-level filters use that the perspective does not show, as
+    `'Table'[Column]` / `[Measure]`, sorted."""
     columns, measures = perspective_fields(model_dir)
     bad = set()
-    for page in pages:
-        used = page_fields(page) + [f for v in page.visuals for f in prop_fields(v.props)]
+    uses = [page_fields(page) + [f for v in page.visuals for f in prop_fields(v.props)] for page in pages]
+    for used in uses + [[f.field for f in report_filters]]:
         for f in used:
             known = columns if f.kind == "column" else measures
             if (f.table, f.name) not in known:
