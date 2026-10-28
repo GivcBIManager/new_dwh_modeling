@@ -6142,11 +6142,18 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
-	/// The KPI actual of the 12 months ending at the last month in context, oldest first, separated by semicolons (sparkline data).
+	/// The KPI actual of the months in context up to today (a single month: the 12 months ending there), oldest first, separated by semicolons (sparkline data).
 	measure 'BSC Trend' =
 			VAR __Value = ( -- measure body
 				VAR EndMonth = CALCULATE ( MAX ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-				VAR Months = TOPN ( 12, FILTER ( ALL ( 'Date'[Year Month] ), 'Date'[Year Month] <= EndMonth ), 'Date'[Year Month], DESC )
+				-- the months in context up to today; a single month shows the 12 months ending there
+				VAR Selected = CALCULATETABLE ( VALUES ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR Many = COUNTROWS ( Selected ) > 1
+				VAR Months =
+					FILTER (
+						ALL ( 'Date'[Year Month] ),
+						IF ( Many, 'Date'[Year Month] IN Selected, 'Date'[Year Month] <= EndMonth && 'Date'[Year Month] > EndMonth - 100 )
+					)
 				RETURN
 					CONCATENATEX (
 						Months,
@@ -6163,7 +6170,7 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
-	/// Everything the scorecard visual shows for the KPI in context, from one evaluation: actual | target | variance | score | state | KPI weight | actual trend | target trend | score trend. Numbers in en-US without grouping, blank as an empty field; each trend is the 12 months ending at the last month in context, oldest first, separated by semicolons. Same values as BSC Actual, BSC Target, BSC Variance %, BSC Score, BSC State, BSC KPI Weight and BSC Trend; the guard text when a guard trips.
+	/// Everything the scorecard visual shows for the KPI in context, from one evaluation: actual | target | variance | score | state | KPI weight | actual trend | target trend | score trend. Numbers in en-US without grouping, blank as an empty field; each trend is the months in context up to today (a single month: the 12 months ending there), oldest first, separated by semicolons. Same values as BSC Actual, BSC Target, BSC Variance %, BSC Score, BSC State, BSC KPI Weight and BSC Trend; the guard text when a guard trips.
 	measure 'BSC Visual Payload' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'BSC KPI'[KPI Code] )
@@ -6180,15 +6187,25 @@ table _Measures
 				VAR PastPY = CALCULATETABLE ( VALUES ( 'Date'[Date] ), SAMEPERIODLASTYEAR ( Past ) )
 				VAR PastAll = CALCULATETABLE ( VALUES ( 'Date'[Date] ), REMOVEFILTERS ( 'Date' ), 'Date'[Date] <= TODAY () )
 				VAR EndMonth = CALCULATE ( MAX ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-				VAR Months = TOPN ( 12, FILTER ( ALL ( 'Date'[Year Month] ), 'Date'[Year Month] <= EndMonth ), 'Date'[Year Month], DESC )
+				-- the months in context up to today; a single month shows the 12 months ending there
+				VAR Selected = CALCULATETABLE ( VALUES ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR Many = COUNTROWS ( Selected ) > 1
+				VAR Months =
+					FILTER (
+						ALL ( 'Date'[Year Month] ),
+						IF ( Many, 'Date'[Year Month] IN Selected, 'Date'[Year Month] <= EndMonth && 'Date'[Year Month] > EndMonth - 100 )
+					)
 				-- periods: 0 the selection, 1 its prior year, 2 all time and all hospitals, a Year Month key that month, the key - 100 its prior year
+				-- (distinct: in a selection of more than 12 months a trend month is also another trend month's prior year)
 				VAR Periods =
-					UNION (
-						ROW ( "@Period", 0 ),
-						ROW ( "@Period", 1 ),
-						ROW ( "@Period", 2 ),
-						SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] ),
-						SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] - 100 )
+					DISTINCT (
+						UNION (
+							ROW ( "@Period", 0 ),
+							ROW ( "@Period", 1 ),
+							ROW ( "@Period", 2 ),
+							SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] ),
+							SELECTCOLUMNS ( Months, "@Period", 'Date'[Year Month] - 100 )
+						)
 					)
 				VAR MonthDates =
 					GENERATE (
@@ -6281,8 +6298,9 @@ table _Measures
 								KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 							)
 					)
-				-- the 12 trend months and their prior-year months: 24 different months, each period's dates inside its own month, so one
-				-- evaluation grouped by Year Month gives every month its own value (one storage engine query per measure, not 24)
+				-- the trend months and their prior-year months, each period's dates inside its own month, so one evaluation grouped by
+				-- Year Month gives every month its own value (one storage engine query per measure, not one per month). When a trend
+				-- month is also the prior year of the current (partial) month, that prior year is the whole month, not the same days.
 				VAR MeasuredMonths =
 					CALCULATETABLE (
 						ADDCOLUMNS (

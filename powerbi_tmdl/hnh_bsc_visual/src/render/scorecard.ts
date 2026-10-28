@@ -7,7 +7,7 @@ import { comparator } from "./rows";
 import { sparkline } from "./sparkline";
 
 const SPARK_W = 156, SPARK_H = 42;
-export const COLUMNS = ["Status", "KPI · objective", "Actual", "Target", "Variance", "Score", "12-mo trend"];
+export const COLUMNS = ["Status", "KPI · objective", "Actual", "Target", "Variance", "Score", "Trend"];
 
 
 /** A row with a value to show: an actual, and a state other than no data or parked. */

@@ -257,7 +257,7 @@ describe("board", () => {
     it("has seven header cells outside the scrolling body", () => {
         const t = draw().querySelector(".bd-table")!;
         expect([...t.querySelectorAll(".bd-thead > span")].map(s => s.textContent))
-            .toEqual(["Status", "KPI · objective", "Actual", "Target", "Variance", "Score", "12-mo trend"]);
+            .toEqual(["Status", "KPI · objective", "Actual", "Target", "Variance", "Score", "Trend"]);
         expect(t.querySelector(".bd-tbody .bd-thead")).toBeNull();
     });
     it("a row carries its key, series and tab stop, and seven cells", () => {
