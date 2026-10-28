@@ -30,6 +30,6 @@ where table in ('ssas_fact_charge_line', 'ssas_fact_order_line', 'ssas_fact_stoc
                'delivery_line', 'invoice_doc_no', 'master_order_no', 'order_line', 'oasis_line_id', 'oasis_doc_no',
                'fusion_transaction_id', 'claim_invoice_no', 'stat_invoice_no', 'visit_id', 'sequence_no', 'lot_number')
 union all
-select 'gold' as table, toString(n) as name, 'views' as type, 'expected 89 ssas_ views' as rule
+select 'gold' as table, toString(n) as name, 'views' as type, 'expected 91 ssas_ views' as rule
 from (select count() as n from system.tables where database = '{{ db }}' and startsWith(name, 'ssas_'))
-where n != 89
+where n != 91
