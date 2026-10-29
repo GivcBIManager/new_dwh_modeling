@@ -92,15 +92,23 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
 `bi_users.csv` in the repository root (not in git) is the list of report users: login, department, name, branch,
 specialty, `is_admin`, `can_see_pay`, `can_see_pii`.
 
-1. Add or change the user's row in `bi_users.csv`.
+The server joined the domain `HnhRiyadh.com` in October 2026. A report user is either a **local account**,
+`HNHANALYTICSSRV\<name>` (the original design: created by step 2), or a **domain account** written as its user
+principal name, `<name>@hnhriyadh.com`. The `HNH Readers` role compares `USERPRINCIPALNAME()`, which is the UPN for a
+domain account, so a domain reader whose UPN has no row in `bi_users.csv` sees no branch at all: every branch-linked
+measure is blank and a custom visual draws nothing (found 2026-10-29 with `HNHRIYADH\InmaMedAuditor`). Check the exact
+string with the measure `_Measures[Current User]` as that user.
+
+1. Add or change the user's row in `bi_users.csv` (a domain account: UPN as `login_name`, `dep`, name, branches, flags).
 2. `scripts\create_bi_windows_users.ps1` creates the local Windows account (random password, never expires), and puts it
    in `HNH_BI_Users`, in the department group `HNH_BI_<dep>` and in the branch group `HNH_BI_Branch_<branch>` of every
    branch the user can see (all eight without `branch_key`). The script only adds memberships; after moving a user
    to another branch or department, remove the old group membership by hand. New passwords go to `C:\HNH\secrets\` (Administrators
-   only): `bi_user_passwords.csv` to hand out, `bi_user_credentials.xml` for `test.ps1`.
+   only): `bi_user_passwords.csv` to hand out, `bi_user_credentials.xml` for `test.ps1`. A domain account gets no local
+   account or password; the script only puts it in `HNH_BI_Users` and its department and branch groups.
 3. `scripts\load_bi_users.ps1` (ClickHouse admin login) replaces `default.bi_users` and `default.map_bi_user_permission`
    with the CSV, after copying the old rows to `*_backup_<timestamp>` tables.
-4. After the next dbt build and `process.ps1 -Mode Daily`, the measure `_Measures[Current User]` (folder Diagnostics) in a report shows `HNHANALYTICSSRV\<user>`.
+4. After the next dbt build and `process.ps1 -Mode Daily`, the measure `_Measures[Current User]` (folder Diagnostics) in a report shows `HNHANALYTICSSRV\<user>` for a local account and `<name>@hnhriyadh.com` for a domain account.
 
 Model administrators (role `HNH Admins`, no row filters) are listed in `$admins` in `scripts\deploy.ps1`, which adds
 them to `HNH_Analytics` and `HNH_Analytics_Test` after every deploy.

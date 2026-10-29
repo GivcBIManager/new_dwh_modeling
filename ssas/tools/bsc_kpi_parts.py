@@ -172,7 +172,7 @@ PARTS = {
         "+ CALCULATE ( [Admissions], Admissions[Is Referral Policy] = \"Yes\" )", "[Census] + [Admissions]", "ratio"),
     "LRN_TURNOVER": ("SUM ( 'Workforce Monthly'[Resignations] )", "[BSC Average Headcount]", "ratio"),
     "LRN_REVENUE_PER_FTE": ("[BSC GL Net Revenue]", "[BSC Average FTE]", "ratio"),
-    "LRN_STAFF_TO_BED": ("[BSC Average FTE]", "[BSC Available Beds]", "ratio"),
+    "LRN_STAFF_TO_BED": ("[BSC Average Clinical FTE]", "[BSC Available Beds]", "ratio"),
     "LRN_SAUDIZATION": (_workforce_heads(", 'Workforce Monthly'[Is Saudi] = 1"), _workforce_heads(""), "ratio"),
     "LRN_VACANCY_RATE": (
         _PERIOD_END + "RETURN\n"
