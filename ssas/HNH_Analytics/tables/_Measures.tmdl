@@ -3926,6 +3926,32 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """BSC GL AR Average"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
+	/// Credit-patient AR collected in SAR (insurers, government and companies; no cash patients): the Oasis AR sub-ledger receipts before the hospital's Fusion GL cutover, the Fusion Receivables receipts from it; months up to the current one.
+	measure 'BSC AR Collected' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( SUM ( 'BSC AR Collections'[Collected Amount] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard BSC AR Collections]
+			RETURN IF ( __Wrong = "", __Value, """BSC AR Collected"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Balanced Scorecard\Building Blocks
+	/// Average credit-patient AR in SAR (net trade receivables without the cash-patient accounts): per hospital, the mean over months up to the current one of (opening + closing) / 2, added over hospitals.
+	measure 'BSC Credit AR Average' =
+			VAR __Value = ( -- measure body
+				VAR Months = CALCULATETABLE ( VALUES ( 'Date'[Year Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				RETURN
+					SUMX (
+						VALUES ( Branch[Branch Key] ),
+						AVERAGEX (
+							Months,
+							CALCULATE ( DIVIDE ( SUM ( 'BSC AR Collections'[Credit AR Opening] ) + SUM ( 'BSC AR Collections'[Credit AR Closing] ), 2 ) )
+						)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard BSC AR Collections]
+			RETURN IF ( __Wrong = "", __Value, """BSC Credit AR Average"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Balanced Scorecard\Building Blocks
 	/// Average inventory in SAR: per hospital, the mean over months up to the current one of (opening + closing) / 2 of caption inventories, net.
 	measure 'BSC GL Inventory Average' =
 			VAR __Value = ( -- measure body
@@ -4203,6 +4229,15 @@ table _Measures
 			VAR __Wrong = [_Guard GL FS Monthly]
 			RETURN IF ( __Wrong = "", __Value, """BSC Days in AR (days)"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
+		displayFolder: Balanced Scorecard\Financial
+	/// KPI 7: credit-patient AR collected / average credit AR over the period in context (one month: its (opening + closing) / 2; several months or a year to date: the mean of the monthly averages).
+	measure 'BSC Net Collection Rate' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [BSC AR Collected], [BSC Credit AR Average] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard BSC AR Collections]
+			RETURN IF ( __Wrong = "", __Value, """BSC Net Collection Rate"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Financial
 	/// KPI 64: average GL inventory x days in the period / GL cost of goods sold, medical consumables and cost of medicines.
 	measure 'BSC Days Inventory (days)' =
@@ -4953,6 +4988,7 @@ table _Measures
 							"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
 							"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
 							"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+							"@FIN_NET_COLLECTION", [BSC Net Collection Rate],
 							"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
 							"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
 							"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
@@ -5016,6 +5052,7 @@ table _Measures
 							"FIN_COST_TO_REVENUE", MAXX ( Measured, [@FIN_COST_TO_REVENUE] ),
 							"FIN_CONSUMABLES_RATIO", MAXX ( Measured, [@FIN_CONSUMABLES_RATIO] ),
 							"FIN_DAYS_IN_AR", MAXX ( Measured, [@FIN_DAYS_IN_AR] ),
+							"FIN_NET_COLLECTION", MAXX ( Measured, [@FIN_NET_COLLECTION] ),
 							"FIN_DAYS_INVENTORY", MAXX ( Measured, [@FIN_DAYS_INVENTORY] ),
 							"FIN_REVENUE_PER_BED", MAXX ( Measured, [@FIN_REVENUE_PER_BED] ),
 							"FIN_RETURN_ON_ASSETS", MAXX ( Measured, [@FIN_RETURN_ON_ASSETS] ),
@@ -5065,7 +5102,7 @@ table _Measures
 						)
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 17 facts #3ba24bc3]
+			VAR __Wrong = [_Guard 18 facts #27e18bc6]
 			RETURN IF ( __Wrong = "", __Value, """BSC Actual"" can't be analysed by " & __Wrong )
 		displayFolder: Balanced Scorecard\Scoring
 
@@ -5102,6 +5139,7 @@ table _Measures
 								"FIN_COST_TO_REVENUE", [BSC GL Net Revenue] - [BSC GL EBITDA],
 								"FIN_CONSUMABLES_RATIO", [BSC GL Consumables],
 								"FIN_DAYS_IN_AR", [BSC GL AR Average] * [BSC Days in Period],
+								"FIN_NET_COLLECTION", [BSC AR Collected],
 								"FIN_DAYS_INVENTORY", [BSC GL Inventory Average] * [BSC Days in Period],
 								"FIN_REVENUE_PER_BED", [BSC GL Net Revenue],
 								"FIN_RETURN_ON_ASSETS", [BSC GL Income],
@@ -5215,7 +5253,7 @@ table _Measures
 						)
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 14 facts #797d2218]
+			VAR __Wrong = [_Guard 15 facts #f1ff93bc]
 			RETURN IF ( __Wrong = "", __Value, """BSC Numerator"" can't be analysed by " & __Wrong )
 		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
@@ -5249,6 +5287,7 @@ table _Measures
 								"FIN_COST_TO_REVENUE", [BSC GL Net Revenue],
 								"FIN_CONSUMABLES_RATIO", [BSC GL Net Revenue],
 								"FIN_DAYS_IN_AR", [BSC GL Net Revenue],
+								"FIN_NET_COLLECTION", [BSC Credit AR Average],
 								"FIN_DAYS_INVENTORY", [BSC GL COGS],
 								"FIN_REVENUE_PER_BED", [BSC Available Beds],
 								"FIN_RETURN_ON_ASSETS", [BSC GL Assets Opening],
@@ -5311,7 +5350,7 @@ table _Measures
 						)
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 17 facts #3ba24bc3]
+			VAR __Wrong = [_Guard 18 facts #27e18bc6]
 			RETURN IF ( __Wrong = "", __Value, """BSC Denominator"" can't be analysed by " & __Wrong )
 		formatString: #,0.##
 		displayFolder: Balanced Scorecard\Scoring
@@ -5394,7 +5433,7 @@ table _Measures
 						BLANK ()
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 19 facts #e451b8cd]
+			VAR __Wrong = [_Guard 20 facts #f450ebef]
 			RETURN IF ( __Wrong = "", __Value, """BSC Target"" can't be analysed by " & __Wrong )
 		displayFolder: Balanced Scorecard\Scoring
 
@@ -5439,6 +5478,7 @@ table _Measures
 									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
 									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
 									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_NET_COLLECTION", [BSC Net Collection Rate],
 									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
 									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
 									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
@@ -5515,6 +5555,7 @@ table _Measures
 										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
 										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
 										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_NET_COLLECTION", MAXX ( PeriodMeasures, [@FIN_NET_COLLECTION] ),
 										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
 										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
 										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
@@ -5637,7 +5678,7 @@ table _Measures
 				VAR V = IF ( ISBLANK ( A ) || ISBLANK ( T ) || ISTEXT ( A ) || ISTEXT ( T ), BLANK (), IF ( T = 0, Diff, DIVIDE ( Diff, ABS ( T ) ) ) )
 				RETURN V
 			) -- end of measure body
-			VAR __Wrong = [_Guard 19 facts #e451b8cd]
+			VAR __Wrong = [_Guard 20 facts #f450ebef]
 			RETURN IF ( __Wrong = "", __Value, """BSC Variance %"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Balanced Scorecard\Scoring
@@ -5673,6 +5714,7 @@ table _Measures
 									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
 									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
 									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_NET_COLLECTION", [BSC Net Collection Rate],
 									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
 									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
 									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
@@ -5749,6 +5791,7 @@ table _Measures
 										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
 										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
 										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_NET_COLLECTION", MAXX ( PeriodMeasures, [@FIN_NET_COLLECTION] ),
 										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
 										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
 										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
@@ -5874,7 +5917,7 @@ table _Measures
 				VAR S = IF ( NOT ISBLANK ( V ), ROUND ( ScoreBase + ScoreSlope * 100 * V, 0 ) )
 				RETURN S
 			) -- end of measure body
-			VAR __Wrong = [_Guard 19 facts #e451b8cd]
+			VAR __Wrong = [_Guard 20 facts #f450ebef]
 			RETURN IF ( __Wrong = "", __Value, """BSC Score"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Scoring
@@ -5888,7 +5931,7 @@ table _Measures
 				VAR WatchFrom = SELECTEDVALUE ( 'BSC KPI'[Watch From] )
 				RETURN IF ( NOT ISBLANK ( S ), IF ( S >= GoodFrom, "On track", IF ( S >= WatchFrom, "Watch", "At risk" ) ) )
 			) -- end of measure body
-			VAR __Wrong = [_Guard 19 facts #e451b8cd]
+			VAR __Wrong = [_Guard 20 facts #f450ebef]
 			RETURN IF ( __Wrong = "", __Value, """BSC Status"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Balanced Scorecard\Scoring
@@ -5931,6 +5974,7 @@ table _Measures
 									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
 									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
 									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_NET_COLLECTION", [BSC Net Collection Rate],
 									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
 									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
 									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
@@ -6011,6 +6055,7 @@ table _Measures
 										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
 										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
 										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_NET_COLLECTION", MAXX ( PeriodMeasures, [@FIN_NET_COLLECTION] ),
 										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
 										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
 										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
@@ -6148,7 +6193,7 @@ table _Measures
 						Rating
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 19 facts #e451b8cd]
+			VAR __Wrong = [_Guard 20 facts #f450ebef]
 			RETURN IF ( __Wrong = "", __Value, """BSC State"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Balanced Scorecard\Scoring
@@ -6172,7 +6217,7 @@ table _Measures
 				VAR Scored = FILTER ( Kpis, NOT ISBLANK ( [@score] ) && [@weight] > 0 )
 				RETURN DIVIDE ( SUMX ( Scored, [@score] * [@weight] ), SUMX ( Scored, [@weight] ) )
 			) -- end of measure body
-			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			VAR __Wrong = [_Guard 21 facts #44b6d100]
 			RETURN IF ( __Wrong = "", __Value, """BSC Pillar Score"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Scoring
@@ -6185,7 +6230,7 @@ table _Measures
 				VAR Scored = FILTER ( Pillars, NOT ISBLANK ( [@score] ) )
 				RETURN DIVIDE ( SUMX ( Scored, [@score] * [@weight] ), SUMX ( Scored, [@weight] ) )
 			) -- end of measure body
-			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			VAR __Wrong = [_Guard 21 facts #44b6d100]
 			RETURN IF ( __Wrong = "", __Value, """BSC Overall Score"" can't be analysed by " & __Wrong )
 		formatString: #,0.0
 		displayFolder: Balanced Scorecard\Scoring
@@ -6213,7 +6258,7 @@ table _Measures
 						'Date'[Year Month], ASC
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 17 facts #3ba24bc3]
+			VAR __Wrong = [_Guard 18 facts #27e18bc6]
 			RETURN IF ( __Wrong = "", __Value, """BSC Trend"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Balanced Scorecard\Scoring
@@ -6293,6 +6338,7 @@ table _Measures
 									"@FIN_COST_TO_REVENUE", [_Unguarded BSC Cost to Revenue],
 									"@FIN_CONSUMABLES_RATIO", [_Unguarded BSC Consumables Ratio],
 									"@FIN_DAYS_IN_AR", [_Unguarded BSC Days in AR (days)],
+									"@FIN_NET_COLLECTION", [_Unguarded BSC Net Collection Rate],
 									"@FIN_DAYS_INVENTORY", [_Unguarded BSC Days Inventory (days)],
 									"@FIN_REVENUE_PER_BED", [_Unguarded BSC Revenue per Bed],
 									"@FIN_RETURN_ON_ASSETS", [_Unguarded BSC Return on Assets],
@@ -6360,6 +6406,7 @@ table _Measures
 							"@FIN_COST_TO_REVENUE", [_Unguarded BSC Cost to Revenue],
 							"@FIN_CONSUMABLES_RATIO", [_Unguarded BSC Consumables Ratio],
 							"@FIN_DAYS_IN_AR", [_Unguarded BSC Days in AR (days)],
+							"@FIN_NET_COLLECTION", [_Unguarded BSC Net Collection Rate],
 							"@FIN_DAYS_INVENTORY", [_Unguarded BSC Days Inventory (days)],
 							"@FIN_REVENUE_PER_BED", [_Unguarded BSC Revenue per Bed],
 							"@FIN_RETURN_ON_ASSETS", [_Unguarded BSC Return on Assets],
@@ -6440,6 +6487,7 @@ table _Measures
 										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
 										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
 										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_NET_COLLECTION", MAXX ( PeriodMeasures, [@FIN_NET_COLLECTION] ),
 										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
 										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
 										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
@@ -6609,7 +6657,7 @@ table _Measures
 						& "|" & CONCATENATEX ( MonthScores, IF ( ISNUMBER ( [@Target] ), FORMAT ( [@Target], "0.############", "en-US" ) ), ";", [@Period], ASC )
 						& "|" & CONCATENATEX ( MonthScores, IF ( ISNUMBER ( [@Score] ), FORMAT ( [@Score], "0.############", "en-US" ) ), ";", [@Period], ASC )
 			) -- end of measure body
-			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			VAR __Wrong = [_Guard 21 facts #44b6d100]
 			RETURN IF ( __Wrong = "", __Value, """BSC Visual Payload"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Balanced Scorecard\Visual
@@ -6652,6 +6700,7 @@ table _Measures
 									"@FIN_COST_TO_REVENUE", [BSC Cost to Revenue],
 									"@FIN_CONSUMABLES_RATIO", [BSC Consumables Ratio],
 									"@FIN_DAYS_IN_AR", [BSC Days in AR (days)],
+									"@FIN_NET_COLLECTION", [BSC Net Collection Rate],
 									"@FIN_DAYS_INVENTORY", [BSC Days Inventory (days)],
 									"@FIN_REVENUE_PER_BED", [BSC Revenue per Bed],
 									"@FIN_RETURN_ON_ASSETS", [BSC Return on Assets],
@@ -6732,6 +6781,7 @@ table _Measures
 										"FIN_COST_TO_REVENUE", MAXX ( PeriodMeasures, [@FIN_COST_TO_REVENUE] ),
 										"FIN_CONSUMABLES_RATIO", MAXX ( PeriodMeasures, [@FIN_CONSUMABLES_RATIO] ),
 										"FIN_DAYS_IN_AR", MAXX ( PeriodMeasures, [@FIN_DAYS_IN_AR] ),
+										"FIN_NET_COLLECTION", MAXX ( PeriodMeasures, [@FIN_NET_COLLECTION] ),
 										"FIN_DAYS_INVENTORY", MAXX ( PeriodMeasures, [@FIN_DAYS_INVENTORY] ),
 										"FIN_REVENUE_PER_BED", MAXX ( PeriodMeasures, [@FIN_REVENUE_PER_BED] ),
 										"FIN_RETURN_ON_ASSETS", MAXX ( PeriodMeasures, [@FIN_RETURN_ON_ASSETS] ),
@@ -6874,7 +6924,7 @@ table _Measures
 					IF ( ISNUMBER ( A ), FORMAT ( A, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( T ), FORMAT ( T, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( V ), FORMAT ( V, "0.############", "en-US" ) ) & "|" & IF ( ISNUMBER ( S ), FORMAT ( S, "0.############", "en-US" ) )
 						& "|" & StateWord & "|" & IF ( ISNUMBER ( WeightValue ), FORMAT ( WeightValue, "0.############", "en-US" ) ) & "|||"
 			) -- end of measure body
-			VAR __Wrong = [_Guard 20 facts #b6b7dad9]
+			VAR __Wrong = [_Guard 21 facts #44b6d100]
 			RETURN IF ( __Wrong = "", __Value, """BSC Visual Payload Scores"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Balanced Scorecard\Visual
@@ -6952,8 +7002,8 @@ table _Measures
 
 		annotation hnh_guard_allow = BSC KPI
 
-	/// Filtered tables that cannot filter Admissions, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 14 facts #797d2218' =
+	/// Filtered tables that cannot filter Admissions, BSC AR Collections, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 15 facts #f1ff93bc' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -6966,6 +7016,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -7048,8 +7099,8 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
-	/// Filtered tables that cannot filter Admissions, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 17 facts #3ba24bc3' =
+	/// Filtered tables that cannot filter Admissions, BSC AR Collections, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 18 facts #27e18bc6' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -7062,6 +7113,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -7144,8 +7196,8 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
-	/// Filtered tables that cannot filter Admissions, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, BSC Targets, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Targets, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 19 facts #e451b8cd' =
+	/// Filtered tables that cannot filter Admissions, BSC AR Collections, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, BSC Targets, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Targets, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 20 facts #f450ebef' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -7158,6 +7210,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -7240,8 +7293,8 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
-	/// Filtered tables that cannot filter Admissions, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, BSC Targets, BSC Weights, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Targets, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 20 facts #b6b7dad9' =
+	/// Filtered tables that cannot filter Admissions, BSC AR Collections, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, BSC Targets, BSC Weights, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Targets, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 21 facts #44b6d100' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -7254,6 +7307,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -7349,6 +7403,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7441,6 +7496,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7536,6 +7592,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7630,6 +7687,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7724,6 +7782,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7815,6 +7874,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7903,6 +7963,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -7998,6 +8059,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8088,6 +8150,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8178,6 +8241,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8268,6 +8332,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8358,6 +8423,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8435,6 +8501,103 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
+	/// Filtered tables that cannot filter BSC AR Collections, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard BSC AR Collections' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
 	/// Filtered tables that cannot filter BSC Budgeted FTE, Requisitions, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard BSC Budgeted FTE + Requisitions' =
 			VAR __Names =
@@ -8449,6 +8612,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8546,6 +8710,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -8642,6 +8807,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -8739,6 +8905,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -8835,6 +9002,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
@@ -8930,6 +9098,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -9025,6 +9194,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
 				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
@@ -9120,6 +9290,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9214,6 +9385,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9311,6 +9483,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9408,6 +9581,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9505,6 +9679,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9598,6 +9773,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9685,6 +9861,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9776,6 +9953,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9868,6 +10046,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -9957,6 +10136,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10050,6 +10230,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10144,6 +10325,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10238,6 +10420,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10324,6 +10507,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10421,6 +10605,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10518,6 +10703,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10614,6 +10800,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10707,6 +10894,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10796,6 +10984,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10889,6 +11078,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -10985,6 +11175,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11082,6 +11273,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11179,6 +11371,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11267,6 +11460,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11360,6 +11554,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11449,6 +11644,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11544,6 +11740,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11641,6 +11838,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11732,6 +11930,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11826,6 +12025,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11913,6 +12113,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -11999,6 +12200,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12090,6 +12292,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12178,6 +12381,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12271,6 +12475,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12367,6 +12572,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12458,6 +12664,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12553,6 +12760,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12647,6 +12855,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12742,6 +12951,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12834,6 +13044,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -12922,6 +13133,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -13010,6 +13222,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -13099,6 +13312,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -13188,6 +13402,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -13283,6 +13498,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -13370,6 +13586,7 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
 				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
 				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
@@ -13666,6 +13883,13 @@ table _Measures
 					+ CALCULATE ( [Revenue], 'Care Type'[Care Type] = "IP", 'Charge Lines'[Is LTC] = "No" ),
 				[Revenue]
 			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of BSC Net Collection Rate without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded BSC Net Collection Rate' =
+			DIVIDE ( [BSC AR Collected], [BSC Credit AR Average] )
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded

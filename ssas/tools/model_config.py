@@ -94,6 +94,7 @@ TABLES = [
     Table("ssas_fact_bsc_manual_value", "BSC Manual Values", "fact", "Monthly KPI values entered by the BI manager."),
     Table("ssas_fact_bsc_budgeted_fte", "BSC Budgeted FTE", "fact", "Budgeted FTE per hospital and year (job vacancy rate)."),
     Table("ssas_fact_bsc_licensed_beds", "BSC Licensed Beds", "fact", "Licensed beds per hospital and year (activated bed rate)."),
+    Table("ssas_fact_bsc_ar_collection_monthly", "BSC AR Collections", "fact", "Credit-patient AR receipts and the credit AR balance per hospital and month (net collection rate)."),
     Table("ssas_fact_gl_fs_monthly", "GL FS Monthly", "fact", "Monthly GL balances per hospital and account, Oasis before each branch's Fusion cutover and Fusion after it."),
     Table("ssas_fact_bsc_workforce_monthly", "Workforce Monthly", "fact", "Heads, part-time doctors and resignations per hospital, month end and person, by the scorecard rules."),
     Table("ssas_fact_recruiting_requisition", "Requisitions", "fact", "Approved Oracle Recruiting requisitions of the hospitals."),
@@ -197,8 +198,8 @@ ACTIVE_DATE = {
     "Leave Balances": "accrual_period_date_key", "Absences": "start_date_key", "Absence Days": "date_key",
     "Staff Productivity": "month_date_key",
     "BSC Targets": "month_date_key", "BSC Manual Values": "month_date_key", "BSC Budgeted FTE": "year_date_key",
-    "BSC Licensed Beds": "year_date_key", "GL FS Monthly": "month_date_key", "Workforce Monthly": "month_date_key",
-    "Requisitions": "filled_date_key",
+    "BSC Licensed Beds": "year_date_key", "BSC AR Collections": "month_date_key", "GL FS Monthly": "month_date_key",
+    "Workforce Monthly": "month_date_key", "Requisitions": "filled_date_key",
 }
 
 ACTIVE_TIME = {
@@ -252,6 +253,7 @@ PERSPECTIVES = {
     "Patient Experience": ["Survey Responses", "Survey Answers"],
     "Patient Details": ["Encounters", "Admissions", "Episodes", "Invoices"],
     "Balanced Scorecard": ["BSC Targets", "BSC Weights", "BSC Manual Values", "BSC Budgeted FTE", "BSC Licensed Beds",
+                           "BSC AR Collections",
                            "GL FS Monthly", "Workforce Monthly", "Requisitions", "Charge Lines", "Encounters",
                            "Admissions", "Episodes", "Bed Occupancy", "Clinic Capacity", "Claim Lines", "Pre-auth Lines",
                            "Invoices", "Survey Answers", "Income Statement", "Targets",

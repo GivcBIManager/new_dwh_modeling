@@ -73,3 +73,20 @@ models:
       - hnh_unique_combination:
           columns: [branch_key, year_date_key]
           config: {severity: warn}
+  - name: fact_bsc_ar_collection_monthly
+    description: >
+      Credit-patient AR collections and the credit AR balance per hospital and month (KPI 7, Net Collection Rate). Oasis
+      AR sub-ledger receipts of non-patient accounts before the branch's Fusion GL cutover, Fusion Receivables receipts
+      on the trade receivables accounts from it. The balance is the net trade receivables of fact_gl_fs_monthly without
+      the cash-patient AR accounts.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start]
+          config: {severity: warn}
+    columns:
+      - name: branch_key
+        tests:
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+      - name: source_system
+        tests:
+          - accepted_values: {values: ['oasis', 'fusion'], config: {severity: warn}}

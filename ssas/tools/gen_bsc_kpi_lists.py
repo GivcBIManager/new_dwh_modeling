@@ -31,6 +31,7 @@ KPIS = [
     ("FIN_COST_TO_REVENUE", "BSC Cost to Revenue"),
     ("FIN_CONSUMABLES_RATIO", "BSC Consumables Ratio"),
     ("FIN_DAYS_IN_AR", "BSC Days in AR (days)"),
+    ("FIN_NET_COLLECTION", "BSC Net Collection Rate"),
     ("FIN_DAYS_INVENTORY", "BSC Days Inventory (days)"),
     ("FIN_REVENUE_PER_BED", "BSC Revenue per Bed"),
     ("FIN_RETURN_ON_ASSETS", "BSC Return on Assets"),

@@ -49,6 +49,7 @@ PARTS = {
     "FIN_COST_TO_REVENUE": ("[BSC GL Net Revenue] - [BSC GL EBITDA]", "[BSC GL Net Revenue]", "ratio"),
     "FIN_CONSUMABLES_RATIO": ("[BSC GL Consumables]", "[BSC GL Net Revenue]", "ratio"),
     "FIN_DAYS_IN_AR": ("[BSC GL AR Average] * [BSC Days in Period]", "[BSC GL Net Revenue]", "ratio"),
+    "FIN_NET_COLLECTION": ("[BSC AR Collected]", "[BSC Credit AR Average]", "ratio"),
     "FIN_DAYS_INVENTORY": ("[BSC GL Inventory Average] * [BSC Days in Period]", "[BSC GL COGS]", "ratio"),
     "FIN_REVENUE_PER_BED": ("[BSC GL Net Revenue]", "[BSC Available Beds]", "ratio"),
     "FIN_RETURN_ON_ASSETS": ("[BSC GL Income]", "[BSC GL Assets Opening]", "ratio"),

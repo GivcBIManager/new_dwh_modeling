@@ -1,0 +1,57 @@
+/// Credit-patient AR receipts and the credit AR balance per hospital and month (net collection rate).
+table 'BSC AR Collections'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column 'Collected Amount'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: collected_amount
+
+	column 'Credit AR Opening'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: credit_ar_opening
+
+	column 'Credit AR Closing'
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: credit_ar_closing
+
+	column 'Month Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: month_date_key
+
+	partition 'BSC AR Collections' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_fact_bsc_ar_collection_monthly")
+				in
+				    Source
+
+	annotation hnh_kind = fact
+	annotation hnh_view = ssas_fact_bsc_ar_collection_monthly

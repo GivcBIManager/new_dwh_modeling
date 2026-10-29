@@ -1,0 +1,1 @@
+{{ hnh_ssas_view('fact_bsc_ar_collection_monthly', drop=['month_start'], decimals=['collected_amount', 'credit_ar_opening', 'credit_ar_closing'], extra=['toInt64(toYYYYMMDD(t.month_start)) as month_date_key']) }}

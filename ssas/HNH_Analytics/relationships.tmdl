@@ -181,6 +181,14 @@ relationship bed_occupancy_department_key
 	fromColumn: 'Bed Occupancy'.'Department Key'
 	toColumn: Department.'Department Key'
 
+relationship bsc_ar_collections_branch_key
+	fromColumn: 'BSC AR Collections'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship bsc_ar_collections_month_date_key
+	fromColumn: 'BSC AR Collections'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
 relationship bsc_budgeted_fte_branch_key
 	fromColumn: 'BSC Budgeted FTE'.'Branch Key'
 	toColumn: Branch.'Branch Key'

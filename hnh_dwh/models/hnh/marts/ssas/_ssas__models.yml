@@ -1428,6 +1428,22 @@ models:
         data_type: "String"
       - name: is_inpatient_ward
         data_type: "String"
+  - name: ssas_fact_bsc_ar_collection_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: source_system
+        data_type: "String"
+      - name: collected_amount
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: credit_ar_opening
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: credit_ar_closing
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: month_date_key
+        data_type: "Int64"
   - name: ssas_fact_bsc_budgeted_fte
     config:
       contract: {enforced: true}

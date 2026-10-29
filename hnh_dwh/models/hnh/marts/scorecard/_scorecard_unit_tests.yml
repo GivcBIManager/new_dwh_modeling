@@ -129,3 +129,73 @@ unit_tests:
             (2, 20260930, 'staff-31', 'resignation', 31, -1, 0, 0, 0, 0, 0, 1, 'oasis', -1, -1, -1, -1, -1, -1),
             (6, 20251231, 'staff-33', 'resignation', 33, -1, 0, 0, 0, 0, 0, 1, 'oasis', -1, -1, -1, -1, -1, -1),
             (6, 20260930, 'emp-701', 'resignation', -1, 701, 0, 0, 0, 0, 0, 1, 'fusion', 906, 11, 21, 31, 41, 7))
+
+  - name: fact_bsc_ar_collection_monthly_credit_receipts_by_cutover
+    description: >
+      Branch 1 has no cutover row, so it stays on Oasis: June's insurer receipt of 1,000 less its 100 reversal counts,
+      the CASHACC receipt and the receipt on the patient's own account do not. Its AR balance is the trade receivables
+      (provision included) without 11200007, the inpatient cash account. Branch 6 moves to Fusion in May: its April
+      Oasis receipt counts, its June Oasis receipt and its April Fusion receipt do not. In June the Fusion Receivables
+      receipt of 800 lands on the unapplied receipts control and its 300 application moves between AR accounts (net
+      0); the receipt on 11303101 (A/R - Cash), the credit memo and the bank clearing line are left out.
+    model: fact_bsc_ar_collection_monthly
+    given:
+      - input: ref('stg_ref__gl_cutover')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_id, toInt32(202605) as first_fusion_gl_month, toDate('2026-05-01') as first_fusion_gl_month_start
+      - input: ref('stg_oasis__ar_documents')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, toNullable(t) as doc_type, toNullable(a) as account_code, toNullable(e) as ext_ref,
+                 toNullable(toDateTime(d, 'Asia/Riyadh')) as doc_at, toFloat64(amt) as total_doc_price
+          from values('b UInt8, t String, a String, e String, d String, amt Float64',
+              (1, 'RECEIPT', 'INS-1014-0087', '', '2026-06-10 10:00:00', -1000),
+              (1, 'RECEIPT', 'INS-1014-0087', '', '2026-06-20 10:00:00', 100),
+              (1, 'RECEIPT', 'CASHACC', '', '2026-06-10 10:00:00', -500),
+              (1, 'RECEIPT', '12345', '12345', '2026-06-11 10:00:00', -200),
+              (1, 'INVOICEAR', 'INS-1014-0087', '', '2026-06-05 10:00:00', 4000),
+              (6, 'RECEIPT', 'DIR-0006-01', '', '2026-04-15 10:00:00', -700),
+              (6, 'RECEIPT', 'DIR-0006-01', '', '2026-06-15 10:00:00', -900))
+      - input: ref('hnh_fact_gl_journal_line')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toInt64(a) as gl_account_key, toNullable(toInt32(d)) as accounting_date_key,
+                 toNullable(s) as je_source, toNullable(c) as je_category, toFloat64(dr) as debit, toFloat64(cr) as credit
+          from values('a UInt32, d UInt32, s String, c String, dr Float64, cr Float64',
+              (11, 20260612, 'Receivables', 'Receipts', 0, 800),
+              (19, 20260612, 'Receivables', 'Receipts', 800, 0),
+              (11, 20260620, 'Receivables', 'Receipts', 300, 0),
+              (12, 20260620, 'Receivables', 'Receipts', 0, 300),
+              (13, 20260620, 'Receivables', 'Receipts', 0, 50),
+              (12, 20260625, 'Receivables', 'Credit Memos', 0, 200),
+              (11, 20260415, 'Receivables', 'Receipts', 0, 600))
+      - input: ref('hnh_dim_gl_account')
+        format: sql
+        rows: |
+          select toInt64(k) as gl_account_key, toNullable(toUInt32(n)) as natural_account, toInt64(f) as fs_line_key
+          from values('k UInt32, n UInt32, f UInt32', (11, 11105701, 1), (12, 11303102, 1), (13, 11303101, 1), (19, 11104117, 2))
+      - input: ref('dim_fs_line')
+        format: sql
+        rows: |
+          select toInt64(f) as fs_line_key, c as fs_caption, l as fs_line
+          from values('f UInt32, c String, l String', (1, 'Trade receivables, net', 'Trade receivables'),
+                      (2, 'Cash and cash equivalents', 'Bank clearing'))
+      - input: ref('fact_gl_fs_monthly')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_key, toDate(m) as month_start, s as source_system, a as account_code,
+                 c as fs_caption, toFloat64(o) as opening_balance, toFloat64(0) as opening_journal_amount, toFloat64(cl) as closing_balance
+          from values('b UInt8, m String, s String, a String, c String, o Float64, cl Float64',
+              (1, '2026-06-01', 'oasis', '11200000', 'trade receivables, net', 5000, 6000),
+              (1, '2026-06-01', 'oasis', '21500001', 'trade receivables, net', -500, -600),
+              (1, '2026-06-01', 'oasis', '11200007', 'trade receivables, net', 300, 400),
+              (1, '2026-06-01', 'oasis', '11101001', 'cash and cash equivalents', 900, 950),
+              (6, '2026-06-01', 'fusion', '11303102', 'trade receivables, net', 2000, 1700),
+              (6, '2026-06-01', 'fusion', '11105701', 'trade receivables, net', 0, -500),
+              (6, '2026-06-01', 'fusion', '11303101', 'trade receivables, net', -50, -100))
+    expect:
+      rows:
+        - {branch_key: 1, month_start: '2026-06-01', source_system: oasis, collected_amount: 900, credit_ar_opening: 4500, credit_ar_closing: 5400}
+        - {branch_key: 6, month_start: '2026-04-01', source_system: oasis, collected_amount: 700, credit_ar_opening: 0, credit_ar_closing: 0}
+        - {branch_key: 6, month_start: '2026-06-01', source_system: fusion, collected_amount: 800, credit_ar_opening: 2000, credit_ar_closing: 1200}
