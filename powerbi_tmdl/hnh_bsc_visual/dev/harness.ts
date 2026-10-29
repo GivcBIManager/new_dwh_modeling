@@ -70,7 +70,7 @@ function branchPayload(kind: string, spec: Spec, tilt: number): string {
         // A score above 100 (scoring changes come later): the number prints in full, rings and bars stop at 100.
         const trend = Array.from({ length: MONTHS }, (_, i) => spec.target * (1.2 + i * 0.02));
         const actual = trend[MONTHS - 1];
-        return payload({ actual, target: spec.target, variance: actual / spec.target - 1, score: 112, state: "On track", weight: 2,
+        return payload({ actual, target: spec.target, variance: actual / spec.target - 1, score: 112, state: "On track", weight: 0.02,
             trend, targetTrend: Array(MONTHS).fill(spec.target), scoreTrend: trend.map((_, i) => 100 + i) });
     }
     const target = spec.target * (1 + (rnd() - 0.5) * 0.04);
@@ -81,7 +81,7 @@ function branchPayload(kind: string, spec: Spec, tilt: number): string {
     trend[MONTHS - 1] = actual;
     return payload({
         // Payload field 3 is direction-adjusted (positive = better than target), as [BSC Visual Payload] sends it.
-        actual, target, variance: signedVariance(variance, spec.dir), score, state: stateOf(score), weight: 1 + Math.floor(rnd() * 3),
+        actual, target, variance: signedVariance(variance, spec.dir), score, state: stateOf(score), weight: (1 + Math.floor(rnd() * 3)) / 100,
         trend, targetTrend: Array(MONTHS).fill(target), scoreTrend: trend.map(v => scoreOf(v / target - 1, spec.dir)),
     });
 }

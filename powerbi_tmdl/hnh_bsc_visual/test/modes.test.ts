@@ -269,7 +269,7 @@ describe("board", () => {
         expect(r.getAttribute("tabindex")).toBe("0");
         expect(r.children.length).toBe(7);
         expect(r.querySelector(".chip.bad")!.textContent).toBe("At risk");
-        expect(r.querySelector(".bd-obj")!.textContent).toBe("Obj");
+        expect(r.querySelector(".bd-obj-t")!.textContent).toBe("Obj");
         expect(r.querySelector(".c-actual")!.textContent).toBe("50.0%");
         expect(r.querySelector(".c-target")!.textContent).toBe("≥ 50.0%");
         expect(r.querySelector(".c-score")!.textContent).toBe("60");
@@ -301,7 +301,7 @@ describe("board", () => {
         const rs = [row("P1", "Financial", 1, 0.3, { kpiStatus: "parked", payload: payload({ state: "Parked" }) })];
         const r = draw(rs).querySelector(".bd-row")!;
         expect(r.querySelector(".chip.nodata")!.textContent).toBe("Parked");
-        expect(r.querySelector(".bd-obj")!.textContent).toBe("Definition to be agreed");
+        expect(r.querySelector(".bd-obj-t")!.textContent).toBe("Definition to be agreed");
         expect(r.querySelector(".c-actual")!.textContent).toBe("–");
         expect(r.querySelector(".c-var")!.textContent).toBe("–");
         expect(r.querySelector(".c-score")!.textContent).toBe("–");
@@ -319,6 +319,19 @@ describe("board", () => {
         const [m1, m2] = [...draw(rs).querySelectorAll(".bd-row")];
         expect(m1.querySelector(".bd-name .bd-tag")!.textContent).toBe("Manual");
         expect(m2.querySelector(".bd-tag")).toBeNull();
+    });
+    it("hints each KPI's weight (share of the overall score) after the objective, and none without a weight", () => {
+        const rs = [
+            row("W1", "Financial", 1, 0.3, { payload: payload({ actual: 1, target: 1, variance: 0, score: 85, state: "On track", weight: 0.042 }) }),
+            row("W2", "Financial", 1, 0.3, { displayOrder: 2, payload: payload({ actual: 1, target: 1, variance: 0, score: 85, state: "On track", weight: 0.0165 }) }),
+            row("W3", "Financial", 1, 0.3, { displayOrder: 3, payload: payload({ actual: 1, target: 1, variance: 0, score: 85, state: "On track" }) }),
+        ];
+        const [w1, w2, w3] = [...draw(rs).querySelectorAll(".bd-row")];
+        expect(w1.querySelector(".bd-obj .bd-wt")!.textContent).toBe("4.2% weight");
+        expect(w1.querySelector(".bd-wt")!.getAttribute("title")).toBe("KPI weight: 4.2% of the overall score");
+        expect(w1.querySelector(".bd-name .bd-wt")).toBeNull();
+        expect(w2.querySelector(".bd-wt")!.textContent).toBe("1.7% weight");
+        expect(w3.querySelector(".bd-wt")).toBeNull();
     });
     it("without a selected KPI the panel asks for one", () => {
         const b = draw();

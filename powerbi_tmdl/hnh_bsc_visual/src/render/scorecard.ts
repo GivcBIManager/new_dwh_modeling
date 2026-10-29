@@ -27,6 +27,14 @@ function trendCell(r: KpiRow, colourVar: string): HTMLElement {
     return cell;
 }
 
+/** The KPI's weight (its share of the overall score; a pillar's KPI weights add up to the pillar weight) as a small
+ * hint after the objective ("4.2% weight", "1.7% weight"); none without one. */
+function weightHint(r: KpiRow): HTMLElement | null {
+    if (!isNum(r.weight)) return null;
+    const pct = `${+(r.weight * 100).toFixed(1)}%`;
+    return el("span", { class: "bd-wt", title: `KPI weight: ${pct} of the overall score` }, [`${pct} weight`]);
+}
+
 function scoreRow(r: KpiRow, selected: boolean, colourVar: string): HTMLElement {
     const value = hasValue(r);
     const cls = stateClass(r.state);
@@ -36,9 +44,9 @@ function scoreRow(r: KpiRow, selected: boolean, colourVar: string): HTMLElement 
     }, [
         el("span", { class: "c-chip" }, [stateChip(r.state, r.stateWord)]),
         el("span", { class: "c-kpi" }, [
-            // The name gives way (ellipsis) before the Manual tag does.
+            // The name gives way (ellipsis) before the Manual tag does, the objective before the weight hint.
             el("span", { class: "bd-name" }, [el("span", { class: "bd-name-t" }, [r.name]), r.manual ? el("span", { class: "bd-tag" }, ["Manual"]) : null]),
-            el("span", { class: "bd-obj" }, [r.reason ?? r.objectiveTitle]),
+            el("span", { class: "bd-obj" }, [el("span", { class: "bd-obj-t" }, [r.reason ?? r.objectiveTitle]), weightHint(r)]),
         ]),
         el("span", { class: "c-actual" }, [value ? formatValue(r.actual, r.valueFormat) : DASH]),
         el("span", { class: "c-target" }, [targetText(r)]),
