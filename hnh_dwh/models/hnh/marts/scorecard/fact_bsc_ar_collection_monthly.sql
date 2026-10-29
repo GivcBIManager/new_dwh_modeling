@@ -1,7 +1,7 @@
 {{ config(order_by='(branch_key, month_start)') }}
 
 -- Credit-patient AR collections and the credit AR balance per hospital and month: KPI 7, Net Collection Rate =
--- collected in the period / credit AR closing balance at its end. Each branch-month takes one source, as fact_gl_fs_monthly does (map_gl_cutover):
+-- collected from 1 January / credit AR closing balance at the end of the month. Each branch-month takes one source, as fact_gl_fs_monthly does (map_gl_cutover):
 -- - before the branch's first Fusion GL month, the Oasis AR sub-ledger receipts of insurers, contracts and other
 --   non-patient accounts. The Oasis GL posts AR in consolidated batches that mix receipts with credit notes, so its
 --   documents are read instead;
