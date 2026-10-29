@@ -1,6 +1,8 @@
 -- Oasis document lines of the stock, purchasing and patient-invoice types, and credit notes so that Fusion references
 -- to them resolve (spec F8). quantity is in the product's base unit: qty_change, or qty_shipped on invoice lines that
 -- carry no qty_change; unit_cost and list_unit_price are per base unit.
+-- DOCL is loaded on its own AMEND_LAST_DATE, so the lake also holds lines whose header is dated before the history
+-- start (DOC starts there); only lines under a header in scope are kept.
 select
     toUInt8(branch_id)                      as branch_id,
     toInt64(line_id)                        as line_id,
@@ -28,3 +30,5 @@ select
     {{ hnh_code('uom_code') }}              as uom_code
 from {{ hnh_oasis_source('docl') }} final
 where doc_type in ('INVOICEAR', 'CREDITAR', 'STOCKISS', 'STOCKRCPT', 'PORDER')
+  and (branch_id, doc_id) in (select branch_id, doc_id from {{ hnh_oasis_source('doc') }} final
+                              where doc_date >= '{{ var("hnh_history_start_date") }}')
