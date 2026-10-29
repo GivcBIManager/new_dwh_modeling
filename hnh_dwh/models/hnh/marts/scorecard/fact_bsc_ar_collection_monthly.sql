@@ -25,7 +25,7 @@ with cutover as (
 oasis_receipts as (
     select
         r.branch_id                   as branch_key,
-        toStartOfMonth(r.doc_at)      as month_start,
+        toStartOfMonth(assumeNotNull(r.doc_at)) as month_start,  -- doc_at is Nullable; the where drops nulls (allow_nullable_key = 0)
         sum(-r.total_doc_price)       as collected
     from {{ ref('stg_oasis__ar_documents') }} as r
     left join cutover as c on c.branch_id = r.branch_id
