@@ -63,6 +63,7 @@ KPIS = [
     ("INT_ANCILLARY_UTILIZATION", "BSC Ancillary Utilization"),
     ("INT_REVENUE_LEAKAGE", "BSC Revenue Leakage"),
     ("INT_CLAIM_INITIAL_REJECTION", "BSC Claim Initial Rejection"),
+    ("INT_CLAIM_FINAL_REJECTION", "BSC Claim Final Rejection"),
     ("INT_ORDER_NOT_DONE", "BSC Order Not Done"),
     ("INT_APPROVAL_TAT", "BSC Approval TAT (min)"),
     ("INT_COST_BUDGET_VARIANCE", "BSC Cost Budget Variance"),

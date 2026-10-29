@@ -155,6 +155,7 @@ PARTS = {
         f"CALCULATE ( SUM ( Invoices[Net Amount] ), {_LEAKAGE}, 'Claim Status'[Is Submitted] = \"No\" )",
         f"CALCULATE ( SUM ( Invoices[Net Amount] ), {_LEAKAGE} )", "ratio"),
     "INT_CLAIM_INITIAL_REJECTION": ("[Claims Rejected]", "[Claims Submitted]", "ratio"),
+    "INT_CLAIM_FINAL_REJECTION": ("[BSC GL Rejection]", "[Claims Submitted]", "ratio"),
     # BSC Order Not Done is [Unutilised Approval Rate %] = DIVIDE ( [Unutilised Approvals], [Pre-auth Services] )
     "INT_ORDER_NOT_DONE": ("[Unutilised Approvals]", "[Pre-auth Services]", "ratio"),
     # BSC Approval TAT (min) is [Sent to Response Avg (min)], an AVERAGE
