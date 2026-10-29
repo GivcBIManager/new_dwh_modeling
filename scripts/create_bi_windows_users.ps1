@@ -64,9 +64,17 @@ function Set-SecretsAcl([string]$Path) {
 
 $rows = @(Import-Csv -Path $CsvPath -Encoding UTF8)
 $problems = @()
+# A domain account is written as its user principal name (<name>@hnhriyadh.com): it gets no local account or password,
+# only the group memberships (HNH_BI_Users is the member of the SSAS role HNH Readers).
+function Test-DomainLogin([string]$Login) { return $Login -match '^[^\\@\s]+@[^\\@\s]+$' }
 foreach ($r in $rows) {
+    if (Test-DomainLogin $r.login_name) {
+        if (-not $r.dep.Trim()) { $problems += "$($r.login_name): no dep" }
+        if ($r.branch_key -and -not $Branches.Contains($r.branch_key)) { $problems += "$($r.login_name): branch_key '$($r.branch_key)' is not 1-8" }
+        continue
+    }
     $parts = $r.login_name.Split('\')
-    if ($parts.Count -ne 2 -or $parts[0] -ne $machine) { $problems += "$($r.login_name): login must be $machine\<name>" }
+    if ($parts.Count -ne 2 -or $parts[0] -ne $machine) { $problems += "$($r.login_name): login must be $machine\<name> or <name>@<domain>" }
     elseif ($parts[1].Length -gt 20 -or $parts[1] -notmatch '^[A-Za-z0-9_.-]+$') { $problems += "$($r.login_name): name must be 1-20 of A-Z 0-9 _ . -" }
     if (-not $r.dep.Trim()) { $problems += "$($r.login_name): no dep" }
     if ($r.branch_key -and -not $Branches.Contains($r.branch_key)) { $problems += "$($r.login_name): branch_key '$($r.branch_key)' is not 1-8" }
@@ -77,7 +85,7 @@ $created = @(); $updated = 0; $joined = 0; $newGroups = @()
 $passwords = @{}
 # The built-in Administrator (SID ...-500) keeps its own name and gets no department group.
 $builtInName = (Get-LocalUser | Where-Object { $_.SID.Value -like '*-500' }).Name
-$deptRows = @($rows | Where-Object { $_.login_name.Split('\')[1] -ne $builtInName })
+$deptRows = @($rows | Where-Object { (Test-DomainLogin $_.login_name) -or $_.login_name.Split('\')[1] -ne $builtInName })
 $groups = @($AllUsersGroup) + @($deptRows | ForEach-Object { Get-DepartmentGroup $_.dep } | Sort-Object -Unique) +
     @($Branches.Values | ForEach-Object { "HNH_BI_Branch_$_" })
 foreach ($g in $groups) {
@@ -88,13 +96,21 @@ foreach ($g in $groups) {
 }
 
 foreach ($r in $rows) {
-    $name = $r.login_name.Split('\')[1]
+    $domainLogin = Test-DomainLogin $r.login_name
+    if ($domainLogin) {
+        # no local account; the memberships below use the UPN, which Add-LocalGroupMember resolves through the domain
+        $name = $r.login_name; $member = $r.login_name; $user = $null; $builtIn = $false
+    } else {
+        $name = $r.login_name.Split('\')[1]; $member = "$machine\$name"
+        $user = Get-LocalUser -Name $name -ErrorAction SilentlyContinue
+        $builtIn = $user -and $user.SID.Value -like '*-500'
+    }
     $fullName = $r.'FULL NAME'.Trim()
     $description = $r.Description.Trim()
     if ($description.Length -gt 48) { $description = $description.Substring(0, 47) + [char]0x2026 }   # local accounts allow 48
-    $user = Get-LocalUser -Name $name -ErrorAction SilentlyContinue
-    $builtIn = $user -and $user.SID.Value -like '*-500'
-    if (-not $user) {
+    if ($domainLogin) {
+        # nothing to create or update
+    } elseif (-not $user) {
         $created += $name
         if (-not $DryRun) {
             $plain = New-HnhPassword
@@ -111,11 +127,11 @@ foreach ($r in $rows) {
     foreach ($g in $wanted) {
         $isMember = $false
         if (-not ($newGroups -contains $g)) {
-            $isMember = @(Get-LocalGroupMember -Group $g | Where-Object { $_.Name -eq "$machine\$name" }).Count -gt 0
+            $isMember = @(Get-LocalGroupMember -Group $g | Where-Object { $_.Name -eq $member -or ($domainLogin -and $_.Name -like ('*\' + $member.Split('@')[0])) }).Count -gt 0
         }
         if (-not $isMember) {
             $joined++
-            if (-not $DryRun) { Add-LocalGroupMember -Group $g -Member $name }
+            if (-not $DryRun) { Add-LocalGroupMember -Group $g -Member $member }
         }
     }
 }

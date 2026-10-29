@@ -31,7 +31,7 @@ Never write a password into the repository or into a command that echoes it. DSN
 
 ## Server facts that affect the design
 
-- Workgroup machine, no Active Directory: SSAS `EffectiveUserName` fails ("your domain isn't available"). Run a test as a user by logging in as that local account.
+- The server joined the domain `HnhRiyadh.com` in October 2026 (it was a workgroup machine when the user flow was designed). Report users are local accounts `HNHANALYTICSSRV\<name>` or domain accounts; the `HNH Readers` role compares `USERPRINCIPALNAME()`, so a domain reader needs a `bi_users.csv` row with the UPN `<name>@hnhriyadh.com` or sees no data. Run a test as a user by logging in as that account.
 - An SSAS server administrator bypasses row filters. Security tests need a non-admin member of `HNH_BI_Users`.
 - System ANSI code page 1252. Through `MSDASQL`, the ClickHouse ODBC driver (1.4.3) reports `String` as `SQL_VARCHAR`, so Arabic text arrives as UTF-8 bytes read as 1252. It also reports `Decimal` with scale 0, so fractions are truncated (spike 2026-10-08).
 - Python 3.12 is installed for all users in `C:\Program Files\Python312` (on the machine PATH). `ssas/tools/generate.py` also needs `clickhouse_connect` and the `HNH_CH_*` environment variables.

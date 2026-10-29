@@ -2,6 +2,8 @@
 .SYNOPSIS
   Replace the BI users source of row security with bi_users.csv: default.bi_users (login, branch, admin, specialty)
   and default.map_bi_user_permission (pay and PII flags). Old rows are copied to backup tables, then removed.
+  A login is MACHINE\<name> (a local account) or <name>@<domain> (the user principal name of a domain account, which is
+  what USERPRINCIPALNAME() returns to the HNH Readers role).
   sec_user_access (and gold.ssas_sec_user_access) pick the new users up at the next dbt build of tag:hnh; SSAS at the
   next process.ps1 run after it.
     powershell -ExecutionPolicy Bypass -File scripts\load_bi_users.ps1 [-DryRun]
@@ -17,8 +19,14 @@ $machine = $env:COMPUTERNAME
 
 $rows = @(Import-Csv -Path $CsvPath -Encoding UTF8)
 $problems = @()
+# A login is a local account, MACHINE\<name> (create_bi_windows_users.ps1 creates it), or a domain account written as
+# its user principal name, <name>@hnhriyadh.com: the HNH Readers role compares USERPRINCIPALNAME(), which is the UPN of
+# a domain account. The server joined HnhRiyadh.com in October 2026; a domain reader gets no local account.
+$upn = '^[^\\@\s]+@[^\\@\s]+$'
 foreach ($r in $rows) {
-    if ($r.login_name -notmatch ('^' + [regex]::Escape($machine) + '\\[^\\]+$')) { $problems += "$($r.login_name): login must be $machine\<name>" }
+    if ($r.login_name -notmatch ('^' + [regex]::Escape($machine) + '\\[^\\]+$') -and $r.login_name -notmatch $upn) {
+        $problems += "$($r.login_name): login must be $machine\<name> or <name>@<domain> (the UPN of a domain account)"
+    }
     if ($r.branch_key -and $r.branch_key -notmatch '^[1-8]$') { $problems += "$($r.login_name): branch_key '$($r.branch_key)' is not 1-8" }
     foreach ($flag in 'is_admin', 'can_see_pay', 'can_see_pii') {
         if ($r.$flag -notmatch '^[01]$') { $problems += "$($r.login_name): $flag '$($r.$flag)' is not 0 or 1" }
