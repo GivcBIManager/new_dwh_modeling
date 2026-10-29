@@ -109,7 +109,7 @@ PARTS = {
     "CUS_NEW_PATIENTS": (f"CALCULATE ( COUNTROWS ( Encounters ), {_NEW_PATIENT} )", "[OP Visits]", "ratio"),
     "CUS_OP_WAIT": (f"CALCULATE ( SUM ( Encounters[Wait Minutes] ), {_OP_SEEN} )",
                     f"CALCULATE ( COUNT ( Encounters[Wait Minutes] ), {_OP_SEEN} )", "ratio"),
-    "CUS_NON_MOH_SHARE": ("CALCULATE ( [Revenue by Episode Payer], Payer[Is MOH] = \"No\" )",
+    "CUS_NON_MOH_SHARE": ("CALCULATE ( [Revenue by Episode Payer], Payer[Company] <> \"Moh\" )",
                           "[Revenue by Episode Payer]", "ratio"),
     "CUS_PAYER_VOLUME": ("CALCULATE ( [Census], Payer[Category] = \"Insurance\" )", "", "value"),
     "CUS_ACQUISITION_COST": ("[BSC GL Marketing]",
