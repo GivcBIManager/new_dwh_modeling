@@ -4021,65 +4021,79 @@ table _Measures
 			COUNTROWS ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted net revenue in SAR (budget line REV_NET, most likely).
+	/// Budgeted net revenue in SAR (budget line REV_NET, most likely). Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget Net Revenue' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "REV_NET" )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "REV_NET" )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget Net Revenue"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted EBITDA in SAR (budget line EBITDA, most likely).
+	/// Budgeted EBITDA in SAR (budget line EBITDA, most likely). Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget EBITDA' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "EBITDA" )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "EBITDA" )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget EBITDA"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted operating cost in SAR (budget lines TOTAL_DC + TOTAL_GA, most likely).
+	/// Budgeted operating cost in SAR (budget lines TOTAL_DC + TOTAL_GA, most likely). Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget Opex' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] IN { "TOTAL_DC", "TOTAL_GA" } )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] IN { "TOTAL_DC", "TOTAL_GA" } )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget Opex"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted G&A in SAR without marketing (TOTAL_GA minus GA_MARKETING, most likely), as bsc vw_financial.
+	/// Budgeted G&A in SAR without marketing (TOTAL_GA minus GA_MARKETING, most likely), as bsc vw_financial. Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget G&A' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "TOTAL_GA" )
-					- CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "GA_MARKETING" )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "TOTAL_GA" )
+						- CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "GA_MARKETING" )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget G&A"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted medical consumables in SAR (budget line DC_CONSUMABLES, most likely).
+	/// Budgeted medical consumables in SAR (budget line DC_CONSUMABLES, most likely). Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget Consumables' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "DC_CONSUMABLES" )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "DC_CONSUMABLES" )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget Consumables"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted selling and marketing expense in SAR (budget line GA_MARKETING, most likely), the budget of BSC GL Marketing.
+	/// Budgeted selling and marketing expense in SAR (budget line GA_MARKETING, most likely), the budget of BSC GL Marketing. Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget Marketing' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "GA_MARKETING" )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "GA_MARKETING" )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget Marketing"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Balanced Scorecard\Building Blocks
-	/// Budgeted cost of medicines in SAR (budget line DC_MEDICINES, most likely).
+	/// Budgeted cost of medicines in SAR (budget line DC_MEDICINES, most likely). Blank when the total is 0 (no budget loaded, as for new hospitals).
 	measure 'BSC Budget Medicines' =
 			VAR __Value = ( -- measure body
-				CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "DC_MEDICINES" )
+				VAR Total =
+					CALCULATE ( SUM ( 'Income Statement'[Budget Most Likely] ), 'Budget Line'[Budget Line Code] = "DC_MEDICINES" )
+				RETURN IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
 			) -- end of measure body
 			VAR __Wrong = [_Guard Income Statement]
 			RETURN IF ( __Wrong = "", __Value, """BSC Budget Medicines"" can't be analysed by " & __Wrong )
