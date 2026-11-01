@@ -80,12 +80,32 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
 |---|---|
 | Deploy (validate, test, promote) | `deploy.ps1 -Stage All`. Validate = Best Practice Analyzer. Test reuses the loaded `HNH_Analytics_Test` (metadata, new or changed tables, Daily refresh); add `-Full` to reload it from scratch (after a long gap, or when an old month's row count fails). The test database stays loaded after promotion. |
 | Try measure changes on the test database | `deploy.ps1 -Stage TestMeasures` (validate, metadata to `HNH_Analytics_Test` keeping its data, load unprocessed partitions, measure checks). The first run after a promotion loads the whole test database. |
-| After each successful dbt run | `process.ps1 -Mode Daily` (exit 2 = gate closed: no new successful `tag:hnh` run) |
+| After each successful dbt run | `process.ps1 -Mode Daily` (exit 2 = gate closed: no new successful `tag:hnh` run; `-Selected '<selector>'` when the dbt run used another selector) |
 | Friday | `process.ps1 -Mode Weekly` |
 | In January (partition roll-over) | After `process.ps1 -Mode Daily`, run `test.ps1 -Database HNH_Analytics -Stage RowCounts`. |
 | Test production | `test.ps1 -Database HNH_Analytics` |
 | Partition preview | `partitions.ps1 -Database HNH_Analytics -DryRun` |
 | Roll back | `deploy.ps1 -Stage Rollback -BackupFile HNH_Analytics_<timestamp>.abf` (last 5 backups kept in the SSAS backup folder) |
+
+## Trigger from Dagster
+
+Dagster on the dbt server (172.22.25.214) runs `process.ps1` over SSH after its dbt job, as the local account
+`HNHANALYTICSSRV\svc_dagster` (an SSAS server administrator, member of `OpenSSH Users`, key-only login; sshd listens on
+port 22 for that host only; set up 2026-11-01). The gate inside the script decides whether anything is processed, so
+the asset may run after every dbt job; exit code 2 is reported as "nothing new", not as a failure.
+
+1. Copy the private key `C:\HNH\secrets\svc_dagster_id_ed25519` to the Dagster host as `~/.ssh/svc_dagster_id_ed25519`
+   (mode 600) of the account that runs Dagster. Check: `ssh -i ~/.ssh/svc_dagster_id_ed25519 svc_dagster@hnhanalyticssrv whoami`.
+2. Add `dagster/hnh_analytics_refresh.py` to the Dagster project and merge its `defs`. Set `HNH_DBT_DEPS` to the dbt
+   asset keys of the hnh models and, when the dbt job does not run `tag:hnh`, the `selected` config to its selector
+   (the gate reads `gold.ssas_etl_run_log.selected`). Either add the asset to the dbt job's selection or keep the
+   module's schedules (Daily 03:00, Weekly on Friday).
+3. `process.ps1` writes its transcript to `ssas/logs/` and the last processed run to `ssas/state/<database>.json`
+   (`svc_dagster` has Modify on both); it reads ClickHouse through the system DSN `HNH_Gold`.
+
+The public key is `C:\ProgramData\ssh\svc_dagster_authorized_keys` (`Match User svc_dagster` in `sshd_config`,
+Windows Server 2025 also requires the `OpenSSH Users` group); to rotate, `ssh-keygen` a new pair into
+`C:\HNH\secrets\` and replace that file (owner Administrators, SYSTEM and Administrators full, svc_dagster read).
 
 ## Give a user access
 

@@ -3,14 +3,19 @@
   Processes HNH_Analytics after a successful dbt run (SSAS spec 9.4).
   Daily: partitions in line with today, dimensions + last 3 months + Later + No date of each large table + small facts, then Calculate.
   Weekly: full refresh. One transaction each. Exit 0 = processed, 2 = gate closed (nothing done), 1 = error.
+  The gate looks at the latest gold.ssas_etl_run_log row whose selected is -Selected (default tag:hnh): pass the
+  selector of the dbt run that was just made when it was not tag:hnh. Dagster calls this script over SSH as
+  svc_dagster (ssas/dagster/hnh_analytics_refresh.py, README "Trigger from Dagster").
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File ssas\scripts\process.ps1 -Mode Daily
+  powershell -ExecutionPolicy Bypass -File ssas\scripts\process.ps1 -Mode Daily -Selected 'source:press_ganey+'
 #>
 param(
     [string]$Server = 'HNHANALYTICSSRV\REPORTSERVERDB',
     [string]$Database = 'HNH_Analytics',
     [ValidateSet('Daily', 'Weekly')][string]$Mode = 'Daily',
     [string]$Dsn = 'HNH_Gold',
+    [ValidatePattern('^[A-Za-z0-9_:+.*@,/ \-]+$')][string]$Selected = 'tag:hnh',   # a dbt selector: no quotes or backslashes, it goes into SQL
     [string]$TabularEditorDir = 'C:\Program Files (x86)\Tabular Editor',
     [datetime]$Today = (Get-Date),
     [switch]$Force
@@ -32,7 +37,8 @@ try {
         $state = Get-Content $statePath -Raw | ConvertFrom-Json
         if ($state.run_finished_at) { $lastRun = [datetime]::ParseExact($state.run_finished_at, $format, $culture) }
     }
-    $run = Invoke-HnhOdbc -Dsn $Dsn -Query "select status, formatDateTime(run_finished_at, '%Y-%m-%d %H:%i:%S') as finished from gold.ssas_etl_run_log where selected = 'tag:hnh' order by run_finished_at desc limit 1"
+    $selectedSql = $Selected.Replace("'", "''")
+    $run = Invoke-HnhOdbc -Dsn $Dsn -Query "select status, formatDateTime(run_finished_at, '%Y-%m-%d %H:%i:%S') as finished from gold.ssas_etl_run_log where selected = '$selectedSql' order by run_finished_at desc limit 1"
     $status = ''; $finished = $null; $finishedText = $null
     if ($run.Rows.Count -gt 0) {
         $status = [string]$run.Rows[0]['status']
@@ -42,7 +48,7 @@ try {
     $since = $lastRun
     if ($Mode -eq 'Weekly') { $since = $null }
     if (-not $Force -and -not (Test-HnhGate -Status $status -FinishedAt $finished -LastProcessedRunAt $since)) {
-        Write-Host "Gate closed: latest tag:hnh run status '$status' finished '$finishedText'; last processed run '$lastRun'. Nothing processed."
+        Write-Host "Gate closed: latest '$Selected' run status '$status' finished '$finishedText'; last processed run '$lastRun'. Nothing processed."
         $exitCode = 2
     } else {
         Import-HnhTom $TabularEditorDir
