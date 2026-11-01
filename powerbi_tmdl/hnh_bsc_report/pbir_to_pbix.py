@@ -44,13 +44,18 @@ HOW_CREATED = {"User": 1, "Drillthrough": 5}
 INTERACTION = {"Default": 0, "DataFilter": 1, "HighlightFilter": 2, "NoFilter": 3}
 SORT = {"Ascending": 1, "Descending": 2}
 RESOURCE_ITEM = {"Image": 100, "CustomTheme": 201}
+# Version, Settings, Metadata and DiagramLayout are UTF-16 LE without a byte-order mark, [Content_Types].xml is UTF-8
+# with one, as in the package the server accepted (/Patient Experience/PGaney Patient Survey, 2026-10-26). The server
+# parses Metadata as UTF-16: a UTF-8 Metadata is refused with HTTP 400, "Unexpected character encountered while
+# parsing value" in ReportMetadataUtils.TryDeserializeReportMetadata (RSPowerBI log, 2026-11-01).
 VERSION_PART = "1.28".encode("utf-16-le")
 SETTINGS_PART = ('{"Version":4,"ReportSettings":{},"QueriesSettings":{"TypeDetectionEnabled":true,'
-                 '"RelationshipImportEnabled":true,"Version":"2.154.778.0"}}').encode("utf-8")
-METADATA_PART = '{"Version":5,"AutoCreatedRelationships":[],"CreatedFrom":"OnPrem","CreatedFromRelease":"2026.05"}'.encode("utf-8")
+                 '"RelationshipImportEnabled":true,"Version":"2.154.778.0"}}').encode("utf-16-le")
+METADATA_PART = ('{"Version":5,"AutoCreatedRelationships":[],"CreatedFrom":"OnPrem",'
+                 '"CreatedFromRelease":"2026.05"}').encode("utf-16-le")
 DIAGRAM_PART = ('{"version":"1.1.0","diagrams":[{"ordinal":0,"scrollPosition":{"x":0,"y":0},"nodes":[],"name":"All tables",'
                 '"zoomValue":100,"pinKeyFieldsToTop":false,"showExtraHeaderInfo":false,"hideKeyFieldsWhenCollapsed":false,'
-                '"tablesLocked":false}],"selectedDiagram":"All tables","defaultDiagram":"All tables"}').encode("utf-8")
+                '"tablesLocked":false}],"selectedDiagram":"All tables","defaultDiagram":"All tables"}').encode("utf-16-le")
 CONTENT_TYPES = (
     '<?xml version="1.0" encoding="utf-8"?>'
     '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
@@ -61,7 +66,7 @@ CONTENT_TYPES = (
     '<Override PartName="/Report/Layout" ContentType="" />'
     '<Override PartName="/Settings" ContentType="application/json" />'
     '<Override PartName="/Metadata" ContentType="application/json" />'
-    '<Override PartName="/Connections" ContentType="" /></Types>').encode("utf-8")
+    '<Override PartName="/Connections" ContentType="" /></Types>').encode("utf-8-sig")
 
 
 class Unsupported(ValueError):

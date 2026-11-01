@@ -97,6 +97,9 @@ def check_upload_rules(path) -> list[str]:
             raw = z.read(names[norm.index(LAYOUT)])
         if any(n.startswith("Report/definition/") or n == "Report/definition" for n in norm):
             problems.append("has a Report/definition/ entry (the site refuses the file)")
+        for part in ("Settings", "Metadata", "DiagramLayout"):
+            if part in norm and z.read(names[norm.index(part)])[:2] != b"\x7b\x00":
+                problems.append(f"{part} is not UTF-16 LE starting with '{{' (the site refuses the file)")
     if raw is not None:
         if raw[:2] in (b"\xff\xfe", b"\xfe\xff") or raw[:3] == b"\xef\xbb\xbf":
             problems.append("Report/Layout starts with a byte-order mark (Desktop reports the file as corrupt)")

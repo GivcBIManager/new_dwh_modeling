@@ -196,7 +196,7 @@ def good_parts(layout=None, bom=False):
         "Report/Layout": lb,
         "DataModel": b"fake stored model" * 10,
         "Report/CustomVisuals/hnh/package.json": b'{"x":1}',
-        "Settings": b"\x00\x01binary\xff",
+        "Settings": '{"Version":4,"ReportSettings":{}}'.encode("utf-16-le"),
     }
 
 
