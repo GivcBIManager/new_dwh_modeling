@@ -1,7 +1,9 @@
 {{ config(order_by='(login_name, branch_key)') }}
 
 -- The source UserName already carries an old domain prefix (domain, backslash, name) in mixed case.
--- The login is rebuilt as SSAS machine, backslash, lower-case name without the old prefix.
+-- The login is rebuilt as SSAS machine, backslash, lower-case name without the old prefix. A domain account is written
+-- as its user principal name (<name>@hnhriyadh.com, load_bi_users.ps1) and kept as that UPN, lower case: the HNH
+-- Readers role compares USERPRINCIPALNAME(), which returns the UPN for a domain account.
 with raw_users as (
     select
         {{ hnh_user_name('user_name') }} as normalised_name,
@@ -65,7 +67,8 @@ first_source_name as (
 select
     a.user_name                                                          as user_name,
     f.source_user_name                                                   as source_user_name,
-    concat('{{ var("hnh_ssas_machine_name") }}', char(92), a.user_name)   as login_name,
+    if(position(a.user_name, '@') > 0, a.user_name,
+       concat('{{ var("hnh_ssas_machine_name") }}', char(92), a.user_name)) as login_name,
     a.branch_key                                                         as branch_key,
     a.unified_specialty                                                  as unified_specialty,
     a.is_admin                                                           as is_admin,
