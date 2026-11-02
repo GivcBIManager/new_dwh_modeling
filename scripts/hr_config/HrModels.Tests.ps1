@@ -373,16 +373,20 @@ Describe 'DQ_B8_PAYROLL_COPY' {
 }
 
 Describe 'DQ_PAYROLL_MONTH_MISSING' {
-    $p = "(2, 'fusion', 1, 11, -1, 202608, 'Basic', 1), (2, 'fusion', 1, 11, -1, 202610, 'Basic', 1), " +
-         "(3, 'fusion', 2, 12, -1, 202609, 'Basic', 1), (3, 'fusion', 2, 12, -1, 202610, 'Basic', 1), (0, 'fusion', 3, 13, -1, 202601, 'Basic', 1)"
+    # Last closed month 202610: no hospital has it yet, so it is not a gap. Branch 2 misses 202608, which branch 3 has.
+    $p = "(2, 'fusion', 1, 11, -1, 202607, 'Basic', 1), (2, 'fusion', 1, 11, -1, 202609, 'Basic', 1), " +
+         "(3, 'fusion', 2, 12, -1, 202608, 'Basic', 1), (3, 'fusion', 2, 12, -1, 202609, 'Basic', 1), (0, 'fusion', 3, 13, -1, 202601, 'Basic', 1)"
     $rows = Of (Get-DqRecords @{ fact_payroll_monthly = $p }) 'DQ_PAYROLL_MONTH_MISSING'
-    It 'returns the hospital-month with no payroll up to the last closed month' {
+    It 'returns the hospital-month with no payroll that another hospital has, up to the last closed month' {
         $rows.Count | Should Be 1
         [int]$rows[0].branch_key | Should Be 2
         [int64]$rows[0].employee_key | Should Be -1
         $rows[0].field_name | Should Be 'payroll_month'
-        $rows[0].value_found | Should Be '202609'
-        Day $rows[0].record_date | Should Be '2026-09-01'
+        $rows[0].value_found | Should Be '202608'
+        Day $rows[0].record_date | Should Be '2026-08-01'
+    }
+    It 'does not flag a month no hospital has payroll for yet' {
+        @($rows | Where-Object { $_.value_found -eq '202610' }).Count | Should Be 0
     }
 }
 
@@ -416,9 +420,10 @@ Describe 'DQ_TERMINATED_WITH_BALANCE' {
 
 Describe 'DQ_FUTURE_DATED' {
     $rows = Of (Get-DqRecords @{
-        hnh_fact_worker_movement = "(5, 11, -1, 20261201), (5, 12, -1, 20261001)"
-        fact_absence = "(5, 13, -1, 20261120, 1, 'C', 1), (5, 14, -1, 20261101, 1, 'C', 1), (5, 15, -1, 20261201, 0, 'C', 1)" }) 'DQ_FUTURE_DATED'
-    It 'returns the movement and the counted absence dated after today' {
+        hnh_fact_worker_movement = "(5, 11, -1, 20271201), (5, 12, -1, 20261201), (5, 16, -1, 20261001)"
+        fact_absence = "(5, 13, -1, 20280110, 1, 'C', 1), (5, 14, -1, 20270601, 1, 'C', 1), (5, 15, -1, 20280110, 0, 'C', 1)" }) 'DQ_FUTURE_DATED'
+    # As of 2026-11-15: only dates after 2027-11-15 count; planned leave and pending actions within 12 months do not.
+    It 'returns the movement and the counted absence dated more than 12 months ahead' {
         $rows.Count | Should Be 2
         (@($rows | ForEach-Object { "$([int64]$_.employee_key):$($_.field_name)" }) | Sort-Object) -join ',' | Should Be '11:action_date,13:start_date'
         foreach ($r in $rows) { [int]$r.branch_key | Should Be 5 }

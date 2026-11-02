@@ -9,8 +9,8 @@
 -- test and the page cannot drift. "Today" is var hnh_bsc_as_of (empty = today()).
 with
     ifNull(toDateOrNull('{{ var('hnh_bsc_as_of') }}'), today())  as as_of_,
-    toInt32(toYYYYMMDD(as_of_))                                  as as_of_key_,
     toInt32(toYYYYMM(addMonths(toStartOfMonth(as_of_), -1)))     as last_closed_month_,
+    toInt32(toYYYYMMDD(addMonths(as_of_, 12)))                   as future_limit_key_,
 
 emp as (
     select employee_key, person_id, branch_key, worker_number, worker_type_code, is_terminated, termination_date,
@@ -157,7 +157,8 @@ b8_payroll_copy as (
 ),
 
 -- DQ_PAYROLL_MONTH_MISSING: for each hospital, a month from its first payroll month to the last closed month (the
--- month before today's) with no payroll row. The record is the hospital and month.
+-- month before today's) with no payroll row, while at least one other hospital has payroll for that month (so a month
+-- whose payroll no hospital has loaded yet, early in the next month, is not a gap). The record is the hospital and month.
 payroll_month_seen as (select branch_key, payroll_month from payroll where branch_key between 1 and 8 group by branch_key, payroll_month),
 payroll_month_missing as (
     select 'DQ_PAYROLL_MONTH_MISSING' as issue_code, g.branch_key as branch_key, toInt64(-1) as employee_key, toInt64(-1) as staff_key,
@@ -170,6 +171,7 @@ payroll_month_missing as (
                                                        - intDiv(first_month, 100) * 12 - first_month % 100 + 1)))) as month_date
     ) as g
     where (g.branch_key, g.payroll_month) not in (select branch_key, payroll_month from payroll_month_seen)
+      and g.payroll_month in (select payroll_month from payroll_month_seen)
 ),
 
 -- DQ_LEAVE_BALANCE_STOPS: a hospital whose leave balances stop. Its latest month is the month that holds most of its
@@ -201,18 +203,19 @@ terminated_with_balance as (
     where l.is_current_balance = 1 and e.is_terminated = 1
 ),
 
--- DQ_FUTURE_DATED (reconciliation section 5): worker movements, and counted absences, dated after today.
+-- DQ_FUTURE_DATED (reconciliation section 5): worker movements, and counted absences, dated more than 12 months after
+-- today. Planned leave and pending actions within the next year are normal and not flagged.
 future_dated as (
     select 'DQ_FUTURE_DATED' as issue_code, branch_key, employee_key, staff_key, null as worker_number, null as staff_id,
            'action_date' as field_name, toString(record_date) as value_found,
            makeDate(intDiv(action_date_key, 10000), intDiv(action_date_key, 100) % 100, action_date_key % 100) as record_date
     from {{ ref('hnh_fact_worker_movement') }}
-    where action_date_key > as_of_key_
+    where action_date_key > future_limit_key_
     union all
     select 'DQ_FUTURE_DATED', branch_key, employee_key, staff_key, null, null, 'start_date', toString(start_date_),
            makeDate(intDiv(start_date_key, 10000), intDiv(start_date_key, 100) % 100, start_date_key % 100) as start_date_
     from {{ ref('fact_absence') }}
-    where is_counted = 1 and start_date_key > as_of_key_
+    where is_counted = 1 and start_date_key > future_limit_key_
 ),
 
 -- DQ_NO_HOSPITAL: active employee with no hospital (branch 0; the CON contractors). Shown under Head Office.

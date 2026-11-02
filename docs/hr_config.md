@@ -112,4 +112,6 @@ SELECT issue_code, issue_name, area, fix_in, 'HR Operations', 'High', how_to_fix
 FROM default.map_hr_dq_issue WHERE issue_code = 'DQ_FTE_ZERO' ORDER BY changed_at DESC LIMIT 1;
 ```
 
+Parking an issue (`status = 'parked'`) also silences its dbt warn test, because the warn tests read `fact_hr_dq_record`, which keeps active issues only.
+
 A new issue also needs a dbt check that finds its records. Add the catalogue row with `status = 'parked'` until the check is built.
