@@ -1,9 +1,4 @@
 {{ config(severity='warn') }}
-
-select
-    branch_id,
-    {{ hnh_code('staff_id') }}  as staff_id_normalised,
-    groupArray(staff_id)        as raw_ids
-from {{ hnh_oasis_source('staff_master_data') }} final
-group by branch_id, staff_id_normalised
-having uniqExact(staff_id) > 1
+-- Oasis staff IDs of a branch that differ only in format (case, spaces); one row per raw ID.
+-- Rule and records: fact_hr_dq_record, issue DQ_STAFF_ID_FORMAT (shown on the HR dashboard's Data quality page).
+select * from {{ ref('fact_hr_dq_record') }} where issue_code = 'DQ_STAFF_ID_FORMAT'

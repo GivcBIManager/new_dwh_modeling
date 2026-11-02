@@ -83,3 +83,13 @@ def test_fusion_source_renders_the_fusion_table(project):
     (project / "staging" / "x" / "stg_f.sql").write_text(
         "select 1 from {{ hnh_fusion_source('fact_recruiting_requisition') }} final", encoding="utf-8")
     assert r.render("stg_f") == "select 1 from fusion.fact_recruiting_requisition final"
+
+
+def test_hnh_code_title_and_oasis_source_render_their_macro_sql(project):
+    (project / "marts" / "finance" / "fact_c.sql").write_text(
+        "select {{ hnh_code('s.staff_id') }} as c, {{ hnh_title('o.name') }} as n\n"
+        "from {{ hnh_oasis_source('staff_master_data') }} final", encoding="utf-8")
+    assert r.render("fact_c") == (
+        "select nullIf(upper(trimBoth(ifNull(toString(s.staff_id), ''))), '') as c, "
+        "if(match(o.name, '[a-z]') and match(o.name, '[A-Z]'), o.name, initcap(o.name)) as n\n"
+        "from oasis.staff_master_data final")

@@ -1,7 +1,8 @@
 """Render an hnh dbt model to plain ClickHouse SQL, for read-only checks through an ODBC DSN.
 
-dbt is not installed on HNHANALYTICSSRV. This handles only the Jinja the bsc models use: config(), ref(), source(),
-var(), hnh_settings(), hnh_oasis_gl_source() and hnh_fusion_source(); anything else stops with an error.
+dbt is not installed on HNHANALYTICSSRV. This handles only the Jinja the bsc and hr models use: config(), ref(), source(),
+var(), hnh_settings(), hnh_oasis_gl_source(), hnh_fusion_source(), hnh_oasis_source() (as the oasis source),
+hnh_code() and hnh_title() on a column name; anything else stops with an error.
 
   python scripts/render_model_sql.py bsc_vw_financial --inline fact_gl_fs_monthly,stg_bsc__oasis_gl_line \
       --replace stg_ref__gl_cutover=scripts/fixtures/gl_cutover_stub.sql --wrap "DESCRIBE ({model})" --out m.sql
@@ -76,6 +77,16 @@ def render(name, inline=frozenset(), replace=None, depth=0):
         m = re.fullmatch(r"hnh_fusion_source\('(\w+)'\)", expr)
         if m:
             return f"fusion.{m.group(1)}"
+        m = re.fullmatch(r"hnh_oasis_source\('(\w+)'\)", expr)
+        if m:
+            return f"oasis.{m.group(1)}"
+        m = re.fullmatch(r"hnh_code\('([\w.]+)'\)", expr)
+        if m:
+            return f"nullIf(upper(trimBoth(ifNull(toString({m.group(1)}), ''))), '')"
+        m = re.fullmatch(r"hnh_title\('([\w.]+)'\)", expr)
+        if m:
+            c = m.group(1)
+            return f"if(match({c}, '[a-z]') and match({c}, '[A-Z]'), {c}, initcap({c}))"
         m = re.fullmatch(r"var\('(\w+)'\)", expr)
         if m:
             return variables[m.group(1)]

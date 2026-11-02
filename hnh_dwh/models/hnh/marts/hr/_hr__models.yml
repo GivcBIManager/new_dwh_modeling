@@ -37,3 +37,27 @@ models:
         tests:
           - unique: {config: {severity: warn}}
           - not_null: {config: {severity: warn}}
+  - name: fact_hr_dq_record
+    description: >
+      One row per HR data quality issue and affected record (worker number, Oasis staff ID, field, value found), active
+      issues only. No names or amounts. Records with no hospital are under Head Office (100); record_date has no date key.
+    columns:
+      - name: hr_dq_issue_key
+        tests:
+          - not_null: {config: {severity: warn}}
+          - relationships: {to: ref('dim_hr_dq_issue'), field: hr_dq_issue_key, config: {severity: warn}}
+      - name: issue_code
+        tests:
+          - not_null: {config: {severity: warn}}
+      - name: branch_key
+        tests:
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 100], quote: false, config: {severity: warn}}
+      - name: employee_key
+        tests:
+          - relationships: {to: ref('hnh_dim_employee'), field: employee_key, config: {severity: warn}}
+      - name: staff_key
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key, config: {severity: warn}}
+      - name: field_name
+        tests:
+          - not_null: {config: {severity: warn}}
