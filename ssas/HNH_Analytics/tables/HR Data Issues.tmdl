@@ -1,0 +1,71 @@
+/// HR data quality issues with owner, severity and how to fix them.
+table 'HR Data Issues'
+
+	column 'HR Dq Issue Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_dq_issue_key
+
+	column 'Issue Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: issue_code
+
+	column 'Issue Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: issue_name
+
+	column Area
+		dataType: string
+		summarizeBy: none
+		sourceColumn: area
+
+	column 'Fix In'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fix_in
+
+	column Owner
+		dataType: string
+		summarizeBy: none
+		sourceColumn: owner
+
+	column Severity
+		dataType: string
+		summarizeBy: none
+		sourceColumn: severity
+
+	column 'How To Fix'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: how_to_fix
+
+	column 'Display Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: display_order
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	column 'Last Changed At'
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: last_changed_at
+
+	partition 'HR Data Issues' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_hr_dq_issue")
+				in
+				    Source
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_hr_dq_issue

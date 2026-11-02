@@ -626,6 +626,34 @@ relationship headcount_staff_key
 	fromColumn: Headcount.'Staff Key'
 	toColumn: Staff.'Staff Key'
 
+relationship hr_data_issue_records_branch_key
+	fromColumn: 'HR Data Issue Records'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship hr_data_issue_records_employee_key
+	fromColumn: 'HR Data Issue Records'.'Employee Key'
+	toColumn: Employee.'Employee Key'
+
+relationship hr_data_issue_records_hr_dq_issue_key
+	fromColumn: 'HR Data Issue Records'.'HR Dq Issue Key'
+	toColumn: 'HR Data Issues'.'HR Dq Issue Key'
+
+relationship hr_data_issue_records_staff_key
+	fromColumn: 'HR Data Issue Records'.'Staff Key'
+	toColumn: Staff.'Staff Key'
+
+relationship hr_targets_branch_key
+	fromColumn: 'HR Targets'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship hr_targets_hr_kpi_key
+	fromColumn: 'HR Targets'.'HR KPI Key'
+	toColumn: 'HR KPI'.'HR KPI Key'
+
+relationship hr_targets_month_date_key
+	fromColumn: 'HR Targets'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
 relationship income_statement_branch_key
 	fromColumn: 'Income Statement'.'Branch Key'
 	toColumn: Branch.'Branch Key'

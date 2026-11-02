@@ -1,0 +1,130 @@
+/// HR dashboard KPIs with definition, formula, direction and target source.
+table 'HR KPI'
+
+	column 'HR KPI Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: hr_kpi_key
+
+	column 'KPI Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: kpi_code
+
+	column Kind
+		dataType: string
+		summarizeBy: none
+		sourceColumn: kind
+
+	column 'KPI Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: kpi_name
+
+	column 'Short Label'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: short_label
+
+	column Area
+		dataType: string
+		summarizeBy: none
+		sourceColumn: area
+
+	column Definition
+		dataType: string
+		summarizeBy: none
+		sourceColumn: definition
+
+	column Formula
+		dataType: string
+		summarizeBy: none
+		sourceColumn: formula
+
+	column 'Source System'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source_system
+
+	column Grain
+		dataType: string
+		summarizeBy: none
+		sourceColumn: grain
+
+	column Caveats
+		dataType: string
+		summarizeBy: none
+		sourceColumn: caveats
+
+	column Direction
+		dataType: string
+		summarizeBy: none
+		sourceColumn: direction
+
+	column 'Value Format'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: value_format
+
+	column 'Display Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: display_order
+
+	column 'Measure Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: measure_name
+
+	column 'BSC KPI Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: bsc_kpi_code
+
+	column 'Target Source'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: target_source
+
+	column 'Needs Pay'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: needs_pay
+
+	column 'Is Home Tile'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: is_home_tile
+
+	column Status
+		dataType: string
+		summarizeBy: none
+		sourceColumn: status
+
+	column 'Last Changed At'
+		dataType: dateTime
+		formatString: yyyy-mm-dd hh:nn
+		summarizeBy: none
+		sourceColumn: last_changed_at
+
+	column 'BSC KPI Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: bsc_kpi_key
+
+	partition 'HR KPI' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_hr_kpi")
+				in
+				    Source
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_hr_kpi

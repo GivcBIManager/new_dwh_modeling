@@ -15,7 +15,7 @@ import bsc_kpi_parts  # noqa: E402
 SSAS = Path(__file__).resolve().parents[1]
 MODEL = SSAS / "HNH_Analytics"
 DOMAINS = {"Patient Flow", "Revenue Cycle", "Claims & Pre-auth", "Finance", "Workforce", "Supply Chain",
-           "Patient Experience", "Balanced Scorecard", t.DIAGNOSTICS}
+           "Patient Experience", "Balanced Scorecard", "HR Dashboard", t.DIAGNOSTICS}
 MEASURES_TEXT = (MODEL / "tables" / f"{t.MEASURE_TABLE}.tmdl").read_text(encoding="utf-8")
 MEASURES = t.measures(MEASURES_TEXT)
 NAMES = {m.name for m in MEASURES}

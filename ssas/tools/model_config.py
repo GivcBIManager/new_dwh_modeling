@@ -98,11 +98,18 @@ TABLES = [
     Table("ssas_fact_gl_fs_monthly", "GL FS Monthly", "fact", "Monthly GL balances per hospital and account, Oasis before each branch's Fusion cutover and Fusion after it."),
     Table("ssas_fact_bsc_workforce_monthly", "Workforce Monthly", "fact", "Heads, part-time doctors and resignations per hospital, month end and person, by the scorecard rules."),
     Table("ssas_fact_recruiting_requisition", "Requisitions", "fact", "Approved Oracle Recruiting requisitions of the hospitals."),
+    # HR dashboard: KPI catalogue, monthly targets and the data quality issues with their records.
+    Table("ssas_dim_hr_kpi", "HR KPI", "dim", "HR dashboard KPIs with definition, formula, direction and target source."),
+    Table("ssas_fact_hr_target_monthly", "HR Targets", "fact", "HR KPI targets and watch values per hospital and month."),
+    Table("ssas_dim_hr_dq_issue", "HR Data Issues", "dim", "HR data quality issues with owner, severity and how to fix them."),
+    Table("ssas_fact_hr_dq_record", "HR Data Issue Records", "fact", "One HR record that has a data quality issue."),
 ]
 
 DIM_KEYS = {
     "branch_key": ("Branch", "branch_key"),
     "bsc_kpi_key": ("BSC KPI", "bsc_kpi_key"),
+    "hr_kpi_key": ("HR KPI", "hr_kpi_key"),
+    "hr_dq_issue_key": ("HR Data Issues", "hr_dq_issue_key"),
     "patient_key": ("Patient", "patient_key"),
     "care_type_key": ("Care Type", "care_type_key"),
     "service_key": ("Service", "service_key"),
@@ -200,6 +207,7 @@ ACTIVE_DATE = {
     "BSC Targets": "month_date_key", "BSC Manual Values": "month_date_key", "BSC Budgeted FTE": "year_date_key",
     "BSC Licensed Beds": "year_date_key", "BSC AR Collections": "month_date_key", "GL FS Monthly": "month_date_key",
     "Workforce Monthly": "month_date_key", "Requisitions": "filled_date_key",
+    "HR Targets": "month_date_key",
 }
 
 ACTIVE_TIME = {
@@ -259,11 +267,16 @@ PERSPECTIVES = {
                            "Invoices", "Survey Answers", "Income Statement", "Targets",
                            # the family detail pages of the report (bsc report plan, Task 6)
                            "Order Lines", "GL Journal Lines", "Headcount", "Worker Movements", "Survey Responses"],
+    "HR Dashboard": ["Headcount", "Worker Movements", "Absences", "Absence Days", "Payroll", "Leave Balances",
+                     "Staff Productivity", "Workforce Monthly", "Requisitions", "BSC Budgeted FTE", "HR Targets",
+                     "HR Data Issue Records"],
 }
 PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"], "Workforce": ["Employee Details"],
-                     "Balanced Scorecard": ["BSC Parameters"]}
+                     "Balanced Scorecard": ["BSC Parameters"],
+                     "HR Dashboard": ["Employee Details", "HR KPI", "HR Data Issues"]}
 # Measures live in _Measures with display folder "<domain>\<topic>" (decision P26). A perspective shows the measures of
 # its own domain plus Diagnostics; these override that (None = every measure).
 PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"],
                                "Balanced Scorecard": ["Balanced Scorecard", "Revenue Cycle", "Claims & Pre-auth", "Finance",
-                                                      "Patient Flow", "Workforce", "Patient Experience"]}
+                                                      "Patient Flow", "Workforce", "Patient Experience"],
+                               "HR Dashboard": ["HR Dashboard", "Workforce", "Balanced Scorecard"]}
