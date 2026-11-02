@@ -7084,6 +7084,486 @@ table _Measures
 		displayFolder: Balanced Scorecard\Detail
 
 		annotation hnh_guard_allow = BSC KPI
+	/// Contingent workers as a share of all heads (contingent included) at the last closed month of the selection, by the Headcount rule (last closed month per branch, the projected current month excluded). Snapshot.
+	measure 'Contingent Share %' =
+			VAR __Value = ( -- measure body
+				VAR Heads =
+					SUMX (
+						VALUES ( Branch[Branch Key] ),
+						VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), REMOVEFILTERS ( Headcount ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), Headcount[Is Closed Month] = "Yes" )
+						RETURN
+							CALCULATE (
+								SUM ( Headcount[Headcount Units] ),
+								Headcount[Month Date Key] = LastMonth,
+								Headcount[Is Closed Month] = "Yes"
+							)
+					)
+				VAR Contingent =
+					SUMX (
+						VALUES ( Branch[Branch Key] ),
+						VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), REMOVEFILTERS ( Headcount ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), Headcount[Is Closed Month] = "Yes" )
+						RETURN
+							CALCULATE (
+								SUM ( Headcount[Headcount Units] ),
+								Headcount[Month Date Key] = LastMonth,
+								Headcount[Is Closed Month] = "Yes",
+								Headcount[Is Contingent] = "Yes"
+							)
+					)
+				RETURN DIVIDE ( Contingent, Heads )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Headcount]
+			RETURN IF ( __Wrong = "", __Value, """Contingent Share %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: HR Dashboard\Measures
+
+		annotation hnh_snapshot = 1
+	/// Female employees as a share of Headcount (contingent workers excluded) at the last closed month of the selection. Employees with no gender recorded count in the headcount only. Snapshot.
+	measure 'Female Share %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( CALCULATE ( [Headcount], KEEPFILTERS ( Headcount[Gender] = "F" ) ), [Headcount] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Headcount]
+			RETURN IF ( __Wrong = "", __Value, """Female Share %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: HR Dashboard\Measures
+
+		annotation hnh_snapshot = 1
+	/// Leavers of the selection (up to today) whose employee hire date lies within the 12 months before the leaving date, divided by the hires of the 12 months up to the selection's end (today at the latest). Fusion movements, so it does not reconcile with Turnover %. Blank for a selection wholly in the future.
+	measure 'New Hire Turnover %' =
+			VAR __Value = ( -- measure body
+				VAR EndDate = MIN ( MAX ( 'Date'[Date] ), TODAY () )
+				VAR NewLeavers =
+					COUNTROWS (
+						FILTER (
+							CALCULATETABLE ( 'Worker Movements', 'Worker Movements'[Is Leaver] = "Yes", KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ),
+							VAR LeaveDate = RELATED ( 'Date'[Date] )
+							VAR HireDate = RELATED ( Employee[Hire Date] )
+							RETURN NOT ISBLANK ( HireDate ) && HireDate <= LeaveDate && HireDate > EDATE ( LeaveDate, -12 )
+						)
+					)
+				VAR HiresBefore = CALCULATE ( [Hires], REMOVEFILTERS ( 'Date' ), 'Date'[Date] > EDATE ( EndDate, -12 ), 'Date'[Date] <= EndDate )
+				RETURN IF ( MIN ( 'Date'[Date] ) <= TODAY (), DIVIDE ( NewLeavers, HiresBefore ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """New Hire Turnover %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: HR Dashboard\Measures
+	/// Leave Balance (days) divided by the employees holding a balance in the same month: the last closed accrual month of the selection per branch, the latest period of each employee and plan. Snapshot.
+	measure 'Average Leave Balance (days)' =
+			VAR __Value = ( -- measure body
+				VAR Employees =
+					SUMX (
+						VALUES ( Branch[Branch Key] ),
+						VAR LastDay =
+							CALCULATE (
+								MAX ( 'Leave Balances'[Accrual Period Date Key] ),
+								REMOVEFILTERS ( 'Leave Balances' ),
+								VALUES ( 'Date'[Date] ),
+								VALUES ( Branch[Branch Key] ),
+								'Leave Balances'[Is Latest In Month] = "Yes",
+								'Leave Balances'[Is Closed Period] = "Yes",
+								'Date'[Is Past] = "Yes"
+							)
+						RETURN
+							CALCULATE (
+								DISTINCTCOUNT ( 'Leave Balances'[Employee Key] ),
+								'Leave Balances'[Is Latest In Month] = "Yes",
+								'Leave Balances'[Is Closed Period] = "Yes",
+								'Date'[Year Month] = INT ( LastDay / 100 )
+							)
+					)
+				RETURN DIVIDE ( [Leave Balance (days)], Employees )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Leave Balances]
+			RETURN IF ( __Wrong = "", __Value, """Average Leave Balance (days)"" can't be analysed by " & __Wrong )
+		formatString: #,0.0
+		displayFolder: HR Dashboard\Measures
+
+		annotation hnh_snapshot = 1
+	/// 1 when the viewer's role shows pay (the Pay Category table has rows under row-level security), else 0. Pay KPIs read Requires pay access when it is 0.
+	measure 'HR Can See Pay' =
+			IF ( CALCULATE ( COUNTROWS ( 'Pay Category' ), REMOVEFILTERS ( 'Pay Category' ) ) > 0, 1, 0 )
+		formatString: 0
+		displayFolder: HR Dashboard\Measures
+	/// Actual of the HR KPI in context: the measure named in its measure_name, evaluated without the HR KPI and HR Targets filters. Blank for a metric row and when no single KPI is in context.
+	measure 'HR KPI Actual' =
+			VAR __Value = ( -- measure body
+				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
+				RETURN
+					CALCULATE (
+						SWITCH (
+							Code,
+							"HR_HEADCOUNT", [Headcount],
+							"HR_CONTINGENT_SHARE", [Contingent Share %],
+							"HR_SAUDIZATION", [BSC Saudization],
+							"HR_FEMALE_SHARE", [Female Share %],
+							"HR_TURNOVER", [BSC Turnover],
+							"HR_NEW_HIRE_TURNOVER", [New Hire Turnover %],
+							"HR_STAFF_COST_PER_FTE", [Payroll Cost per FTE],
+							"HR_REVENUE_PER_FTE", [BSC Revenue per FTE],
+							"HR_OVERTIME_SHARE", [Overtime Share %],
+							"HR_SICK_LEAVE_RATE", [Sick Leave Rate %],
+							"HR_LEAVE_LIABILITY", [Leave Liability],
+							"HR_VACANCY_RATE", [BSC Vacancy Rate],
+							"HR_TIME_TO_FILL", [BSC Time to Fill (days)],
+							"HR_STAFF_TO_BED", [BSC Staff to Bed],
+							"HR_CLINICAL_TO_DOCTOR", [BSC Clinical to Doctor],
+							"HR_REVENUE_PER_DOCTOR", [BSC Revenue per Doctor],
+							"HR_VISITS_PER_FTE", [Visits per FTE],
+							"HR_REVENUE_PER_PAYROLL_SAR", [Revenue per Payroll SAR],
+							BLANK ()
+						),
+						REMOVEFILTERS ( 'HR KPI' ),
+						-- HR Targets column by column: REMOVEFILTERS ( 'HR Targets' ) would also clear Branch and Date (its expanded table)
+						REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 12 facts #3285a6da]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Actual"" can't be analysed by " & __Wrong )
+		displayFolder: HR Dashboard\KPIs
+
+		formatStringDefinition =
+				SWITCH (
+					SELECTEDVALUE ( 'HR KPI'[Value Format] ),
+					"sar", "#,0",
+					"pct", "0.0%",
+					"days", "#,0.0",
+					"#,0.00"
+				)
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// Fixed target of the HR KPI in context from the HR Targets table: the average of the hospitals' monthly targets over the days up to today; an annual target with scale_with_months is pro-rated by the months in context (the BSC Fixed Target rule).
+	measure 'HR KPI Fixed Target' =
+			VAR __Value = ( -- measure body
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				RETURN
+					CALCULATE (
+						VAR TargetValue = AVERAGE ( 'HR Targets'[Target Value] )
+						VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
+						RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, TargetValue * Months / 12, TargetValue ),
+						Past,
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard HR Targets]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Fixed Target"" can't be analysed by " & __Wrong )
+		displayFolder: HR Dashboard\KPIs
+
+		formatStringDefinition =
+				SWITCH (
+					SELECTEDVALUE ( 'HR KPI'[Value Format] ),
+					"sar", "#,0",
+					"pct", "0.0%",
+					"days", "#,0.0",
+					"#,0.00"
+				)
+	/// Fixed watch value of the HR KPI in context from the HR Targets table, by the HR KPI Fixed Target rule: the average of the hospitals' monthly watch values up to today, pro-rated by the months in context with scale_with_months.
+	measure 'HR KPI Fixed Watch' =
+			VAR __Value = ( -- measure body
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				RETURN
+					CALCULATE (
+						VAR WatchValue = AVERAGE ( 'HR Targets'[Watch Value] )
+						VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
+						RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, WatchValue * Months / 12, WatchValue ),
+						Past,
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard HR Targets]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Fixed Watch"" can't be analysed by " & __Wrong )
+		displayFolder: HR Dashboard\KPIs
+
+		formatStringDefinition =
+				SWITCH (
+					SELECTEDVALUE ( 'HR KPI'[Value Format] ),
+					"sar", "#,0",
+					"pct", "0.0%",
+					"days", "#,0.0",
+					"#,0.00"
+				)
+	/// Target of the HR KPI in context: HR KPI Fixed Target when its target source is fixed; for the scorecard-sourced Revenue per FTE, BSC Target Revenue per FTE over hospitals and the days up to today (the scorecard's own target); blank when the source is none.
+	measure 'HR KPI Target' =
+			VAR __Value = ( -- measure body
+				VAR TargetSource = SELECTEDVALUE ( 'HR KPI'[Target Source] )
+				VAR BscCode = SELECTEDVALUE ( 'HR KPI'[BSC KPI Code] )
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				RETURN
+					SWITCH (
+						TRUE (),
+						TargetSource = "fixed", [HR KPI Fixed Target],
+						TargetSource = "bsc" && BscCode = "LRN_REVENUE_PER_FTE",
+							CALCULATE (
+								[BSC Target Revenue per FTE],
+								Past,
+								KEEPFILTERS ( Branch[Is Hospital] = "Yes" ),
+								REMOVEFILTERS ( 'HR KPI' ),
+								REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
+							),
+						BLANK ()
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard HR Targets + Income Statement + Workforce Monthly | HR KPI, HR Targets]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Target"" can't be analysed by " & __Wrong )
+		displayFolder: HR Dashboard\KPIs
+
+		formatStringDefinition =
+				SWITCH (
+					SELECTEDVALUE ( 'HR KPI'[Value Format] ),
+					"sar", "#,0",
+					"pct", "0.0%",
+					"days", "#,0.0",
+					"#,0.00"
+				)
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// Watch value of the HR KPI in context: HR KPI Fixed Watch when its target source is fixed, else blank (a scorecard-sourced KPI takes its status from BSC Status).
+	measure 'HR KPI Watch' =
+			VAR __Value = ( -- measure body
+				IF ( SELECTEDVALUE ( 'HR KPI'[Target Source] ) = "fixed", [HR KPI Fixed Watch] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard HR Targets]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Watch"" can't be analysed by " & __Wrong )
+		displayFolder: HR Dashboard\KPIs
+
+		formatStringDefinition =
+				SWITCH (
+					SELECTEDVALUE ( 'HR KPI'[Value Format] ),
+					"sar", "#,0",
+					"pct", "0.0%",
+					"days", "#,0.0",
+					"#,0.00"
+				)
+	/// 1 when any HR Targets row in context (hospitals, days up to today) is a placeholder target, else 0.
+	measure 'HR KPI Is Placeholder' =
+			VAR __Value = ( -- measure body
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				RETURN IF ( CALCULATE ( MAX ( 'HR Targets'[Is Placeholder] ), Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ) = 1, 1, 0 )
+			) -- end of measure body
+			VAR __Wrong = [_Guard HR Targets]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Is Placeholder"" can't be analysed by " & __Wrong )
+		formatString: 0
+		displayFolder: HR Dashboard\KPIs
+	/// Status of the HR KPI in context, the first rule that matches: Parked; Requires pay access (needs pay, viewer without pay); No data (blank actual); the BSC Status of its scorecard KPI when the target source is bsc; No target yet (blank target, never compared); then by direction: higher (A >= T On track, A >= W Watch), lower or ceiling (A <= T On track, A <= W Watch), on_target (|A - T| <= |W - T| / 2 On track, <= |W - T| Watch), otherwise At risk. Blank for a metric row and when no single KPI is in context.
+	measure 'HR KPI Status' =
+			VAR __Value = ( -- measure body
+				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
+				VAR Kind = SELECTEDVALUE ( 'HR KPI'[Kind] )
+				VAR KpiState = SELECTEDVALUE ( 'HR KPI'[Status] )
+				VAR NeedsPay = SELECTEDVALUE ( 'HR KPI'[Needs Pay] )
+				VAR TargetSource = SELECTEDVALUE ( 'HR KPI'[Target Source] )
+				VAR Direction = SELECTEDVALUE ( 'HR KPI'[Direction] )
+				VAR BscCode = SELECTEDVALUE ( 'HR KPI'[BSC KPI Code] )
+				VAR A = [HR KPI Actual]
+				VAR T = [HR KPI Target]
+				VAR W = [HR KPI Watch]
+				VAR BscState =
+					CALCULATE (
+						[BSC Status],
+						'BSC KPI'[KPI Code] = BscCode,
+						REMOVEFILTERS ( 'HR KPI' ),
+						REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
+					)
+				VAR HasWatch = NOT ISBLANK ( W )
+				RETURN
+					SWITCH (
+						TRUE (),
+						ISBLANK ( Code ) || Kind <> "kpi", BLANK (),
+						KpiState = "parked", "Parked",
+						NeedsPay = 1 && [HR Can See Pay] = 0, "Requires pay access",
+						ISBLANK ( A ), "No data",
+						TargetSource = "bsc", IF ( ISBLANK ( BscState ), "No target yet", BscState ),
+						ISBLANK ( T ), "No target yet",
+						Direction = "higher", IF ( A >= T, "On track", IF ( HasWatch && A >= W, "Watch", "At risk" ) ),
+						Direction IN { "lower", "ceiling" }, IF ( A <= T, "On track", IF ( HasWatch && A <= W, "Watch", "At risk" ) ),
+						Direction = "on_target",
+							IF (
+								HasWatch,
+								IF ( ABS ( A - T ) <= ABS ( W - T ) / 2, "On track", IF ( ABS ( A - T ) <= ABS ( W - T ), "Watch", "At risk" ) ),
+								IF ( A = T, "On track", "At risk" )
+							),
+						BLANK ()
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 27 facts #b65ea250]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Status"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\KPIs
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// HR KPI Status with its shape: ● On track, ◆ Watch, ■ At risk, ○ No target yet, – No data, Parked, 🔒 Requires pay access.
+	measure 'HR KPI Status Text' =
+			VAR __Value = ( -- measure body
+				VAR S = [HR KPI Status]
+				RETURN
+					SWITCH (
+						S,
+						"On track", "● On track",
+						"Watch", "◆ Watch",
+						"At risk", "■ At risk",
+						"No target yet", "○ No target yet",
+						"No data", "– No data",
+						"Parked", "Parked",
+						"Requires pay access", "🔒 Requires pay access",
+						S
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 27 facts #b65ea250]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Status Text"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\KPIs
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// Hex colour of HR KPI Status: #0E9F8E On track, #EF8B00 Watch, #DB280A At risk, grey #9AA7B5 for No target yet, No data, Parked and Requires pay access.
+	measure 'HR KPI Status Colour' =
+			VAR __Value = ( -- measure body
+				SWITCH (
+					[HR KPI Status],
+					"On track", "#0E9F8E",
+					"Watch", "#EF8B00",
+					"At risk", "#DB280A",
+					"No target yet", "#9AA7B5",
+					"No data", "#9AA7B5",
+					"Parked", "#9AA7B5",
+					"Requires pay access", "#9AA7B5",
+					BLANK ()
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 27 facts #b65ea250]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Status Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\KPIs
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// HR KPI Target as text in the KPI's value_format (pct 0.0%, sar #,0, days #,0.0, num #,0 or #,0.00), followed by " (placeholder)" for a placeholder target; Not set when there is no target. Blank when no single KPI is in context.
+	measure 'HR KPI Target Text' =
+			VAR __Value = ( -- measure body
+				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
+				VAR ValueFormat = SELECTEDVALUE ( 'HR KPI'[Value Format] )
+				VAR T = [HR KPI Target]
+				VAR Shown =
+					SWITCH (
+						ValueFormat,
+						"pct", FORMAT ( T, "0.0%" ),
+						"sar", FORMAT ( T, "#,0" ),
+						"days", FORMAT ( T, "#,0.0" ),
+						IF ( T = INT ( T ), FORMAT ( T, "#,0" ), FORMAT ( T, "#,0.00" ) )
+					)
+				RETURN
+					SWITCH (
+						TRUE (),
+						ISBLANK ( Code ), BLANK (),
+						ISBLANK ( T ), "Not set",
+						Shown & IF ( [HR KPI Is Placeholder] = 1, " (placeholder)" )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard HR Targets + Income Statement + Workforce Monthly | HR KPI, HR Targets]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Target Text"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\KPIs
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+
+	/// Filtered tables that cannot filter Absence Days, BSC Budgeted FTE, Bed Occupancy, GL FS Monthly, HR Targets, Headcount, Leave Balances, Payroll, Requisitions, Staff Productivity, Worker Movements, Workforce Monthly (also allowed: HR KPI, HR Targets), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 12 facts #3285a6da' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
 
 	/// Filtered tables that cannot filter Admissions, BSC AR Collections, BSC Licensed Beds, BSC Manual Values, Bed Occupancy, Charge Lines, Claim Lines, Encounters, GL FS Monthly, Income Statement, Invoices, Pre-auth Lines, Requisitions, Survey Answers, Workforce Monthly (also allowed: BSC KPI), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard 15 facts #f1ff93bc' =
@@ -7443,6 +7923,106 @@ table _Measures
 				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
 				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
 				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Absence Days, Admissions, BSC AR Collections, BSC Budgeted FTE, BSC Licensed Beds, BSC Manual Values, BSC Targets, Bed Occupancy, Charge Lines, Claim Lines, Clinic Capacity, Encounters, Episodes, GL FS Monthly, HR Targets, Headcount, Income Statement, Invoices, Leave Balances, Payroll, Pre-auth Lines, Requisitions, Staff Productivity, Survey Answers, Targets, Worker Movements, Workforce Monthly (also allowed: HR KPI, HR Targets), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 27 facts #b65ea250' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
 				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
 				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
 				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
@@ -11680,6 +12260,206 @@ table _Measures
 				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
 				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
 				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter HR Targets, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard HR Targets' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter HR Targets, Income Statement, Workforce Monthly (also allowed: HR KPI, HR Targets), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard HR Targets + Income Statement + Workforce Monthly | HR KPI, HR Targets' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
 				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
 				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
 				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
