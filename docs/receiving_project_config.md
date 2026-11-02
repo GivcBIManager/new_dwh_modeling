@@ -112,6 +112,20 @@ Spec `2026-10-20-hnh-bsc-ssas-perspective-analysis.md`, plan `2026-10-20-bsc-dwh
   - their content is edited by the BI manager with SQL inserts afterwards (`docs/bsc_config.md`).
 - **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`).
 
+## HR dashboard (2026-11-02)
+
+Design and plan in `docs/superpowers/specs/` and `docs/superpowers/plans/` (HR dashboard).
+
+- **Copy:**
+  - the new `stg_ref__hr_*` staging models in `staging/reference/` with their YAML (`_reference__sources.yml`, `_reference__models.yml`, `_hr_ref_unit_tests.yml`);
+  - the new folder `hnh_dwh/models/hnh/marts/hr/` (`dim_hr_kpi`, `fact_hr_target_monthly`, `dim_hr_dq_issue`, `fact_hr_dq_record` and `_hr__models.yml`; no config block needed: the `marts:` defaults apply);
+  - the new views `marts/ssas/ssas_dim_hr_kpi.sql`, `ssas_fact_hr_target_monthly.sql`, `ssas_dim_hr_dq_issue.sql`, `ssas_fact_hr_dq_record.sql`;
+  - the changed tests (they now read `fact_hr_dq_record`): `warn_employees_without_staff_link`, `warn_staff_linked_to_many_employees`, `warn_staff_id_collisions`, `warn_fte_out_of_range`, `warn_absence_zero_days`, `warn_leave_without_salary`, `warn_unmapped_pay_codes`, `warn_branch8_payroll_copies_branch7`, and `assert_mart_text_title_case`.
+- **Create the config tables first** (before any build: the models and the 8 warn tests above read them): `scripts\hr_config\apply_hr_config.ps1` on HNHANALYTICSSRV (`-DryRun` first).
+- **Build:** `dbt build --select stg_ref__hr_*+ fact_hr_dq_record+`.
+- **Dagster:** add `stg_ref__hr_*+ fact_hr_dq_record+` to the nightly dbt job's selector so data quality refreshes nightly.
+- **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`).
+
 ## Reference tables that must exist in `default`
 
 Loaded once by `scripts/load_reference_data.py` and `scripts/load_hijri_calendar.py` (outside dbt): `branch_dict_source`, `map_purchasers`, `map_referral_policies`, `budget_data`, `bi_users`, `map_bi_user_permission` (SSAS pay and PII permissions, see below), `map_unified_department_v2`, `map_bed_classification`, `map_ward_tower`, `map_clinic_duration`, `map_clinic_count`, `map_home_care_entity`, `map_termination_reason`, `map_product_category`, `map_claim_status`, `map_nphies_reason`, `map_hijri_calendar`, `map_public_holiday`, `map_order_fulfilment_packages`, `map_pay_category`, `map_payroll_cutover`, `map_fs_account`, `map_oasis_fs_account`, `map_fs_line_order`, `map_budget_fs_line`, `map_fusion_specialty_unified`, `income_statement_budget`, `map_opening_balance_batch` (Fusion journal batches that are opening balances although not categorised MRC Open Balances, O-P3-12; add a row with `branch_id`, `je_batch_id`, `reason` when finance loads a go-live batch under another category). Phase 5 adds `map_scm_cutover` (one row per branch: inventory go-live date and first Fusion purchasing month; set Alrabwah's and Head Office's go-live dates when they move, O-P5-6), `map_store_department` (drafted by `scripts/draft_store_department_map.py`) and `map_item_group` (drafted by `scripts/draft_item_group_map.py`); both drafts await BI-manager review (O-P5-4). `bal_product_base` (table `default.old_bal_product_base`, the source's `identifier`) is optional: until the user loads the old warehouse's daily snapshots (columns `BRANCH_ID`, `C_ID`, `PRODUCT_CODE`, `Snapshot_timestamp`, `QTY_ON_HAND`, `AVERAGE_COST`; other names are set in the `cols` dict at the top of `stg_ref__stock_snapshot.sql`), `stg_ref__stock_snapshot` is empty and Oasis month-end stock starts at 2026-08-31 (Fusion-valuation months start at each live branch's go-live month: Ghirnata 2026-04, Abha 2026-05, Jazan and Muhayil 2026-07, Unaizah 2026-08, Khamis and Madinah 2026-09); the next `dbt build` after the load adds the snapshot and derived months. Re-run `load_hijri_calendar.py` once a year to extend the calendar.
