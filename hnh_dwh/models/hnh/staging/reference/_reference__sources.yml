@@ -57,3 +57,7 @@ sources:
       - name: map_bsc_budgeted_fte
       - name: map_bsc_parameter
       - name: map_bsc_licensed_beds
+      # HR dashboard config change logs (HR dashboard design, model changes): insert-only, edited by the BI manager, read by stg_ref__hr_*
+      - name: map_hr_kpi
+      - name: map_hr_target
+      - name: map_hr_dq_issue

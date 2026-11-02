@@ -348,3 +348,55 @@ models:
       - name: branch_id
         tests:
           - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+  # HR dashboard config (HR dashboard design, model changes). The relationship keeps every target pointing at a catalogue KPI.
+  - name: stg_ref__hr_kpi
+    columns:
+      - name: kpi_code
+        tests:
+          - unique: {config: {severity: warn}}
+          - not_null: {config: {severity: warn}}
+      - name: kind
+        tests:
+          - accepted_values: {values: ['kpi', 'metric'], config: {severity: warn}}
+      - name: direction
+        tests:
+          - accepted_values: {values: ['higher', 'lower', 'ceiling', 'on_target'], config: {severity: warn}}
+      - name: value_format
+        tests:
+          - accepted_values: {values: ['num', 'pct', 'sar', 'days'], config: {severity: warn}}
+      - name: target_source
+        tests:
+          - accepted_values: {values: ['fixed', 'bsc', 'none'], config: {severity: warn}}
+      - name: status
+        tests:
+          - accepted_values: {values: ['active', 'parked'], config: {severity: warn}}
+  - name: stg_ref__hr_target
+    tests:
+      - hnh_unique_combination:
+          columns: [kpi_code, branch_id, year, month]
+          config: {severity: warn}
+    columns:
+      - name: kpi_code
+        tests:
+          - relationships: {to: ref('stg_ref__hr_kpi'), field: kpi_code, config: {severity: warn}}
+      - name: branch_id
+        tests:
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+      - name: month
+        tests:
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false, config: {severity: warn}}
+  - name: stg_ref__hr_dq_issue
+    columns:
+      - name: issue_code
+        tests:
+          - unique: {config: {severity: warn}}
+          - not_null: {config: {severity: warn}}
+      - name: fix_in
+        tests:
+          - accepted_values: {values: ['Fusion', 'Oasis', 'Oasis or Fusion', 'Fusion payroll', 'BI'], config: {severity: warn}}
+      - name: severity
+        tests:
+          - accepted_values: {values: ['High', 'Medium', 'Low'], config: {severity: warn}}
+      - name: status
+        tests:
+          - accepted_values: {values: ['active', 'parked'], config: {severity: warn}}
