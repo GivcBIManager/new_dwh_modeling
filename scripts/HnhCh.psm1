@@ -150,5 +150,69 @@ function Test-HnhFsAccountMapping {
     return ,$problems
 }
 
+# Create the config tables of one dashboard (DDL file) and load their first content (seed file), or with -Update
+# add every INSERT of an update file. Shared by scripts\bsc_config\apply_bsc_config.ps1 and scripts\hr_config\apply_hr_config.ps1.
+# -DryRun parses the files and prints what would happen, without credentials or a connection.
+function Invoke-HnhConfigApply {
+    param(
+        [Parameter(Mandatory)][string]$Ddl,
+        [Parameter(Mandatory)][string]$Seed,
+        [string]$Update = '',
+        [string]$Url = 'http://172.22.25.214:8123/',
+        [switch]$DryRun
+    )
+    $ErrorActionPreference = 'Stop'
+    function Split-Statements([string]$Text) {
+        $body = ($Text -replace '(?m)^\s*--.*$', '')
+        return @([regex]::Split($body, ';\s*\r?\n') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    }
+
+    function ConvertTo-Inserts([string]$Text) {
+        foreach ($s in (Split-Statements $Text)) {
+            $table = ([regex]::Match($s, 'INSERT INTO default\.(\w+)')).Groups[1].Value
+            if ($s -match '\)\s*VALUES\s*\r?\n') {
+                $rows = ([regex]::Matches($s, '(?m)^\s{4}\(')).Count
+                [pscustomobject]@{ Table = $table; Sql = $s; Rows = $rows; Label = "$rows rows" }
+            } else {
+                $src = ([regex]::Match($s, '(?i)FROM (\w+\.\w+)')).Groups[1].Value
+                [pscustomobject]@{ Table = $table; Sql = $s; Rows = -1; Label = "INSERT ... SELECT from $src" }
+            }
+        }
+    }
+
+    $ddlStatements = Split-Statements ([IO.File]::ReadAllText((Resolve-Path $Ddl)))
+    $updating = [bool]$Update
+    $inserts = if ($updating) { @(ConvertTo-Inserts ([IO.File]::ReadAllText((Resolve-Path $Update)))) }
+               else { @(ConvertTo-Inserts ([IO.File]::ReadAllText((Resolve-Path $Seed)))) }
+    $prefix = if ($updating) { 'update ' } else { '' }
+
+    foreach ($d in $ddlStatements) { Write-Host (([regex]::Match($d, 'CREATE TABLE IF NOT EXISTS default\.\w+')).Value) }
+    foreach ($s in $inserts) { Write-Host ("{0}default.{1}: {2}" -f $prefix, $s.Table, $s.Label) }
+    if ($DryRun) { Write-Host '(dry run) nothing written'; return }
+
+    $admin = Get-Credential -Message 'ClickHouse user that may create tables and insert into database default'
+    if (-not $admin) { throw 'No credential entered' }
+    $headers = @{ 'X-ClickHouse-User' = $admin.UserName.TrimStart('\'); 'X-ClickHouse-Key' = $admin.GetNetworkCredential().Password }
+    function Invoke-Ch([string]$Sql) {
+        $body = [Text.Encoding]::UTF8.GetBytes($Sql)
+        return Invoke-RestMethod -Uri $Url -Method Post -Headers $headers -Body $body -ContentType 'text/plain; charset=utf-8'
+    }
+    # Invoke-RestMethod may turn a bare number reply into an Int32, so counts are read as text.
+    function Get-Count([string]$Table) { return [long]([string](Invoke-Ch "SELECT count() FROM default.$Table FORMAT TabSeparated")).Trim() }
+
+    foreach ($d in $ddlStatements) { Invoke-Ch $d | Out-Null }
+    $before = @{}
+    foreach ($s in $inserts) {
+        if (-not $before.ContainsKey($s.Table)) { $before[$s.Table] = Get-Count $s.Table }
+        if (-not $updating -and $before[$s.Table] -gt 0) { Write-Host "default.$($s.Table): skipped (already has $($before[$s.Table]) rows)"; continue }
+        $start = Get-Count $s.Table
+        Invoke-Ch $s.Sql | Out-Null
+        $added = (Get-Count $s.Table) - $start
+        if ($s.Rows -ge 0 -and $added -ne $s.Rows) { throw "default.$($s.Table): expected $($s.Rows) new rows, found $added" }
+        Write-Host "${prefix}default.$($s.Table): inserted $added rows"
+    }
+}
+
 Export-ModuleMember -Function Test-HnhReadOnlySql, Invoke-HnhSelect, ConvertTo-HnhTsvField, Get-HnhContractColumns,
-    Compare-HnhColumns, Compare-HnhBscRows, New-HnhTableDdl, Test-HnhGlCutover, Test-HnhFsAccountMapping
+    Compare-HnhColumns, Compare-HnhBscRows, New-HnhTableDdl, Test-HnhGlCutover, Test-HnhFsAccountMapping,
+    Invoke-HnhConfigApply

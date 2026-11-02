@@ -16,53 +16,6 @@ param(
     [switch]$DryRun
 )
 $ErrorActionPreference = 'Stop'
-
-function Split-Statements([string]$Text) {
-    $body = ($Text -replace '(?m)^\s*--.*$', '')
-    return @([regex]::Split($body, ';\s*\r?\n') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-}
-
-function ConvertTo-Inserts([string]$Text) {
-    foreach ($s in (Split-Statements $Text)) {
-        $table = ([regex]::Match($s, 'INSERT INTO default\.(\w+)')).Groups[1].Value
-        if ($s -match '\)\s*VALUES\s*\r?\n') {
-            $rows = ([regex]::Matches($s, '(?m)^\s{4}\(')).Count
-            [pscustomobject]@{ Table = $table; Sql = $s; Rows = $rows; Label = "$rows rows" }
-        } else {
-            $src = ([regex]::Match($s, '(?i)FROM (\w+\.\w+)')).Groups[1].Value
-            [pscustomobject]@{ Table = $table; Sql = $s; Rows = -1; Label = "INSERT ... SELECT from $src" }
-        }
-    }
-}
-
-$ddl = Split-Statements ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'bsc_config_ddl.sql')))
-$updating = [bool]$Update
-$inserts = if ($updating) { @(ConvertTo-Inserts ([IO.File]::ReadAllText((Resolve-Path $Update)))) }
-           else { @(ConvertTo-Inserts ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'bsc_config_seed.sql')))) }
-$prefix = if ($updating) { 'update ' } else { '' }
-
-foreach ($d in $ddl) { Write-Host (([regex]::Match($d, 'CREATE TABLE IF NOT EXISTS default\.\w+')).Value) }
-foreach ($s in $inserts) { Write-Host ("{0}default.{1}: {2}" -f $prefix, $s.Table, $s.Label) }
-if ($DryRun) { Write-Host '(dry run) nothing written'; return }
-
-$admin = Get-Credential -Message 'ClickHouse user that may create tables and insert into database default'
-if (-not $admin) { throw 'No credential entered' }
-$headers = @{ 'X-ClickHouse-User' = $admin.UserName.TrimStart('\'); 'X-ClickHouse-Key' = $admin.GetNetworkCredential().Password }
-function Invoke-Ch([string]$Sql) {
-    $body = [Text.Encoding]::UTF8.GetBytes($Sql)
-    return Invoke-RestMethod -Uri $Url -Method Post -Headers $headers -Body $body -ContentType 'text/plain; charset=utf-8'
-}
-# Invoke-RestMethod may turn a bare number reply into an Int32, so counts are read as text.
-function Get-Count([string]$Table) { return [long]([string](Invoke-Ch "SELECT count() FROM default.$Table FORMAT TabSeparated")).Trim() }
-
-foreach ($d in $ddl) { Invoke-Ch $d | Out-Null }
-$before = @{}
-foreach ($s in $inserts) {
-    if (-not $before.ContainsKey($s.Table)) { $before[$s.Table] = Get-Count $s.Table }
-    if (-not $updating -and $before[$s.Table] -gt 0) { Write-Host "default.$($s.Table): skipped (already has $($before[$s.Table]) rows)"; continue }
-    $start = Get-Count $s.Table
-    Invoke-Ch $s.Sql | Out-Null
-    $added = (Get-Count $s.Table) - $start
-    if ($s.Rows -ge 0 -and $added -ne $s.Rows) { throw "default.$($s.Table): expected $($s.Rows) new rows, found $added" }
-    Write-Host "${prefix}default.$($s.Table): inserted $added rows"
-}
+Import-Module (Join-Path $PSScriptRoot '..\HnhCh.psm1') -Force
+Invoke-HnhConfigApply -Ddl (Join-Path $PSScriptRoot 'bsc_config_ddl.sql') -Seed (Join-Path $PSScriptRoot 'bsc_config_seed.sql') `
+    -Update $Update -Url $Url -DryRun:$DryRun
