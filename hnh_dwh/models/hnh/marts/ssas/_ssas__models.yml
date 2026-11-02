@@ -646,6 +646,80 @@ models:
         data_type: "Int64"
       - name: is_current
         data_type: "String"
+  - name: ssas_dim_hr_dq_issue
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: hr_dq_issue_key
+        data_type: "Int64"
+      - name: issue_code
+        data_type: "String"
+      - name: issue_name
+        data_type: "String"
+      - name: area
+        data_type: "String"
+      - name: fix_in
+        data_type: "String"
+      - name: owner
+        data_type: "String"
+      - name: severity
+        data_type: "String"
+      - name: how_to_fix
+        data_type: "String"
+      - name: display_order
+        data_type: "Int64"
+      - name: status
+        data_type: "String"
+      - name: last_changed_at
+        data_type: "DateTime64(3)"
+  - name: ssas_dim_hr_kpi
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: hr_kpi_key
+        data_type: "Int64"
+      - name: kpi_code
+        data_type: "String"
+      - name: kind
+        data_type: "String"
+      - name: kpi_name
+        data_type: "String"
+      - name: short_label
+        data_type: "String"
+      - name: area
+        data_type: "String"
+      - name: definition
+        data_type: "String"
+      - name: formula
+        data_type: "String"
+      - name: source_system
+        data_type: "String"
+      - name: grain
+        data_type: "String"
+      - name: caveats
+        data_type: "String"
+      - name: direction
+        data_type: "String"
+      - name: value_format
+        data_type: "String"
+      - name: display_order
+        data_type: "Int64"
+      - name: measure_name
+        data_type: "String"
+      - name: bsc_kpi_code
+        data_type: "String"
+      - name: target_source
+        data_type: "String"
+      - name: needs_pay
+        data_type: "Int64"
+      - name: is_home_tile
+        data_type: "Int64"
+      - name: status
+        data_type: "String"
+      - name: last_changed_at
+        data_type: "DateTime64(3)"
+      - name: bsc_kpi_key
+        data_type: "Int64"
   - name: ssas_dim_item
     config:
       contract: {enforced: true}
@@ -2038,6 +2112,50 @@ models:
         data_type: "Float64"
       - name: is_new_hire_in_month
         data_type: "String"
+  - name: ssas_fact_hr_dq_record
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: hr_dq_issue_key
+        data_type: "Int64"
+      - name: issue_code
+        data_type: "String"
+      - name: branch_key
+        data_type: "Int64"
+      - name: employee_key
+        data_type: "Int64"
+      - name: staff_key
+        data_type: "Int64"
+      - name: worker_number
+        data_type: "Nullable(String)"
+      - name: staff_id
+        data_type: "Nullable(String)"
+      - name: field_name
+        data_type: "String"
+      - name: value_found
+        data_type: "Nullable(String)"
+      - name: record_date
+        data_type: "Nullable(Date)"
+  - name: ssas_fact_hr_target_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: hr_kpi_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: month_date_key
+        data_type: "Int64"
+      - name: target_value
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: watch_value
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: scale_with_months
+        data_type: "Int64"
+      - name: source_basis
+        data_type: "String"
+      - name: is_placeholder
+        data_type: "Int64"
   - name: ssas_fact_income_statement_monthly
     config:
       contract: {enforced: true}
