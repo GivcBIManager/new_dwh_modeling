@@ -17,6 +17,7 @@
     'hnh_dim_hr_department.department_name', 'hnh_dim_hr_department.department_base_name',
     'sec_user_access.user_name', 'sec_user_access.source_user_name', 'sec_user_access.login_name',
     'dim_bsc_kpi.kpi_name',
+    'dim_hr_kpi.kpi_name', 'dim_hr_kpi.measure_name', 'dim_hr_kpi.definition', 'dim_hr_dq_issue.issue_name',
 ] -%}
 {%- set checks = [] -%}
 {%- if execute -%}
