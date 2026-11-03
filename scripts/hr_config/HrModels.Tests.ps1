@@ -244,6 +244,23 @@ Describe 'DQ_STAFF_MANY_EMP' {
     }
 }
 
+Describe 'DQ_STAFF_MANY_EMP leaves duplicate worker numbers to DQ_EMP_DUP_WORKER_NO (final review M1)' {
+    # 11 and 12 share worker number W1 in branch 4 and link to staff 21 with 15 (W9); 13 alone on staff 22
+    $e = ((Emp 11 '1001' 4 'W1' -Staff 21), (Emp 12 '1002' 4 'W1' -Staff 21), (Emp 15 '1005' 4 'W9' -Staff 21), (Emp 13 '1003' 4 'S22' -Staff 22)) -join ', '
+    $all = Get-DqRecords @{ hnh_dim_employee = $e
+        bridge_employee_staff = "(11, 21, 4, 'W1'), (12, 21, 4, 'W1'), (15, 21, 4, 'W9'), (13, 22, 4, 'S22')" }
+    $many = Of $all 'DQ_STAFF_MANY_EMP'
+    $dup = Of $all 'DQ_EMP_DUP_WORKER_NO'
+    It 'lists the duplicate-worker-number employees once, under DQ_EMP_DUP_WORKER_NO' {
+        (@($dup | ForEach-Object { [int64]$_.employee_key }) | Sort-Object) -join ',' | Should Be '11,12'
+        @($many | Where-Object { [int64]$_.employee_key -in 11, 12 }).Count | Should Be 0
+    }
+    It 'keeps the other employee of the staff record linked to several' {
+        (@($many | ForEach-Object { [int64]$_.employee_key }) | Sort-Object) -join ',' | Should Be '15'
+        [int64]$many[0].staff_key | Should Be 21
+    }
+}
+
 Describe 'DQ_STAFF_ID_FORMAT' {
     $rows = Of (Get-DqRecords @{
         staff_master_data = "(3, 'A1'), (3, ' a1'), (3, 'A1'), (3, 'B2'), (4, 'A1')"

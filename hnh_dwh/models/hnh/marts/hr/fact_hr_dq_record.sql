@@ -52,12 +52,17 @@ staff_no_emp as (
       and staff_key not in (select staff_key from bridge)
 ),
 
--- DQ_STAFF_MANY_EMP (warn_staff_linked_to_many_employees): one row per employee of a staff record linked to several.
+-- DQ_STAFF_MANY_EMP (warn_staff_linked_to_many_employees): one row per employee of a staff record linked to several,
+-- less the employees DQ_EMP_DUP_WORKER_NO already flags: two Fusion employees with one worker number link to the same
+-- staff record, and the fix is in Fusion (that issue), so they are not listed twice with a different "fix in" (HR
+-- dashboard final review M1). This also narrows warn_staff_linked_to_many_employees, which reads these records: it no
+-- longer counts those employees (they stay under DQ_EMP_DUP_WORKER_NO on the Data quality page).
 staff_many_emp as (
     select 'DQ_STAFF_MANY_EMP' as issue_code, branch_key, employee_key, staff_key, worker_number, worker_number as staff_id,
            'staff_id' as field_name, worker_number as value_found, null as record_date
     from (select *, count() over (partition by staff_key, branch_key) as employees from bridge)
     where employees > 1
+      and employee_key not in (select employee_key from emp_dup_worker_no)
 ),
 
 -- DQ_STAFF_ID_FORMAT (warn_staff_id_collisions): each raw Oasis staff id of a branch whose ids are equal once trimmed and
