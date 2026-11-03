@@ -1,0 +1,103 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "data_quality",
+  "displayName": "Data quality",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "af840857a4c20f4a59e2",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "HR Data Issues"
+              }
+            },
+            "Property": "Status"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "h",
+              "Entity": "HR Data Issues",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "h"
+                          }
+                        },
+                        "Property": "Status"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'active'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "44373dd5619d77de7df1",
+      "type": "NoFilter"
+    },
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "d065357c697b688ab3f8",
+      "type": "NoFilter"
+    },
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "27bc02ff360c764c4411",
+      "type": "NoFilter"
+    },
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "31e64a2c723e55e86951",
+      "type": "NoFilter"
+    },
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "7daf80f8b7dfbed8d37f",
+      "type": "NoFilter"
+    },
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "2cf08042d489d20ff0ad",
+      "type": "NoFilter"
+    },
+    {
+      "source": "917f225ceeebe5111e45",
+      "target": "ad4db080bd8b2ca07680",
+      "type": "NoFilter"
+    }
+  ]
+}

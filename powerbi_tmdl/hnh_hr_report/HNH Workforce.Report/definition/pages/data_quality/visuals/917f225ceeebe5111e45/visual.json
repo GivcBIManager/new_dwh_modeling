@@ -1,0 +1,183 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "917f225ceeebe5111e45",
+  "position": {
+    "x": 30,
+    "y": 714,
+    "z": 21000,
+    "height": 342,
+    "width": 1296,
+    "tabOrder": 21000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issue Records"
+                    }
+                  },
+                  "Property": "Issue Code"
+                }
+              },
+              "queryRef": "HR Data Issue Records.Issue Code",
+              "nativeQueryRef": "Issue Code",
+              "displayName": "Issue code"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Branch"
+                    }
+                  },
+                  "Property": "Branch Name"
+                }
+              },
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
+              "displayName": "Hospital"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issue Records"
+                    }
+                  },
+                  "Property": "Worker Number"
+                }
+              },
+              "queryRef": "HR Data Issue Records.Worker Number",
+              "nativeQueryRef": "Worker Number",
+              "displayName": "Worker number"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issue Records"
+                    }
+                  },
+                  "Property": "Staff ID"
+                }
+              },
+              "queryRef": "HR Data Issue Records.Staff ID",
+              "nativeQueryRef": "Staff ID",
+              "displayName": "Oasis staff ID"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Staff"
+                    }
+                  },
+                  "Property": "Staff Name"
+                }
+              },
+              "queryRef": "Staff.Staff Name",
+              "nativeQueryRef": "Staff Name",
+              "displayName": "Oasis name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issue Records"
+                    }
+                  },
+                  "Property": "Field Name"
+                }
+              },
+              "queryRef": "HR Data Issue Records.Field Name",
+              "nativeQueryRef": "Field Name",
+              "displayName": "Field"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issue Records"
+                    }
+                  },
+                  "Property": "Value Found"
+                }
+              },
+              "queryRef": "HR Data Issue Records.Value Found",
+              "nativeQueryRef": "Value Found",
+              "displayName": "Value found"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issue Records"
+                    }
+                  },
+                  "Property": "Record Date"
+                }
+              },
+              "queryRef": "HR Data Issue Records.Record Date",
+              "nativeQueryRef": "Record Date",
+              "displayName": "Record date"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "HR Data Issue Records"
+                  }
+                },
+                "Property": "Issue Code"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Records behind the selected issue'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

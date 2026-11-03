@@ -722,3 +722,82 @@ def test_employee_list_filtered_by_headcount():
     assert not [v for v in page.visuals if v.roles.get("Values") == [PAY_NOTICE]]
     assert {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")} >= {BRANCH_NAME, MONTH_PICK}
     assert any(v.sample == "buttonNavigate" and "Back" in json.dumps(v.props) for v in page.visuals)
+
+
+# ---- Data quality and Guide --------------------------------------------------------------------------------------
+
+def _text_of(page):
+    """All the text of a page's text boxes (guide pages)."""
+    out = []
+    for v in page.visuals:
+        for g in v.props.get("general", []):
+            for p in g["properties"].get("paragraphs", []):
+                out += [r["value"] for r in p["textRuns"]]
+    return "\n".join(out)
+
+
+def test_dq_guide_pages_registered_in_order():
+    names = [p.name for p in PAGES]
+    assert names[-4:] == ["data_quality", "guide", "guide_definitions", "employee_list"]
+    for n in ("data_quality", "guide", "guide_definitions"):
+        assert not _page(n).hidden
+
+
+def test_dq_page_has_no_month_slicer():
+    page = _page("data_quality")
+    slicers = {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")}
+    assert MONTH_PICK not in slicers and BRANCH_NAME in slicers
+    assert all(f.table != "Date" for f in page_fields(page))
+
+
+def test_dq_page_content_and_measures():
+    page = _page("data_quality")
+    by_sample = lambda s: [v for v in page.visuals if v.sample == s]  # noqa: E731
+    cards = {v.roles["Values"][0].name for v in by_sample("card")}
+    assert {"HR Open Issues", "HR Issue Records", "HR Affected Employees"} <= cards
+    bar = by_sample("barChart")[0]
+    assert bar.roles["Category"] == [col("HR Data Issues", "Fix In")] and bar.roles["Y"] == [meas("HR Issue Records")]
+    issue_table, records = by_sample("table")
+    for c in ("Issue Name", "Severity", "Fix In", "Owner"):
+        assert col("HR Data Issues", c) in issue_table.roles["Values"]
+    assert meas("HR Issue Records") in issue_table.roles["Values"]
+    assert (col("HR Data Issues", "Status"), "eq", ["active"]) in _flt(issue_table)
+    assert [f.name for f in records.roles["Values"]] == ["Issue Code", "Branch Name", "Worker Number", "Staff ID",
+                                                         "Staff Name", "Field Name", "Value Found", "Record Date"]
+    matrix = by_sample("matrix")[0]
+    assert matrix.roles["Rows"] == [col("HR Data Issues", "Issue Name")]
+    assert matrix.roles["Columns"] == [BRANCH_NAME]
+    assert any(col("HR Data Issues", "How To Fix") in v.roles.get("Values", []) for v in by_sample("card"))
+    # the records table follows the issue table (default cross-filter), not the other way round
+    assert not [i for i in page.interactions if i.source is issue_table and i.target is records]
+
+
+def test_dq_measures_never_hit_a_guard():
+    from pages_detail import blocked_tables
+    page = _page("data_quality")
+    for v in page.visuals:
+        own = {f.table for fs in v.roles.values() for f in fs if f.kind == "column"}
+        for fs in v.roles.values():
+            for f in fs:
+                if f.kind == "measure":
+                    assert not blocked_tables(f.name) & own, (v.title, f.name)
+
+
+def test_definitions_cover_all_kinds():
+    page = _page("guide_definitions")
+    table = next(v for v in page.visuals if v.sample == "table")
+    assert all(f.field != col("HR KPI", "Kind") for f in table.filters)
+    assert all(f.field != col("HR KPI", "Kind") for f in page.filters)
+    values = table.roles["Values"]
+    for c in ("KPI Name", "Kind", "Definition", "Formula", "Source System", "Grain", "Direction", "Caveats"):
+        assert col("HR KPI", c) in values
+    assert meas("HR KPI Target Text") in values
+    assert {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")} >= {AREA}
+
+
+def test_guide_text_covers_the_rules():
+    text = _text_of(_page("guide"))
+    for needle in ("Last closed month", "● On track", "◆ Watch", "■ At risk", "○ No target yet", "– No data", "Parked",
+                   "Requires pay access", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
+                   "largest change", "nightly", "Back", "BSC turnover", "in Fusion"):
+        assert needle in text, needle
