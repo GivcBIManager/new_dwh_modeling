@@ -22,8 +22,8 @@ Branch, Month and Period slicers apply. Left, [HR KPI Detail Title] (the KPI's n
 definition say how to pick a KPI instead of "(Blank)"; right, cards for [HR KPI Actual Text], target and status, the 24-month line of actual against
 target and watch, and the bar by branch. The Month slicer (synced with every page) does not reach the line or the
 bar: NoFilter interactions, so they show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every branch
-whatever the selection. Period does not reach the line either (a monthly trend); the bar follows it. Over each chart,
-[HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2), and
+whatever the selection. Period does not reach the line either (a monthly trend); the bar follows it. In each chart's
+title band (right-aligned, small; ruling R31), [HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2), and
 "" (an empty card, no filter) otherwise. Back returns to the page you came from.
 
 Both pages carry the branches page filter: the eight hospitals and Head Office (user decision 2026-11-03, the scope
@@ -34,7 +34,7 @@ from __future__ import annotations
 from frame import CONTENT, NAVY, _lit, button_props, no_container
 from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
                       HR_WATCH_TEXT, SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, fixed_table,
-                      measure_colour, page_frame, saved_selection, single_selection)
+                      measure_colour, page_frame, saved_selection, single_selection, title_notice)
 from model import Filter, Interaction, Page, Visual, col, meas
 
 X0, Y0, W0, H0 = CONTENT  # 30, 186, 1860, ...
@@ -136,7 +136,6 @@ LINE_H = 380
 BAR_Y = LINE_Y + LINE_H + GAP
 BAR_H = Y0 + H0 - BAR_Y
 BACK_W = 110
-NOTICE_H = 60
 
 # (HR KPI column, panel height)
 DEFINITION = [("Definition", 150), ("Formula", 120), ("Source System", 90), ("Grain", 90), ("Caveats", 150)]
@@ -173,13 +172,10 @@ def kpi_detail_page() -> Page:
     bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By branch",
                   roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]})
     visuals += [line, bars]
-    # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] says why, over the middle of each chart
-    # (final review I2). It is "" for pay readers and for a KPI that needs no pay, so the card shows nothing; no
-    # filter, because a card filtered to no row prints "(Blank)"
-    notice = meas("HR KPI Pay Notice")
-    for chart in (line, bars):
-        visuals.append(Visual("card", chart.x, chart.y + (chart.h - NOTICE_H) / 2, chart.w, NOTICE_H,
-                              roles={"Values": [notice]}, props=card_look(16, NAVY)))
+    # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] says why (final review I2), in each chart's
+    # title band (ruling R31: over the plot it took the hover and clicks). It is "" for pay readers and for a KPI that
+    # needs no pay, so the card shows nothing; no filter, because a card filtered to no row prints "(Blank)"
+    visuals += [title_notice(chart, "HR KPI Pay Notice") for chart in (line, bars)]
     interactions = [Interaction(month, line, "NoFilter"), Interaction(month, bars, "NoFilter"),
                     Interaction(branch, bars, "NoFilter"), Interaction(period, line, "NoFilter")]
     return Page(KPI_DETAIL_NAME, "KPI detail", visuals, filters=[branches()], interactions=interactions,

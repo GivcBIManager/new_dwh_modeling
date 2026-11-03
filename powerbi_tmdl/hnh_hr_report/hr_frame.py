@@ -358,6 +358,47 @@ def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
     return [white_panel(x, y, w, h), actual, target, status]
 
 
+# ---- notices in a chart's title band (ruling R31) ----------------------------------------------------------------
+# A notice on a chart or table ([HR Pay Notice], [HR KPI Pay Notice], [HR Vacancy Note]: "" when there is nothing to
+# say) sits in the visual's title strip, right-aligned, in a small font: over the plot area it would take the hover
+# and the clicks (tooltips, cross-highlighting) even while empty.
+CHART_TITLE_PT = 14  # the theme's title text class (Segoe UI Semibold), one line
+TITLE_BAND_H = 32  # px from the visual's top: its top padding and the title's row; the plot area starts below
+NOTICE_PT = 9
+NOTICE_TOP, NOTICE_H, NOTICE_RIGHT = 3, 26, 8  # the notice card in the band; NOTICE_RIGHT: gap to the right edge
+# The longest text each notice measure shows (ssas/HNH_Analytics/tables/_Measures.tmdl)
+NOTICE_TEXTS = {"HR Pay Notice": "Requires pay access", "HR KPI Pay Notice": "Requires pay access",
+                "HR Vacancy Note": "Budgeted FTE not loaded: vacancy rate not available"}
+EM_PER_CHAR = 0.52  # Segoe UI, regular and semibold: 0.44-0.48 em a character on these texts (System.Drawing)
+
+
+def _text_px(text: str, pt: float) -> float:
+    return len(text) * EM_PER_CHAR * pt * 4 / 3
+
+
+def title_text_width(title: str) -> float:
+    """A generous estimate of a visual title's width in px, with the visual's left padding."""
+    return 12 + _text_px(title, CHART_TITLE_PT)
+
+
+def notice_text_width(measure: str) -> float:
+    """The notice card's width for `measure`'s longest text, with the card's own padding."""
+    return 16 + _text_px(NOTICE_TEXTS[measure], NOTICE_PT)
+
+
+def title_notice(chart: Visual, measure: str) -> Visual:
+    """`measure`'s notice in `chart`'s title band, right-aligned; the card has no filter (a card filtered to no row
+    prints "(Blank)"). Draw it after the chart. Raises when the title and the notice do not fit on one line."""
+    if chart.title is None:
+        raise ValueError(f"a notice needs a titled visual: {chart.sample} {chart.roles}")
+    w = notice_text_width(measure)
+    x = chart.x + chart.w - NOTICE_RIGHT - w
+    if x < chart.x + title_text_width(chart.title):
+        raise ValueError(f"chart '{chart.title}' ({chart.w:.0f} px) is too narrow for its title and [{measure}]")
+    return Visual("card", x, chart.y + NOTICE_TOP, w, NOTICE_H, roles={"Values": [meas(measure)]},
+                  props=card_look(NOTICE_PT, NAVY))
+
+
 def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: str) -> Visual:
     """An outline page-navigation button ("Open data quality ›")."""
     return Visual("buttonNavigate", x, y, w, h,
@@ -365,6 +406,6 @@ def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: st
 
 
 __all__ = ["BRANCH_KEYS", "BSC_DIR", "DETAIL_PAGES", "HEAD_OFFICE", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY",
-           "SEED", "TABS", "WHITE", "branches", "card_look", "filters", "fixed_table", "home_tile_codes", "kpi_label",
+           "NOTICE_PT", "SEED", "TABS", "TITLE_BAND_H", "WHITE", "branches", "card_look", "filters", "fixed_table", "home_tile_codes", "kpi_label",
            "kpi_tile", "measure_colour", "nav_button", "page_frame", "search_box", "seed_kpis", "small_title",
-           "sub_tabs", "white_panel"]
+           "notice_text_width", "sub_tabs", "title_notice", "title_text_width", "white_panel"]

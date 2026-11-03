@@ -534,8 +534,7 @@ def test_kpi_detail_charts_have_a_pay_notice():
     assert len(notices) == 2 and all(n.filters == [] for n in notices)  # "" for a pay reader: an empty card
     for chart in (next(v for v in page.visuals if v.sample == "lineChart"),
                   next(v for v in page.visuals if v.sample == "barChart")):
-        assert any(n.x == chart.x and n.w == chart.w and chart.y <= n.y and n.y + n.h <= chart.y + chart.h
-                   for n in notices)
+        assert any(_in_title_band(n, chart) for n in notices)  # ruling R31
 
 
 def _period(page):
@@ -695,6 +694,47 @@ def _columns(v):
 def _covers(notice, v):
     """The notice lies over the visual: inside it vertically, overlapping it horizontally."""
     return notice.x < v.x + v.w and v.x < notice.x + notice.w and v.y <= notice.y and notice.y + notice.h <= v.y + v.h
+
+
+def _in_title_band(notice, chart):
+    """Ruling R31: the notice lies in the chart's title strip (the top TITLE_BAND_H px, the title's row), right of the
+    title's text and inside the chart's right edge, so the plot area below stays free for hover and selection."""
+    from hr_frame import TITLE_BAND_H, title_text_width
+    return (chart.title is not None and chart.y <= notice.y and notice.y + notice.h <= chart.y + TITLE_BAND_H
+            and notice.x >= chart.x + title_text_width(chart.title) and notice.x + notice.w <= chart.x + chart.w)
+
+
+NOTICE_MEASURES = {"HR Pay Notice", "HR KPI Pay Notice", "HR Vacancy Note"}
+
+
+def test_chart_notices_sit_in_the_title_band():
+    """Ruling R31: a notice over a chart or table ([HR Pay Notice], [HR KPI Pay Notice], [HR Vacancy Note]) sits in
+    that visual's title band, right-aligned, in a small font, drawn after it; it never reaches the plot area of any
+    titled visual, so tooltips and cross-highlighting on the chart work. Notices over a run of cards (no title) stay
+    over the cards."""
+    from hr_frame import NOTICE_PT, TITLE_BAND_H, notice_text_width
+    seen = 0
+    for page in PAGES:
+        titled = [v for v in page.visuals if v.sample in ("lineChart", "barChart", "table", "matrix")]
+        cards = [v for v in page.visuals if v.sample == "card" and not set(m.name for m in _measures(v)) & NOTICE_MEASURES]
+        for n in (v for v in page.visuals if v.sample == "card" and {m.name for m in _measures(v)} & NOTICE_MEASURES):
+            under = [c for c in titled if _overlaps(n, c)]
+            if not under:  # a notice over a run of pay cards
+                assert any(_overlaps(n, c) for c in cards), (page.name, n)
+                continue
+            seen += 1
+            assert len(under) == 1 and _in_title_band(n, under[0]), (page.name, under[0].title, n)
+            assert _index(page, n) > _index(page, under[0]), (page.name, under[0].title)
+            assert n.y + n.h <= under[0].y + TITLE_BAND_H  # never over the plot area
+            assert lit(n.props["labels"][0]["properties"]["fontSize"]) == f"{NOTICE_PT}D" and NOTICE_PT <= 10
+            assert n.w >= notice_text_width(_measures(n)[0].name), (page.name, under[0].title)
+            assert n.filters == []
+            assert n.x + n.w >= under[0].x + under[0].w - 16  # right-aligned in the strip
+    assert seen >= 10
+
+
+def _overlaps(a, b):
+    return a.x < b.x + b.w and b.x < a.x + a.w and a.y < b.y + b.h and b.y < a.y + a.h
 
 
 def test_detail_pages_have_sub_tabs():

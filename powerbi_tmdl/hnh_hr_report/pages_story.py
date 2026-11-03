@@ -18,7 +18,7 @@ ends at the last closed month, not at an arbitrary selected month.
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit
-from hr_frame import branches, card_look, filters, kpi_tile, page_frame
+from hr_frame import branches, card_look, filters, kpi_tile, page_frame, title_notice
 from model import Filter, Interaction, Page, Visual, col, meas
 
 GAP = 24
@@ -33,14 +33,13 @@ TILE_W = 340
 CHART_X = X0 + SENTENCE_W + GAP
 CHART_W = X0 + W0 - TILE_W - GAP - CHART_X  # 728
 TILE_X = X0 + W0 - TILE_W
-NOTICE_H = 60
 
 YEAR_MONTH = col("Date", "Year Month Name")
 MONTH_OFFSET = col("Date", "Month Offset")
 LAST_12_CLOSED = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
 
-# (story measure, chart measures, chart title, KPI tile code, the note over the chart or None): [HR Pay Notice] over
-# the pay chart, [HR Vacancy Note] over the vacancy chart (empty while no budgeted FTE is loaded)
+# (story measure, chart measures, chart title, KPI tile code, the chart's note or None): [HR Pay Notice] on the pay
+# chart, [HR Vacancy Note] on the vacancy chart (empty while no budgeted FTE is loaded), in the title band (R31)
 BLOCKS = [
     ("HR Story Size", ["Headcount", "FTE"], "Headcount and FTE", "HR_HEADCOUNT", None),
     ("HR Story Flow", ["BSC Turnover"], "Turnover", "HR_TURNOVER", None),
@@ -68,12 +67,10 @@ def _chart(y: float, measures: list[str], title: str) -> Visual:
                   title=f"{title}, last 12 closed months", filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc")
 
 
-def _note(y: float, measure: str) -> Visual:
-    """A note over the chart: [HR Pay Notice] ("Requires pay access" without pay access) or [HR Vacancy Note]. The
-    measure is "" when there is nothing to say, so the card shows nothing; no filter, because a card filtered to no
-    row prints "(Blank)"."""
-    return Visual("card", CHART_X, y + (BLOCK_H - NOTICE_H) / 2, CHART_W, NOTICE_H,
-                  roles={"Values": [meas(measure)]}, props=card_look(16, NAVY))
+def _note(chart: Visual, measure: str) -> Visual:
+    """The chart's note in its title band, right-aligned (ruling R31): [HR Pay Notice] ("Requires pay access" without
+    pay access) or [HR Vacancy Note]. The measure is "" when there is nothing to say, so the card shows nothing."""
+    return title_notice(chart, measure)
 
 
 def story_page() -> Page:
@@ -87,7 +84,7 @@ def story_page() -> Page:
         charts.append(chart)
         visuals += [_sentence(y, story), chart]
         if note:
-            visuals.append(_note(y, note))
+            visuals.append(_note(chart, note))
         visuals += kpi_tile(code, TILE_X, y, TILE_W, BLOCK_H)
     interactions = [Interaction(month_slicer, c, "NoFilter") for c in charts]
     # the hospitals and Head Office, as the sentences and tiles (user decision 2026-11-03)

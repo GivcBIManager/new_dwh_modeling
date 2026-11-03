@@ -33,14 +33,15 @@ Rules the pages keep:
   (`blocked_tables`, read from the model). The build stops when a visual's own columns, a page slicer, the page
   filter or a drill field is such a table; a selection in a chart or table is kept from reaching a visual whose
   measures reject one of its tables (NoFilter interactions, written here).
-- Pay (ruling R22): a visual with a pay figure has an [HR Pay Notice] card over it: "Requires pay access" to readers
-  without pay access, "" (an empty card) to the others. The card has no filter: a card filtered to no row prints
+- Pay (ruling R22): a visual with a pay figure has an [HR Pay Notice] card: "Requires pay access" to readers
+  without pay access, "" (an empty card) to the others. On a chart or table it sits in the title band, right-aligned
+  in a small font (ruling R31: over the plot area it took the hover and clicks); over a run of pay cards, centred. The card has no filter: a card filtered to no row prints
   "(Blank)" (the 2026-11-03 screenshots). Pay cards are still filtered to non-blank.
 - Departments and positions (ruling R30): charts and the Department slicer use the prefix-free 'HR Department'
   [Department Base Name] and 'Position'[Position Base Name] ("Nursing Department", "Staff Nurse"), one bar for the
   same name at every hospital and Head Office; the per-hospital Department Name is only on the Employee list.
 - Recruitment: while no budgeted FTE is loaded the vacancy rate is blank; its card is [HR Vacancy Rate Text] ("No
-  budgeted FTE") and each vacancy chart has the [HR Vacancy Note] card over it ("" once loaded).
+  budgeted FTE") and each vacancy chart has the [HR Vacancy Note] card in its title band ("" once loaded).
 - Fusion leaver measures are labelled "in Fusion"; the headline turnover is [BSC Turnover]. Labels are this repo's
   (not title-cased).
 
@@ -64,7 +65,8 @@ from functools import lru_cache
 
 from fields import MODEL_DIR
 from frame import CONTENT, NAVY, _lit
-from hr_frame import SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, page_frame, search_box, sub_tabs
+from hr_frame import (SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, page_frame, search_box, sub_tabs,
+                      title_notice)
 from model import Field, Filter, Interaction, Page, Visual, col, meas
 
 GAP = 24
@@ -220,9 +222,9 @@ def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
 
 
 def _notice(x: float, y: float, w: float, h: float, measure: Field = PAY_NOTICE) -> Visual:
-    """A note centred over a visual: [HR Pay Notice] ("Requires pay access") over a pay visual, or another text
-    measure. The measure returns "" when there is nothing to say, so the card shows nothing; it has no filter, because a
-    card filtered to no row prints "(Blank)"."""
+    """A note centred over a run of cards: [HR Pay Notice] ("Requires pay access") over pay cards. The measure returns
+    "" when there is nothing to say, so the card shows nothing; it has no filter, because a card filtered to no row
+    prints "(Blank)". A chart's or table's notice sits in its title band instead (hr_frame.title_notice, R31)."""
     return Visual("card", x, y + (h - NOTICE_H) / 2, w, NOTICE_H, roles={"Values": [measure]},
                   props=card_look(16, NAVY))
 
@@ -295,10 +297,10 @@ def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], ex
     for spec, x, cy, cw, ch in placed:
         v = _visual(spec, x, cy, cw, ch)
         data.append(v)
-        if spec["pay"]:
-            notices.append(_notice(x, cy, cw, ch))
+        if spec["pay"]:  # in the chart's title band (ruling R31)
+            notices.append(title_notice(v, PAY_NOTICE.name))
         if spec.get("note"):
-            notices.append(_notice(x, cy, cw, ch, meas(spec["note"])))
+            notices.append(title_notice(v, spec["note"]))
     visuals += data + notices
     rows = math.ceil(len(extras) / 3)
     bottom = grid_end + rows * (GAP + EXTRA_H)
@@ -381,7 +383,7 @@ def payroll_page() -> Page:
                     [(BRANCH_NAME, "Branch"), (col("Payroll", "Source"), "Source"),
                      (col("Payroll", "Payroll Status"), "Payroll status")],
                     ["Payroll Cost", "Gross Pay (Open Payroll)"], pay=True)],
-        extras=[trend("Overtime share of gross pay", ["Overtime Share %"], pay=True),
+        extras=[trend("Overtime share", ["Overtime Share %"], pay=True),  # short: the title band holds the notice (R31)
                 bars("Payroll cost per FTE by branch (SAR)", BRANCH_NAME, ["Payroll Cost per FTE"], pay=True),
                 bars("Overtime share of gross pay by branch", BRANCH_NAME, ["Overtime Share %"], pay=True)],
         page_slicers=[(DEPARTMENT, "Department")])
@@ -445,7 +447,7 @@ def productivity_page() -> Page:
               trend("Visits per FTE", ["Visits per FTE"], pay=True),
               bars("Staff to bed and clinical staff to doctor by branch", BRANCH_NAME,
                    ["BSC Staff to Bed", "BSC Clinical to Doctor"])],
-        extras=[bars("Payroll cost per visit, doctors and nurses (SAR)", STAFF_CATEGORY, ["Payroll Cost per Visit"],
+        extras=[bars("Payroll cost per visit (SAR)", STAFF_CATEGORY, ["Payroll Cost per Visit"],  # by doctor, nurse
                      pay=True),
                 bars("Revenue per FTE by branch (SAR)", BRANCH_NAME, ["BSC Revenue per FTE"]),
                 bars("Revenue per doctor by branch (SAR)", BRANCH_NAME, ["BSC Revenue per Doctor"])])
