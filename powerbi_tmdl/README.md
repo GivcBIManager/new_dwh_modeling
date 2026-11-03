@@ -3,6 +3,7 @@
 How a report built in this repository reaches Power BI Report Server, and the rules learned on the way. Every report
 here is a Power BI project (PBIP, PBIR format) written by a generator and connected live to the SSAS model
 `HNH_Analytics` (or `HNH_Analytics_Test`): `hnh_bsc_report/` (the Balanced Scorecard) and
+`hnh_hr_report/` (the HR dashboard, "HNH Workforce") and
 `pressGaneyDashboard/pressGaneyDashboard/` (the Press Ganey dashboard). Measures live in the model
 (`ssas/HNH_Analytics/tables/_Measures.tmdl`), never in the report.
 
@@ -70,3 +71,24 @@ type (201) and the `visualInteractions` type values (Default 0, DataFilter 1, Hi
   smoke test runs the deployed measures and flags any guard message.
 - A button label needs a `selector: {"id": "default"}` entry; a report-level measure would need
   `"Schema": "extension"` (not used any more); PBIR files are UTF-8 without a byte-order mark.
+
+## HNH Workforce (HR dashboard) route
+
+Same route as above, with the HR report's paths. It is built against `HNH_Analytics_Test` (perspective `HR Dashboard`).
+
+1. `python powerbi_tmdl/hnh_hr_report/build.py` (prints `report schemas: passed` and `Desktop project reader: opened`).
+2. `python powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py "powerbi_tmdl/hnh_hr_report/HNH Workforce.pbip" --out "C:\HNH\report\HNH Workforce.pbix"` (14 pages, 501 visuals).
+3. `pbix.check_upload_rules` on the file must return `[]` (run from `powerbi_tmdl/hnh_bsc_report`: `python -c "from pbix import check_upload_rules; print(check_upload_rules(r'C:\HNH\report\HNH Workforce.pbix'))"`).
+4. Open the `.pbix` in Desktop for Report Server without saving; upload it to `http://hnhanalyticssrv/reports` only on the user's go-ahead.
+
+**Switch to production.** After the model is deployed to production (a separate go-ahead), rebuild with `python powerbi_tmdl/hnh_hr_report/build.py --database HNH_Analytics`, convert again, and upload that file (a separate go-ahead). Until then the report points at `HNH_Analytics_Test`.
+
+**Check on first open** (Desktop for Report Server, then the portal):
+
+- The Month slicer shows "Last closed month" on every page.
+- The tall pages (Story, Headcount, Movements, Payroll, Absence, Productivity, and Scorecard if it is tall) scroll at full width instead of shrinking.
+- Status text is coloured (green / amber / red, grey for No target yet and No data).
+- Pay notices: as `HRM_CORP` they show nothing; as `EXE_ABH` they show "Requires pay access" (pay tiles, the Cost story block, Payroll and Productivity).
+- The Employee list keeps its rows for a reader without pay access, with the names blank.
+- The KPI detail 24-month line shows 24 points after drilling from the Scorecard.
+- `EXE_ABH` sees only Abha and no Head Office (100) data quality records; `HRM_CORP` sees all hospitals, Head Office records and the placeholder marks on the targets.

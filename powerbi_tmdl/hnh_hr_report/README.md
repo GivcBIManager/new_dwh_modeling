@@ -31,7 +31,11 @@ Run from the repository root:
 
 The arguments are the BSC `build.py`'s. The defaults are `--database HNH_Analytics_Test` and `--server HNHANALYTICSSRV\REPORTSERVERDB`; `--out` is the folder for the project and defaults to this folder. Only the project is built (`--format pbip`); `--pbiviz` is not used. The command stops if a field is not in the `HR Dashboard` perspective. It then prints `report schemas: passed` and `Desktop project reader: opened`, and exits 1 on any problem. Commit the regenerated project.
 
-The server reads only the legacy package: write it with `powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py` as `powerbi_tmdl/README.md` describes.
+The server reads only the legacy package: write it with `powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py` as `powerbi_tmdl/README.md` describes (section "HNH Workforce (HR dashboard) route": the commands, the checks on first open, and the switch to production).
+
+`python powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py "powerbi_tmdl/hnh_hr_report/HNH Workforce.pbip" --out "C:\HNH\report\HNH Workforce.pbix"`
+
+The switch to production is `build.py --database HNH_Analytics` after the model is deployed to production; then convert again.
 
 ## KPI tiles and status
 
