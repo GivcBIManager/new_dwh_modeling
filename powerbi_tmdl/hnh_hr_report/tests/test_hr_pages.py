@@ -617,6 +617,37 @@ def test_branch_wording():
                 assert v.labels == {BRANCH_NAME: "Branch"}, page.name
 
 
+def _string_literals(dax):
+    """The DAX text literals of an expression, guard messages ("... can't be analysed by ") left out."""
+    import re
+    return [s.replace('""', '"') for s in re.findall(r'"((?:[^"]|"")*)"', dax) if "can't be analysed by" not in s]
+
+
+def test_branch_wording_in_measure_texts_and_seed():
+    """Minor 3c of the Head Office review: the text a reader sees from the model says branch where Head Office is
+    included. No text literal of a measure on the HR pages or in the HR Dashboard folders says "hospital" (KPI
+    detail's placeholder said "trend, hospitals and definition"), and no KPI's Grain or definition in
+    hr_config_seed.sql does ("Hospital, month", "per hospital"), but turnover's factual "hospitals 1 to 5 / 6 to 8"."""
+    import re
+    import sys as _sys
+    _sys.path.insert(0, str(Path(MODEL_DIR).parents[0] / "tools"))
+    import hnh_tmdl
+    measures = {m.name: m for m in hnh_tmdl.measures((Path(MODEL_DIR) / "tables" / "_Measures.tmdl")
+                                                     .read_text(encoding="utf-8-sig"))}
+    used = {f.name for p in PAGES for f in page_fields(p) if f.kind == "measure"}
+    hr = {n for n, m in measures.items() if (m.folder or "").startswith("HR Dashboard")}
+    assert "HR KPI Definition Text" in used | hr and len(hr) > 40
+    for name in sorted(used | hr):
+        for text in _string_literals(measures[name].expression):
+            assert "hospital" not in text.lower(), (name, text)
+    seed = seed_kpis()
+    assert len(seed) >= 33
+    for row in seed:
+        for column in ("grain", "definition"):
+            text = re.sub(r"hospitals \d to \d", "", str(row[column]))
+            assert "hospital" not in text.lower(), (row["kpi_code"], column, row[column])
+
+
 # Long lists get a search box in their dropdown (Desktop's slicer "Search": objects.general selfFilterEnabled)
 SEARCH_SLICERS = {col("HR Department", "Department Base Name"), col("Job", "Job Name"), col("Grade", "Grade Name"),
                   col("Employee", "Nationality")}

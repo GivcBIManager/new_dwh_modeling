@@ -10,6 +10,20 @@ function Invoke-Build([string]$Json) {
         return [IO.File]::ReadAllText($out)
     } finally { if (Test-Path $out) { Remove-Item $out -Force } }
 }
+function Split-Tuple([string]$Line) {
+    # Raw SQL tokens of one VALUES row, as build_hr_placeholders.ps1 splits them
+    return @([regex]::Matches($Line.Trim().TrimEnd(',', ';'), "'(?:\\.|[^'\\])*'|now64\(\d+\)|-?[\d.]+") | ForEach-Object { $_.Value })
+}
+function Get-SeedKpiRows([string]$Text) {
+    # code token ('HR_X') -> tokens of its map_hr_kpi row in a seed text
+    $out = @{}; $in = $false
+    foreach ($line in ($Text -split "`r?`n")) {
+        if ($line -match '^\s*--') { continue }
+        if ($line -match '^INSERT INTO default\.(\w+)') { $in = ($Matches[1] -eq 'map_hr_kpi'); continue }
+        if ($in -and $line -match '^\s{4}\(') { $t = Split-Tuple $line; $out[$t[0]] = $t }
+    }
+    return $out
+}
 function Get-InsertRows([string]$Sql, [string]$Table) {
     $stmt = ($Sql -split ';\s*\r?\n') | Where-Object { $_ -match "INSERT INTO default\.$Table " } | Select-Object -First 1
     return @($stmt -split "`r?`n" | Where-Object { $_ -match '^\s{4}\(' })
@@ -34,10 +48,28 @@ Describe 'build_hr_placeholders.ps1' {
     }
     It 're-inserts the three leave balance metrics with needs_pay = 1' {
         $k = Get-InsertRows $sql 'map_hr_kpi'
-        $k.Count | Should Be 3
         foreach ($c in 'HR_M_LEAVE_BALANCE', 'HR_M_CURRENT_LEAVE_BALANCE', 'HR_M_AVERAGE_LEAVE_BALANCE') {
-            ($k | Where-Object { $_ -match "^\s{4}\('$c', 'metric'," -and $_ -match "'none', 1, 0, 'active', now64\(3\), 'seed', 'Leave Balances is pay-gated by role', 0\)" }).Count | Should Be 1
+            ($k | Where-Object { $_ -match "^\s{4}\('$c', 'metric'," -and $_ -match "'none', 1, 0, 'active', now64\(3\), 'seed', 'Leave Balances is pay-gated by role(; wording: branches include Head Office)?', 0\)" }).Count | Should Be 1
         }
+    }
+    It 're-inserts the reworded KPI rows as the seed has them now, once per code (minor 3c)' {
+        $k = Get-InsertRows $sql 'map_hr_kpi'
+        $seed = Get-SeedKpiRows ([IO.File]::ReadAllText((Join-Path $here 'hr_config_seed.sql')))
+        $codes = @($k | ForEach-Object { (Split-Tuple $_)[0] })
+        $codes.Count | Should Be 21  # 3 pay-gated + 19 reworded, HR_M_LEAVE_BALANCE in both
+        @($codes | Select-Object -Unique).Count | Should Be $codes.Count
+        foreach ($line in $k) {
+            $t = Split-Tuple $line
+            $s = $seed[$t[0]]
+            $pay = $t[0] -in "'HR_M_LEAVE_BALANCE'", "'HR_M_CURRENT_LEAVE_BALANCE'", "'HR_M_AVERAGE_LEAVE_BALANCE'"
+            for ($i = 0; $i -lt $s.Count; $i++) {
+                if ($i -eq 21 -or ($i -eq 16 -and $pay)) { continue }
+                "$($t[0]) $i $($t[$i])" | Should Be "$($t[0]) $i $($s[$i])"
+            }
+            if (-not $pay) { $t[21] | Should Be "'wording: branches include Head Office'" }
+        }
+        ($k | Where-Object { $_ -match "^\s{4}\('HR_TURNOVER', 'kpi',.*'Branch, month'.*'wording: branches include Head Office', 0\)" }).Count | Should Be 1
+        ($k | Where-Object { $_ -match "^\s{4}\('HR_M_LEAVE_BALANCE',.* per branch: .*'Leave Balances is pay-gated by role; wording: branches include Head Office', 0\)" }).Count | Should Be 1
     }
     It 'ends each statement so apply_hr_config.ps1 can split them' {
         $sql | Should Match ';\s*\r?\n'
@@ -123,6 +155,24 @@ Describe 'build_hr_placeholders.ps1 KPI lists' {
     It 'queries every branch, Head Office included: no Is Hospital filter (user decision 2026-11-03)' {
         $script | Should Not Match 'Is Hospital'
         $script | Should Match 'Branch\[Branch Key\] <> 0'
+    }
+    It 'lists in $WordingKpis exactly the rows whose text differs from the seed as loaded at GATE G1 (4119ad1)' {
+        $loaded = (& git -C $root show '4119ad1:scripts/hr_config/hr_config_seed.sql') -join "`n"
+        if ($LASTEXITCODE -ne 0) { throw 'git show 4119ad1 failed' }
+        $was = Get-SeedKpiRows $loaded
+        $now = Get-SeedKpiRows ([IO.File]::ReadAllText((Join-Path $here 'hr_config_seed.sql')))
+        $changed = @($now.Keys | Where-Object { ($now[$_] -join '|') -ne ($was[$_] -join '|') } | ForEach-Object { $_.Trim("'") } | Sort-Object)
+        $changed.Count | Should Be 19
+        (Get-ScriptList 'WordingKpis') -join ', ' | Should Be ($changed -join ', ')
+    }
+    It 'leaves no hospital wording in a seed Grain or definition, but the hospitals 1 to 5 / 6 to 8 of turnover' {
+        $now = Get-SeedKpiRows ([IO.File]::ReadAllText((Join-Path $here 'hr_config_seed.sql')))
+        foreach ($code in $now.Keys) {
+            foreach ($i in 5, 8) {
+                $text = $now[$code][$i] -replace 'hospitals \d to \d', ''
+                "$code $text" | Should Not Match '(?i)hospital'
+            }
+        }
     }
     It 'writes per-branch rows for the codes of measure HR KPI Is Additive ($AdditiveKpis)' {
         $measures = [IO.File]::ReadAllText((Join-Path $root 'ssas\HNH_Analytics\tables\_Measures.tmdl'))

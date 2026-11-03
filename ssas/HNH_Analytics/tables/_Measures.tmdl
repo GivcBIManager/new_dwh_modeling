@@ -7851,7 +7851,7 @@ table _Measures
 			IF (
 				HASONEVALUE ( 'HR KPI'[KPI Code] ),
 				SELECTEDVALUE ( 'HR KPI'[Definition] ),
-				"No KPI selected. On the Scorecard, select a KPI row and use Drill through to KPI detail: its figures, trend, hospitals and definition show here."
+				"No KPI selected. On the Scorecard, select a KPI row and use Drill through to KPI detail: its figures, trend, branches and definition show here."
 			)
 		formatString: General
 		displayFolder: HR Dashboard\Report

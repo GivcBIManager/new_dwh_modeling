@@ -22,7 +22,10 @@
     the absolute value is 100 or more, else to 2 decimals. The watch value is 10 percent worse than the UNROUNDED
     target in the KPI's direction (x 0.9 for higher, x 1.1 for lower, ceiling and on_target), then rounded by the same rule.
 
-  The same update file re-inserts the 3 leave balance metrics with needs_pay = 1 (leave balance in days is pay-gated by role).
+  The same update file re-inserts the 3 leave balance metrics with needs_pay = 1 (leave balance in days is pay-gated by role),
+  and the map_hr_kpi rows whose wording changed in the seed after it was loaded ($WordingKpis: "Hospital, month" and
+  "per hospital" became "Branch, month" and "per branch" once Head Office was included), each as the seed has it now.
+  A code in both lists is written once, with needs_pay = 1 and the new wording.
 #>
 param(
     [string]$Server = 'HNHANALYTICSSRV\REPORTSERVERDB',
@@ -43,6 +46,15 @@ $FlowKpis = @('HR_TURNOVER', 'HR_NEW_HIRE_TURNOVER', 'HR_STAFF_COST_PER_FTE', 'H
 $AdditiveKpis = @('HR_HEADCOUNT', 'HR_LEAVE_LIABILITY')
 # Metrics re-inserted with needs_pay = 1.
 $PayGatedMetrics = @('HR_M_LEAVE_BALANCE', 'HR_M_CURRENT_LEAVE_BALANCE', 'HR_M_AVERAGE_LEAVE_BALANCE')
+$PayGatedNote = 'Leave Balances is pay-gated by role'
+# Rows whose Grain or definition changed in hr_config_seed.sql after the seed was loaded (GATE G1, 2026-11-02): the
+# figures cover every branch, Head Office included (user decision 2026-11-03). Re-inserted from the seed as it is now.
+# BuildHrPlaceholders.Tests.ps1 checks the list against the seed as loaded.
+$WordingKpis = @('HR_SAUDIZATION', 'HR_TURNOVER', 'HR_STAFF_COST_PER_FTE', 'HR_REVENUE_PER_FTE', 'HR_OVERTIME_SHARE',
+                 'HR_SICK_LEAVE_RATE', 'HR_LEAVE_LIABILITY', 'HR_VACANCY_RATE', 'HR_STAFF_TO_BED', 'HR_CLINICAL_TO_DOCTOR',
+                 'HR_REVENUE_PER_DOCTOR', 'HR_VISITS_PER_FTE', 'HR_REVENUE_PER_PAYROLL_SAR', 'HR_M_FTE', 'HR_M_PAYROLL_COST',
+                 'HR_M_GROSS_PAY', 'HR_M_GROSS_PAY_OPEN', 'HR_M_LEAVE_BALANCE', 'HR_M_PAYROLL_COST_PER_VISIT')
+$WordingNote = 'wording: branches include Head Office'
 $Years = @(2026, 2027)
 $SourceBasis = "Placeholder $dash HR to confirm"
 $ChangeNote = "placeholder: Jan${dash}Sep 2026 level"
@@ -168,14 +180,20 @@ foreach ($k in $kpis) {
     }
 }
 
-# --- pay-gated leave balance metrics ------------------------------------------------------------------------------------
+# --- map_hr_kpi rows: pay-gated leave balance metrics, new wording -------------------------------------------------------
 $metricRows = New-Object System.Collections.Generic.List[string]
-foreach ($code in $PayGatedMetrics) {
-    $row = $kpiRows | Where-Object { $_.Code -eq $code }
-    if (-not $row) { throw "Metric $code is not in $seedPath" }
+foreach ($code in @($PayGatedMetrics + $WordingKpis)) {
+    if (-not ($kpiRows | Where-Object { $_.Code -eq $code })) { throw "KPI $code is not in $seedPath" }
+}
+foreach ($row in $kpiRows) {
+    $pay = $PayGatedMetrics -contains $row.Code
+    $wording = $WordingKpis -contains $row.Code
+    if (-not ($pay -or $wording)) { continue }
     $t = @($row.Tokens)
-    $t[16] = '1'
-    $t[21] = "'Leave Balances is pay-gated by role'"
+    $notes = @()
+    if ($pay) { $t[16] = '1'; $notes += $PayGatedNote }
+    if ($wording) { $notes += $WordingNote }
+    $t[21] = "'" + ($notes -join '; ') + "'"
     $metricRows.Add('    (' + ($t -join ', ') + ')')
 }
 
@@ -185,7 +203,8 @@ $lines = @(
     "-- HR placeholder update $((Get-Date).ToString('yyyy-MM-dd')): the target of each fixed KPI is its Jan-Sep 2026 level (flow KPIs x 12/9), for 2026 and 2027,",
     "-- until HR confirms real targets (source_basis starts with Placeholder). Additive KPIs have one row per branch (hospitals",
     "-- and Head Office 100); the others one branch_id 0 row, which applies to every branch, Head Office included.",
-    "-- The leave balance metrics become pay-gated (needs_pay = 1). Built by build_hr_placeholders.ps1.",
+    "-- The leave balance metrics become pay-gated (needs_pay = 1); KPI rows whose Grain or definition now say branch",
+    "-- (Head Office included) are re-inserted as the seed has them. Built by build_hr_placeholders.ps1.",
     "-- Applied with apply_hr_config.ps1 -Update; insert-only, the latest row per key wins.",
     "",
     "INSERT INTO default.map_hr_target ($targetCols) VALUES",
@@ -199,4 +218,4 @@ $lines = @(
 
 $summary | ForEach-Object { Write-Host $_ }
 if ($blank.Count) { Write-Host ("Skipped, blank value: " + ($blank -join ', ')) }
-Write-Host ("Wrote {0} target rows and {1} metric rows to {2}" -f $targetRows.Count, $metricRows.Count, $Out)
+Write-Host ("Wrote {0} target rows and {1} map_hr_kpi rows to {2}" -f $targetRows.Count, $metricRows.Count, $Out)
