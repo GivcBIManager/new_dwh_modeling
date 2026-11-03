@@ -23,11 +23,11 @@
                       "Entity": "Date"
                     }
                   },
-                  "Property": "Year Month Name"
+                  "Property": "Month Pick"
                 }
               },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name",
+              "queryRef": "Date.Month Pick",
+              "nativeQueryRef": "Month Pick",
               "displayName": "Month",
               "active": true
             }
@@ -55,14 +55,14 @@
             "singleSelect": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             },
             "selectAllCheckboxEnabled": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
@@ -95,6 +95,53 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        }
+      ],
+      "general": [
+        {
+          "properties": {
+            "filter": {
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "d",
+                    "Entity": "Date",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "d"
+                                }
+                              },
+                              "Property": "Month Pick"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'Last closed month'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -155,7 +202,7 @@
       ]
     },
     "syncGroup": {
-      "groupName": "bsc Date.Year Month Name",
+      "groupName": "bsc Date.Month Pick",
       "fieldChanges": true,
       "filterChanges": true
     },

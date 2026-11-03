@@ -30,13 +30,13 @@ PAGES, REPORT_FILTERS = _hr_pages().PAGES, _hr_pages().REPORT_FILTERS
 KPI_CODE = col("HR KPI", "KPI Code")
 BRANCH_NAME = col("Branch", "Branch Name")
 IS_HOSPITAL = col("Branch", "Is Hospital")
-YEAR_MONTH_NAME = col("Date", "Year Month Name")
+MONTH_PICK = col("Date", "Month Pick")
 STATUS_COLOUR = meas("HR KPI Status Colour")
 TAB_NAMES = ["home", "story", "scorecard", "headcount", "data_quality", "guide"]
 DETAIL_NAMES = ["headcount", "movements", "payroll", "absence", "recruitment", "productivity"]
 # R13: the slicers a page with HR KPI Actual / Status / Status Text / Status Colour may carry
-KPI_MEASURES = {"HR KPI Actual", "HR KPI Status", "HR KPI Status Text", "HR KPI Status Colour"}
-ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, YEAR_MONTH_NAME}
+KPI_MEASURES = {"HR KPI Actual", "HR KPI Actual Text", "HR KPI Status", "HR KPI Status Text", "HR KPI Status Colour"}
+ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK}
 
 
 def lit(prop):
@@ -161,12 +161,43 @@ def test_kpi_pages_carry_only_hospital_and_month_slicers():
 def test_filters_hospital_and_month_dropdowns():
     hospital, month = filters()
     assert hospital.sample == month.sample == "slicerDropdown"
-    assert hospital.roles == {"Values": [BRANCH_NAME]} and month.roles == {"Values": [YEAR_MONTH_NAME]}
+    assert hospital.roles == {"Values": [BRANCH_NAME]} and month.roles == {"Values": [MONTH_PICK]}
     assert [(f.field, f.op, f.values) for f in hospital.filters] == [(IS_HOSPITAL, "in", ["Yes"])]
-    assert hospital.labels == {BRANCH_NAME: "Hospital"} and month.labels == {YEAR_MONTH_NAME: "Month"}
+    assert hospital.labels == {BRANCH_NAME: "Hospital"} and month.labels == {MONTH_PICK: "Month"}
     for v in (hospital, month):  # inside the filter bar, left of the help buttons
         assert frame.FILTER_BAR[1] <= v.y and v.y + v.h <= frame.FILTER_BAR[1] + frame.FILTER_BAR[3]
         assert v.x + v.w < HELP[0][2][0]
+
+
+def test_month_slicer_single_select_on_last_closed_month():
+    """R21: Month is a single-select dropdown on 'Date'[Month Pick] saved on "Last closed month" (the model relabels
+    the previous month every day), so Home opens on one month, the one HR Story Home describes."""
+    _hospital, month = filters()
+    selection = month.props["selection"][0]["properties"]
+    assert selection["singleSelect"]["expr"]["Literal"]["Value"] == "true"
+    assert selection["selectAllCheckboxEnabled"]["expr"]["Literal"]["Value"] == "false"
+    page = PAGES[0]
+    i = next(i for i, v in enumerate(page.visuals) if v.sample == "slicerDropdown" and MONTH_PICK in v.roles["Values"])
+    objects = pbir.visual_json(page, page.visuals[i], i, "")["visual"]["objects"]
+    flt = objects["general"][0]["properties"]["filter"]["filter"]
+    assert flt["From"] == [{"Name": "d", "Entity": "Date", "Type": 0}]
+    cond = flt["Where"][0]["Condition"]["In"]
+    assert cond["Expressions"] == [{"Column": {"Expression": {"SourceRef": {"Source": "d"}}, "Property": "Month Pick"}}]
+    assert cond["Values"] == [[{"Literal": {"Value": "'Last closed month'"}}]]
+    assert objects["data"] == [{"properties": {"mode": {"expr": {"Literal": {"Value": "'Dropdown'"}}}}}]
+
+
+def test_home_figures_are_pay_aware_text():
+    """R22: users without pay access read "Requires pay access", never "(Blank)": every tile's figure is
+    [HR KPI Actual Text], the Payroll and Productivity area cards the text measures."""
+    vs = home().visuals
+    bound = [f for v in vs for f in v.roles.get("Values", [])]
+    assert meas("HR KPI Actual") not in bound
+    assert bound.count(meas("HR KPI Actual Text")) == 8
+    for measure in ("Payroll Cost", "Visits per FTE"):
+        assert meas(measure) not in bound
+    for measure in ("HR Payroll Cost Text", "HR Visits per FTE Text"):
+        assert bound.count(meas(measure)) == 1
 
 
 def test_slicers_sync_across_pages():
@@ -175,7 +206,7 @@ def test_slicers_sync_across_pages():
     for i, v in enumerate(page.visuals):
         if v.sample == "slicerDropdown":
             groups.append(pbir.visual_json(page, v, i, "")["visual"]["syncGroup"])
-    assert [g["groupName"] for g in groups] == ["bsc Branch.Branch Name", "bsc Date.Year Month Name"]
+    assert [g["groupName"] for g in groups] == ["bsc Branch.Branch Name", "bsc Date.Month Pick"]
     assert all(g["fieldChanges"] and g["filterChanges"] for g in groups)
 
 
@@ -184,7 +215,7 @@ def test_kpi_tile():
     panel, cards = vs[0], vs[1:]
     assert panel.sample == "panel" and (panel.x, panel.y, panel.w, panel.h) == (30, 300, 447, 236)
     assert [c.sample for c in cards] == ["card"] * 3
-    assert [c.roles["Values"] for c in cards] == [[meas("HR KPI Actual")], [meas("HR KPI Target Text")],
+    assert [c.roles["Values"] for c in cards] == [[meas("HR KPI Actual Text")], [meas("HR KPI Target Text")],
                                                   [meas("HR KPI Status Text")]]
     for c in cards:
         assert [(f.field, f.op, f.values) for f in c.filters] == [(KPI_CODE, "eq", ["HR_TURNOVER"])]
@@ -244,6 +275,14 @@ def test_seed_parser_reads_quotes_escapes_and_calls(tmp_path):
     assert home_tile_codes(sql) == ["A", "B"]
 
 
+def test_seed_parser_standard_escapes(tmp_path):
+    """ClickHouse string escapes: \\n, \\t, \\r, \\0, \\\\ and \\' (any other \\x is x)."""
+    sql = tmp_path / "seed.sql"
+    sql.write_text(r"INSERT INTO default.map_hr_kpi (kpi_code, short_label) VALUES "
+                   r"('A', 'one\ntwo\tthree\r \\ back \' q \0 nul \% x');", encoding="utf-8")
+    assert seed_kpis(sql)[0]["short_label"] == "one\ntwo\tthree\r \\ back ' q \x00 nul % x"
+
+
 def test_seed_is_the_repository_file():
     assert SEED.name == "hr_config_seed.sql" and SEED.is_file()
 
@@ -260,7 +299,9 @@ def test_project_files_without_custom_visual():
     for k, b in files.items():
         assert not b.startswith(b"\xef\xbb\xbf"), k
     report = json.loads(files["HNH Workforce.Report/definition/report.json"].decode("utf-8"))
-    assert "reportExtensions" not in json.dumps(report) and "bookmarks" not in json.dumps(report)
+    assert "bookmarks" not in json.dumps(report)
+    # report-level measures would be written to definition/reportExtensions.json
+    assert not any("reportExtensions" in k for k in files)
 
 
 def test_no_visual_groups_or_bookmarks_in_pages():

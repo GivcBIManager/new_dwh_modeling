@@ -6,7 +6,7 @@ The generator reuses the Balanced Scorecard generator's modules in `powerbi_tmdl
 
 Code:
 
-- `hr_frame.py`: `HR_FRAME` (title "Workforce" / "Hayat Healthcare", tabs Home, Story, Scorecard, Details, Data quality, Guide, and the How to use and Definitions buttons), `HR_REPORT` (name, perspective, theme, logo), `page_frame(tab, bar)`, the filter bar (`filters()`: Hospital and Month; `sub_tabs(current)`: the six detail pages), `kpi_tile(code, x, y, w, h)`, and the KPI list read from `scripts/hr_config/hr_config_seed.sql` (`seed_kpis()`, `home_tile_codes()`, `kpi_label()`).
+- `hr_frame.py`: `HR_FRAME` (title "Workforce" / "Hayat Healthcare", tabs Home, Story, Scorecard, Details, Data quality, Guide, and the How to use and Definitions buttons), `HR_REPORT` (name, perspective, theme, logo), `page_frame(tab, bar)`, the filter bar (`filters()`: Hospital and Month, Month saved on "Last closed month"; `sub_tabs(current)`: the six detail pages), `kpi_tile(code, x, y, w, h)`, and the KPI list read from `scripts/hr_config/hr_config_seed.sql` (`seed_kpis()`, `home_tile_codes()`, `kpi_label()`).
 - `pages_home.py`: Home. `pages.py`: `PAGES` (in order) and `REPORT_FILTERS` (this year and last year).
 - `build.py`: the CLI.
 
@@ -24,4 +24,6 @@ The server reads only the legacy package: write it with `powerbi_tmdl/hnh_bsc_re
 
 ## KPI tiles and status
 
-A KPI tile shows `[HR KPI Actual]` under the KPI's short label, `[HR KPI Target Text]` (with "(placeholder)" while the target is one), and `[HR KPI Status Text]` (shape and word) in the colour of `[HR KPI Status Colour]`, set as the card's value colour by conditional formatting (field value). Home's tiles are the seed's `is_home_tile` KPIs in `display_order`. Pages that show these measures carry only the Hospital and Month slicers.
+A KPI tile shows `[HR KPI Actual Text]` (the formatted actual; "Requires pay access" for a pay KPI without pay access) under the KPI's short label, `[HR KPI Target Text]` (with "(placeholder)" while the target is one), and `[HR KPI Status Text]` (shape and word) in the colour of `[HR KPI Status Colour]`, set as the card's value colour by conditional formatting (field value). Home's tiles are the seed's `is_home_tile` KPIs in `display_order`. Pages that show these measures carry only the Hospital and Month slicers. Home's Payroll and Productivity area cards use the pay-aware `[HR Payroll Cost Text]` and `[HR Visits per FTE Text]`.
+
+The Month slicer is single-select on `'Date'[Month Pick]` and saved on "Last closed month": the model gives that label to the previous month each day, so every page opens on the last closed month without a rebuild.

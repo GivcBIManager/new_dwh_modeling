@@ -27,7 +27,8 @@ if str(BSC_DIR) not in sys.path:
 import frame  # noqa: E402
 from frame import (FILTER_BAR, LOGO, NAVY, WHITE, Rect, _colour, _lit, _num, button_props, no_container,  # noqa: E402
                    tab_width)
-from model import Filter, Visual, col, meas  # noqa: E402
+from layout import aliases, lit, source_expr  # noqa: E402
+from model import MEASURE_TABLE, Field, Filter, Visual, col, meas  # noqa: E402
 from pbir import THEME, ReportSpec  # noqa: E402
 
 SEED = REPO / "scripts" / "hr_config" / "hr_config_seed.sql"
@@ -78,7 +79,10 @@ def page_frame(tab: str | None, bar: list[Visual]) -> list[Visual]:
 
 BRANCH_NAME = col("Branch", "Branch Name")
 IS_HOSPITAL = col("Branch", "Is Hospital")
-YEAR_MONTH_NAME = col("Date", "Year Month Name")  # "Oct 2026", sorted by 'Date'[Year Month]
+# "Last closed month" for the previous calendar month (relabelled by the nightly build), else as Year Month Name
+# ("2026-Sep"); sorted by 'Date'[Year Month] (ruling R21)
+MONTH_PICK = col("Date", "Month Pick")
+LAST_CLOSED_MONTH = "Last closed month"
 HOSPITAL_SLICER: Rect = (30, 90, 330, 66)  # the BSC's slicer rects: the bar (84..162) less 6 px top and bottom
 MONTH_SLICER: Rect = (375, 90, 270, 66)
 SUB_TAB_X, SUB_TAB_GAP = 669, 6  # right of the Month slicer (ends 645); the row ends before How to use (1590)
@@ -89,16 +93,32 @@ def hospitals() -> Filter:
     return Filter(IS_HOSPITAL, "in", ["Yes"])
 
 
+def saved_selection(column: Field, value: str) -> dict:
+    """A slicer's saved selection, `general.filter`: `column IN (value)`, the semantic-query shape Desktop writes for
+    a selected slicer item (From alias as layout.aliases names it)."""
+    alias = aliases([column.table])[column.table]
+    cond = {"In": {"Expressions": [source_expr(column, alias)], "Values": [[lit(value)]]}}
+    return {"general": [{"properties": {"filter": {"filter": {
+        "Version": 2, "From": [{"Name": alias, "Entity": column.table, "Type": 0}],
+        "Where": [{"Condition": cond}]}}}}]}
+
+
+def single_selection() -> dict:
+    """Slicer selection: one item at a time, no "Select all"."""
+    return {"selection": [{"properties": {"singleSelect": _lit(True), "selectAllCheckboxEnabled": _lit(False)}}]}
+
+
 def filters() -> list[Visual]:
     """Hospital (hospitals only, multi-select with Select all) and Month dropdowns. pbir.py gives each slicer the
-    sync group of its field, so a selection carries to every page. Month has no saved selection: the measures take
-    the last closed month in the selection."""
-    look = {**bsc.select_all_selection(), **bsc.dropdown_look()}
+    sync group of its field, so a selection carries to every page. Month (ruling R21) is single-select on
+    'Date'[Month Pick], saved on "Last closed month": the model gives that label to the previous month each day, so
+    the report opens on the last closed month without a rebuild, the month HR Story Home describes."""
     return [
         Visual("slicerDropdown", *HOSPITAL_SLICER, roles={"Values": [BRANCH_NAME]}, filters=[hospitals()],
-               props=look, labels={BRANCH_NAME: "Hospital"}),
-        Visual("slicerDropdown", *MONTH_SLICER, roles={"Values": [YEAR_MONTH_NAME]}, props=look,
-               labels={YEAR_MONTH_NAME: "Month"}),
+               props={**bsc.select_all_selection(), **bsc.dropdown_look()}, labels={BRANCH_NAME: "Hospital"}),
+        Visual("slicerDropdown", *MONTH_SLICER, roles={"Values": [MONTH_PICK]},
+               props={**single_selection(), **bsc.dropdown_look(), **saved_selection(MONTH_PICK, LAST_CLOSED_MONTH)},
+               labels={MONTH_PICK: "Month"}),
     ]
 
 
@@ -139,13 +159,17 @@ def _skip(sql: str, i: int) -> int:
     return i
 
 
+_ESCAPES = {"n": "\n", "t": "\t", "r": "\r", "0": "\0", "b": "\b", "f": "\f", "v": "\v"}
+
+
 def _string(sql: str, i: int) -> tuple[str, int]:
-    """A quoted string starting after its opening quote: `\\x` is x, `''` is one quote (ClickHouse)."""
+    """A quoted string starting after its opening quote, with ClickHouse's escapes: `''` is one quote; `\\n`, `\\t`,
+    `\\r`, `\\0`, `\\b`, `\\f` and `\\v` are those characters; any other `\\x` is x (`\\'`, `\\\\`)."""
     out = []
     while True:
         c = sql[i]
         if c == "\\":
-            out.append(sql[i + 1])
+            out.append(_ESCAPES.get(sql[i + 1], sql[i + 1]))
             i += 2
         elif c == "'" and sql[i + 1:i + 2] == "'":
             out.append("'")
@@ -236,7 +260,7 @@ def kpi_label(code: str, path: Path = SEED) -> str:
 # ---- KPI tile -----------------------------------------------------------------------------------------------------
 
 KPI_CODE = col("HR KPI", "KPI Code")
-HR_ACTUAL, HR_TARGET_TEXT = meas("HR KPI Actual"), meas("HR KPI Target Text")
+HR_ACTUAL_TEXT, HR_TARGET_TEXT = meas("HR KPI Actual Text"), meas("HR KPI Target Text")
 HR_STATUS_TEXT, HR_STATUS_COLOUR = meas("HR KPI Status Text"), meas("HR KPI Status Colour")
 TILE_PAD = 16
 
@@ -244,7 +268,7 @@ TILE_PAD = 16
 def measure_colour(measure: str) -> dict:
     """A colour property whose value is a measure's text ("#0E9F8E"): conditional formatting by field value, the
     expression Desktop writes for it (as the Press Ganey report's table font colours, `[NPS Color]`)."""
-    return {"solid": {"color": {"expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}},
+    return {"solid": {"color": {"expr": {"Measure": {"Expression": {"SourceRef": {"Entity": MEASURE_TABLE}},
                                                      "Property": measure}}}}}
 
 
@@ -274,7 +298,8 @@ def white_panel(x: float, y: float, w: float, h: float) -> Visual:
 
 
 def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
-    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code: [HR KPI Actual] under the
+    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code: [HR KPI Actual Text] (the
+    formatted actual, "Requires pay access" for a pay KPI without pay access, "–" without data; ruling R22) under the
     KPI's short label, [HR KPI Target Text] ("6.0% (placeholder)", "Not set") labelled "Target", and
     [HR KPI Status Text] (shape and word, "◆ Watch") in the colour of [HR KPI Status Colour]: colour, shape and word."""
     label = kpi_label(code)
@@ -284,7 +309,7 @@ def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
     if actual_h < 80:
         raise ValueError(f"kpi_tile {code}: {h} px is too low for a tile")
     only = [Filter(KPI_CODE, "eq", [code])]
-    actual = Visual("card", ix, y + pad, iw, actual_h, roles={"Values": [HR_ACTUAL]}, filters=list(only),
+    actual = Visual("card", ix, y + pad, iw, actual_h, roles={"Values": [HR_ACTUAL_TEXT]}, filters=list(only),
                     title=label, props={**card_look(28, NAVY), **small_title()})
     target = Visual("card", ix, y + pad + actual_h, iw, target_h, roles={"Values": [HR_TARGET_TEXT]},
                     filters=list(only), props=card_look(12, MUTED, category=True),

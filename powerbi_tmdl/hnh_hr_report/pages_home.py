@@ -25,14 +25,16 @@ AREA_W = (W0 - 5 * GAP) / 6  # 290
 DQ_Y = AREAS_Y + AREA_H + GAP  # 974
 DQ_BUTTON_W, DQ_BUTTON_H = 230, 48
 
-# Each detail page's figure on its area card: (measure, the figure's label). Repo labels, not title-cased.
+# Each detail page's figure on its area card: (measure, the figure's label). Repo labels, not title-cased. Pay
+# figures are the pay-aware text measures (ruling R22): "Requires pay access" without pay access, never "(Blank)";
+# [HR Payroll Cost Text] carries its unit ("SAR 43.6M").
 AREA_FIGURES = {
     "headcount": ("Headcount", "Headcount"),
     "movements": ("Hires", "Hires"),
-    "payroll": ("Payroll Cost", "Payroll cost (SAR)"),
+    "payroll": ("HR Payroll Cost Text", "Payroll cost"),
     "absence": ("Sick Days", "Sick days"),
     "recruitment": ("BSC Vacancy Rate", "Vacancy rate"),
-    "productivity": ("Visits per FTE", "Visits per FTE"),
+    "productivity": ("HR Visits per FTE Text", "Visits per FTE"),
 }
 
 
