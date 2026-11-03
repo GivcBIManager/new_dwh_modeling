@@ -34,7 +34,7 @@ BASE_THEME = HERE / "theme" / "CY26SU05.json"  # Desktop's base theme, as Deskto
 BASE_THEME_NAME = "CY26SU05"
 THEME_VERSION = {"visual": "2.9.0", "report": "3.3.0", "page": "2.3.1"}  # handover report.json reportVersionAtImport
 VISUAL_DIST = REPO / "powerbi_tmdl" / "hnh_bsc_visual" / "dist"
-PAGE_WIDTH, PAGE_HEIGHT = 1920, 1080
+PAGE_WIDTH = 1920
 SYNC_PREFIX = "bsc "
 
 

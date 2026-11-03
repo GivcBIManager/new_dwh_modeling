@@ -78,6 +78,7 @@ class FrameSpec:
     subtitle: str
     tabs: list[tuple[str, str]]
     help: list[tuple[str, str, Rect]]
+    logo: str = LOGO.name  # the registered logo's file name (ReportSpec.logo.name must agree)
 
 
 BSC_FRAME = FrameSpec("Balanced Scorecard", "Hayat Healthcare", TABS, HELP_BUTTONS)
@@ -202,13 +203,13 @@ def panel(x: float, y: float, w: float, h: float, colour: str, radius: int = 0) 
         "visualHeader": [{"properties": {"show": _lit(False)}}]})
 
 
-def image(x: float, y: float, w: float, h: float) -> Visual:
+def image(x: float, y: float, w: float, h: float, logo: str = LOGO.name) -> Visual:
     """The logo (`LOGO`, registered by pbir.py as a RegisteredResources image), as the handover's image visual writes
     `image.sourceFile.image`. Scaling 'Normal' keeps the aspect ratio inside the box (Desktop's report theme schema
     titles 'Normal' "Fit"; the value 'Fit' is its "Stretch")."""
-    source = {"name": _lit(LOGO.name),
+    source = {"name": _lit(logo),
               "url": {"expr": {"ResourcePackageItem": {"PackageName": "RegisteredResources", "PackageType": 1,
-                                                       "ItemName": LOGO.name}}},
+                                                       "ItemName": logo}}},
               "scaling": _lit("Normal")}
     return Visual("image", x, y, w, h, props={"image": [{"properties": {"sourceFile": {"image": source}}}],
                                               **no_container()})
@@ -258,7 +259,7 @@ def frame(current: str | None, filter_visuals: list[Visual], filter_bar: bool = 
     `spec.tabs`' names, or None for a page without one), the filter bar and its rule (left out when `filter_bar` is False:
     KPI detail's visual draws that band itself), `filter_visuals`, then How to use and Calculations. KPI detail passes
     its HNH visual and Back as `filter_visuals`, so How to use and Calculations are drawn over the visual's sub-bar."""
-    out = [panel(*HEADER, NAVY), image(*LOGO_RECT), title_box(spec), *tabs(current, spec)]
+    out = [panel(*HEADER, NAVY), image(*LOGO_RECT, logo=spec.logo), title_box(spec), *tabs(current, spec)]
     if filter_bar:
         out += [panel(*FILTER_BAR, WHITE), panel(*FILTER_RULE, LINE)]
     return out + list(filter_visuals) + help_buttons(spec)

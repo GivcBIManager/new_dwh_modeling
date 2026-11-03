@@ -1,5 +1,7 @@
 """The BSC report builds byte-identical: SHA-256 of every file `write_pbip` writes, against the fixture recorded
 before the generator was parameterised (frame, report identity and perspective as parameters for the HR report).
+The build uses a pinned date (the Date slicer's year literal follows the build date). The hashes also depend on the
+packaged HNH visual, the highest-version .pbiviz in hnh_bsc_visual/dist: a new .pbiviz version needs `--record`.
 Regenerate the fixture only for an intended change to the BSC output:
 
     python powerbi_tmdl/hnh_bsc_report/tests/test_bsc_unchanged.py --record
@@ -17,10 +19,12 @@ FIXTURE = HERE / "bsc_build_hashes.json"
 
 
 def build_hashes() -> dict[str, str]:
+    import datetime
     import pages
     from pbir import write_pbip
     with tempfile.TemporaryDirectory() as tmp:
-        write_pbip(pages.PAGES, tmp, "HNH_Analytics_Test", report_filters=getattr(pages, "REPORT_FILTERS", []))
+        write_pbip(pages.build_pages(datetime.date(2026, 11, 3)), tmp, "HNH_Analytics_Test",
+                   report_filters=getattr(pages, "REPORT_FILTERS", []))
         root = Path(tmp)
         return {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in sorted(root.rglob("*")) if p.is_file()}
@@ -78,6 +82,16 @@ def test_frame_spec_drives_title_tabs_and_help():
     assert frame.frame("a", [], spec=spec) != frame.frame(None, [])
     text = json.dumps([v.props for v in frame.frame("b", [], spec=spec)])
     assert "Sub" in text and "Beta" in text and "Help" in text and "Balanced Scorecard" not in text
+
+
+def test_frame_spec_logo_name_reaches_the_image_visual():
+    import frame
+    spec = frame.FrameSpec("HR", "Sub", [], [], logo="other_logo.png")
+    img = next(v for v in frame.frame(None, [], spec=spec) if v.sample == "image")
+    text = json.dumps(img.props)
+    assert "other_logo.png" in text and frame.LOGO.name not in text
+    default = next(v for v in frame.frame(None, []) if v.sample == "image")
+    assert frame.LOGO.name in json.dumps(default.props)
 
 
 if __name__ == "__main__":
