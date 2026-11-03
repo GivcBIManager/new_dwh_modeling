@@ -7827,7 +7827,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Vacancy Note"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// BSC Vacancy Rate as text for a card, as 0.0%: "Not available (no budgeted FTE)" when no budgeted FTE is loaded for the year of the period end (as HR Vacancy Note), – when there is no rate.
+	/// BSC Vacancy Rate as text for a card, as 0.0%: "No budgeted FTE" when no budgeted FTE is loaded for the year of the period end (as HR Vacancy Note), – when there is no rate.
 	measure 'HR Vacancy Rate Text' =
 			VAR __Value = ( -- measure body
 				VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
@@ -7836,7 +7836,7 @@ table _Measures
 				RETURN
 					SWITCH (
 						TRUE (),
-						NOT ISBLANK ( PeriodEnd ) && ISBLANK ( Budgeted ), "Not available (no budgeted FTE)",
+						NOT ISBLANK ( PeriodEnd ) && ISBLANK ( Budgeted ), "No budgeted FTE",
 						ISBLANK ( Rate ), "–",
 						FORMAT ( Rate, "0.0%" )
 					)
@@ -7859,56 +7859,56 @@ table _Measures
 			)
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// Hospital of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row.
+	/// Hospital of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row, and over more than 10 headcount rows (a total row: not a list of every value).
 	measure 'HR Employee Hospital' =
 			VAR __Value = ( -- measure body
 				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				VAR MonthRows = CALCULATETABLE ( Headcount, Headcount[Month Date Key] = LastMonth, Headcount[Is Closed Month] = "Yes", Headcount[Is Contingent] = "No" )
-				RETURN IF ( NOT ISEMPTY ( MonthRows ), CONCATENATEX ( SUMMARIZE ( MonthRows, Branch[Branch Name] ), Branch[Branch Name], ", " ) )
+				RETURN IF ( NOT ISEMPTY ( MonthRows ) && COUNTROWS ( MonthRows ) <= 10, CONCATENATEX ( SUMMARIZE ( MonthRows, Branch[Branch Name] ), Branch[Branch Name], ", " ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Headcount]
 			RETURN IF ( __Wrong = "", __Value, """HR Employee Hospital"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// HR department (the per-hospital Department Name, "ABH Icu-Nurse") of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row.
+	/// HR department (the per-hospital Department Name, "ABH Icu-Nurse") of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row, and over more than 10 headcount rows (a total row: not a list of every value).
 	measure 'HR Employee Department' =
 			VAR __Value = ( -- measure body
 				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				VAR MonthRows = CALCULATETABLE ( Headcount, Headcount[Month Date Key] = LastMonth, Headcount[Is Closed Month] = "Yes", Headcount[Is Contingent] = "No" )
-				RETURN IF ( NOT ISEMPTY ( MonthRows ), CONCATENATEX ( SUMMARIZE ( MonthRows, 'HR Department'[Department Name] ), 'HR Department'[Department Name], ", " ) )
+				RETURN IF ( NOT ISEMPTY ( MonthRows ) && COUNTROWS ( MonthRows ) <= 10, CONCATENATEX ( SUMMARIZE ( MonthRows, 'HR Department'[Department Name] ), 'HR Department'[Department Name], ", " ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Headcount]
 			RETURN IF ( __Wrong = "", __Value, """HR Employee Department"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// Job of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row.
+	/// Job of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row, and over more than 10 headcount rows (a total row: not a list of every value).
 	measure 'HR Employee Job' =
 			VAR __Value = ( -- measure body
 				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				VAR MonthRows = CALCULATETABLE ( Headcount, Headcount[Month Date Key] = LastMonth, Headcount[Is Closed Month] = "Yes", Headcount[Is Contingent] = "No" )
-				RETURN IF ( NOT ISEMPTY ( MonthRows ), CONCATENATEX ( SUMMARIZE ( MonthRows, Job[Job Name] ), Job[Job Name], ", " ) )
+				RETURN IF ( NOT ISEMPTY ( MonthRows ) && COUNTROWS ( MonthRows ) <= 10, CONCATENATEX ( SUMMARIZE ( MonthRows, Job[Job Name] ), Job[Job Name], ", " ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Headcount]
 			RETURN IF ( __Wrong = "", __Value, """HR Employee Job"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// Grade of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row.
+	/// Grade of the employee in context at the last closed headcount month of the selection, for the Employee list (an attribute as a measure, so the list groups by employee only and stays fast). Blank without a headcount row, and over more than 10 headcount rows (a total row: not a list of every value).
 	measure 'HR Employee Grade' =
 			VAR __Value = ( -- measure body
 				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				VAR MonthRows = CALCULATETABLE ( Headcount, Headcount[Month Date Key] = LastMonth, Headcount[Is Closed Month] = "Yes", Headcount[Is Contingent] = "No" )
-				RETURN IF ( NOT ISEMPTY ( MonthRows ), CONCATENATEX ( SUMMARIZE ( MonthRows, Grade[Grade Name] ), Grade[Grade Name], ", " ) )
+				RETURN IF ( NOT ISEMPTY ( MonthRows ) && COUNTROWS ( MonthRows ) <= 10, CONCATENATEX ( SUMMARIZE ( MonthRows, Grade[Grade Name] ), Grade[Grade Name], ", " ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Headcount]
 			RETURN IF ( __Wrong = "", __Value, """HR Employee Grade"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// Oasis staff ID linked to the employee in context at the last closed headcount month of the selection, for the Employee list. Blank without a headcount row; "" when the employee has no Oasis staff record (the Staff table's Unknown member).
+	/// Oasis staff ID linked to the employee in context at the last closed headcount month of the selection, for the Employee list. Blank without a headcount row and over more than 10 rows (a total); "" when the employee has no Oasis staff record (the Staff table's Unknown member).
 	measure 'HR Employee Staff ID' =
 			VAR __Value = ( -- measure body
 				VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				VAR MonthRows = CALCULATETABLE ( Headcount, Headcount[Month Date Key] = LastMonth, Headcount[Is Closed Month] = "Yes", Headcount[Is Contingent] = "No" )
-				RETURN IF ( NOT ISEMPTY ( MonthRows ), CONCATENATEX ( FILTER ( SUMMARIZE ( MonthRows, Staff[Staff Key], Staff[Staff ID] ), Staff[Staff Key] <> -1 ), Staff[Staff ID], ", " ) & "" )
+				RETURN IF ( NOT ISEMPTY ( MonthRows ) && COUNTROWS ( MonthRows ) <= 10, CONCATENATEX ( FILTER ( SUMMARIZE ( MonthRows, Staff[Staff Key], Staff[Staff ID] ), Staff[Staff Key] <> -1 ), Staff[Staff ID], ", " ) & "" )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Headcount]
 			RETURN IF ( __Wrong = "", __Value, """HR Employee Staff ID"" can't be analysed by " & __Wrong )
@@ -8012,7 +8012,7 @@ table _Measures
 								ISBLANK ( Cur ),
 								"No headcount for " & FORMAT ( MonthStart, "MMMM yyyy" ) & ".",
 								"Headcount " & FORMAT ( Cur, "#,0" ) & " at the end of " & FORMAT ( MonthStart, "MMMM yyyy" )
-									& IF ( NOT ISBLANK ( FteNow ), " (FTE " & FORMAT ( FteNow, "#,0.0" ) & ")" ) & ": "
+									& IF ( NOT ISBLANK ( FteNow ), " (FTE " & FORMAT ( FteNow, "#,0" ) & ")" ) & ": "
 									& IF (
 										ISBLANK ( Prev ),
 										"no previous-month data",
