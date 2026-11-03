@@ -1,0 +1,305 @@
+"""The HR report's frame and building blocks, on the BSC generator's modules (powerbi_tmdl/hnh_bsc_report: frame,
+model, pbir; spec docs/superpowers/specs/2026-11-02-hr-dashboard-design.md, "Pages" and "Branding and build").
+
+    HR_FRAME, HR_REPORT      the frame (title, tabs, help buttons) and the report (name, perspective, theme, logo)
+    page_frame(tab, bar)     the BSC frame with the HR title and tabs; `bar`: the visuals in the filter bar
+    filters()                Hospital and Month dropdowns, synced across pages
+    sub_tabs(current)        the six detail pages as a second row of tabs in the filter bar
+    kpi_tile(code, x, y, w, h)  a KPI's actual, target and status on a white panel
+    seed_kpis(), home_tile_codes()  the KPI list as scripts/hr_config/hr_config_seed.sql inserts it
+
+The geometry, colours, buttons and the theme are the BSC's; nothing is copied. Labels here are this repo's (not
+title-cased).
+"""
+from __future__ import annotations
+
+import importlib.util
+import re
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+BSC_DIR = HERE.parent / "hnh_bsc_report"
+REPO = HERE.parents[1]
+if str(BSC_DIR) not in sys.path:
+    sys.path.append(str(BSC_DIR))  # after this folder: both have a pages.py
+
+import frame  # noqa: E402
+from frame import (FILTER_BAR, LOGO, NAVY, WHITE, Rect, _colour, _lit, _num, button_props, no_container,  # noqa: E402
+                   tab_width)
+from model import Filter, Visual, col, meas  # noqa: E402
+from pbir import THEME, ReportSpec  # noqa: E402
+
+SEED = REPO / "scripts" / "hr_config" / "hr_config_seed.sql"
+
+
+def _bsc_pages():
+    """The BSC report's pages.py (its slicer, panel and button helpers), loaded as `bsc_pages`: the name `pages` is
+    this report's."""
+    name = "bsc_pages"
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, BSC_DIR / "pages.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return sys.modules[name]
+
+
+bsc = _bsc_pages()
+MUTED = bsc.MUTED
+
+# ---- frame and report ---------------------------------------------------------------------------------------------
+
+TABS: list[tuple[str, str]] = [("home", "Home"), ("story", "Story"), ("scorecard", "Scorecard"),
+                               ("headcount", "Details"), ("data_quality", "Data quality"), ("guide", "Guide")]
+HELP: list[tuple[str, str, Rect]] = [("guide", "How to use", frame.HELP_BUTTONS[0][2]),
+                                     ("guide_definitions", "Definitions", frame.HELP_BUTTONS[1][2])]
+HR_FRAME = frame.FrameSpec("Workforce", "Hayat Healthcare", TABS, HELP, logo=LOGO.name)
+HR_REPORT = ReportSpec("HNH Workforce", "HR Dashboard", THEME, LOGO, custom_visual=False)
+
+# The detail pages under the Details tab: (page name, display name, sub-tab label).
+DETAIL_PAGES: list[tuple[str, str, str]] = [
+    ("headcount", "Headcount & mix", "Headcount"),
+    ("movements", "Movements & turnover", "Movements"),
+    ("payroll", "Payroll & overtime", "Payroll"),
+    ("absence", "Absence & leave", "Absence"),
+    ("recruitment", "Recruitment", "Recruitment"),
+    ("productivity", "Productivity", "Productivity"),
+]
+
+
+def page_frame(tab: str | None, bar: list[Visual]) -> list[Visual]:
+    """The BSC frame with the HR title, tabs and help buttons. `tab`: the page's own tab (one of TABS' names; a detail
+    page passes "headcount", the Details tab), or None. `bar`: the filter-bar visuals (filters(), sub_tabs())."""
+    return frame.frame(tab, bar, spec=HR_FRAME)
+
+
+# ---- filter bar ---------------------------------------------------------------------------------------------------
+
+BRANCH_NAME = col("Branch", "Branch Name")
+IS_HOSPITAL = col("Branch", "Is Hospital")
+YEAR_MONTH_NAME = col("Date", "Year Month Name")  # "Oct 2026", sorted by 'Date'[Year Month]
+HOSPITAL_SLICER: Rect = (30, 90, 330, 66)  # the BSC's slicer rects: the bar (84..162) less 6 px top and bottom
+MONTH_SLICER: Rect = (375, 90, 270, 66)
+SUB_TAB_X, SUB_TAB_GAP = 669, 6  # right of the Month slicer (ends 645); the row ends before How to use (1590)
+SUB_TAB_Y, SUB_TAB_H = 96, 54  # as the help buttons
+
+
+def hospitals() -> Filter:
+    return Filter(IS_HOSPITAL, "in", ["Yes"])
+
+
+def filters() -> list[Visual]:
+    """Hospital (hospitals only, multi-select with Select all) and Month dropdowns. pbir.py gives each slicer the
+    sync group of its field, so a selection carries to every page. Month has no saved selection: the measures take
+    the last closed month in the selection."""
+    look = {**bsc.select_all_selection(), **bsc.dropdown_look()}
+    return [
+        Visual("slicerDropdown", *HOSPITAL_SLICER, roles={"Values": [BRANCH_NAME]}, filters=[hospitals()],
+               props=look, labels={BRANCH_NAME: "Hospital"}),
+        Visual("slicerDropdown", *MONTH_SLICER, roles={"Values": [YEAR_MONTH_NAME]}, props=look,
+               labels={YEAR_MONTH_NAME: "Month"}),
+    ]
+
+
+def _navigate(page_name: str) -> dict:
+    return {"type": _lit("PageNavigation"), "navigationSection": _lit(page_name)}
+
+
+def sub_tabs(current: str) -> list[Visual]:
+    """The six detail pages as a row of buttons in the filter bar, right of the slicers: the current page's filled
+    in brand blue ("primary"), the others outlined ("outline"). `current` must be a detail page."""
+    names = [name for name, _display, _label in DETAIL_PAGES]
+    if current not in names:
+        raise ValueError(f"sub_tabs: {current!r} is not a detail page ({', '.join(names)})")
+    out, x = [], SUB_TAB_X
+    for name, _display, label in DETAIL_PAGES:
+        w = tab_width(label)
+        kind = "primary" if name == current else "outline"
+        out.append(Visual("buttonNavigate", x, SUB_TAB_Y, w, SUB_TAB_H,
+                          props={**button_props(_navigate(name), label, kind), **no_container()}))
+        x += w + SUB_TAB_GAP
+    if x - SUB_TAB_GAP > HELP[0][2][0] or SUB_TAB_Y + SUB_TAB_H > FILTER_BAR[1] + FILTER_BAR[3]:
+        raise ValueError("sub_tabs: the row does not fit the filter bar")
+    return out
+
+
+# ---- the KPI list (seed) ------------------------------------------------------------------------------------------
+
+def _skip(sql: str, i: int) -> int:
+    """Past white space and `--` comments."""
+    while i < len(sql):
+        if sql[i].isspace():
+            i += 1
+        elif sql.startswith("--", i):
+            j = sql.find("\n", i)
+            i = len(sql) if j < 0 else j + 1
+        else:
+            break
+    return i
+
+
+def _string(sql: str, i: int) -> tuple[str, int]:
+    """A quoted string starting after its opening quote: `\\x` is x, `''` is one quote (ClickHouse)."""
+    out = []
+    while True:
+        c = sql[i]
+        if c == "\\":
+            out.append(sql[i + 1])
+            i += 2
+        elif c == "'" and sql[i + 1:i + 2] == "'":
+            out.append("'")
+            i += 2
+        elif c == "'":
+            return "".join(out), i + 1
+        else:
+            out.append(c)
+            i += 1
+
+
+def _token(sql: str, i: int) -> tuple[object, int]:
+    """A bare value up to the next `,` or `)` outside brackets: an int, a float, or the text (`now64(3)`)."""
+    depth, j = 0, i
+    while depth or sql[j] not in ",)":
+        depth += {"(": 1, ")": -1}.get(sql[j], 0)
+        j += 1
+    raw = sql[i:j].strip()
+    if re.fullmatch(r"-?\d+", raw):
+        return int(raw), j
+    if re.fullmatch(r"-?\d+\.\d*", raw):
+        return float(raw), j
+    return raw, j
+
+
+def _rows(sql: str, table: str) -> list[dict]:
+    m = re.search(r"INSERT\s+INTO\s+" + re.escape(table) + r"\s*\(([^)]*)\)\s*VALUES", sql, re.IGNORECASE)
+    if not m:
+        raise ValueError(f"no INSERT INTO {table} in the seed")
+    columns = [c.strip() for c in m.group(1).split(",")]
+    rows, i = [], m.end()
+    while True:
+        i = _skip(sql, i)
+        if i >= len(sql) or sql[i] == ";":
+            return rows
+        if sql[i] == ",":
+            i += 1
+            continue
+        if sql[i] != "(":
+            raise ValueError(f"seed: unexpected {sql[i:i + 20]!r} in the {table} values")
+        values, i = [], i + 1
+        while True:
+            i = _skip(sql, i)
+            if sql[i] == ")":
+                i += 1
+                break
+            if sql[i] == ",":
+                i += 1
+                continue
+            if sql[i] == "'":
+                value, i = _string(sql, i + 1)
+            else:
+                value, i = _token(sql, i)
+            values.append(value)
+        if len(values) != len(columns):
+            raise ValueError(f"seed: a {table} row has {len(values)} values for {len(columns)} columns")
+        rows.append(dict(zip(columns, values)))
+
+
+def seed_kpis(path: Path = SEED) -> list[dict]:
+    """The rows `default.map_hr_kpi` is seeded with, in file order, as {column: value}."""
+    return _rows(Path(path).read_text(encoding="utf-8-sig"), "default.map_hr_kpi")
+
+
+def _current(path: Path = SEED) -> dict[str, dict]:
+    """The seed's current row per KPI code: the last one wins, deleted rows drop out."""
+    out: dict[str, dict] = {}
+    for r in seed_kpis(path):
+        out[r["kpi_code"]] = r
+    return {code: r for code, r in out.items() if not r.get("is_deleted", 0)}
+
+
+def home_tile_codes(path: Path = SEED) -> list[str]:
+    """Home's tiles: the active `kpi` rows with is_home_tile 1, in display_order."""
+    rows = [r for r in _current(path).values()
+            if r["is_home_tile"] == 1 and r["status"] == "active" and r.get("kind", "kpi") == "kpi"]
+    return [r["kpi_code"] for r in sorted(rows, key=lambda r: (r["display_order"], r["kpi_code"]))]
+
+
+def kpi_label(code: str, path: Path = SEED) -> str:
+    """The KPI's short label in the seed (a repo label, as the HR KPI table shows it)."""
+    row = _current(path).get(code)
+    if row is None:
+        raise ValueError(f"KPI {code!r} is not in {Path(path).name}")
+    return row["short_label"]
+
+
+# ---- KPI tile -----------------------------------------------------------------------------------------------------
+
+KPI_CODE = col("HR KPI", "KPI Code")
+HR_ACTUAL, HR_TARGET_TEXT = meas("HR KPI Actual"), meas("HR KPI Target Text")
+HR_STATUS_TEXT, HR_STATUS_COLOUR = meas("HR KPI Status Text"), meas("HR KPI Status Colour")
+TILE_PAD = 16
+
+
+def measure_colour(measure: str) -> dict:
+    """A colour property whose value is a measure's text ("#0E9F8E"): conditional formatting by field value, the
+    expression Desktop writes for it (as the Press Ganey report's table font colours, `[NPS Color]`)."""
+    return {"solid": {"color": {"expr": {"Measure": {"Expression": {"SourceRef": {"Entity": "_Measures"}},
+                                                     "Property": measure}}}}}
+
+
+def card_look(size: float, colour: str | dict | None = None, category: bool = False, box: bool = False) -> dict:
+    """Card format objects: the value in Segoe UI `size` pt, `colour` a hex colour or a measure_colour(); the
+    category label (the field's name or its label in the visual) in small grey, or hidden. `box`: keep the theme's
+    white panel; else no background, border or visual header (the card sits on a panel)."""
+    labels = {"fontSize": _num(size)}
+    if colour is not None:
+        labels["color"] = _colour(colour) if isinstance(colour, str) else colour
+    out = {"labels": [{"properties": labels}],
+           "categoryLabels": [{"properties": {"show": _lit(category), **({"fontSize": _num(9),
+                                                                          "color": _colour(MUTED)}
+                                                                         if category else {})}}]}
+    return out if box else {**out, **no_container()}
+
+
+def small_title(size: float = 11) -> dict:
+    """A visual title in small grey (over the tile's figure, the mockup's label)."""
+    return {"title": [{"properties": {"fontColor": _colour(MUTED), "fontSize": _num(size)}}]}
+
+
+def white_panel(x: float, y: float, w: float, h: float) -> Visual:
+    """A white panel with the data visuals' 1 px #DCE5EF border and radius 12 (BSC pages.white_panel)."""
+    return Visual("panel", x, y, w, h, props={**bsc.white_panel(),
+                                              "visualHeader": [{"properties": {"show": _lit(False)}}]})
+
+
+def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
+    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code: [HR KPI Actual] under the
+    KPI's short label, [HR KPI Target Text] ("6.0% (placeholder)", "Not set") labelled "Target", and
+    [HR KPI Status Text] (shape and word, "◆ Watch") in the colour of [HR KPI Status Colour]: colour, shape and word."""
+    label = kpi_label(code)
+    pad, status_h, target_h = TILE_PAD, 48, 56
+    ix, iw = x + pad, w - 2 * pad
+    actual_h = h - 2 * pad - target_h - status_h
+    if actual_h < 80:
+        raise ValueError(f"kpi_tile {code}: {h} px is too low for a tile")
+    only = [Filter(KPI_CODE, "eq", [code])]
+    actual = Visual("card", ix, y + pad, iw, actual_h, roles={"Values": [HR_ACTUAL]}, filters=list(only),
+                    title=label, props={**card_look(28, NAVY), **small_title()})
+    target = Visual("card", ix, y + pad + actual_h, iw, target_h, roles={"Values": [HR_TARGET_TEXT]},
+                    filters=list(only), props=card_look(12, MUTED, category=True),
+                    labels={HR_TARGET_TEXT: "Target"})
+    status = Visual("card", ix, y + pad + actual_h + target_h, iw, status_h, roles={"Values": [HR_STATUS_TEXT]},
+                    filters=list(only), props=card_look(14, measure_colour(HR_STATUS_COLOUR.name)))
+    return [white_panel(x, y, w, h), actual, target, status]
+
+
+def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: str) -> Visual:
+    """An outline page-navigation button ("Open data quality ›")."""
+    return Visual("buttonNavigate", x, y, w, h,
+                  props={**button_props(_navigate(page_name), label, "outline"), **no_container()})
+
+
+__all__ = ["BSC_DIR", "DETAIL_PAGES", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY", "SEED", "TABS", "WHITE",
+           "card_look", "filters", "home_tile_codes", "hospitals", "kpi_label", "kpi_tile", "measure_colour",
+           "nav_button", "page_frame", "seed_kpis", "small_title", "sub_tabs", "white_panel"]
