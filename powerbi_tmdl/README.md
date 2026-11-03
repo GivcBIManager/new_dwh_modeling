@@ -92,8 +92,9 @@ Same route as above, with the HR report's paths. It is built against `HNH_Analyt
 - Status text is coloured: teal `#0E9F8E` On track, amber `#EF8B00` Watch, red `#DB280A` At risk, grey `#9AA7B5` for No target yet, No data, Parked and Requires pay access.
 - Pay notices: as `HRM_CORP` they show nothing (no "(Blank)": the notice is `""`); as `EXE_ABH` they show "Requires pay access" (pay tiles, the Cost story block, Payroll and Productivity). As `EXE_ABH`, check also whether a pay card under its notice (Payroll, Absence & leave, Productivity cards) prints "(Blank)" next to the notice: those cards show the model's pay measures, blank without pay access.
 - Pay KPI targets (manual check of final review C1): as `EXE_ABH`, the Scorecard rows of Staff Cost per FTE, Overtime Share, Leave Liability, Visits per FTE and Revenue per Payroll SAR read "Requires pay access" in Actual, Target, Variance and Watch at; their KPI detail shows no target or watch line and the notice over both charts, and Turnover's KPI detail shows no notice. As `HRM_CORP` the same rows show figures. (`test.ps1 -Stage Security` checks the measures; this checks the pages.)
-- Story, Scorecard and KPI detail show no Head Office: the hospital charts and the matrix list hospitals only.
+- Head Office is on every page (user decision 2026-11-03): the Branch slicer lists the eight hospitals and Head Office and no "Group"; the by-branch charts, the Scorecard matrix and KPI detail's bar show a Head Office column or bar (No data for the scorecard-shared KPIs, whose facts hold no Head Office rows); Home's headcount includes Head Office's staff.
+- The Department, Job, Grade and Nationality slicers open with a search box; typing narrows the list.
 - The Employee list keeps its rows for a reader without pay access, with the names blank.
 - The KPI detail 24-month line shows 24 points after drilling from the Scorecard.
-- `HRM_CORP` sees all hospitals, pay figures, Head Office data quality records and the placeholder marks on the targets.
-- `EXE_ABH` sees Abha only, no Head Office (100) data quality records and no Fusion names on the Employee list.
+- `HRM_CORP` sees all hospitals and Head Office, pay figures, Head Office data quality records and the placeholder marks on the targets.
+- `EXE_ABH` sees Abha only (no Head Office in the Branch slicer or any figure), no Head Office (100) data quality records and no Fusion names on the Employee list.
