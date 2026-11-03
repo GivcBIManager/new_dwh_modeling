@@ -16,8 +16,9 @@
   - Additive KPIs (HR KPI Is Additive in ssas\HNH_Analytics\tables\_Measures.tmdl) are written per hospital
     (branch_id 1 to 8, each hospital's own level), because the model sums the hospital targets. Others get one
     row per year with branch_id 0.
-  - Value format: 3 decimals for pct (0.1 percentage point), whole numbers otherwise. The watch value is 10 percent
-    worse than the rounded target in the KPI's direction: x 0.9 for higher, x 1.1 for lower, ceiling and on_target.
+  - Rounding: 4 decimals for pct (0.01 percentage point); every other format (num, days, sar) to a whole number when
+    the absolute value is 100 or more, else to 2 decimals. The watch value is 10 percent worse than the UNROUNDED
+    target in the KPI's direction (x 0.9 for higher, x 1.1 for lower, ceiling and on_target), then rounded by the same rule.
 
   The same update file re-inserts the 3 leave balance metrics with needs_pay = 1 (leave balance in days is pay-gated by role).
 #>
@@ -127,19 +128,21 @@ if ($Values) {
 
 # --- rows ---------------------------------------------------------------------------------------------------------------
 function Format-Num([double]$x) { return $x.ToString('R', $inv) }
-function Get-Rounded([double]$x, [int]$d) { return [Math]::Round($x, $d, [MidpointRounding]::AwayFromZero) }
+function Get-Rounded([double]$x, [string]$format) {
+    $d = if ($format -eq 'pct') { 4 } elseif ([Math]::Abs($x) -ge 100) { 0 } else { 2 }
+    return [Math]::Round($x, $d, [MidpointRounding]::AwayFromZero)
+}
 
 $targetRows = New-Object System.Collections.Generic.List[string]
 $blank = New-Object System.Collections.Generic.List[string]
 $summary = New-Object System.Collections.Generic.List[string]
 function Add-Rows($k, [int]$branch, [double]$raw) {
     $flow = [int]($FlowKpis -contains $k.Code)
-    $d = if ($k.Format -eq 'pct') { 3 } else { 0 }
     $value = $raw
     if ($flow) { $value = $raw * 12 / 9 }
-    $target = Get-Rounded $value $d
+    $target = Get-Rounded $value $k.Format
     $factor = if ($k.Direction -eq 'higher') { 0.9 } else { 1.1 }
-    $watch = Get-Rounded ($target * $factor) $d
+    $watch = Get-Rounded ($value * $factor) $k.Format
     foreach ($y in $Years) {
         $targetRows.Add(("    ('{0}', {1}, {2}, 0, {3}, {4}, {5}, '{6}', now64(3), 'seed', '{7}', 0)" -f $k.Code, $branch, $y, (Format-Num $target), (Format-Num $watch), $flow, $SourceBasis, $ChangeNote))
     }
