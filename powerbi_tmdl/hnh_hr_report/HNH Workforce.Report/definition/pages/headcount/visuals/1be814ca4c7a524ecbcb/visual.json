@@ -23,11 +23,11 @@
                       "Entity": "HR Department"
                     }
                   },
-                  "Property": "Department Name"
+                  "Property": "Department Base Name"
                 }
               },
-              "queryRef": "HR Department.Department Name",
-              "nativeQueryRef": "Department Name",
+              "queryRef": "HR Department.Department Base Name",
+              "nativeQueryRef": "Department Base Name",
               "active": true
             }
           ]
@@ -104,7 +104,7 @@
                 "Entity": "HR Department"
               }
             },
-            "Property": "Department Name"
+            "Property": "Department Base Name"
           }
         },
         "type": "TopN",
@@ -137,7 +137,7 @@
                               "Source": "h"
                             }
                           },
-                          "Property": "Department Name"
+                          "Property": "Department Base Name"
                         },
                         "Name": "field"
                       }
@@ -181,7 +181,7 @@
                             "Source": "h"
                           }
                         },
-                        "Property": "Department Name"
+                        "Property": "Department Base Name"
                       }
                     }
                   ],

@@ -77,17 +77,17 @@
             },
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Staff"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Staff Name"
+                  "Property": "HR Issue Oasis Name"
                 }
               },
-              "queryRef": "Staff.Staff Name",
-              "nativeQueryRef": "Staff Name",
+              "queryRef": "_Measures.HR Issue Oasis Name",
+              "nativeQueryRef": "HR Issue Oasis Name",
               "displayName": "Oasis name"
             },
             {
@@ -155,6 +155,21 @@
           }
         ]
       }
+    },
+    "objects": {
+      "total": [
+        {
+          "properties": {
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "visualContainerObjects": {
       "title": [

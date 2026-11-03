@@ -14,8 +14,8 @@ KPIs and the metrics defined without a target are all listed.
 """
 from __future__ import annotations
 
-from frame import CONTENT, NAVY
-from hr_frame import HR_TARGET_TEXT, HR_WATCH_TEXT, bsc, card_look, filters, page_frame
+from frame import CONTENT, NAVY, _lit
+from hr_frame import HR_TARGET_TEXT, HR_WATCH_TEXT, bsc, card_look, filters, fixed_table, page_frame
 from model import Filter, Interaction, Page, Visual, col, meas
 from pages_detail import _guarded
 
@@ -66,13 +66,14 @@ def data_quality_page() -> Page:
     records_cols = [(col("HR Data Issue Records", "Issue Code"), "Issue code"), (BRANCH_NAME, "Hospital"),
                     (col("HR Data Issue Records", "Worker Number"), "Worker number"),
                     (col("HR Data Issue Records", "Staff ID"), "Oasis staff ID"),
-                    (col("Staff", "Staff Name"), "Oasis name"),
+                    (meas("HR Issue Oasis Name"), "Oasis name"),  # "" without an Oasis staff record
                     (col("HR Data Issue Records", "Field Name"), "Field"),
                     (col("HR Data Issue Records", "Value Found"), "Value found"),
                     (col("HR Data Issue Records", "Record Date"), "Record date")]
     records = Visual("table", X0, BOT_Y, RECORDS_W, END - BOT_Y, title="Records behind the selected issue",
                      roles={"Values": [f for f, _ in records_cols]}, labels=dict(records_cols),
-                     sort=records_cols[0][0], sort_dir="asc")
+                     sort=records_cols[0][0], sort_dir="asc",
+                     props={"total": [{"properties": {"totals": _lit(False)}}]})
     fix = Visual("table", X0 + RECORDS_W + GAP, BOT_Y, FIX_W, END - BOT_Y, title="How to fix",
                  roles={"Values": [ISSUE_NAME, HOW_TO_FIX]}, labels={ISSUE_NAME: "Issue", HOW_TO_FIX: "How to fix"},
                  filters=[ACTIVE_ISSUES], sort=ISSUE_NAME, sort_dir="asc", props=bsc.word_wrap())
@@ -130,6 +131,14 @@ GUIDE_SECTIONS = [
         "absence facts and no job on payroll.",
         "Data quality: the records are rebuilt with the nightly build, so a fix at the source disappears on the "
         "next day's refresh. Records at Head Office are visible to administrators only.",
+        "Unknown, in any list or chart, means the record names no department, location, job, staff member or "
+        "other item, or names one the source does not have; it is the same label in every report.",
+        "Departments and positions are shown without the hospital prefix (Nursing Department, Staff Nurse), so "
+        "the same name at every hospital is one bar; the Employee list shows each person's own department.",
+        "FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced "
+        "by 1 (Data quality lists those). FTE figures therefore show no decimals.",
+        "Vacancy rate is the open requisition openings divided by the budgeted FTE of the year; until the "
+        "budgeted FTE is loaded the vacancy rate reads No budgeted FTE.",
         "Definitions lists every KPI and metric with its definition, formula, source and caveats; pick an Area to "
         "narrow it.",
         "Questions, corrections, or a target to change: contact the BI manager."]),
@@ -159,13 +168,17 @@ def definitions_page() -> Page:
                   props={**bsc.select_all_selection(), **bsc.dropdown_look()}, labels={AREA: "Area"})
     name = col("HR KPI", "KPI Name")
     order = col("HR KPI", "Display Order")
-    fields = ([AREA, name] + [col("HR KPI", c) for c in ("Kind", "Definition", "Formula", "Source System", "Grain",
-                                                          "Direction")]
-              + [HR_TARGET_TEXT, HR_WATCH_TEXT, col("HR KPI", "Caveats"), order])
+    # Fixed widths in px (sum within the table's 1860 less the scroll bar), text wrapped: the table fits the page
+    # (with auto-sized columns the Grain column fell off its right edge)
+    widths = {AREA: 100, name: 170, col("HR KPI", "Kind"): 60, col("HR KPI", "Definition"): 340,
+              col("HR KPI", "Formula"): 250, col("HR KPI", "Source System"): 130, col("HR KPI", "Grain"): 150,
+              col("HR KPI", "Direction"): 80, HR_TARGET_TEXT: 120, HR_WATCH_TEXT: 120, col("HR KPI", "Caveats"): 250,
+              order: 50}
+    fields = list(widths)
     # No Kind filter: the scored KPIs and the metrics are all defined here
     table = Visual("table", X0, TABLE_Y, W0, END - TABLE_Y, title="Every KPI and metric", roles={"Values": fields},
                    labels={name: "KPI or metric", HR_TARGET_TEXT: "Target", HR_WATCH_TEXT: "Watch at",
-                           order: "Order"}, sort=order, sort_dir="asc", props=bsc.word_wrap())
+                           order: "Order"}, sort=order, sort_dir="asc", props=fixed_table(widths, 10, left=(HR_TARGET_TEXT, HR_WATCH_TEXT)))
     hospital, month = filters()
     return Page("guide_definitions", "Definitions", page_frame("guide", [hospital, month]) + [area, table])
 

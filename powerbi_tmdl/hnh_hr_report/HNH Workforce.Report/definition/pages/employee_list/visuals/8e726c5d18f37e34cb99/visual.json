@@ -32,6 +32,21 @@
             },
             {
               "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
+                  "Property": "Person Number"
+                }
+              },
+              "queryRef": "Employee.Person Number",
+              "nativeQueryRef": "Person Number",
+              "displayName": "Person number"
+            },
+            {
+              "field": {
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
@@ -47,77 +62,77 @@
             },
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Staff"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Staff ID"
+                  "Property": "HR Employee Staff ID"
                 }
               },
-              "queryRef": "Staff.Staff ID",
-              "nativeQueryRef": "Staff ID",
+              "queryRef": "_Measures.HR Employee Staff ID",
+              "nativeQueryRef": "HR Employee Staff ID",
               "displayName": "Oasis staff ID"
             },
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "HR Employee Hospital"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "_Measures.HR Employee Hospital",
+              "nativeQueryRef": "HR Employee Hospital",
               "displayName": "Hospital"
             },
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR Department"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Department Name"
+                  "Property": "HR Employee Department"
                 }
               },
-              "queryRef": "HR Department.Department Name",
-              "nativeQueryRef": "Department Name",
+              "queryRef": "_Measures.HR Employee Department",
+              "nativeQueryRef": "HR Employee Department",
               "displayName": "Department"
             },
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Job"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Job Name"
+                  "Property": "HR Employee Job"
                 }
               },
-              "queryRef": "Job.Job Name",
-              "nativeQueryRef": "Job Name",
+              "queryRef": "_Measures.HR Employee Job",
+              "nativeQueryRef": "HR Employee Job",
               "displayName": "Job"
             },
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Grade"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Grade Name"
+                  "Property": "HR Employee Grade"
                 }
               },
-              "queryRef": "Grade.Grade Name",
-              "nativeQueryRef": "Grade Name",
+              "queryRef": "_Measures.HR Employee Grade",
+              "nativeQueryRef": "HR Employee Grade",
               "displayName": "Grade"
             },
             {
@@ -185,6 +200,21 @@
           }
         ]
       }
+    },
+    "objects": {
+      "total": [
+        {
+          "properties": {
+            "totals": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "visualContainerObjects": {
       "title": [

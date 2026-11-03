@@ -31,20 +31,28 @@ Rules the pages keep:
   (`blocked_tables`, read from the model). The build stops when a visual's own columns, a page slicer, the page
   filter or a drill field is such a table; a selection in a chart or table is kept from reaching a visual whose
   measures reject one of its tables (NoFilter interactions, written here).
-- Pay (ruling R22): a visual with a pay figure has an [HR Pay Notice] card over it, filtered to non-blank, so it shows
-  only to readers without pay access; pay cards are filtered to non-blank too, so they show nothing rather than
-  "(Blank)" under the notice.
+- Pay (ruling R22): a visual with a pay figure has an [HR Pay Notice] card over it: "Requires pay access" to readers
+  without pay access, "" (an empty card) to the others. The card has no filter: a card filtered to no row prints
+  "(Blank)" (the 2026-11-03 screenshots). Pay cards are still filtered to non-blank.
+- Departments and positions (ruling R30): charts and the Department slicer use the prefix-free 'HR Department'
+  [Department Base Name] and 'Position'[Position Base Name] ("Nursing Department", "Staff Nurse"), one bar for the
+  same name at every hospital; the per-hospital Department Name is only on the Employee list.
+- Recruitment: while no budgeted FTE is loaded the vacancy rate is blank; its card is [HR Vacancy Rate Text] ("No
+  budgeted FTE") and each vacancy chart has the [HR Vacancy Note] card over it ("" once loaded).
 - Fusion leaver measures are labelled "in Fusion"; the headline turnover is [BSC Turnover]. Labels are this repo's
   (not title-cased).
 
-Employee list (hidden): drill-through on 'Branch'[Branch Name] and 'HR Department'[Department Name] with "keep all
-filters" off, as the BSC's family pages: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker Action')
+Employee list (hidden): drill-through on 'Branch'[Branch Name] and 'HR Department'[Department Base Name] (the
+detail charts' axes) with "keep all filters" off, as the BSC's family pages: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker Action')
 would make [Headcount] return its guard message. The month and the other selections arrive through the page's
-slicers, synced with the detail pages'. One table (worker number, name, Oasis staff ID, hospital, department, job,
+slicers, synced with the detail pages'. One table (worker number, person number, name, Oasis staff ID, hospital, department, job,
 grade, hire date, status, headcount), filtered to [Headcount] not blank (ruling R4): Employee has no branch
-relationship or row filter, so branch security applies through the fact. The name is the measure [HR Employee Name],
-blank without pay access; the table has no 'Employee Details' column, because a table grouped by a column with no
-visible rows (the role hides Employee Details without pay access) has no rows at all.
+relationship or row filter, so branch security applies through the fact. The table groups by Employee columns only;
+the Oasis staff ID, hospital, department (the per-hospital name), job and grade are measures ([HR Employee ...]) read
+through the month's headcount row. Grouped by the columns of six dimensions the query ran for minutes (over 160 s of
+CPU on the test slot, an empty table in Desktop); this way it takes about 2 s. The name is the measure
+[HR Employee Name], blank without pay access; the table has no 'Employee Details' column, because a table grouped by
+a column with no visible rows (the role hides Employee Details without pay access) has no rows at all.
 """
 from __future__ import annotations
 
@@ -53,7 +61,7 @@ import re
 from functools import lru_cache
 
 from fields import MODEL_DIR
-from frame import CONTENT, NAVY
+from frame import CONTENT, NAVY, _lit
 from hr_frame import SUB_TAB_X, SUB_TAB_Y, bsc, card_look, filters, hospitals, page_frame, sub_tabs
 from model import Field, Filter, Interaction, Page, Visual, col, meas
 
@@ -73,8 +81,9 @@ BRANCH_NAME = col("Branch", "Branch Name")
 YEAR_MONTH = col("Date", "Year Month Name")
 MONTH_OFFSET = col("Date", "Month Offset")
 LAST_12_CLOSED = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
-DEPARTMENT = col("HR Department", "Department Name")  # per hospital ("ABH Icu-Nurse"): the drill field
-UNIFIED_DEPARTMENT = col("HR Department", "Unified Department")  # across hospitals ("ICU"): the slicer
+# prefix-free ("Icu-Nurse" for "ABH Icu-Nurse"; ruling R30): the charts' axis, the slicer and the drill field
+DEPARTMENT = col("HR Department", "Department Base Name")
+POSITION = col("Position", "Position Base Name")  # prefix-free ("Staff Nurse" for "RBW Staff Nurse")
 HEADCOUNT = meas("Headcount")
 PAY_NOTICE = meas("HR Pay Notice")
 EMPLOYEE_NAME = meas("HR Employee Name")  # one employee's Fusion name; blank without pay access
@@ -82,7 +91,7 @@ ABSENCE_TYPE = col("Absence Type", "Absence Type Name")
 EMPLOYEE_LIST = "employee_list"
 
 # The page slicers (field, label): only on pages where every measure accepts their tables
-WORKFORCE_SLICERS = [(UNIFIED_DEPARTMENT, "Department"), (col("Job", "Job Name"), "Job"),
+WORKFORCE_SLICERS = [(DEPARTMENT, "Department"), (col("Job", "Job Name"), "Job"),
                      (col("Grade", "Grade Name"), "Grade"), (col("Employee", "Nationality"), "Nationality"),
                      (col("Employee", "Worker Type"), "Worker type")]
 
@@ -137,22 +146,25 @@ def _guarded(page_name: str, data: list[Visual], page_tables: set[str]) -> list[
 
 # ---- building blocks ----------------------------------------------------------------------------------------------
 
-def card(measure: str, label: str, pay: bool = False) -> dict:
-    """A card for the selected month: the figure over its label. `pay`: needs pay access."""
-    return {"kind": "card", "measures": [measure], "labels": {measure: label}, "pay": pay}
+def card(measure: str, label: str, pay: bool = False, decimals: int | None = None) -> dict:
+    """A card for the selected month: the figure over its label. `pay`: needs pay access. `decimals`: the value's
+    decimal places, whatever the measure's format."""
+    return {"kind": "card", "measures": [measure], "labels": {measure: label}, "pay": pay, "decimals": decimals}
 
 
-def trend(title: str, measures: list[str], labels: dict | None = None, pay: bool = False) -> dict:
-    """A line chart of the last 12 closed months."""
+def trend(title: str, measures: list[str], labels: dict | None = None, pay: bool = False,
+          note: str | None = None) -> dict:
+    """A line chart of the last 12 closed months. `note`: as bars()."""
     return {"kind": "lineChart", "title": f"{title}, last 12 closed months", "measures": measures,
-            "labels": labels or {}, "pay": pay}
+            "labels": labels or {}, "pay": pay, "note": note}
 
 
 def bars(title: str, by: Field, measures: list[str], labels: dict | None = None, top: bool = False,
-         pay: bool = False) -> dict:
-    """A bar chart for the selected month, sorted by its first measure; `top`: only the top 15."""
+         pay: bool = False, note: str | None = None) -> dict:
+    """A bar chart for the selected month, sorted by its first measure; `top`: only the top 15. `note`: a text measure
+    shown on a card over the chart ("" when there is nothing to say)."""
     return {"kind": "barChart", "title": title, "by": by, "measures": measures, "labels": labels or {}, "top": top,
-            "pay": pay}
+            "pay": pay, "note": note}
 
 
 def table(title: str, columns: list[tuple[Field, str]], measures: list[str], labels: dict | None = None,
@@ -189,7 +201,7 @@ def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
     if kind == "card":
         return Visual("card", x, y, w, h, roles={"Values": ms}, labels=_labels(spec),
                       filters=[Filter(ms[0], "notblank")] if spec["pay"] else [],
-                      props=card_look(24, NAVY, category=True, box=True))
+                      props=card_look(24, NAVY, category=True, box=True, decimals=spec.get("decimals")))
     if kind == "lineChart":
         return Visual("lineChart", x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": ms}, title=spec["title"],
                       labels=_labels(spec), filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc")
@@ -203,11 +215,12 @@ def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
                   sort_dir="asc")
 
 
-def _notice(x: float, y: float, w: float, h: float) -> Visual:
-    """[HR Pay Notice] ("Requires pay access") centred over a pay visual; blank for readers with pay access, so the
-    card is filtered to a non-blank notice (Story's Cost block)."""
-    return Visual("card", x, y + (h - NOTICE_H) / 2, w, NOTICE_H, roles={"Values": [PAY_NOTICE]},
-                  filters=[Filter(PAY_NOTICE, "notblank")], props=card_look(16, NAVY))
+def _notice(x: float, y: float, w: float, h: float, measure: Field = PAY_NOTICE) -> Visual:
+    """A note centred over a visual: [HR Pay Notice] ("Requires pay access") over a pay visual, or another text
+    measure. The measure returns "" when there is nothing to say, so the card shows nothing; it has no filter, because a
+    card filtered to no row prints "(Blank)"."""
+    return Visual("card", x, y + (h - NOTICE_H) / 2, w, NOTICE_H, roles={"Values": [measure]},
+                  props=card_look(16, NAVY))
 
 
 def slicer(field: Field, label: str, x: float, y: float, w: float) -> Visual:
@@ -278,6 +291,8 @@ def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], ex
         data.append(v)
         if spec["pay"]:
             notices.append(_notice(x, cy, cw, ch))
+        if spec.get("note"):
+            notices.append(_notice(x, cy, cw, ch, meas(spec["note"])))
     visuals += data + notices
     rows = math.ceil(len(extras) / 3)
     bottom = grid_end + rows * (GAP + EXTRA_H)
@@ -294,15 +309,17 @@ def headcount_page() -> Page:
     hc = ["Headcount"]
     return detail_page(
         "headcount", "Headcount & mix",
-        cards=[card("Headcount", "Headcount"), card("FTE", "FTE"), card("Average Headcount", "Average headcount"),
-               card("Average FTE", "Average FTE"), card("BSC Saudization", "Saudization"),
+        # FTE equals headcount today (Fusion FTE values are 1; a zero FTE is replaced by 1): no decimals
+        cards=[card("Headcount", "Headcount"), card("FTE", "FTE", decimals=0),
+               card("Average Headcount", "Average headcount", decimals=0),
+               card("Average FTE", "Average FTE", decimals=0), card("BSC Saudization", "Saudization"),
                card("Female Share %", "Female share"), card("Contingent Share %", "Contingent workers' share")],
         grid=[trend("Headcount and FTE", ["Headcount", "FTE"]),
               bars("Headcount by hospital", BRANCH_NAME, hc),
               bars("Headcount by department, top 15", DEPARTMENT, hc, top=True),
               bars("Headcount by job, top 15", col("Job", "Job Name"), hc, top=True)],
         extras=[bars("Headcount by grade, top 15", col("Grade", "Grade Name"), hc, top=True),
-                bars("Headcount by position, top 15", col("Position", "Position Name"), hc, top=True),
+                bars("Headcount by position, top 15", POSITION, hc, top=True),
                 bars("Headcount by location, top 15", col("Location", "Location Name"), hc, top=True),
                 bars("Headcount, Saudi and non-Saudi", col("Headcount", "Is Saudi"), hc),
                 bars("Headcount by gender", col("Headcount", "Gender"), hc),
@@ -361,7 +378,7 @@ def payroll_page() -> Page:
         extras=[trend("Overtime share of gross pay", ["Overtime Share %"], pay=True),
                 bars("Payroll cost per FTE by hospital (SAR)", BRANCH_NAME, ["Payroll Cost per FTE"], pay=True),
                 bars("Overtime share of gross pay by hospital", BRANCH_NAME, ["Overtime Share %"], pay=True)],
-        page_slicers=[(UNIFIED_DEPARTMENT, "Department")])
+        page_slicers=[(DEPARTMENT, "Department")])
 
 
 def absence_page() -> Page:
@@ -388,15 +405,16 @@ def absence_page() -> Page:
 
 
 def recruitment_page() -> Page:
-    """Recruitment, by hospital only: Requisitions has no department (spec "Pages" 4)."""
+    """Recruitment, by hospital only: Requisitions has no department (spec "Pages" 4). No budgeted FTE is loaded
+    yet: the vacancy card and charts say so ([HR Vacancy Rate Text], [HR Vacancy Note])."""
     return detail_page(
         "recruitment", "Recruitment",
-        cards=[card("BSC Vacancy Rate", "Vacancy rate (openings / budgeted FTE)"),
+        cards=[card("HR Vacancy Rate Text", "Vacancy rate (openings / budgeted FTE)"),
                card("BSC Time to Fill (days)", "Time to fill (days)"),
                card("Requisitions Approved", "Requisitions approved"),
                card("Requisitions Filled", "Requisitions filled"), card("Open Openings", "Open openings")],
-        grid=[trend("Vacancy rate", ["BSC Vacancy Rate"]),
-              bars("Vacancy rate by hospital", BRANCH_NAME, ["BSC Vacancy Rate"]),
+        grid=[trend("Vacancy rate", ["BSC Vacancy Rate"], note="HR Vacancy Note"),
+              bars("Vacancy rate by hospital", BRANCH_NAME, ["BSC Vacancy Rate"], note="HR Vacancy Note"),
               trend("Requisitions approved and filled", ["Requisitions Approved", "Requisitions Filled"]),
               bars("Open openings by hospital", BRANCH_NAME, ["Open Openings"])],
         extras=[trend("Time to fill (days)", ["BSC Time to Fill (days)"]),
@@ -436,7 +454,8 @@ def detail_pages() -> list[Page]:
 # ---- Employee list ------------------------------------------------------------------------------------------------
 
 def employee_list_page() -> Page:
-    """Hidden drill-through on hospital and department (keep all filters off; see the module docstring)."""
+    """Hidden drill-through on hospital and the prefix-free department (keep all filters off; see the module
+    docstring)."""
     hospital, month = filters()
     back = bsc.back_button(SUB_TAB_X, SUB_TAB_Y, BACK_W, 54)
     visuals = page_frame(None, [hospital, month, back])
@@ -444,15 +463,20 @@ def employee_list_page() -> Page:
     y = Y0 + SLICER_H + GAP
     worker = col("Employee", "Worker Number")
     # [HR Employee Name] is blank for every row without pay access, and a table keeps only the rows where one of its
-    # measures is not blank: [Headcount] (1 a person) is a column too, so the rows stay
-    fields = [(worker, "Worker number"), (EMPLOYEE_NAME, "Name (pay access)"),
-              (col("Staff", "Staff ID"), "Oasis staff ID"), (BRANCH_NAME, "Hospital"), (DEPARTMENT, "Department"),
-              (col("Job", "Job Name"), "Job"), (col("Grade", "Grade Name"), "Grade"),
-              (col("Employee", "Hire Date"), "Hire date"), (col("Employee", "Assignment Status"), "Status"),
-              (HEADCOUNT, "Headcount")]
+    # measures is not blank: [Headcount] (1 a person) is a column too, so the rows stay. Grouped by Employee columns
+    # only; the other attributes are measures through the month's headcount row (fast; see the module docstring)
+    # Person Number is one per person (4,314 people, 4,276 worker numbers in October 2026): without it the people
+    # with no worker number and the same hire date fold into one row
+    fields = [(worker, "Worker number"), (col("Employee", "Person Number"), "Person number"),
+              (EMPLOYEE_NAME, "Name (pay access)"),
+              (meas("HR Employee Staff ID"), "Oasis staff ID"), (meas("HR Employee Hospital"), "Hospital"),
+              (meas("HR Employee Department"), "Department"), (meas("HR Employee Job"), "Job"),
+              (meas("HR Employee Grade"), "Grade"), (col("Employee", "Hire Date"), "Hire date"),
+              (col("Employee", "Assignment Status"), "Status"), (HEADCOUNT, "Headcount")]
     people = Visual("table", X0, y, W0, CONTENT_END - y, roles={"Values": [f for f, _ in fields]},
                     title="People in the headcount of the month", labels=dict(fields),
-                    filters=[Filter(HEADCOUNT, "notblank")], sort=worker, sort_dir="asc")
+                    filters=[Filter(HEADCOUNT, "notblank")], sort=worker, sort_dir="asc",
+                    props={"total": [{"properties": {"totals": _lit(False)}}]})  # a list of people has no total
     visuals += own_slicers + [people]
     page_filters = [hospitals()]
     drill = [BRANCH_NAME, DEPARTMENT]

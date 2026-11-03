@@ -1,9 +1,11 @@
 """Scorecard and KPI detail (spec "Pages" 3 and 7).
 
-Scorecard (`scorecard_page`): Hospital, Month, Area and Period dropdowns; a table of every active KPI (Area, KPI code
-and name, [HR KPI Status Text] coloured by [HR KPI Status Colour], [HR KPI Actual Text], [HR KPI Target Text],
-[HR KPI Variance Text], [HR KPI Watch Text]), sorted by Display Order; a "Drill through to KPI detail" button, enabled
-by one selected table row; a matrix of KPI x hospital showing [HR KPI Status Text] in the same colours. Both are
+Scorecard (`scorecard_page`): Hospital, Month, Area and Period dropdowns; a table of every active KPI (Area, KPI
+name, Status: [HR KPI Status Text] coloured by [HR KPI Status Colour], Actual, Target, Variance, Watch at: the text
+measures; Order), sorted by Display Order, with fixed column widths that fill the table (no total row); a "Drill
+through to KPI detail" button, enabled by one selected table row; a matrix of KPI x hospital showing
+[HR KPI Status Text] in the same colours. The drill-through field is 'HR KPI'[KPI Name] (unique, as the code), a
+column of both the table and the matrix, so the table needs no KPI Code column and a matrix row drills too. Both are
 filtered to Kind "kpi" and Status "active". The cells are the model's text measures (R22): a reader without pay access
 reads "Requires pay access" for a pay KPI's figures, target, variance and watch value (final review C1). No sparkline
 column: the generator has no sparkline, and KPI detail has the trend.
@@ -13,15 +15,16 @@ YTD; on Scorecard and KPI detail only, synced between them (the sync group is th
 actual, target and status describe January to the selected month: a flow KPI's annual target is pro-rated by the
 months (scale_with_months), a snapshot KPI keeps its month-end value. Story stays on one month (R18).
 
-KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Code] only (keep_filters off: the
+KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Name] only (keep_filters off: the
 scorecard's Month would otherwise AND with the line's Month Offset filter and leave one point); the page's own synced
-Hospital, Month and Period slicers apply. Left, the KPI's name and the definition panel (Definition, Formula, Source
-System, Grain, Caveats); right, cards for [HR KPI Actual Text], target and status, the 24-month line of actual against
+Hospital, Month and Period slicers apply. Left, [HR KPI Detail Title] (the KPI's name) and the definition panel
+([HR KPI Definition Text], Formula, Source System, Grain, Caveats): opened without a drill-through, the title and the
+definition say how to pick a KPI instead of "(Blank)"; right, cards for [HR KPI Actual Text], target and status, the 24-month line of actual against
 target and watch, and the bar by hospital. The Month slicer (synced with every page) does not reach the line or the
 bar: NoFilter interactions, so they show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every hospital
 whatever the selection. Period does not reach the line either (a monthly trend); the bar follows it. Over each chart,
-[HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2). Back
-returns to the page you came from.
+[HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2), and
+"" (an empty card, no filter) otherwise. Back returns to the page you came from.
 
 Both pages are filtered to hospitals (final review I1), the scope of the HR KPI measures.
 """
@@ -29,7 +32,7 @@ from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit, button_props, no_container
 from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
-                      HR_WATCH_TEXT, KPI_CODE, SUB_TAB_X, SUB_TAB_Y, bsc, card_look, filters, hospitals,
+                      HR_WATCH_TEXT, SUB_TAB_X, SUB_TAB_Y, bsc, card_look, filters, fixed_table, hospitals,
                       measure_colour, page_frame, saved_selection, single_selection)
 from model import Filter, Interaction, Page, Visual, col, meas
 
@@ -51,11 +54,15 @@ ACTIVE_KPIS = [Filter(KIND, "eq", ["kpi"]), Filter(STATUS, "eq", ["active"])]
 # ---- Scorecard ----------------------------------------------------------------------------------------------------
 
 AREA_SLICER = (SUB_TAB_X, 90, 270, 66)  # right of the Month slicer, as the others in the filter bar
-TABLE_Y, TABLE_H = Y0, 480
+TABLE_Y, TABLE_H = Y0, 600  # 18 KPIs at 12 pt with a wrapped header
 DRILL_Y, DRILL_H, DRILL_W = TABLE_Y + TABLE_H + GAP, 54, 420
-MATRIX_Y = DRILL_Y + DRILL_H + GAP  # 744
+MATRIX_Y = DRILL_Y + DRILL_H + GAP  # 888
 MATRIX_H = 600
-SCORECARD_H = MATRIX_Y + MATRIX_H + 30  # 1374: the page scrolls
+SCORECARD_H = MATRIX_Y + MATRIX_H + 30  # 1518: the page scrolls
+TABLE_FONT = 12
+# The scorecard columns' widths in px (sum within the table's 1860 less the scroll bar)
+SCORECARD_WIDTHS = {AREA: 170, KPI_NAME: 330, HR_STATUS_TEXT: 260, HR_ACTUAL_TEXT: 210, HR_TARGET_TEXT: 260,
+                    HR_VARIANCE_TEXT: 190, HR_WATCH_TEXT: 260, DISPLAY_ORDER: 90}
 
 WILDCARD = {"dataViewWildcard": {"matchingOption": 1}}
 
@@ -65,11 +72,6 @@ def status_colours() -> dict:
     formatting by field value, as the Press Ganey table's `fontColor`)."""
     return {"values": [{"properties": {"fontColor": measure_colour(HR_STATUS_COLOUR.name)},
                         "selector": {"data": [WILDCARD], "metadata": HR_STATUS_TEXT.ref}}]}
-
-
-def _wrap(props: dict) -> dict:
-    return {**props, "values": props["values"] + [{"properties": {"wordWrap": _lit(True)}}],
-            "columnHeaders": [{"properties": {"wordWrap": _lit(True)}}]}
 
 
 def _area_slicer() -> Visual:
@@ -100,12 +102,16 @@ def period_slicer(x: float) -> Visual:
 def scorecard_page() -> Page:
     area = _area_slicer()
     bar = filters() + [area, period_slicer(area.x + area.w + SLICER_GAP)]
-    table_fields = [AREA, KPI_CODE, KPI_NAME, HR_STATUS_TEXT, HR_ACTUAL_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
-                    HR_WATCH_TEXT, DISPLAY_ORDER]
+    # every column labelled: a field without a label shows its model name ("HR KPI Status Text")
+    table_fields = list(SCORECARD_WIDTHS)
+    props = fixed_table(SCORECARD_WIDTHS, TABLE_FONT, left=(HR_STATUS_TEXT, HR_ACTUAL_TEXT, HR_TARGET_TEXT,
+                                                            HR_VARIANCE_TEXT, HR_WATCH_TEXT))
+    props["values"] = status_colours()["values"] + props["values"]
     table = Visual("table", X0, TABLE_Y, W0, TABLE_H, title="Every active KPI: select a row, then drill through",
                    roles={"Values": table_fields}, filters=list(ACTIVE_KPIS), sort=DISPLAY_ORDER, sort_dir="asc",
-                   props=_wrap(status_colours()),
-                   labels={DISPLAY_ORDER: "Order", HR_VARIANCE_TEXT: "Variance", HR_WATCH_TEXT: "Watch at"})
+                   props=props,
+                   labels={KPI_NAME: "KPI", HR_STATUS_TEXT: "Status", HR_ACTUAL_TEXT: "Actual", HR_TARGET_TEXT: "Target",
+                           DISPLAY_ORDER: "Order", HR_VARIANCE_TEXT: "Variance", HR_WATCH_TEXT: "Watch at"})
     link = {"type": _lit("Drillthrough"), "drillthroughSection": _lit(KPI_DETAIL_NAME)}
     drill = Visual("buttonDrill", X0, DRILL_Y, DRILL_W, DRILL_H,
                    props={**button_props(link, "Drill through to KPI detail →", "primary"), **no_container()})
@@ -141,12 +147,15 @@ def kpi_detail_page() -> Page:
     period = period_slicer(SUB_TAB_X + BACK_W + GAP)
     visuals = page_frame(None, [hospital, month, back, period])
     wrap = {"wordWrap": [{"properties": {"show": _lit(True)}}]}
-    visuals.append(Visual("card", X0, Y0, LEFT_W, TITLE_H, roles={"Values": [KPI_NAME]},
+    # the heading and the definition are measures that say how to pick a KPI when no drill-through brought one
+    visuals.append(Visual("card", X0, Y0, LEFT_W, TITLE_H, roles={"Values": [meas("HR KPI Detail Title")]},
                           props={**card_look(20, NAVY, box=True), **wrap}))
     y = Y0 + TITLE_H + GAP
     for name, h in DEFINITION:
-        visuals.append(Visual("card", X0, y, LEFT_W, h, roles={"Values": [col("HR KPI", name)]},
-                              props={**card_look(12, NAVY, category=True, box=True), **wrap}))
+        field = meas("HR KPI Definition Text") if name == "Definition" else col("HR KPI", name)
+        visuals.append(Visual("card", X0, y, LEFT_W, h, roles={"Values": [field]},
+                              props={**card_look(12, NAVY, category=True, box=True), **wrap},
+                              labels={field: name} if field.kind == "measure" else {}))
         y += h + GAP
     figures = [(HR_ACTUAL_TEXT, "Actual", card_look(28, NAVY, category=True, box=True)),
                (HR_TARGET_TEXT, "Target", card_look(28, NAVY, category=True, box=True)),
@@ -163,14 +172,14 @@ def kpi_detail_page() -> Page:
     bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By hospital",
                   roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]}, filters=[hospitals()])
     visuals += [line, bars]
-    # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] (blank for pay readers and for a KPI that
-    # needs no pay, so filtered to non-blank) says why, over the middle of each chart (final review I2)
+    # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] says why, over the middle of each chart
+    # (final review I2). It is "" for pay readers and for a KPI that needs no pay, so the card shows nothing; no
+    # filter, because a card filtered to no row prints "(Blank)"
     notice = meas("HR KPI Pay Notice")
     for chart in (line, bars):
         visuals.append(Visual("card", chart.x, chart.y + (chart.h - NOTICE_H) / 2, chart.w, NOTICE_H,
-                              roles={"Values": [notice]}, filters=[Filter(notice, "notblank")],
-                              props=card_look(16, NAVY)))
+                              roles={"Values": [notice]}, props=card_look(16, NAVY)))
     interactions = [Interaction(month, line, "NoFilter"), Interaction(month, bars, "NoFilter"),
                     Interaction(hospital, bars, "NoFilter"), Interaction(period, line, "NoFilter")]
     return Page(KPI_DETAIL_NAME, "KPI detail", visuals, filters=[hospitals()], interactions=interactions,
-                drill_fields=[KPI_CODE], hidden=True, keep_filters=False)
+                drill_fields=[KPI_NAME], hidden=True, keep_filters=False)

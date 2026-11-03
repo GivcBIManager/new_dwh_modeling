@@ -35,7 +35,7 @@ AREA_FIGURES = {
     "movements": ("Hires", "Hires"),
     "payroll": ("HR Payroll Cost Text", "Payroll cost"),
     "absence": ("Sick Days", "Sick days"),
-    "recruitment": ("BSC Vacancy Rate", "Vacancy rate"),
+    "recruitment": ("HR Vacancy Rate Text", "Vacancy rate"),  # says why there is none (no budgeted FTE)
     "productivity": ("HR Visits per FTE Text", "Visits per FTE"),
 }
 

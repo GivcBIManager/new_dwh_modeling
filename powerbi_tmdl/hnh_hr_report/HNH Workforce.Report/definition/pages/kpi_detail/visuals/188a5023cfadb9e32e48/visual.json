@@ -17,17 +17,17 @@
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR KPI"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "KPI Name"
+                  "Property": "HR KPI Detail Title"
                 }
               },
-              "queryRef": "HR KPI.KPI Name",
-              "nativeQueryRef": "KPI Name"
+              "queryRef": "_Measures.HR KPI Detail Title",
+              "nativeQueryRef": "HR KPI Detail Title"
             }
           ]
         }

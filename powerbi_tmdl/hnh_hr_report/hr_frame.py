@@ -273,11 +273,16 @@ def measure_colour(measure: str) -> dict:
                                                      "Property": measure}}}}}
 
 
-def card_look(size: float, colour: str | dict | None = None, category: bool = False, box: bool = False) -> dict:
+def card_look(size: float, colour: str | dict | None = None, category: bool = False, box: bool = False,
+              decimals: int | None = None) -> dict:
     """Card format objects: the value in Segoe UI `size` pt, `colour` a hex colour or a measure_colour(); the
     category label (the field's name or its label in the visual) in small grey, or hidden. `box`: keep the theme's
-    white panel; else no background, border or visual header (the card sits on a panel)."""
+    white panel; else no background, border or visual header (the card sits on a panel). `decimals`: the value's
+    decimal places (`labelPrecision`) whatever the measure's format; None keeps the format's."""
     labels = {"fontSize": _num(size)}
+    if decimals is not None:  # display units None (1): with Auto the card kept the format's decimal
+        labels["labelDisplayUnits"] = _num(1)
+        labels["labelPrecision"] = {"expr": {"Literal": {"Value": f"{decimals}L"}}}
     if colour is not None:
         labels["color"] = _colour(colour) if isinstance(colour, str) else colour
     out = {"labels": [{"properties": labels}],
@@ -285,6 +290,23 @@ def card_look(size: float, colour: str | dict | None = None, category: bool = Fa
                                                                           "color": _colour(MUTED)}
                                                                          if category else {})}}]}
     return out if box else {**out, **no_container()}
+
+
+def fixed_table(widths: dict[Field, float], font: float, left: tuple[Field, ...] = ()) -> dict:
+    """Table format objects for a table that fits its width: each field's column at its fixed width in px
+    (`columnWidth` by the field's queryRef, with autosize off and the fixed-width adjustment, as the Press Ganey
+    report's tables), text wrapped, values and headers in Segoe UI `font` pt, no total row. `left`: text measures
+    to align left (a measure's column is right-aligned by default, even when it returns text)."""
+    out = {"columnHeaders": [{"properties": {"wordWrap": _lit(True), "autoSizeColumnWidth": _lit(False),
+                                             "columnAdjustment": _lit("fixedWidth"), "fontSize": _num(font)}}],
+           "values": [{"properties": {"wordWrap": _lit(True), "fontSize": _num(font)}}],
+           "columnWidth": [{"properties": {"value": _num(w)}, "selector": {"metadata": f.ref}}
+                           for f, w in widths.items()],
+           "total": [{"properties": {"totals": _lit(False)}}]}
+    if left:
+        out["columnFormatting"] = [{"properties": {"alignment": _lit("Left")}, "selector": {"metadata": f.ref}}
+                                   for f in left]
+    return out
 
 
 def small_title(size: float = 11) -> dict:
@@ -328,5 +350,5 @@ def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: st
 
 
 __all__ = ["BSC_DIR", "DETAIL_PAGES", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY", "SEED", "TABS", "WHITE",
-           "card_look", "filters", "home_tile_codes", "hospitals", "kpi_label", "kpi_tile", "measure_colour",
-           "nav_button", "page_frame", "seed_kpis", "small_title", "sub_tabs", "white_panel"]
+           "card_look", "filters", "fixed_table", "home_tile_codes", "hospitals", "kpi_label", "kpi_tile",
+           "measure_colour", "nav_button", "page_frame", "seed_kpis", "small_title", "sub_tabs", "white_panel"]

@@ -203,6 +203,8 @@ def test_home_figures_are_pay_aware_text():
         assert meas(measure) not in bound
     for measure in ("HR Payroll Cost Text", "HR Visits per FTE Text"):
         assert bound.count(meas(measure)) == 1
+    # the Recruitment area card says why there is no vacancy rate (no budgeted FTE) instead of "(Blank)"
+    assert meas("BSC Vacancy Rate") not in bound and bound.count(meas("HR Vacancy Rate Text")) == 1
 
 
 def test_slicers_sync_across_pages():
@@ -366,6 +368,16 @@ def test_story_page_is_tall_and_inside_its_height():
     assert max(v.y + v.h for v in story().visuals) <= story_h
 
 
+def test_story_vacancy_chart_carries_the_vacancy_note():
+    """The Hiring block's vacancy chart is empty while no budgeted FTE is loaded: [HR Vacancy Note] says so over it."""
+    page = story()
+    (chart,) = [v for v in page.visuals if v.sample == "lineChart" and meas("BSC Vacancy Rate") in v.roles["Y"]]
+    notes = _on(page, "HR Vacancy Note")
+    assert len(notes) == 1 and notes[0].filters == []
+    assert chart.x <= notes[0].x and chart.y <= notes[0].y and notes[0].y + notes[0].h <= chart.y + chart.h
+    assert page.visuals.index(notes[0]) > page.visuals.index(chart)
+
+
 def test_story_charts_show_twelve_closed_months_whatever_the_month_slicer_says():
     page = story()
     charts = [v for v in page.visuals if v.sample == "lineChart"]
@@ -387,7 +399,9 @@ def test_story_cost_pay_notice_and_slicers():
     assert len(notice) == 1
     cost = next(v for v in page.visuals if v.sample == "lineChart" and meas("Payroll Cost") in v.roles["Y"])
     assert cost.x <= notice[0].x and notice[0].y >= cost.y and notice[0].y + notice[0].h <= cost.y + cost.h
-    assert notice[0].filters[0].op == "notblank"  # a blank notice would print "(Blank)" over the chart
+    # [HR Pay Notice] is "" for a pay reader: the card shows nothing. A card filtered to no row prints "(Blank)"
+    # (the 2026-11-03 screenshots), so the notice card has no filter
+    assert notice[0].filters == []
     slicers = {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")}
     assert slicers == {BRANCH_NAME, MONTH_PICK}  # R13 / R18
     month = next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
@@ -425,7 +439,14 @@ def test_scorecard_filters_kind_kpi():
     assert (order.index("HR KPI Actual Text") < order.index("HR KPI Target Text") < order.index("HR KPI Variance Text")
             < order.index("HR KPI Watch Text"))
     assert table.labels[meas("HR KPI Variance Text")] == "Variance" and table.labels[meas("HR KPI Watch Text")] == "Watch at"
-    assert col("HR KPI", "KPI Code") in values  # the drill-through field is in the table
+    # every measure column has a header label (the screenshots showed "HR KPI Status Text": no label was given)
+    assert {table.labels[meas(m)] for m in ("HR KPI Status Text", "HR KPI Actual Text", "HR KPI Target Text")} == {
+        "Status", "Actual", "Target"}
+    assert all(f in table.labels for f in values if f.kind == "measure")
+    # the drill-through field is the KPI name, a column of the table and of the matrix: no KPI Code column
+    assert col("HR KPI", "KPI Code") not in values and col("HR KPI", "KPI Name") in values
+    assert col("HR KPI", "KPI Name") in matrix.roles["Rows"]
+    _assert_fixed_columns(table, min_font=11)
     assert matrix.roles["Values"] == [meas("HR KPI Status Text")] and matrix.roles["Columns"] == [BRANCH_NAME]
     # status cells are coloured by [HR KPI Status Colour]
     for v in (table, matrix):
@@ -437,18 +458,46 @@ def test_scorecard_filters_kind_kpi():
     assert "kpi_detail" in json.dumps(drill[0].props)
 
 
-def test_kpi_detail_is_drillthrough_on_code():
+def _assert_fixed_columns(table, min_font):
+    """A table that fits its width: fixed column widths for every field (no autosize), wrapped text, a readable
+    font, no total row."""
+    props = table.props
+    headers = props["columnHeaders"][0]["properties"]
+    assert headers["autoSizeColumnWidth"]["expr"]["Literal"]["Value"] == "false"
+    assert headers["columnAdjustment"]["expr"]["Literal"]["Value"] == "'fixedWidth'"
+    widths = {e["selector"]["metadata"]: float(e["properties"]["value"]["expr"]["Literal"]["Value"].rstrip("D"))
+              for e in props["columnWidth"]}
+    fields = [f for fs in table.roles.values() for f in fs]
+    assert set(widths) == {f.ref for f in fields}
+    assert sum(widths.values()) <= table.w - 30  # the vertical scroll bar and the cell padding
+    assert any("wordWrap" in e["properties"] for e in props["values"])
+    sizes = [float(e["properties"]["fontSize"]["expr"]["Literal"]["Value"].rstrip("D"))
+             for e in props["values"] + props["columnHeaders"] if "fontSize" in e["properties"]]
+    assert len(sizes) == 2 and min(sizes) >= min_font
+    assert props["total"][0]["properties"]["totals"]["expr"]["Literal"]["Value"] == "false"
+    # text measures are left-aligned like the text columns (a measure column is right-aligned by default)
+    left = {e["selector"]["metadata"] for e in props.get("columnFormatting", [])
+            if e["properties"]["alignment"]["expr"]["Literal"]["Value"] == "'Left'"}
+    assert {f.ref for f in fields if f.kind == "measure"} <= left
+
+
+def test_kpi_detail_is_drillthrough_on_name():
     page = _page("kpi_detail")
-    assert page.hidden and page.drill_fields == [KPI_CODE] and not page.keep_filters
+    assert page.hidden and page.drill_fields == [col("HR KPI", "KPI Name")] and not page.keep_filters
     assert page.display == "KPI detail" and page.name == "kpi_detail"
     vs = page.visuals
     # a Back button, and the frame without a current tab
     assert any(v.sample == "buttonNavigate" and "Back" in json.dumps(v.props) for v in vs)
     assert not any(v.sample == "buttonNavigate" and nav_target(v) in TAB_NAMES and
                    "primary" in json.dumps(v.props) for v in vs)
-    # definition panel
+    # definition panel: the definition is [HR KPI Definition Text], which says how to pick a KPI when the page is
+    # opened without a drill-through; the heading is [HR KPI Detail Title] (the KPI name, or the same prompt)
     defs = {v.roles["Values"][0].name for v in vs if v.sample == "card" and v.roles["Values"][0].table == "HR KPI"}
-    assert {"Definition", "Formula", "Source System", "Grain", "Caveats"} <= defs
+    assert {"Formula", "Source System", "Grain", "Caveats"} <= defs
+    for m in ("HR KPI Definition Text", "HR KPI Detail Title"):
+        assert len(_on(page, m)) == 1, m
+    title = _on(page, "HR KPI Detail Title")[0]
+    assert (title.x, title.y) == (frame.CONTENT[0], frame.CONTENT[1])
     # cards for actual (text), target, status
     for m in ("HR KPI Actual Text", "HR KPI Target Text", "HR KPI Status Text"):
         assert len(_on(page, m)) == 1, m
@@ -477,7 +526,7 @@ def test_kpi_detail_charts_have_a_pay_notice():
     page = _page("kpi_detail")
     assert _on(page, "HR Pay Notice") == []
     notices = _on(page, "HR KPI Pay Notice")
-    assert len(notices) == 2 and all(n.filters[0].op == "notblank" for n in notices)
+    assert len(notices) == 2 and all(n.filters == [] for n in notices)  # "" for a pay reader: an empty card
     for chart in (next(v for v in page.visuals if v.sample == "lineChart"),
                   next(v for v in page.visuals if v.sample == "barChart")):
         assert any(n.x == chart.x and n.w == chart.w and chart.y <= n.y and n.y + n.h <= chart.y + chart.h
@@ -557,6 +606,8 @@ def test_every_data_page_is_hospitals_only():
 HEADCOUNT = meas("Headcount")
 PAY_NOTICE = meas("HR Pay Notice")
 DEPARTMENT_NAME = col("HR Department", "Department Name")
+DEPARTMENT_BASE = col("HR Department", "Department Base Name")
+POSITION_BASE = col("Position", "Position Base Name")
 # The measures that read pay-gated tables (Payroll through 'Pay Category', 'Leave Balances', 'Staff Productivity')
 # on the pay pages and Absence & leave each such visual has an HR Pay Notice over it
 PAY_FIELDS = {meas(m) for m in ("Payroll Cost", "Gross Pay", "Gross Pay (Open Payroll)", "Overtime Share %",
@@ -583,10 +634,13 @@ def _measures(v):
     return [f for fs in v.roles.values() for f in fs if f.kind == "measure"]
 
 
+NOTES = {PAY_NOTICE, meas("HR Vacancy Note")}  # text cards over a visual ("" when there is nothing to say)
+
+
 def _data_visuals(page):
-    """Cards, charts and tables that show a measure other than the pay notice."""
+    """Cards, charts and tables that show a measure other than a note (the pay notice, the vacancy note)."""
     return [v for v in page.visuals if v.sample in ("card", "lineChart", "barChart", "table", "matrix")
-            and any(m != PAY_NOTICE for m in _measures(v))]
+            and any(m not in NOTES for m in _measures(v))]
 
 
 def _columns(v):
@@ -724,7 +778,7 @@ def test_detail_pay_visuals_carry_a_pay_notice():
     for name in ("payroll", "absence", "productivity"):
         page = _page(name)
         notices = [v for v in page.visuals if v.roles.get("Values") == [PAY_NOTICE]]
-        assert notices and all(_flt(n) == [(PAY_NOTICE, "notblank", [])] for n in notices), name
+        assert notices and all(_flt(n) == [] for n in notices), name  # "" for a pay reader: an empty card
         pay = [v for v in _data_visuals(page) if set(_measures(v)) & PAY_FIELDS]
         assert pay, name
         for v in pay:
@@ -757,17 +811,50 @@ def test_detail_pages_use_underlying_measures_and_spec_breakdowns():
         return {c for v in _page(name).visuals if v.sample in ("barChart", "table", "matrix")
                 for fs in v.roles.values() for c in fs if c.kind == "column"}
 
-    assert {BRANCH_NAME, DEPARTMENT_NAME, col("Job", "Job Name"), col("Grade", "Grade Name"),
-            col("Position", "Position Name"), col("Location", "Location Name"), col("Headcount", "Is Saudi"),
+    assert {BRANCH_NAME, DEPARTMENT_BASE, col("Job", "Job Name"), col("Grade", "Grade Name"),
+            POSITION_BASE, col("Location", "Location Name"), col("Headcount", "Is Saudi"),
             col("Headcount", "Gender"), col("Headcount", "Age Band"), col("Headcount", "Tenure Band"),
             col("Employee", "Worker Type"), col("Job", "Full Part Time")} <= axes("headcount")
     assert {col("Worker Action", "Action Reason Name"), col("Employee", "Tenure Band")} <= axes("movements")
-    assert {col("Pay Category", "Pay Category"), DEPARTMENT_NAME, col("Payroll", "Source"),
+    assert {col("Pay Category", "Pay Category"), DEPARTMENT_BASE, col("Payroll", "Source"),
             col("Payroll", "Payroll Status")} <= axes("payroll")
     assert {col("Absence Type", "Absence Type Name"), BRANCH_NAME} <= axes("absence")
     assert {col("Staff Productivity", "Staff Category"), BRANCH_NAME} <= axes("productivity")
     card_measures = {m.name for v in _page("headcount").visuals if v.sample == "card" for m in _measures(v)}
     assert "Contingent Share %" in card_measures  # contingent workers shown separately
+
+
+def test_charts_and_slicers_use_prefix_free_names():
+    """R30: departments and positions in charts and the Department slicer are prefix-free ("Nursing Department",
+    not "RBW Nursing Department"); the prefixed Department Name is only on the Employee list (through a measure)."""
+    prefixed = {DEPARTMENT_NAME, col("HR Department", "Unified Department"), col("Position", "Position Name")}
+    for page in PAGES:
+        assert not prefixed & set(page_fields(page)), page.name
+    slicers = {v.roles["Values"][0] for p in _detail_pages() for v in p.visuals if v.sample.startswith("slicer")}
+    assert DEPARTMENT_BASE in slicers
+
+
+def test_headcount_cards_show_whole_numbers():
+    """FTE equals headcount today (Fusion FTE values are 1): FTE and the monthly averages show no decimal."""
+    page = _page("headcount")
+    for m in ("FTE", "Average Headcount", "Average FTE"):
+        (card,) = [v for v in page.visuals if v.sample == "card" and v.roles["Values"] == [meas(m)]]
+        assert card.props["labels"][0]["properties"]["labelPrecision"]["expr"]["Literal"]["Value"] == "0L", m
+
+
+def test_recruitment_says_when_budgeted_fte_is_missing():
+    """No budgeted FTE is loaded: the vacancy card is [HR Vacancy Rate Text] ("No budgeted FTE")
+    and each vacancy chart has the [HR Vacancy Note] card over it (an empty text once the budget is loaded)."""
+    page = _page("recruitment")
+    cards = [v for v in page.visuals if v.sample == "card" and v.roles["Values"][0].name.startswith(
+        ("BSC Vacancy", "HR Vacancy Rate"))]
+    assert [c.roles["Values"] for c in cards] == [[meas("HR Vacancy Rate Text")]]
+    notes = _on(page, "HR Vacancy Note")
+    charts = [v for v in page.visuals if v.sample in ("lineChart", "barChart") and meas("BSC Vacancy Rate") in
+              _measures(v)]
+    assert len(charts) == 2 and len(notes) == 2
+    for chart in charts:
+        assert any(_covers(n, chart) and _index(page, n) > _index(page, chart) and n.filters == [] for n in notes)
 
 
 def test_recruitment_has_no_department():
@@ -787,15 +874,21 @@ def test_employee_list_filtered_by_headcount():
     the page's slicers, synced with the detail pages' slicers."""
     page = _page("employee_list")
     assert page.hidden and page.display == "Employee list" and PAGES[-1] is page
-    assert page.drill_fields == [BRANCH_NAME, DEPARTMENT_NAME] and not page.keep_filters
+    # the drill fields are the detail charts' axes: hospital and the prefix-free department (R30)
+    assert page.drill_fields == [BRANCH_NAME, DEPARTMENT_BASE] and not page.keep_filters
     tables = [v for v in page.visuals if v.sample == "table"]
     assert len(tables) == 1
     people = tables[0]
     assert (HEADCOUNT, "notblank", []) in _flt(people)
-    for f in (col("Employee", "Worker Number"), meas("HR Employee Name"), col("Staff", "Staff ID"), BRANCH_NAME,
-              DEPARTMENT_NAME, col("Job", "Job Name"), col("Grade", "Grade Name"), col("Employee", "Hire Date"),
-              col("Employee", "Assignment Status")):
+    for f in (col("Employee", "Worker Number"), col("Employee", "Person Number"), meas("HR Employee Name"),
+              meas("HR Employee Staff ID"),
+              meas("HR Employee Hospital"), meas("HR Employee Department"), meas("HR Employee Job"),
+              meas("HR Employee Grade"), col("Employee", "Hire Date"), col("Employee", "Assignment Status")):
         assert f in people.roles["Values"], f
+    # Grouped by Employee columns only: a table grouped by six dimensions' columns ran for minutes (empty in
+    # Desktop); the hospital, department, job, grade and staff ID are measures through the month's headcount row
+    assert {f.table for f in people.roles["Values"] if f.kind == "column"} == {"Employee"}
+    assert people.props["total"][0]["properties"]["totals"]["expr"]["Literal"]["Value"] == "false"
     # The role hides Employee Details without pay access, and a table grouped by a column with no visible rows has
     # no rows: the name is the measure [HR Employee Name] (blank without pay access), never an Employee Details
     # column. A table drops the rows where all its measures are blank, so [Headcount] is a column too.
@@ -849,8 +942,11 @@ def test_dq_page_content_and_measures():
         assert col("HR Data Issues", c) in issue_table.roles["Values"]
     assert meas("HR Issue Records") in issue_table.roles["Values"]
     assert (col("HR Data Issues", "Status"), "eq", ["active"]) in _flt(issue_table)
+    # the Oasis name is [HR Issue Oasis Name]: "" rather than the Staff Unknown member's "Unknown" without a record
     assert [f.name for f in records.roles["Values"]] == ["Issue Code", "Branch Name", "Worker Number", "Staff ID",
-                                                         "Staff Name", "Field Name", "Value Found", "Record Date"]
+                                                         "HR Issue Oasis Name", "Field Name", "Value Found",
+                                                         "Record Date"]
+    assert col("Staff", "Staff Name") not in page_fields(page)
     matrix = by_sample("matrix")[0]
     assert matrix.roles["Rows"] == [col("HR Data Issues", "Issue Name")]
     assert matrix.roles["Columns"] == [BRANCH_NAME]
@@ -885,11 +981,13 @@ def test_definitions_cover_all_kinds():
     assert names.index("HR KPI Watch Text") == names.index("HR KPI Target Text") + 1
     assert table.labels[meas("HR KPI Watch Text")] == "Watch at"
     assert {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")} >= {AREA}
+    _assert_fixed_columns(table, min_font=10)  # the Grain column was cut off
 
 
 def test_guide_text_covers_the_rules():
     text = _text_of(_page("guide"))
     for needle in ("Last closed month", "● On track", "◆ Watch", "■ At risk", "○ No target yet", "– No data", "Parked",
                    "🔒 Requires pay access", "within the watch threshold", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
-                   "largest change", "nightly", "Back", "BSC turnover", "in Fusion", "Period", "pro-rated"):
+                   "largest change", "nightly", "Back", "BSC turnover", "in Fusion", "Period", "pro-rated",
+                   "Unknown", "FTE equals headcount", "zero FTE", "budgeted FTE"):
         assert needle in text, needle

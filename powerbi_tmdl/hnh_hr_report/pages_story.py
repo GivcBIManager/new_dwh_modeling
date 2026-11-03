@@ -39,15 +39,16 @@ YEAR_MONTH = col("Date", "Year Month Name")
 MONTH_OFFSET = col("Date", "Month Offset")
 LAST_12_CLOSED = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
 
-# (story measure, chart measures, chart title, KPI tile code, pay-only)
+# (story measure, chart measures, chart title, KPI tile code, the note over the chart or None): [HR Pay Notice] over
+# the pay chart, [HR Vacancy Note] over the vacancy chart (empty while no budgeted FTE is loaded)
 BLOCKS = [
-    ("HR Story Size", ["Headcount", "FTE"], "Headcount and FTE", "HR_HEADCOUNT", False),
-    ("HR Story Flow", ["BSC Turnover"], "Turnover", "HR_TURNOVER", False),
+    ("HR Story Size", ["Headcount", "FTE"], "Headcount and FTE", "HR_HEADCOUNT", None),
+    ("HR Story Flow", ["BSC Turnover"], "Turnover", "HR_TURNOVER", None),
     ("HR Story Cost", ["Payroll Cost"], "Payroll cost",
-     "HR_STAFF_COST_PER_FTE", True),
-    ("HR Story Absence", ["Sick Leave Rate %"], "Sick leave rate", "HR_SICK_LEAVE_RATE", False),
-    ("HR Story Saudization", ["BSC Saudization"], "Saudization", "HR_SAUDIZATION", False),
-    ("HR Story Hiring", ["BSC Vacancy Rate"], "Vacancy rate", "HR_VACANCY_RATE", False),
+     "HR_STAFF_COST_PER_FTE", "HR Pay Notice"),
+    ("HR Story Absence", ["Sick Leave Rate %"], "Sick leave rate", "HR_SICK_LEAVE_RATE", None),
+    ("HR Story Saudization", ["BSC Saudization"], "Saudization", "HR_SAUDIZATION", None),
+    ("HR Story Hiring", ["BSC Vacancy Rate"], "Vacancy rate", "HR_VACANCY_RATE", "HR Vacancy Note"),
 ]
 
 
@@ -67,12 +68,12 @@ def _chart(y: float, measures: list[str], title: str) -> Visual:
                   title=f"{title}, last 12 closed months", filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc")
 
 
-def _pay_notice(y: float) -> Visual:
-    """[HR Pay Notice] over the chart: "Requires pay access" without pay access. The measure is blank for readers
-    who may see pay, and a card would print "(Blank)", so the card is filtered to a non-blank notice."""
+def _note(y: float, measure: str) -> Visual:
+    """A note over the chart: [HR Pay Notice] ("Requires pay access" without pay access) or [HR Vacancy Note]. The
+    measure is "" when there is nothing to say, so the card shows nothing; no filter, because a card filtered to no
+    row prints "(Blank)"."""
     return Visual("card", CHART_X, y + (BLOCK_H - NOTICE_H) / 2, CHART_W, NOTICE_H,
-                  roles={"Values": [meas("HR Pay Notice")]}, filters=[Filter(meas("HR Pay Notice"), "notblank")],
-                  props=card_look(16, NAVY))
+                  roles={"Values": [meas(measure)]}, props=card_look(16, NAVY))
 
 
 def story_page() -> Page:
@@ -80,13 +81,13 @@ def story_page() -> Page:
     month_slicer = bar[1]
     visuals = page_frame("story", bar) + [_heading()]
     charts: list[Visual] = []
-    for i, (story, measures, title, code, pay) in enumerate(BLOCKS):
+    for i, (story, measures, title, code, note) in enumerate(BLOCKS):
         y = BLOCKS_Y + i * (BLOCK_H + GAP)
         chart = _chart(y, measures, title)
         charts.append(chart)
         visuals += [_sentence(y, story), chart]
-        if pay:
-            visuals.append(_pay_notice(y))
+        if note:
+            visuals.append(_note(y, note))
         visuals += kpi_tile(code, TILE_X, y, TILE_W, BLOCK_H)
     interactions = [Interaction(month_slicer, c, "NoFilter") for c in charts]
     # hospitals only, as the sentences and tiles (final review I1): Head Office is not in the charts
