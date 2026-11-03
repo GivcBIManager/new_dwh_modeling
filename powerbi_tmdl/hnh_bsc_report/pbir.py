@@ -16,6 +16,7 @@ import re
 import shutil
 import uuid
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
 from frame import LOGO
@@ -35,6 +36,21 @@ THEME_VERSION = {"visual": "2.9.0", "report": "3.3.0", "page": "2.3.1"}  # hando
 VISUAL_DIST = REPO / "powerbi_tmdl" / "hnh_bsc_visual" / "dist"
 PAGE_WIDTH, PAGE_HEIGHT = 1920, 1080
 SYNC_PREFIX = "bsc "
+
+
+@dataclass(frozen=True)
+class ReportSpec:
+    """What differs between reports built by this generator: the project / report name (folder and file names, the
+    `displayName`), the perspective of the live connection, the custom theme, the logo, and whether the report carries
+    the HNH custom visual (False: no `CustomVisuals/` folder and no .pbiviz is looked for)."""
+    name: str
+    perspective: str
+    theme: Path
+    logo: Path
+    custom_visual: bool
+
+
+BSC_REPORT = ReportSpec(REPORT_NAME, PERSPECTIVE, THEME, LOGO, True)
 
 _FABRIC = "https://developer.microsoft.com/json-schemas/fabric/"
 SCHEMAS = {  # every URL as the handover project has it, except modelReference (Desktop 2.158's packaging library)
@@ -78,8 +94,8 @@ def _guid(*parts) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, "hnh-bsc-report/" + "/".join(parts)))
 
 
-def _platform(kind: str) -> dict:
-    return {"$schema": SCHEMAS["platform"], "metadata": {"type": kind, "displayName": REPORT_NAME},
+def _platform(kind: str, report: ReportSpec = BSC_REPORT) -> dict:
+    return {"$schema": SCHEMAS["platform"], "metadata": {"type": kind, "displayName": report.name},
             "config": {"version": "2.0", "logicalId": _guid(kind)}}
 
 
@@ -94,19 +110,20 @@ def connection_string(server: str, database: str, perspective: str = PERSPECTIVE
     return f'Data Source={server};Initial Catalog={database};Cube="{perspective}"'
 
 
-def live_connection(server: str, database: str, perspective: str = PERSPECTIVE) -> dict[str, dict]:
+def live_connection(server: str, database: str, perspective: str = PERSPECTIVE,
+                    report: ReportSpec = BSC_REPORT) -> dict[str, dict]:
     """{relative path: JSON} for the dataset reference: definition.pbir points `byPath` at a semantic model folder that
     holds only definition.pbism and modelReference.json (the live connection). Power BI Desktop 2.158's packaging
     library says `byConnection` must point at a Fabric model and "connections to other Analysis Services semantic
     models must use a byPath reference to a semantic model definition containing a modelReference.json file"; its
     project reader reads `<model>.SemanticModel/modelReference.json` when the folder has no model. Shapes checked with
     Desktop's own schema validator and reader (pbir_check.desktop_open); not yet opened in Desktop."""
-    model = f"{REPORT_NAME}.SemanticModel"
+    model = f"{report.name}.SemanticModel"
     return {
-        f"{REPORT_NAME}.Report/definition.pbir": {
+        f"{report.name}.Report/definition.pbir": {
             "$schema": SCHEMAS["pbir"], "version": "4.0",
             "datasetReference": {"byPath": {"path": f"../{model}"}}},
-        f"{model}/.platform": _platform("SemanticModel"),
+        f"{model}/.platform": _platform("SemanticModel", report),
         f"{model}/definition.pbism": {"$schema": SCHEMAS["pbism"], "version": "4.2", "settings": {}},
         f"{model}/modelReference.json": {
             "$schema": SCHEMAS["modelReference"],
@@ -165,7 +182,8 @@ def custom_visual(pbiviz: Path) -> tuple[str, dict[str, bytes], dict]:
 
 # ---- report --------------------------------------------------------------------------------------------------------
 
-def report_json(visual_package: dict, report_filters: list[Filter] = ()) -> dict:
+def report_json(visual_package: dict | None, report_filters: list[Filter] = (),
+                report: ReportSpec = BSC_REPORT) -> dict:
     """report.json: the handover's settings and objects, the base theme, the brand theme as the custom theme (a
     RegisteredResources item of type CustomTheme), the logo (a RegisteredResources item of type Image, as the
     handover registers its header image), the HNH visual's resource package and the report-level filters (locked)."""
@@ -174,7 +192,7 @@ def report_json(visual_package: dict, report_filters: list[Filter] = ()) -> dict
         "themeCollection": {
             "baseTheme": {"name": BASE_THEME_NAME, "reportVersionAtImport": THEME_VERSION,
                           "type": "SharedResources"},
-            "customTheme": {"name": THEME.name, "reportVersionAtImport": THEME_VERSION,
+            "customTheme": {"name": report.theme.name, "reportVersionAtImport": THEME_VERSION,
                             "type": "RegisteredResources"},
         },
         "objects": {"section": [{"properties": {"verticalAlignment": _value("Top")}}]},
@@ -183,10 +201,9 @@ def report_json(visual_package: dict, report_filters: list[Filter] = ()) -> dict
              "items": [{"name": BASE_THEME_NAME, "path": f"BaseThemes/{BASE_THEME_NAME}.json",
                         "type": "BaseTheme"}]},
             {"name": "RegisteredResources", "type": "RegisteredResources",
-             "items": [{"name": THEME.name, "path": THEME.name, "type": "CustomTheme"},
-                       {"name": LOGO.name, "path": LOGO.name, "type": "Image"}]},
-            visual_package,
-        ],
+             "items": [{"name": report.theme.name, "path": report.theme.name, "type": "CustomTheme"},
+                       {"name": report.logo.name, "path": report.logo.name, "type": "Image"}]},
+        ] + ([visual_package] if report.custom_visual else []),
         "settings": {
             "useStylableVisualContainerHeader": True, "exportDataMode": "AllowSummarized",
             "defaultDrillFilterOtherVisuals": True, "allowChangeFilterTypes": True, "useEnhancedTooltips": True,
@@ -257,10 +274,10 @@ def date_range_slicer(column: Field, date_range: tuple[str, str]) -> dict:
     }
 
 
-def committed_year(project_dir) -> int | None:
+def committed_year(project_dir, report: ReportSpec = BSC_REPORT) -> int | None:
     """The year the committed project's Date slicers are saved on (the date literal in a slicer's `general.filter`),
     or None when the project has none. `build.py` warns when it differs from today's year."""
-    for f in sorted(Path(project_dir).glob(f"{REPORT_NAME}.Report/definition/pages/*/visuals/*/visual.json")):
+    for f in sorted(Path(project_dir).glob(f"{report.name}.Report/definition/pages/*/visuals/*/visual.json")):
         m = re.search(r"datetime'(\d{4})-", f.read_text(encoding="utf-8"))
         if m:
             return int(m.group(1))
@@ -369,7 +386,7 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
 
 def page_json(page: Page) -> dict:
     out = {"$schema": SCHEMAS["page"], "name": page.name, "displayName": page.display, "displayOption": "FitToPage",
-           "height": PAGE_HEIGHT, "width": PAGE_WIDTH}
+           "height": page.height, "width": PAGE_WIDTH}
     filters = [filter_entry(stable_id(page.name, "page-filter", j), f) for j, f in enumerate(page.filters)]
     if page.drill_fields:
         binding, drill = drill_binding(page)
@@ -396,22 +413,27 @@ def _check_unique(pages: list[Page]) -> None:
 
 # ---- project -------------------------------------------------------------------------------------------------------
 
-def project_files(pages: list[Page], database: str, server: str = SERVER, perspective: str = PERSPECTIVE,
-                  pbiviz: Path | None = None, report_filters: list[Filter] = ()) -> dict[str, bytes]:
-    """{path relative to the output folder: bytes} of the whole project."""
+def project_files(pages: list[Page], database: str, server: str = SERVER, perspective: str | None = None,
+                  pbiviz: Path | None = None, report_filters: list[Filter] = (),
+                  report: ReportSpec = BSC_REPORT) -> dict[str, bytes]:
+    """{path relative to the output folder: bytes} of the whole project. `perspective` overrides the report's."""
     _check_unique(pages)
-    guid, cv_files, cv_package = custom_visual(pbiviz or find_pbiviz())
-    rep = f"{REPORT_NAME}.Report"
+    perspective = perspective or report.perspective
+    if report.custom_visual:
+        guid, cv_files, cv_package = custom_visual(pbiviz or find_pbiviz())
+    else:
+        guid, cv_files, cv_package = "", {}, None
+    rep = f"{report.name}.Report"
     files: dict[str, bytes] = {
-        f"{REPORT_NAME}.pbip": _text({"$schema": SCHEMAS["pbip"], "version": "1.0",
+        f"{report.name}.pbip": _text({"$schema": SCHEMAS["pbip"], "version": "1.0",
                                       "artifacts": [{"report": {"path": rep}}],
                                       "settings": {"enableAutoRecovery": True}}),
         ".gitignore": b"**/.pbi/localSettings.json\r\n**/.pbi/cache.abf\r\n",  # what Desktop writes beside a .pbip
-        f"{rep}/.platform": _text(_platform("Report")),
+        f"{rep}/.platform": _text(_platform("Report", report)),
     }
-    files.update({k: _text(v) for k, v in live_connection(server, database, perspective).items()})
+    files.update({k: _text(v) for k, v in live_connection(server, database, perspective, report).items()})
     files[f"{rep}/definition/version.json"] = _text({"$schema": SCHEMAS["version"], "version": "2.0.0"})
-    files[f"{rep}/definition/report.json"] = _text(report_json(cv_package, report_filters))
+    files[f"{rep}/definition/report.json"] = _text(report_json(cv_package, report_filters, report))
     files[f"{rep}/definition/pages/pages.json"] = _text({"$schema": SCHEMAS["pages"],
                                                          "pageOrder": [p.name for p in pages],
                                                          "activePageName": pages[0].name if pages else ""})
@@ -425,21 +447,22 @@ def project_files(pages: list[Page], database: str, server: str = SERVER, perspe
                 raise ValueError(f"page {page.display}: duplicate visual name {vj['name']}")
             files[path] = _text(vj)
     files[f"{rep}/StaticResources/SharedResources/BaseThemes/{BASE_THEME_NAME}.json"] = BASE_THEME.read_bytes()
-    files[f"{rep}/StaticResources/RegisteredResources/{THEME.name}"] = THEME.read_bytes()
-    files[f"{rep}/StaticResources/RegisteredResources/{LOGO.name}"] = LOGO.read_bytes()
+    files[f"{rep}/StaticResources/RegisteredResources/{report.theme.name}"] = report.theme.read_bytes()
+    files[f"{rep}/StaticResources/RegisteredResources/{report.logo.name}"] = report.logo.read_bytes()
     files.update({f"{rep}/{k}": b for k, b in cv_files.items()})
     return files
 
 
-def write_pbip(pages: list[Page], out_dir, database: str, server: str = SERVER, perspective: str = PERSPECTIVE,
-               pbiviz: Path | None = None, report_filters: list[Filter] = ()) -> Path:
+def write_pbip(pages: list[Page], out_dir, database: str, server: str = SERVER, perspective: str | None = None,
+               pbiviz: Path | None = None, report_filters: list[Filter] = (),
+               report: ReportSpec = BSC_REPORT) -> Path:
     """Write the project into `out_dir` and return the .pbip path. The report's generated folders (`definition`,
     `StaticResources`, `CustomVisuals`) are replaced, so pages that are gone do not linger; every other file is
     overwritten, except `.gitignore`, which is written only when missing. Desktop's local state (`.pbi` folders,
     git-ignored) is kept."""
     out = Path(out_dir)
-    files = project_files(pages, database, server, perspective, pbiviz, report_filters)  # everything checked first
-    rep = out / f"{REPORT_NAME}.Report"
+    files = project_files(pages, database, server, perspective, pbiviz, report_filters, report)  # everything checked first
+    rep = out / f"{report.name}.Report"
     for d in (rep / "definition", rep / "StaticResources", rep / "CustomVisuals"):
         if d.exists():
             shutil.rmtree(d)
@@ -449,4 +472,4 @@ def write_pbip(pages: list[Page], out_dir, database: str, server: str = SERVER, 
             continue  # the folder's own .gitignore (Desktop may extend it) is kept
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
-    return out / f"{REPORT_NAME}.pbip"
+    return out / f"{report.name}.pbip"

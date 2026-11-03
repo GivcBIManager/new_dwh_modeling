@@ -14,6 +14,7 @@ visual). Frame visuals set their own container objects: the theme puts white box
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from model import Visual
@@ -67,6 +68,19 @@ TABS_RIGHT, TAB_GAP = 1890, 3
 TAB_Y, TAB_H, UNDERLINE_H = 0, 80, 4  # the current tab's underline fills the header's last 4 px
 TAB_FONT_SIZE = 14  # pt
 CURRENT_TAB_FILL_TRANSPARENCY = 92  # white at 8 %
+
+
+@dataclass(frozen=True)
+class FrameSpec:
+    """What differs between reports in the frame: the title text box's two lines, the page tabs (page name, label)
+    and the help buttons (page name, label, rect). `BSC_FRAME` holds the Balanced Scorecard's."""
+    title: str
+    subtitle: str
+    tabs: list[tuple[str, str]]
+    help: list[tuple[str, str, Rect]]
+
+
+BSC_FRAME = FrameSpec("Balanced Scorecard", "Hayat Healthcare", TABS, HELP_BUTTONS)
 
 
 def tab_width(label: str) -> float:
@@ -210,39 +224,41 @@ def tab_button(page_name: str, label: str, x: float, w: float, current: bool) ->
     return out
 
 
-def title_box() -> Visual:
-    """"Balanced Scorecard" (Segoe UI Semibold 19pt, white) over "Hayat Healthcare" (12pt, tab grey)."""
-    runs = [("Balanced Scorecard", {"fontFamily": "Segoe UI Semibold", "fontSize": "19pt", "color": WHITE}),
-            ("Hayat Healthcare", {"fontFamily": "Segoe UI", "fontSize": "12pt", "color": TAB_TEXT})]
+def title_box(spec: FrameSpec = BSC_FRAME) -> Visual:
+    """The title (Segoe UI Semibold 19pt, white) over the subtitle (12pt, tab grey): "Balanced Scorecard" over
+    "Hayat Healthcare" for the BSC."""
+    runs = [(spec.title, {"fontFamily": "Segoe UI Semibold", "fontSize": "19pt", "color": WHITE}),
+            (spec.subtitle, {"fontFamily": "Segoe UI", "fontSize": "12pt", "color": TAB_TEXT})]
     paragraphs = [{"textRuns": [{"value": value, "textStyle": style}]} for value, style in runs]
     return Visual("textbox", *TITLE_RECT, props={"general": [{"properties": {"paragraphs": paragraphs}}],
                                                  **no_container()})
 
 
-def tabs(current: str | None) -> list[Visual]:
-    names = [name for name, _label in TABS]
+def tabs(current: str | None, spec: FrameSpec = BSC_FRAME) -> list[Visual]:
+    names = [name for name, _label in spec.tabs]
     if current is not None and current not in names:
         raise ValueError(f"current page {current!r} has no tab (tabs: {', '.join(names)}); pass None")
-    x = TABS_RIGHT - sum(tab_width(label) for _name, label in TABS) - TAB_GAP * (len(TABS) - 1)
+    x = TABS_RIGHT - sum(tab_width(label) for _name, label in spec.tabs) - TAB_GAP * (len(spec.tabs) - 1)
     out: list[Visual] = []
-    for name, label in TABS:
+    for name, label in spec.tabs:
         out += tab_button(name, label, x, tab_width(label), name == current)
         x += tab_width(label) + TAB_GAP
     return out
 
 
-def help_buttons() -> list[Visual]:
+def help_buttons(spec: FrameSpec = BSC_FRAME) -> list[Visual]:
     """"How to use" and "Calculations": outline buttons on the right of the white filter bar."""
     return [Visual("buttonNavigate", *r, props={**button_props(_navigate(name), label, "outline"), **no_container()})
-            for name, label, r in HELP_BUTTONS]
+            for name, label, r in spec.help]
 
 
-def frame(current: str | None, filter_visuals: list[Visual], filter_bar: bool = True) -> list[Visual]:
+def frame(current: str | None, filter_visuals: list[Visual], filter_bar: bool = True,
+          spec: FrameSpec = BSC_FRAME) -> list[Visual]:
     """The frame, bottom to top: the header bar, the logo, the title, the tabs (`current`: the page's own tab, one of
-    `TABS`' names, or None for a page without one), the filter bar and its rule (left out when `filter_bar` is False:
+    `spec.tabs`' names, or None for a page without one), the filter bar and its rule (left out when `filter_bar` is False:
     KPI detail's visual draws that band itself), `filter_visuals`, then How to use and Calculations. KPI detail passes
     its HNH visual and Back as `filter_visuals`, so How to use and Calculations are drawn over the visual's sub-bar."""
-    out = [panel(*HEADER, NAVY), image(*LOGO_RECT), title_box(), *tabs(current)]
+    out = [panel(*HEADER, NAVY), image(*LOGO_RECT), title_box(spec), *tabs(current, spec)]
     if filter_bar:
         out += [panel(*FILTER_BAR, WHITE), panel(*FILTER_RULE, LINE)]
-    return out + list(filter_visuals) + help_buttons()
+    return out + list(filter_visuals) + help_buttons(spec)

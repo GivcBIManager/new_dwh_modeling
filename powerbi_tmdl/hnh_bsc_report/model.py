@@ -99,6 +99,7 @@ class Page:
     hidden: bool = False
     keep_filters: bool = True
     interactions: list[Interaction] = field(default_factory=list)
+    height: int = 1080  # page height in px (the width is always 1920)
 
 
 def visual_index(page: Page, visual: Visual) -> int:

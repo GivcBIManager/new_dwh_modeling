@@ -24,10 +24,10 @@ def _tables(model_dir: Path) -> dict[str, tuple[set, set]]:
     return out
 
 
-def perspective_fields(model_dir: Path = MODEL_DIR) -> tuple[set, set]:
+def perspective_fields(model_dir: Path = MODEL_DIR, perspective: str = PERSPECTIVE) -> tuple[set, set]:
     """({(table, column)}, {(table, measure)}) shown by the perspective. `includeAll` takes the whole table (the way
     sync_perspectives / render_perspective write it); otherwise the listed perspectiveColumn / perspectiveMeasure."""
-    text = (model_dir / "perspectives" / f"{PERSPECTIVE}.tmdl").read_text(encoding="utf-8-sig")
+    text = (model_dir / "perspectives" / f"{perspective}.tmdl").read_text(encoding="utf-8-sig")
     tables = _tables(model_dir)
     columns, measures = set(), set()
     table = None
@@ -66,10 +66,11 @@ def prop_fields(obj) -> list[Field]:
     return out
 
 
-def unknown_fields(pages: list[Page], model_dir: Path = MODEL_DIR, report_filters: list[Filter] = ()) -> list[str]:
+def unknown_fields(pages: list[Page], model_dir: Path = MODEL_DIR, report_filters: list[Filter] = (),
+                   perspective: str = PERSPECTIVE) -> list[str]:
     """The fields the pages and the report-level filters use that the perspective does not show, as
     `'Table'[Column]` / `[Measure]`, sorted."""
-    columns, measures = perspective_fields(model_dir)
+    columns, measures = perspective_fields(model_dir, perspective)
     bad = set()
     uses = [page_fields(page) + [f for v in page.visuals for f in prop_fields(v.props)] for page in pages]
     for used in uses + [[f.field for f in report_filters]]:
