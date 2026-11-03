@@ -54,6 +54,7 @@ try {
     $tables = @($db.Model.Tables | Where-Object { (Get-HnhAnnotation $_ 'hnh_view') -ne $null })
     $facts = @($tables | Where-Object { (Get-HnhAnnotation $_ 'hnh_kind') -eq 'fact' })
     $payTables = @('Payroll', 'Leave Balances', 'Staff Productivity')
+    $hasHrKpi = @($db.Model.Tables | Where-Object { $_.Name -eq 'HR KPI' }).Count -gt 0   # the HR dashboard tables are deployed
     $securityConfig = Get-Content (Join-Path $root 'tests\security.json') -Raw | ConvertFrom-Json
 
     if (Want 'RowCounts') {
@@ -111,6 +112,18 @@ try {
                     $employeeExpected = Get-HnhScalar (Sql ('select count() from gold.ssas_dim_employee_pii where branch_key in ({0})' -f ($branches -join ',')))
                 }
                 Report "$($p.Name) employee names" ($employeeRows -eq $employeeExpected) "employee details visible: $employeeRows, expected $employeeExpected (can_see_pay: $pay)"
+
+                if ($hasHrKpi) {
+                    # HR dashboard final review C1: a pay KPI's target and watch value are pay levels. Without pay access
+                    # they are blank and the texts say Requires pay access; with pay access the texts never do.
+                    $rpa = '"Requires pay access"'
+                    if ($pay) { $want = "NOT EXACT([HR KPI Target Text], $rpa) && NOT EXACT([HR KPI Watch Text], $rpa) && ISBLANK([HR KPI Pay Notice])" }
+                    else { $want = "ISBLANK([HR KPI Target]) && ISBLANK([HR KPI Watch]) && ISBLANK([HR KPI Variance]) && EXACT([HR KPI Target Text], $rpa) && EXACT([HR KPI Watch Text], $rpa) && EXACT([HR KPI Variance Text], $rpa) && EXACT([HR KPI Pay Notice], $rpa)" }
+                    $payKpis = "CALCULATETABLE(VALUES('HR KPI'[KPI Code]), 'HR KPI'[Kind] = ""kpi"", 'HR KPI'[Needs Pay] = 1)"
+                    $hrQuery = 'EVALUATE ROW("bad", COUNTROWS(FILTER({0}, CALCULATE(NOT ({1}), ''Date''[Year] = 2026))) + 0, "kpis", COUNTROWS({0}))' -f $payKpis, $want
+                    $hrResult = (Dax $hrQuery $login).Rows[0]
+                    Report "$($p.Name) HR pay targets" (([int64]$hrResult[0] -eq 0) -and ([int64]$hrResult[1] -gt 0)) "$($hrResult[0]) of $($hrResult[1]) pay KPIs show a target, watch or variance against can_see_pay: $pay"
+                }
 
                 if ($specialties.Count -eq 0) {
                     # Review focus 1: every fact row of the user's branches is visible (no orphan keys hidden by a row filter).
