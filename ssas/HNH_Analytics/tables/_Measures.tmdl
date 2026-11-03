@@ -7971,7 +7971,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Home"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Size block sentence for the HR Story Month (the branches in the selection, Head Office included): headcount and FTE at month end, the change on the previous month and on the same month last year ("no prior-year data" when that is blank), the HR_HEADCOUNT status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest change when more than one branch is in context.
+	/// Size block sentence for the HR Story Month (the branches in the selection, Head Office included): headcount and FTE at month end, the change on the previous month and on the same month last year ("no prior-year data" when that is blank), the HR_HEADCOUNT status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest change when at least two branches have values for both months.
 	measure 'HR Story Size' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
@@ -8021,7 +8021,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Changes ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange, "+#,0;-#,0;0" ) & ")."
 									)
 							)
@@ -8031,7 +8031,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Size"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Flow block sentence for the HR Story Month (the branches in the selection, Head Office included): turnover (BSC Turnover) in the month, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_TURNOVER status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when more than one branch is in context, then the month's hires and leavers in Fusion.
+	/// Flow block sentence for the HR Story Month (the branches in the selection, Head Office included): turnover (BSC Turnover) in the month, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_TURNOVER status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when at least two branches have values for both months, then the month's hires and leavers in Fusion.
 	measure 'HR Story Flow' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
@@ -8077,7 +8077,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Changes ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.00;-0.00;0.00" ) & " pts)."
 									)
 							)
@@ -8089,7 +8089,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Flow"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Cost block sentence for the HR Story Month (the branches in the selection, Head Office included): payroll cost in SAR, its change on the previous month and on the same month last year ("no prior-year data" when that is blank), the overtime share and its change, the HR_OVERTIME_SHARE status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest payroll change when more than one branch is in context. "Requires pay access." when HR Can See Pay is 0.
+	/// Cost block sentence for the HR Story Month (the branches in the selection, Head Office included): payroll cost in SAR, its change on the previous month and on the same month last year ("no prior-year data" when that is blank), the overtime share and its change, the HR_OVERTIME_SHARE status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest payroll change when at least two branches have values for both months. "Requires pay access." when HR Can See Pay is 0.
 	measure 'HR Story Cost' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
@@ -8141,7 +8141,7 @@ table _Measures
 									)
 									& IF ( NOT ISBLANK ( KpiState ), " Overtime status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Changes ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange, "+#,0;-#,0;0" ) & " SAR)."
 									)
 							)
@@ -8151,7 +8151,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Cost"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Absence block sentence for the HR Story Month (the branches in the selection, Head Office included): the sick leave rate, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SICK_LEAVE_RATE status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when more than one branch is in context, then the leave liability in SAR and its change ("Leave liability: Requires pay access." when HR Can See Pay is 0).
+	/// Absence block sentence for the HR Story Month (the branches in the selection, Head Office included): the sick leave rate, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SICK_LEAVE_RATE status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when at least two branches have values for both months, then the leave liability in SAR and its change ("Leave liability: Requires pay access." when HR Can See Pay is 0).
 	measure 'HR Story Absence' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
@@ -8209,7 +8209,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Changes ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.00;-0.00;0.00" ) & " pts)."
 									)
 							)
@@ -8220,7 +8220,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Absence"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Saudization block sentence for the HR Story Month (the branches in the selection, Head Office included): BSC Saudization at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SAUDIZATION status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest change when more than one branch is in context.
+	/// Saudization block sentence for the HR Story Month (the branches in the selection, Head Office included): BSC Saudization at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SAUDIZATION status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest change when at least two branches have values for both months.
 	measure 'HR Story Saudization' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
@@ -8264,7 +8264,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Changes ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.0;-0.0;0.0" ) & " pts)."
 									)
 							)
@@ -8274,7 +8274,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Saudization"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Hiring block sentences for the HR Story Month (the branches in the selection, Head Office included): the vacancy rate (BSC Vacancy Rate) at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_VACANCY_RATE status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when more than one branch is in context; then the time to fill of the requisitions filled in the month with its change and the HR_TIME_TO_FILL status.
+	/// Hiring block sentences for the HR Story Month (the branches in the selection, Head Office included): the vacancy rate (BSC Vacancy Rate) at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_VACANCY_RATE status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when at least two branches have values for both months; then the time to fill of the requisitions filled in the month with its change and the HR_TIME_TO_FILL status.
 	measure 'HR Story Hiring' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
@@ -8322,7 +8322,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Changes ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.0;-0.0;0.0" ) & " pts)."
 									)
 							)
