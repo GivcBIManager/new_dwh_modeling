@@ -56,6 +56,8 @@ def main(argv=None) -> int:
     out = args.out or HERE
     try:
         pbip = write_pbip(pages, out, args.database, args.server, report_filters=report_filters, report=HR_REPORT)
+        from hr_frame import lock_branch_filters_on_disk
+        lock_branch_filters_on_disk(out, HR_REPORT.name)  # the branches page filter, locked in view mode
     except (ValueError, OSError) as e:
         print(f"build failed: {e}")
         return 1

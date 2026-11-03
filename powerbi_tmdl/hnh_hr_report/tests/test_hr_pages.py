@@ -316,6 +316,37 @@ def test_project_files_without_custom_visual():
     assert not any("reportExtensions" in k for k in files)
 
 
+def _branch_key_filters(page_json):
+    return [f for f in page_json.get("filterConfig", {}).get("filters", [])
+            if f.get("field") == {"Column": {"Expression": {"SourceRef": {"Entity": "Branch"}}, "Property": "Branch Key"}}]
+
+
+def test_branch_page_filter_locked_in_view_mode():
+    """Minor 3e of the Head Office review: the branches page filter is locked in view mode (as the BSC's report-level
+    filter, `isLockedInViewMode`), so a reader cannot clear it and bring in the Group member; no other filter is."""
+    from hr_frame import lock_branch_filters
+    files = pbir.project_files(PAGES, "HNH_Analytics_Test", report_filters=REPORT_FILTERS, report=HR_REPORT)
+    files = lock_branch_filters(files)
+    seen = 0
+    for page in PAGES:
+        pj = json.loads(files[f"HNH Workforce.Report/definition/pages/{page.name}/page.json"].decode("utf-8"))
+        branch = _branch_key_filters(pj)
+        assert len(branch) == (1 if page.filters else 0), page.name
+        for f in pj.get("filterConfig", {}).get("filters", []):
+            assert f.get("isLockedInViewMode", False) is (f in branch), (page.name, f["name"])
+        seen += len(branch)
+    assert seen == len([p for p in PAGES if p.filters]) >= 12
+
+
+def test_committed_project_has_the_branch_filter_locked():
+    """build.py writes the lock (the written project is what pbir_to_pbix converts)."""
+    root = Path(__file__).resolve().parents[1] / "HNH Workforce.Report" / "definition" / "pages"
+    for page in PAGES:
+        pj = json.loads((root / page.name / "page.json").read_text(encoding="utf-8"))
+        assert all(f.get("isLockedInViewMode") is True for f in _branch_key_filters(pj)), page.name
+        assert len(_branch_key_filters(pj)) == (1 if page.filters else 0), page.name
+
+
 def test_no_visual_groups_or_bookmarks_in_pages():
     files = pbir.project_files(PAGES, "HNH_Analytics_Test", report_filters=REPORT_FILTERS, report=HR_REPORT)
     for k, b in files.items():

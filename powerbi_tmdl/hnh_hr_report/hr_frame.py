@@ -15,6 +15,7 @@ title-cased).
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 import sys
 from pathlib import Path
@@ -31,6 +32,7 @@ from frame import (FILTER_BAR, LOGO, NAVY, WHITE, Rect, _colour, _lit, _num, but
 from layout import aliases, lit, source_expr  # noqa: E402
 from model import MEASURE_TABLE, Field, Filter, Visual, col, meas  # noqa: E402
 from pbir import THEME, ReportSpec  # noqa: E402
+from pbir import _text as pbir_text  # noqa: E402
 
 SEED = REPO / "scripts" / "hr_config" / "hr_config_seed.sql"
 
@@ -100,6 +102,40 @@ SUB_TAB_Y, SUB_TAB_H = 96, 54  # as the help buttons
 def branches() -> Filter:
     """The report's branches: the eight hospitals and Head Office, not the Group member (BRANCH_KEYS)."""
     return Filter(BRANCH_KEY, "in", list(BRANCH_KEYS))
+
+
+# The branches filter as page.json names its field (pbir.filter_entry)
+_BRANCH_KEY_FIELD = {"Column": {"Expression": {"SourceRef": {"Entity": BRANCH_KEY.table}}, "Property": BRANCH_KEY.name}}
+
+
+def lock_branch_filters(files: dict[str, bytes]) -> dict[str, bytes]:
+    """The project's files (pbir.project_files) with the branches page filter of every page locked in view mode
+    (`isLockedInViewMode`, as the BSC's report-level filter), so a reader cannot clear it and bring in the Group
+    member (minor 3e of the Head Office review). The generator writes page filters unlocked and is shared with the
+    BSC report, so the HR build locks them here; pbir_to_pbix carries the flag into the legacy layout."""
+    out = dict(files)
+    for path, data in files.items():
+        if not (path.endswith("/page.json") and "/definition/pages/" in path):
+            continue
+        page = json.loads(data.decode("utf-8"))
+        changed = False
+        for f in page.get("filterConfig", {}).get("filters", []):
+            if f.get("field") == _BRANCH_KEY_FIELD and not f.get("isLockedInViewMode"):
+                f["isLockedInViewMode"] = True
+                changed = True
+        if changed:
+            out[path] = pbir_text(page)
+    return out
+
+
+def lock_branch_filters_on_disk(project_dir: Path, report_name: str) -> int:
+    """lock_branch_filters on a written project (pbir.write_pbip's folder); returns the number of pages changed."""
+    pages = Path(project_dir) / f"{report_name}.Report" / "definition" / "pages"
+    files = {p.relative_to(project_dir).as_posix(): p.read_bytes() for p in pages.glob("*/page.json")}
+    changed = {k: v for k, v in lock_branch_filters(files).items() if v != files[k]}
+    for rel, data in changed.items():
+        (Path(project_dir) / rel).write_bytes(data)
+    return len(changed)
 
 
 def search_box() -> dict:
@@ -406,6 +442,7 @@ def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: st
 
 
 __all__ = ["BRANCH_KEYS", "BSC_DIR", "DETAIL_PAGES", "HEAD_OFFICE", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY",
-           "NOTICE_PT", "SEED", "TABS", "TITLE_BAND_H", "WHITE", "branches", "card_look", "filters", "fixed_table", "home_tile_codes", "kpi_label",
-           "kpi_tile", "measure_colour", "nav_button", "page_frame", "search_box", "seed_kpis", "small_title",
-           "notice_text_width", "sub_tabs", "title_notice", "title_text_width", "white_panel"]
+           "NOTICE_PT", "SEED", "TABS", "TITLE_BAND_H", "WHITE", "branches", "card_look", "filters", "fixed_table",
+           "home_tile_codes", "kpi_label", "kpi_tile", "lock_branch_filters", "lock_branch_filters_on_disk",
+           "measure_colour", "nav_button", "notice_text_width", "page_frame", "search_box", "seed_kpis", "small_title",
+           "sub_tabs", "title_notice", "title_text_width", "white_panel"]
