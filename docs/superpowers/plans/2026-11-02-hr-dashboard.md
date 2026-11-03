@@ -407,7 +407,7 @@
 With the user's go-ahead:
 1. Run `build_hr_placeholders.ps1 -Database HNH_Analytics_Test -Out scripts\hr_config\hr_config_update_<date>.sql`. Show the user the values.
 2. Run `apply_hr_config.ps1 -Update <file>`.
-3. Run a dbt build of `stg_ref__hr_target+` in the receiving project.
+3. Run a dbt build of `stg_ref__hr_*+` in the receiving project (the update file also re-inserts `map_hr_kpi` rows, so `stg_ref__hr_target+` alone is not enough; final review I6, as `powerbi_tmdl/hnh_hr_report/README.md` step 4).
 4. Run `process.ps1 -Database HNH_Analytics_Test -Mode Daily -Force`.
 5. Commit the update file.
 

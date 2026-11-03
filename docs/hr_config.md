@@ -22,7 +22,9 @@ Every row ends with the same four columns:
 
 **First load.** `scripts\hr_config\apply_hr_config.ps1` creates the three tables and seeds `map_hr_kpi` and `map_hr_dq_issue` (`map_hr_target` starts empty). `-DryRun` shows what it would do and writes nothing. A table that already has rows is not seeded again. `-Update <file>` adds every INSERT of an update file. The first run writes to production ClickHouse: ask first.
 
-**When it shows in the report.** The next morning, after the nightly build and SSAS refresh.
+**When it shows in the report.** The next morning, after the nightly build and SSAS refresh, once the Dagster nightly dbt run selects `stg_ref__hr_*+` (step 6 of the deployment checklist in `powerbi_tmdl/hnh_hr_report/README.md`). Until then a change shows only after a dbt build of `stg_ref__hr_*+` and an SSAS process run by hand (steps 4 and 6 of that checklist; both need the user's go-ahead).
+
+**Home tiles and tile labels come from the seed file, not from ClickHouse.** The report generator reads `is_home_tile`, `display_order` and `short_label` from `scripts/hr_config/hr_config_seed.sql` when the report is built. After changing them in `map_hr_kpi`, make the same change to the KPI's row in the seed file, then rebuild the report, convert it and upload it again (`powerbi_tmdl/hnh_hr_report/README.md`, step 5). The Story page's six tiles are fixed in `pages_story.py`.
 
 **See the history of a key:**
 
@@ -72,8 +74,10 @@ Key: `kpi_code`, `branch_id`, `year`, `month`.
 - `month`: 0 = the whole year, 1–12 = one month (wins over 0).
 - `target_value`: the value that is On track.
 - `watch_value`: the value beyond which the KPI is At risk. Between the target and `watch_value` it is Watch. For `on_target` KPIs the distance from the target is compared with the distance from `watch_value` to the target.
-- `scale_with_months`: 1 when an annual target is pro-rated by the months selected (turnover).
-- `source_basis`: where the number comes from. A text that starts with `Placeholder` shows the target with a "P" mark and the word "placeholder" in the tooltip; any other text removes the mark.
+- `scale_with_months`: 1 when an annual target is pro-rated by the months selected: the flow KPIs, whose value grows with the months (`HR_TURNOVER`, `HR_NEW_HIRE_TURNOVER`, `HR_STAFF_COST_PER_FTE`, `HR_REVENUE_PER_DOCTOR`). 0 for ratios and month-end figures.
+- `source_basis`: where the number comes from. A text that starts with `Placeholder` marks the target as a placeholder: the target and watch texts end with " (placeholder)" (KPI tiles, Scorecard, KPI detail, Definitions) and the story sentences add "(placeholder target)" after a status (", placeholder target" on Home). Any other text removes the mark.
+
+A pay KPI (`needs_pay = 1`) shows its target, watch value and variance only to users with pay access; others read "Requires pay access". Its target is a pay level.
 
 The table starts empty. Placeholder targets are added by an update file and are listed with their numbers in the section below. KPIs with `target_source = 'bsc'` take the scorecard target and need no row here. A KPI with no target row shows No target yet.
 
@@ -85,7 +89,7 @@ INSERT INTO default.map_hr_target
 VALUES ('HR_TURNOVER', 0, 2027, 0, 0.08, 0.10, 1, 'HR Director, FY2027 plan', now64(3), 'bi_manager', 'FY2027 target approved by HR', 0);
 ```
 
-A hospital with its own target gets a second row with its `branch_id`; the network target is the average of the hospital targets.
+A hospital with its own target gets a second row with its `branch_id`; a hospital's own row wins over the `branch_id` 0 row. The network target (all hospitals selected) is the average of the hospital targets, except for `HR_HEADCOUNT` and `HR_LEAVE_LIABILITY` (measure `HR KPI Is Additive`): their network value is the sum of the hospitals, so their target is the sum of the hospital targets. For these two, enter one row per hospital (`branch_id` 1–8) and no `branch_id` 0 row: a 0 row gives each hospital without its own row the whole number, which the network then adds up.
 
 **Placeholder targets inserted at launch:** none yet.
 

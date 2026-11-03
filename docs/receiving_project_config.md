@@ -114,7 +114,9 @@ Spec `2026-10-20-hnh-bsc-ssas-perspective-analysis.md`, plan `2026-10-20-bsc-dwh
 
 ## HR dashboard (2026-11-02)
 
-Design and plan in `docs/superpowers/specs/` and `docs/superpowers/plans/` (HR dashboard).
+Design and plan in `docs/superpowers/specs/` and `docs/superpowers/plans/` (HR dashboard). The whole route to production, in order (dbt build, contracts, test slot, placeholder targets, report, Dagster), is the deployment checklist in `powerbi_tmdl/hnh_hr_report/README.md`; it also covers the production `Date` table after `dim_date+` is rebuilt. This section lists what to copy and build in this project.
+
+`fact_hr_dq_record` (2026-11-03): `DQ_STAFF_MANY_EMP` leaves out the employees `DQ_EMP_DUP_WORKER_NO` flags, so `warn_staff_linked_to_many_employees` counts fewer rows (8 to 0 on 2026-11-03).
 
 - **Copy:**
   - the new `stg_ref__hr_*` staging models in `staging/reference/` with their YAML (`_reference__sources.yml`, `_reference__models.yml`, `_hr_ref_unit_tests.yml`);
@@ -122,7 +124,7 @@ Design and plan in `docs/superpowers/specs/` and `docs/superpowers/plans/` (HR d
   - the new views `marts/ssas/ssas_dim_hr_kpi.sql`, `ssas_fact_hr_target_monthly.sql`, `ssas_dim_hr_dq_issue.sql`, `ssas_fact_hr_dq_record.sql`;
   - the changed tests (they now read `fact_hr_dq_record`): `warn_employees_without_staff_link`, `warn_staff_linked_to_many_employees`, `warn_staff_id_collisions`, `warn_fte_out_of_range`, `warn_absence_zero_days`, `warn_leave_without_salary`, `warn_unmapped_pay_codes`, `warn_branch8_payroll_copies_branch7`, and `assert_mart_text_title_case`.
 - **Create the config tables first** (before any build: the models and the 8 warn tests above read them): `scripts\hr_config\apply_hr_config.ps1` on HNHANALYTICSSRV (`-DryRun` first).
-- **Build:** `dbt build --select stg_ref__hr_*+ fact_hr_dq_record+`.
+- **Build:** `dbt build --select stg_ref__hr_*+ fact_hr_dq_record+ dim_date+` (with the default month below).
 - **Dagster:** add `stg_ref__hr_*+ fact_hr_dq_record+` to the nightly dbt job's selector so data quality refreshes nightly.
 - **Default month (ruling R21):** copy the changed `marts/conformed/dim_date.sql`. It adds the last column `month_pick`: `Last closed month` for the month before today's, else the `year_month_name` text (`2026-Sep`). The HR report's Month slicer saves the selection `Last closed month`, so it moves to the new month with the first daily build of each month. Build `dbt build --select dim_date+`. What matters is `dim_date` and then the view `ssas_dim_date`, which lists the table's columns when it compiles; the `+` also rebuilds the `bsc_vw_*` views and `agg_clinic_capacity_daily`, none of which reads `month_pick`. The `ssas_dim_date` contract already has `month_pick String` (added by hand).
 - **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`) and check that the only change to `ssas_dim_date` is that `month_pick` stays last as `String`.
