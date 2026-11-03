@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leave Liability"
+                  "Property": "Leave Balance (days)"
                 }
               },
-              "queryRef": "_Measures.Leave Liability",
-              "nativeQueryRef": "Leave Liability",
-              "displayName": "Leave liability (SAR)"
+              "queryRef": "_Measures.Leave Balance (days)",
+              "nativeQueryRef": "Leave Balance (days)",
+              "displayName": "Leave balance at month end (days)"
             }
           ]
         }
@@ -119,7 +119,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Leave Liability"
+            "Property": "Leave Balance (days)"
           }
         },
         "type": "Advanced",
@@ -146,7 +146,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Leave Liability"
+                          "Property": "Leave Balance (days)"
                         }
                       },
                       "Right": {

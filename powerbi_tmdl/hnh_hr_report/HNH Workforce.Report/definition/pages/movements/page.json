@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
   "name": "movements",
   "displayName": "Movements & turnover",
-  "displayOption": "FitToPage",
-  "height": 1410,
+  "displayOption": "FitToWidth",
+  "height": 1846,
   "width": 1920,
   "filterConfig": {
     "filters": [
@@ -66,32 +66,42 @@
   "visualInteractions": [
     {
       "source": "ab0789f2f6c3b2d234f1",
-      "target": "07e4df673ff2807fee46",
+      "target": "5adefd551864d7d0b01c",
       "type": "NoFilter"
     },
     {
       "source": "ab0789f2f6c3b2d234f1",
-      "target": "b31afa92ef10c0f4ddc8",
+      "target": "291aa91db02bcbd0e741",
       "type": "NoFilter"
     },
     {
-      "source": "713c01170006a65b4b73",
-      "target": "62e85dd9d8d3a81d0697",
+      "source": "b1b83d27f11a970d2773",
+      "target": "9787bb2e6c094f384fea",
       "type": "NoFilter"
     },
     {
-      "source": "713c01170006a65b4b73",
-      "target": "b31afa92ef10c0f4ddc8",
+      "source": "b1b83d27f11a970d2773",
+      "target": "291aa91db02bcbd0e741",
       "type": "NoFilter"
     },
     {
-      "source": "291aa91db02bcbd0e741",
-      "target": "62e85dd9d8d3a81d0697",
+      "source": "6f2795ff2f70ab1d83fe",
+      "target": "9787bb2e6c094f384fea",
       "type": "NoFilter"
     },
     {
-      "source": "291aa91db02bcbd0e741",
-      "target": "b31afa92ef10c0f4ddc8",
+      "source": "6f2795ff2f70ab1d83fe",
+      "target": "291aa91db02bcbd0e741",
+      "type": "NoFilter"
+    },
+    {
+      "source": "8b2794f4a1d47918f7c5",
+      "target": "9787bb2e6c094f384fea",
+      "type": "NoFilter"
+    },
+    {
+      "source": "8b2794f4a1d47918f7c5",
+      "target": "291aa91db02bcbd0e741",
       "type": "NoFilter"
     }
   ]

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "9787bb2e6c094f384fea",
   "position": {
-    "x": 1537.2,
-    "y": 276,
+    "x": 30.0,
+    "y": 410,
     "z": 31000,
     "height": 110,
-    "width": 352.8,
+    "width": 447.0,
     "tabOrder": 31000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "New Hire Turnover %"
+                  "Property": "Voluntary Turnover Rate %"
                 }
               },
-              "queryRef": "_Measures.New Hire Turnover %",
-              "nativeQueryRef": "New Hire Turnover %",
-              "displayName": "New-hire leaver rate in Fusion"
+              "queryRef": "_Measures.Voluntary Turnover Rate %",
+              "nativeQueryRef": "Voluntary Turnover Rate %",
+              "displayName": "Voluntary leaver rate in Fusion"
             }
           ]
         }

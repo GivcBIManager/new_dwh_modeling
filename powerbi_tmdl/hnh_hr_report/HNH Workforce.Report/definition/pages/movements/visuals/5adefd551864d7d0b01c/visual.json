@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5adefd551864d7d0b01c",
   "position": {
-    "x": 972.0,
-    "y": 745.0,
+    "x": 30.0,
+    "y": 544,
     "z": 35000,
-    "height": 311.0,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 35000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,20 +20,34 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Tenure Band"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "Employee.Tenure Band",
-              "nativeQueryRef": "Tenure Band",
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name",
               "active": true
             }
           ]
         },
         "Y": {
           "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Hires"
+                }
+              },
+              "queryRef": "_Measures.Hires",
+              "nativeQueryRef": "Hires"
+            },
             {
               "field": {
                 "Measure": {
@@ -63,6 +77,21 @@
               "queryRef": "_Measures.Voluntary Leavers",
               "nativeQueryRef": "Voluntary Leavers",
               "displayName": "Voluntary leavers in Fusion"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Involuntary Leavers"
+                }
+              },
+              "queryRef": "_Measures.Involuntary Leavers",
+              "nativeQueryRef": "Involuntary Leavers",
+              "displayName": "Involuntary leavers in Fusion"
             }
           ]
         }
@@ -71,16 +100,16 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Date"
                   }
                 },
-                "Property": "Leavers"
+                "Property": "Year Month Name"
               }
             },
-            "direction": "Descending"
+            "direction": "Ascending"
           }
         ]
       }
@@ -99,7 +128,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Leavers in Fusion by tenure band (years)'"
+                  "Value": "'Hires and leavers in Fusion, last 12 closed months'"
                 }
               }
             }
@@ -108,5 +137,140 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "063611a4ffba525d1a07",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Month Offset"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "d",
+              "Entity": "Date",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "d"
+                          }
+                        },
+                        "Property": "Month Offset"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "1L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "2L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "3L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "4L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "5L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "6L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "7L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "8L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "9L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "10L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "11L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "12L"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

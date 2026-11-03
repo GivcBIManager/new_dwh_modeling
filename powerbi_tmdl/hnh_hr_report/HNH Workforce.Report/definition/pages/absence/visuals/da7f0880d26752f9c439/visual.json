@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "da7f0880d26752f9c439",
   "position": {
-    "x": 1286.0,
-    "y": 1080,
+    "x": 30.0,
+    "y": 778,
     "z": 32000,
     "height": 300,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 32000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "Absence Type"
                     }
                   },
-                  "Property": "Year Month Name"
+                  "Property": "Absence Type Name"
                 }
               },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name",
+              "queryRef": "Absence Type.Absence Type Name",
+              "nativeQueryRef": "Absence Type Name",
               "active": true
             }
           ]
@@ -42,11 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leave Liability"
+                  "Property": "Absence Days"
                 }
               },
-              "queryRef": "_Measures.Leave Liability",
-              "nativeQueryRef": "Leave Liability"
+              "queryRef": "_Measures.Absence Days",
+              "nativeQueryRef": "Absence Days",
+              "displayName": "Absence days"
             }
           ]
         }
@@ -55,16 +56,16 @@
         "sort": [
           {
             "field": {
-              "Column": {
+              "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "Date"
+                    "Entity": "_Measures"
                   }
                 },
-                "Property": "Year Month Name"
+                "Property": "Absence Days"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -83,7 +84,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Leave liability (SAR), last 12 closed months'"
+                  "Value": "'Absence days by absence type, top 15'"
                 }
               }
             }
@@ -96,24 +97,76 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "524d269be3da9cbab140",
+        "name": "c73cf4514e356cc718b2",
         "field": {
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Date"
+                "Entity": "Absence Type"
               }
             },
-            "Property": "Month Offset"
+            "Property": "Absence Type Name"
           }
         },
-        "type": "Categorical",
+        "type": "TopN",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "d",
-              "Entity": "Date",
+              "Name": "subquery",
+              "Expression": {
+                "Subquery": {
+                  "Query": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "a",
+                        "Entity": "Absence Type",
+                        "Type": 0
+                      },
+                      {
+                        "Name": "_",
+                        "Entity": "_Measures",
+                        "Type": 0
+                      }
+                    ],
+                    "Select": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "a"
+                            }
+                          },
+                          "Property": "Absence Type Name"
+                        },
+                        "Name": "field"
+                      }
+                    ],
+                    "OrderBy": [
+                      {
+                        "Direction": 2,
+                        "Expression": {
+                          "Measure": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "_"
+                              }
+                            },
+                            "Property": "Absence Days"
+                          }
+                        }
+                      }
+                    ],
+                    "Top": 15
+                  }
+                }
+              },
+              "Type": 2
+            },
+            {
+              "Name": "a",
+              "Entity": "Absence Type",
               "Type": 0
             }
           ],
@@ -126,99 +179,18 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "d"
+                            "Source": "a"
                           }
                         },
-                        "Property": "Month Offset"
+                        "Property": "Absence Type Name"
                       }
                     }
                   ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "1L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "2L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "3L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "4L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "5L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "6L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "7L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "8L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "9L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "10L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "11L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "12L"
-                        }
-                      }
-                    ]
-                  ]
+                  "Table": {
+                    "SourceRef": {
+                      "Source": "subquery"
+                    }
+                  }
                 }
               }
             }

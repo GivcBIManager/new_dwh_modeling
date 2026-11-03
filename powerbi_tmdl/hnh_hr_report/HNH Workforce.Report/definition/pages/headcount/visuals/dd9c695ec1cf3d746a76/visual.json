@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "dd9c695ec1cf3d746a76",
   "position": {
-    "x": 1286.0,
-    "y": 1080,
+    "x": 30.0,
+    "y": 1192,
     "z": 38000,
     "height": 300,
     "width": 604.0,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Location"
+                      "Entity": "Grade"
                     }
                   },
-                  "Property": "Location Name"
+                  "Property": "Grade Name"
                 }
               },
-              "queryRef": "Location.Location Name",
-              "nativeQueryRef": "Location Name",
+              "queryRef": "Grade.Grade Name",
+              "nativeQueryRef": "Grade Name",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by location, top 15'"
+                  "Value": "'Headcount by grade, top 15'"
                 }
               }
             }
@@ -101,10 +101,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Location"
+                "Entity": "Grade"
               }
             },
-            "Property": "Location Name"
+            "Property": "Grade Name"
           }
         },
         "type": "TopN",
@@ -119,8 +119,8 @@
                     "Version": 2,
                     "From": [
                       {
-                        "Name": "l",
-                        "Entity": "Location",
+                        "Name": "g",
+                        "Entity": "Grade",
                         "Type": 0
                       },
                       {
@@ -134,10 +134,10 @@
                         "Column": {
                           "Expression": {
                             "SourceRef": {
-                              "Source": "l"
+                              "Source": "g"
                             }
                           },
-                          "Property": "Location Name"
+                          "Property": "Grade Name"
                         },
                         "Name": "field"
                       }
@@ -164,8 +164,8 @@
               "Type": 2
             },
             {
-              "Name": "l",
-              "Entity": "Location",
+              "Name": "g",
+              "Entity": "Grade",
               "Type": 0
             }
           ],
@@ -178,10 +178,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "l"
+                            "Source": "g"
                           }
                         },
-                        "Property": "Location Name"
+                        "Property": "Grade Name"
                       }
                     }
                   ],

@@ -6,7 +6,7 @@
     "y": 276,
     "z": 21000,
     "height": 780,
-    "width": 1276,
+    "width": 1860,
     "tabOrder": 21000
   },
   "visual": {
@@ -29,6 +29,21 @@
               "queryRef": "Employee.Worker Number",
               "nativeQueryRef": "Worker Number",
               "displayName": "Worker number"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Name"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Name",
+              "nativeQueryRef": "HR Employee Name",
+              "displayName": "Name (pay access)"
             },
             {
               "field": {
@@ -134,6 +149,21 @@
               "queryRef": "Employee.Assignment Status",
               "nativeQueryRef": "Assignment Status",
               "displayName": "Status"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Headcount"
+                }
+              },
+              "queryRef": "_Measures.Headcount",
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }

@@ -3,10 +3,10 @@
   "name": "1be814ca4c7a524ecbcb",
   "position": {
     "x": 30.0,
-    "y": 1080,
+    "y": 868,
     "z": 36000,
     "height": 300,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 36000
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Grade"
+                      "Entity": "HR Department"
                     }
                   },
-                  "Property": "Grade Name"
+                  "Property": "Department Name"
                 }
               },
-              "queryRef": "Grade.Grade Name",
-              "nativeQueryRef": "Grade Name",
+              "queryRef": "HR Department.Department Name",
+              "nativeQueryRef": "Department Name",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by grade, top 15'"
+                  "Value": "'Headcount by department, top 15'"
                 }
               }
             }
@@ -101,10 +101,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Grade"
+                "Entity": "HR Department"
               }
             },
-            "Property": "Grade Name"
+            "Property": "Department Name"
           }
         },
         "type": "TopN",
@@ -119,8 +119,8 @@
                     "Version": 2,
                     "From": [
                       {
-                        "Name": "g",
-                        "Entity": "Grade",
+                        "Name": "h",
+                        "Entity": "HR Department",
                         "Type": 0
                       },
                       {
@@ -134,10 +134,10 @@
                         "Column": {
                           "Expression": {
                             "SourceRef": {
-                              "Source": "g"
+                              "Source": "h"
                             }
                           },
-                          "Property": "Grade Name"
+                          "Property": "Department Name"
                         },
                         "Name": "field"
                       }
@@ -164,8 +164,8 @@
               "Type": 2
             },
             {
-              "Name": "g",
-              "Entity": "Grade",
+              "Name": "h",
+              "Entity": "HR Department",
               "Type": 0
             }
           ],
@@ -178,10 +178,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "g"
+                            "Source": "h"
                           }
                         },
-                        "Property": "Grade Name"
+                        "Property": "Department Name"
                       }
                     }
                   ],

@@ -3,36 +3,17 @@
   "name": "b09077d67e7e3fc05e10",
   "position": {
     "x": 30.0,
-    "y": 320.0,
+    "y": 320,
     "z": 26000,
-    "height": 356.0,
-    "width": 918.0,
+    "height": 110,
+    "width": 447.0,
     "tabOrder": 26000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Date"
-                    }
-                  },
-                  "Property": "Year Month Name"
-                }
-              },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,35 +23,43 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Sick Leave Rate %"
+                  "Property": "Leave Liability"
                 }
               },
-              "queryRef": "_Measures.Sick Leave Rate %",
-              "nativeQueryRef": "Sick Leave Rate %"
+              "queryRef": "_Measures.Leave Liability",
+              "nativeQueryRef": "Leave Liability",
+              "displayName": "Leave liability at month end (SAR)"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "Date"
-                  }
-                },
-                "Property": "Year Month Name"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
       }
     },
-    "visualContainerObjects": {
-      "title": [
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "24D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -80,10 +69,36 @@
                 }
               }
             },
-            "text": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "'Sick leave rate, last 12 closed months'"
+                  "Value": "9D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -98,127 +113,49 @@
       {
         "name": "e81a553f590df7d2ab9d",
         "field": {
-          "Column": {
+          "Measure": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Date"
+                "Entity": "_Measures"
               }
             },
-            "Property": "Month Offset"
+            "Property": "Leave Liability"
           }
         },
-        "type": "Categorical",
+        "type": "Advanced",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "d",
-              "Entity": "Date",
+              "Name": "_",
+              "Entity": "_Measures",
               "Type": 0
             }
           ],
           "Where": [
             {
               "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "d"
-                          }
-                        },
-                        "Property": "Month Offset"
+                "Not": {
+                  "Expression": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "_"
+                            }
+                          },
+                          "Property": "Leave Liability"
+                        }
+                      },
+                      "Right": {
+                        "Literal": {
+                          "Value": "null"
+                        }
                       }
                     }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "1L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "2L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "3L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "4L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "5L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "6L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "7L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "8L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "9L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "10L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "11L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "12L"
-                        }
-                      }
-                    ]
-                  ]
+                  }
                 }
               }
             }

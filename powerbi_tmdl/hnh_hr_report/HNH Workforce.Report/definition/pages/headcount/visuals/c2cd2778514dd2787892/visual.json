@@ -3,14 +3,14 @@
   "name": "c2cd2778514dd2787892",
   "position": {
     "x": 30.0,
-    "y": 745.0,
+    "y": 544,
     "z": 34000,
-    "height": 311.0,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 34000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR Department"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Department Name"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "HR Department.Department Name",
-              "nativeQueryRef": "Department Name",
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name",
               "active": true
             }
           ]
@@ -47,6 +47,20 @@
               },
               "queryRef": "_Measures.Headcount",
               "nativeQueryRef": "Headcount"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "FTE"
+                }
+              },
+              "queryRef": "_Measures.FTE",
+              "nativeQueryRef": "FTE"
             }
           ]
         }
@@ -55,16 +69,16 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Date"
                   }
                 },
-                "Property": "Headcount"
+                "Property": "Year Month Name"
               }
             },
-            "direction": "Descending"
+            "direction": "Ascending"
           }
         ]
       }
@@ -83,7 +97,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by department, top 15'"
+                  "Value": "'Headcount and FTE, last 12 closed months'"
                 }
               }
             }
@@ -96,76 +110,24 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "bbddaf90dcba52504002",
+        "name": "ef10e5276d5c73714f88",
         "field": {
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "HR Department"
+                "Entity": "Date"
               }
             },
-            "Property": "Department Name"
+            "Property": "Month Offset"
           }
         },
-        "type": "TopN",
+        "type": "Categorical",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "h",
-                        "Entity": "HR Department",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "h"
-                            }
-                          },
-                          "Property": "Department Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Headcount"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "h",
-              "Entity": "HR Department",
+              "Name": "d",
+              "Entity": "Date",
               "Type": 0
             }
           ],
@@ -178,18 +140,99 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "h"
+                            "Source": "d"
                           }
                         },
-                        "Property": "Department Name"
+                        "Property": "Month Offset"
                       }
                     }
                   ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "1L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "2L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "3L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "4L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "5L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "6L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "7L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "8L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "9L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "10L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "11L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "12L"
+                        }
+                      }
+                    ]
+                  ]
                 }
               }
             }

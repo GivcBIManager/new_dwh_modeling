@@ -3,36 +3,17 @@
   "name": "032dfdd3d2c00dc0b1ba",
   "position": {
     "x": 972.0,
-    "y": 410.0,
+    "y": 410,
     "z": 33000,
-    "height": 311.0,
-    "width": 918.0,
+    "height": 110,
+    "width": 447.0,
     "tabOrder": 33000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Branch"
-                    }
-                  },
-                  "Property": "Branch Name"
-                }
-              },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,35 +23,43 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Headcount"
+                  "Property": "Contingent Share %"
                 }
               },
-              "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
+              "queryRef": "_Measures.Contingent Share %",
+              "nativeQueryRef": "Contingent Share %",
+              "displayName": "Contingent workers' share"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Headcount"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
     },
-    "visualContainerObjects": {
-      "title": [
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "24D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -80,10 +69,36 @@
                 }
               }
             },
-            "text": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by hospital'"
+                  "Value": "9D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }

@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "097b9e3ac1bf60045d1b",
   "position": {
-    "x": 1286.0,
-    "y": 1404,
+    "x": 30.0,
+    "y": 1516,
     "z": 41000,
     "height": 300,
     "width": 604.0,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "Headcount"
                     }
                   },
-                  "Property": "Worker Type"
+                  "Property": "Is Saudi"
                 }
               },
-              "queryRef": "Employee.Worker Type",
-              "nativeQueryRef": "Worker Type",
+              "queryRef": "Headcount.Is Saudi",
+              "nativeQueryRef": "Is Saudi",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by worker type'"
+                  "Value": "'Headcount, Saudi and non-Saudi'"
                 }
               }
             }

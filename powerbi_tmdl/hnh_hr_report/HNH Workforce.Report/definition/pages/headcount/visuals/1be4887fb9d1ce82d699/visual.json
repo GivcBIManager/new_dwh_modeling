@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "1be4887fb9d1ce82d699",
   "position": {
-    "x": 658.0,
-    "y": 1728,
+    "x": 1286.0,
+    "y": 1516,
     "z": 43000,
     "height": 300,
     "width": 604.0,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Headcount"
+                      "Entity": "Employee"
                     }
                   },
-                  "Property": "Tenure Band"
+                  "Property": "Worker Type"
                 }
               },
-              "queryRef": "Headcount.Tenure Band",
-              "nativeQueryRef": "Tenure Band",
+              "queryRef": "Employee.Worker Type",
+              "nativeQueryRef": "Worker Type",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by tenure band (years)'"
+                  "Value": "'Headcount by worker type'"
                 }
               }
             }

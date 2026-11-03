@@ -1,18 +1,25 @@
 """The six detail pages under the Details tab (spec "Pages" 4) and the hidden Employee list (spec "Pages" 7).
 
 Each detail page has the frame with the Details tab current, Hospital, Month and the six sub-tabs in the filter bar,
-then in the content box: the page's own slicers when every visual on it accepts them, a row of 4 or 5 cards for the
-selected month, a 2 x 2 grid of charts, and below it (the page scrolls) a row of three charts for the rest of the
-spec's breakdowns:
+then in the content box: the page's own slicers when every visual on it accepts them, one or two rows of 4 or 5
+cards for the selected month, a 2 x 2 grid of charts, and below it rows of three charts for the rest of the spec's
+breakdowns. Pages taller than 1080 px fit their width and scroll (pbir.page_json, ruling R24).
 
-    headcount     Headcount, FTE, Saudization, female and contingent share; trend, by hospital, department, job,
-                  grade, position, location, Saudi, gender, worker type, age band, tenure band, full / part time
-    movements     Hires, leavers in Fusion, turnover (BSC Turnover), voluntary and new-hire leaver rates in Fusion;
-                  trends, leavers by action reason and tenure band, hires by action, by hospital and department
+    headcount     Headcount, FTE, average headcount and FTE, Saudization, female and contingent share; trend, by
+                  hospital, department, job, grade, position, location, Saudi, gender, worker type, age band, tenure
+                  band, full / part time
+    movements     Hires, leavers, involuntary leavers, turnover (BSC Turnover), voluntary and new-hire leaver rates,
+                  branch transfers, promotions; trends, movements by movement group, changes by kind (job, grade,
+                  position, location), leavers by action reason and current tenure band, hires by action, by hospital
+                  and department
     payroll       Payroll cost, gross pay, overtime share, cost per FTE, gross pay in open payroll; trend, gross pay
-                  by pay category, cost by department, source and payroll status by hospital, overtime
-    absence       Sick days and rate, leave balance and liability; trends, sick days by absence type, by hospital
-    recruitment   Vacancy rate, time to fill, hires, FTE; trends and by hospital (no department: Requisitions has none)
+                  by pay category, cost by department, source and payroll status by hospital, overtime. Not by job
+                  (ruling R26): Payroll has no job.
+    absence       Sick days and rate, absence days of all kinds, leave balance and liability (month end, average,
+                  now); trends, absence days by category and type, sick days by type, by hospital. Not by department
+                  (ruling R26): the absence and leave facts have no HR department.
+    recruitment   Vacancy rate, time to fill, requisitions approved and filled, open openings; trends and by hospital
+                  (no department: Requisitions has none)
     productivity  Visits per FTE, revenue per payroll SAR, payroll cost per visit (doctors and nurses), revenue per
                   FTE and per doctor, staff to bed, clinical to doctor
 
@@ -33,11 +40,11 @@ Rules the pages keep:
 Employee list (hidden): drill-through on 'Branch'[Branch Name] and 'HR Department'[Department Name] with "keep all
 filters" off, as the BSC's family pages: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker Action')
 would make [Headcount] return its guard message. The month and the other selections arrive through the page's
-slicers, synced with the detail pages'. Both tables are filtered to [Headcount] not blank (ruling R4): Employee has
-no branch relationship or row filter, so branch security applies through the fact. The people table (worker number,
-Oasis staff ID, hospital, department, job, grade, hire date, status) is for every reader; the Fusion names
-('Employee Details', which the role shows only with pay access) are in a second table under an HR Pay Notice, because
-a table grouped by a column with no visible rows has no rows at all.
+slicers, synced with the detail pages'. One table (worker number, name, Oasis staff ID, hospital, department, job,
+grade, hire date, status, headcount), filtered to [Headcount] not blank (ruling R4): Employee has no branch
+relationship or row filter, so branch security applies through the fact. The name is the measure [HR Employee Name],
+blank without pay access; the table has no 'Employee Details' column, because a table grouped by a column with no
+visible rows (the role hides Employee Details without pay access) has no rows at all.
 """
 from __future__ import annotations
 
@@ -57,6 +64,7 @@ SLICER_H = 66  # as the filter bar's slicers
 CARD_H = 110
 NOTICE_H = 60
 EXTRA_H = 300  # the charts below the grid, three to a row
+CHART_MIN_H = 300  # the grid's charts: the rest of the screen, but no lower than this
 BOTTOM_MARGIN = 30
 TOP = 15  # bars on a long axis: the top 15 by the chart's first measure
 BACK_W = 110
@@ -69,6 +77,8 @@ DEPARTMENT = col("HR Department", "Department Name")  # per hospital ("ABH Icu-N
 UNIFIED_DEPARTMENT = col("HR Department", "Unified Department")  # across hospitals ("ICU"): the slicer
 HEADCOUNT = meas("Headcount")
 PAY_NOTICE = meas("HR Pay Notice")
+EMPLOYEE_NAME = meas("HR Employee Name")  # one employee's Fusion name; blank without pay access
+ABSENCE_TYPE = col("Absence Type", "Absence Type Name")
 EMPLOYEE_LIST = "employee_list"
 
 # The page slicers (field, label): only on pages where every measure accepts their tables
@@ -160,7 +170,12 @@ LABELS = {"Leavers": "Leavers in Fusion", "Voluntary Leavers": "Voluntary leaver
           "BSC Time to Fill (days)": "Time to fill (days)", "BSC Revenue per FTE": "Revenue per FTE (SAR)",
           "BSC Revenue per Doctor": "Revenue per doctor (SAR)", "BSC Staff to Bed": "Staff to bed",
           "BSC Clinical to Doctor": "Clinical staff to doctor", "Payroll Cost": "Payroll cost (SAR)",
-          "Gross Pay": "Gross pay (SAR)", "Gross Pay (Open Payroll)": "Gross pay in open payroll (SAR)"}
+          "Gross Pay": "Gross pay (SAR)", "Gross Pay (Open Payroll)": "Gross pay in open payroll (SAR)",
+          "Involuntary Leavers": "Involuntary leavers in Fusion", "Branch Transfers": "Branch transfers",
+          "Promotions": "Promotions (Fusion action)", "Job Changes": "Job changes", "Grade Changes": "Grade changes",
+          "Position Changes": "Position changes", "Location Changes": "Location changes",
+          "Requisitions Approved": "Requisitions approved", "Requisitions Filled": "Requisitions filled",
+          "Open Openings": "Open openings", "Absence Days": "Absence days"}
 
 
 def _labels(spec: dict) -> dict[Field, str]:
@@ -221,10 +236,12 @@ def _interactions(page_name: str, month: Visual, slicers: list[Visual], data: li
 def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], extras: list[dict] = (),
                 page_slicers: list[tuple[Field, str]] = ()) -> Page:
     """A detail page: the frame (Details tab current, Hospital, Month and the sub-tabs in the filter bar), the page's
-    slicers, a row of 4 or 5 cards, a 2 x 2 grid of charts, and `extras` three to a row below it (the page then
-    scrolls). Pay visuals get an HR Pay Notice over them: one over each pay chart, one over the run of pay cards."""
-    if not 4 <= len(cards) <= 5 or len(grid) != 4:
-        raise ValueError(f"page {name}: 4 or 5 cards and a 2 x 2 grid")
+    slicers, one or two rows of 4 or 5 cards, a 2 x 2 grid of charts (filling the screen, at least CHART_MIN_H
+    high), and `extras` three to a row below it (the page then scrolls). Pay visuals get an HR Pay Notice over them:
+    one over each pay chart, one over each row's run of pay cards."""
+    per_row = len(cards) if len(cards) <= 5 else math.ceil(len(cards) / 2)
+    if not 4 <= per_row <= 5 or len(cards) > 10 or len(grid) != 4:
+        raise ValueError(f"page {name}: one or two rows of 4 or 5 cards and a 2 x 2 grid")
     hospital, month = filters()
     visuals = page_frame("headcount", [hospital, month] + sub_tabs(name))
     y = Y0
@@ -234,24 +251,27 @@ def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], ex
         y += SLICER_H + GAP
     data: list[Visual] = []
     notices: list[Visual] = []
-    w = _row(len(cards))
-    pay_run: list[Visual] = []
+    w = _row(per_row)
+    pay_runs: list[list[Visual]] = []  # per row, the pay cards (next to each other)
     for i, spec in enumerate(cards):
-        v = _visual(spec, X0 + i * (w + GAP), y, w, CARD_H)
+        v = _visual(spec, X0 + (i % per_row) * (w + GAP), y + (i // per_row) * (CARD_H + GAP), w, CARD_H)
         data.append(v)
         if spec["pay"]:
-            if pay_run and pay_run[-1] is not data[-2]:
+            if pay_runs and pay_runs[-1][-1] is data[-2] and pay_runs[-1][-1].y == v.y:
+                pay_runs[-1].append(v)
+            elif pay_runs and pay_runs[-1][-1] is not data[-2]:
                 raise ValueError(f"page {name}: the pay cards must be next to each other")
-            pay_run.append(v)
-    if pay_run:
-        x1 = pay_run[0].x
-        notices.append(_notice(x1, y, pay_run[-1].x + pay_run[-1].w - x1, CARD_H))
-    y += CARD_H + GAP
-    chart_w, chart_h = _row(2), (CONTENT_END - y - GAP) / 2
+            else:
+                pay_runs.append([v])
+    for run in pay_runs:
+        notices.append(_notice(run[0].x, run[0].y, run[-1].x + run[-1].w - run[0].x, CARD_H))
+    y += math.ceil(len(cards) / per_row) * (CARD_H + GAP)
+    chart_w, chart_h = _row(2), max(CHART_MIN_H, (CONTENT_END - y - GAP) / 2)
     placed = [(spec, X0 + (i % 2) * (chart_w + GAP), y + (i // 2) * (chart_h + GAP), chart_w, chart_h)
               for i, spec in enumerate(grid)]
+    grid_end = y + 2 * chart_h + GAP
     extra_w = _row(3)
-    placed += [(spec, X0 + (i % 3) * (extra_w + GAP), CONTENT_END + GAP + (i // 3) * (EXTRA_H + GAP), extra_w,
+    placed += [(spec, X0 + (i % 3) * (extra_w + GAP), grid_end + GAP + (i // 3) * (EXTRA_H + GAP), extra_w,
                 EXTRA_H) for i, spec in enumerate(extras)]
     for spec, x, cy, cw, ch in placed:
         v = _visual(spec, x, cy, cw, ch)
@@ -260,7 +280,8 @@ def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], ex
             notices.append(_notice(x, cy, cw, ch))
     visuals += data + notices
     rows = math.ceil(len(extras) / 3)
-    height = CONTENT_END + rows * (GAP + EXTRA_H) + BOTTOM_MARGIN if rows else 1080
+    bottom = grid_end + rows * (GAP + EXTRA_H)
+    height = max(1080, math.ceil(bottom + BOTTOM_MARGIN)) if bottom > CONTENT_END else 1080
     page_filters = [hospitals()]
     interactions = _interactions(name, month, own_slicers + [hospital], data,
                                  {f.field.table for f in page_filters})
@@ -273,7 +294,8 @@ def headcount_page() -> Page:
     hc = ["Headcount"]
     return detail_page(
         "headcount", "Headcount & mix",
-        cards=[card("Headcount", "Headcount"), card("FTE", "FTE"), card("BSC Saudization", "Saudization"),
+        cards=[card("Headcount", "Headcount"), card("FTE", "FTE"), card("Average Headcount", "Average headcount"),
+               card("Average FTE", "Average FTE"), card("BSC Saudization", "Saudization"),
                card("Female Share %", "Female share"), card("Contingent Share %", "Contingent workers' share")],
         grid=[trend("Headcount and FTE", ["Headcount", "FTE"]),
               bars("Headcount by hospital", BRANCH_NAME, hc),
@@ -291,27 +313,37 @@ def headcount_page() -> Page:
         page_slicers=WORKFORCE_SLICERS)
 
 
+CHANGES = ["Job Changes", "Grade Changes", "Position Changes", "Location Changes"]
+
+
 def movements_page() -> Page:
     leavers = ["Leavers", "Voluntary Leavers"]
     return detail_page(
         "movements", "Movements & turnover",
-        cards=[card("Hires", "Hires"), card("Leavers", "Leavers in Fusion"), card("BSC Turnover", "Turnover"),
+        cards=[card("Hires", "Hires"), card("Leavers", "Leavers in Fusion"),
+               card("Involuntary Leavers", "Involuntary leavers in Fusion"), card("BSC Turnover", "Turnover"),
                card("Voluntary Turnover Rate %", "Voluntary leaver rate in Fusion"),
-               card("New Hire Turnover %", "New-hire leaver rate in Fusion")],
-        grid=[trend("Hires and leavers in Fusion", ["Hires"] + leavers),
+               card("New Hire Turnover %", "New-hire leaver rate in Fusion"),
+               card("Branch Transfers", "Branch transfers"), card("Promotions", "Promotions (Fusion action)")],
+        grid=[trend("Hires and leavers in Fusion", ["Hires"] + leavers + ["Involuntary Leavers"]),
               trend("Turnover and voluntary leaver rate in Fusion", ["BSC Turnover", "Voluntary Turnover Rate %"]),
-              bars("Leavers in Fusion by action reason, top 15", col("Worker Action", "Action Reason Name"), leavers,
-                   top=True),
-              bars("Leavers in Fusion by tenure band (years)", col("Employee", "Tenure Band"), leavers)],
-        extras=[bars("Hires by action (rehires included), top 15", col("Worker Action", "Action Name"), ["Hires"],
+              bars("Movements by movement group", col("Worker Action", "Movement Group"), ["Movements"]),
+              bars("Changes by kind and hospital", BRANCH_NAME, CHANGES)],
+        extras=[bars("Leavers in Fusion by action reason, top 15", col("Worker Action", "Action Reason Name"), leavers,
+                     top=True),
+                bars("Leavers in Fusion by current tenure band (years)", col("Employee", "Tenure Band"), leavers),
+                bars("Hires by action (rehires included), top 15", col("Worker Action", "Action Name"), ["Hires"],
                      top=True),
                 bars("Hires and leavers in Fusion by hospital", BRANCH_NAME, ["Hires", "Leavers"]),
                 bars("Hires and leavers in Fusion by department, top 15", DEPARTMENT, ["Hires", "Leavers"],
-                     top=True)],
+                     top=True),
+                bars("Branch transfers and promotions by hospital", BRANCH_NAME, ["Branch Transfers", "Promotions"])],
         page_slicers=WORKFORCE_SLICERS)
 
 
 def payroll_page() -> Page:
+    """Payroll & overtime. Not by job (ruling R26): Payroll has no job, and only the Department slicer suits every
+    visual ([Payroll Cost per FTE] rejects Pay Category and Payroll)."""
     return detail_page(
         "payroll", "Payroll & overtime",
         cards=[card("Payroll Cost", "Payroll cost (SAR)", pay=True), card("Gross Pay", "Gross pay (SAR)", pay=True),
@@ -333,30 +365,43 @@ def payroll_page() -> Page:
 
 
 def absence_page() -> Page:
+    """Absence & leave. Not by department (ruling R26): the absence and leave facts have no HR department."""
     return detail_page(
         "absence", "Absence & leave",
         cards=[card("Sick Days", "Sick days"), card("Sick Leave Rate %", "Sick leave rate"),
-               card("Leave Balance (days)", "Leave balance (days)", pay=True),
-               card("Leave Liability", "Leave liability (SAR)", pay=True)],
+               card("Absence Days", "Absence days, all kinds"),
+               card("Leave Balance (days)", "Leave balance at month end (days)", pay=True),
+               card("Leave Liability", "Leave liability at month end (SAR)", pay=True),
+               card("Average Leave Balance (days)", "Average leave balance (days)", pay=True),
+               card("Current Leave Balance (days)", "Leave balance now (days)", pay=True),
+               card("Current Leave Liability", "Leave liability now (SAR)", pay=True)],
         grid=[trend("Sick leave rate", ["Sick Leave Rate %"]),
-              bars("Sick days by absence type, top 15", col("Absence Type", "Absence Type Name"), ["Sick Days"],
-                   top=True),
-              bars("Sick leave rate by hospital", BRANCH_NAME, ["Sick Leave Rate %"]),
-              bars("Leave liability by hospital (SAR)", BRANCH_NAME, ["Leave Liability"], pay=True)],
-        extras=[trend("Sick days", ["Sick Days"]),
+              bars("Absence days by category", col("Absence Type", "Absence Category"), ["Absence Days"]),
+              bars("Absence days by absence type, top 15", ABSENCE_TYPE, ["Absence Days"], top=True),
+              bars("Sick leave rate by hospital", BRANCH_NAME, ["Sick Leave Rate %"])],
+        extras=[bars("Sick days by absence type, top 15", ABSENCE_TYPE, ["Sick Days"], top=True),
+                trend("Sick days", ["Sick Days"]),
+                trend("Absence days, all kinds", ["Absence Days"]),
+                bars("Leave liability by hospital (SAR)", BRANCH_NAME, ["Leave Liability"], pay=True),
                 bars("Leave balance by hospital (days)", BRANCH_NAME, ["Leave Balance (days)"], pay=True),
                 trend("Leave liability (SAR)", ["Leave Liability"], pay=True)])
 
 
 def recruitment_page() -> Page:
+    """Recruitment, by hospital only: Requisitions has no department (spec "Pages" 4)."""
     return detail_page(
         "recruitment", "Recruitment",
         cards=[card("BSC Vacancy Rate", "Vacancy rate (openings / budgeted FTE)"),
-               card("BSC Time to Fill (days)", "Time to fill (days)"), card("Hires", "Hires"), card("FTE", "FTE")],
+               card("BSC Time to Fill (days)", "Time to fill (days)"),
+               card("Requisitions Approved", "Requisitions approved"),
+               card("Requisitions Filled", "Requisitions filled"), card("Open Openings", "Open openings")],
         grid=[trend("Vacancy rate", ["BSC Vacancy Rate"]),
               bars("Vacancy rate by hospital", BRANCH_NAME, ["BSC Vacancy Rate"]),
-              trend("Time to fill (days)", ["BSC Time to Fill (days)"]),
-              bars("Time to fill by hospital (days)", BRANCH_NAME, ["BSC Time to Fill (days)"])])
+              trend("Requisitions approved and filled", ["Requisitions Approved", "Requisitions Filled"]),
+              bars("Open openings by hospital", BRANCH_NAME, ["Open Openings"])],
+        extras=[trend("Time to fill (days)", ["BSC Time to Fill (days)"]),
+                bars("Time to fill by hospital (days)", BRANCH_NAME, ["BSC Time to Fill (days)"]),
+                trend("Open openings at month end", ["Open Openings"])])
 
 
 STAFF_CATEGORY = col("Staff Productivity", "Staff Category")
@@ -390,9 +435,6 @@ def detail_pages() -> list[Page]:
 
 # ---- Employee list ------------------------------------------------------------------------------------------------
 
-NAMES_W = 560
-
-
 def employee_list_page() -> Page:
     """Hidden drill-through on hospital and department (keep all filters off; see the module docstring)."""
     hospital, month = filters()
@@ -400,25 +442,21 @@ def employee_list_page() -> Page:
     visuals = page_frame(None, [hospital, month, back])
     own_slicers = _slicer_row(WORKFORCE_SLICERS, Y0)
     y = Y0 + SLICER_H + GAP
-    h = CONTENT_END - y
-    in_headcount = Filter(HEADCOUNT, "notblank")
     worker = col("Employee", "Worker Number")
-    columns = [(worker, "Worker number"), (col("Staff", "Staff ID"), "Oasis staff ID"), (BRANCH_NAME, "Hospital"),
-               (DEPARTMENT, "Department"), (col("Job", "Job Name"), "Job"), (col("Grade", "Grade Name"), "Grade"),
-               (col("Employee", "Hire Date"), "Hire date"), (col("Employee", "Assignment Status"), "Status")]
-    people_w = W0 - GAP - NAMES_W
-    people = Visual("table", X0, y, people_w, h, roles={"Values": [c for c, _ in columns]},
-                    title="People in the headcount of the month", labels=dict(columns), filters=[in_headcount],
-                    sort=worker, sort_dir="asc")
-    name_columns = [(worker, "Worker number"), (col("Employee Details", "Full Name"), "Name")]
-    names_x = X0 + people_w + GAP
-    names = Visual("table", names_x, y, NAMES_W, h, roles={"Values": [c for c, _ in name_columns]},
-                   title="Names in Fusion (pay access)", labels=dict(name_columns), filters=[in_headcount],
-                   sort=worker, sort_dir="asc")
-    visuals += own_slicers + [people, names, _notice(names_x, y, NAMES_W, h)]
+    # [HR Employee Name] is blank for every row without pay access, and a table keeps only the rows where one of its
+    # measures is not blank: [Headcount] (1 a person) is a column too, so the rows stay
+    fields = [(worker, "Worker number"), (EMPLOYEE_NAME, "Name (pay access)"),
+              (col("Staff", "Staff ID"), "Oasis staff ID"), (BRANCH_NAME, "Hospital"), (DEPARTMENT, "Department"),
+              (col("Job", "Job Name"), "Job"), (col("Grade", "Grade Name"), "Grade"),
+              (col("Employee", "Hire Date"), "Hire date"), (col("Employee", "Assignment Status"), "Status"),
+              (HEADCOUNT, "Headcount")]
+    people = Visual("table", X0, y, W0, CONTENT_END - y, roles={"Values": [f for f, _ in fields]},
+                    title="People in the headcount of the month", labels=dict(fields),
+                    filters=[Filter(HEADCOUNT, "notblank")], sort=worker, sort_dir="asc")
+    visuals += own_slicers + [people]
     page_filters = [hospitals()]
     drill = [BRANCH_NAME, DEPARTMENT]
-    interactions = _interactions(EMPLOYEE_LIST, month, own_slicers + [hospital], [people, names],
+    interactions = _interactions(EMPLOYEE_LIST, month, own_slicers + [hospital], [people],
                                  {f.field.table for f in page_filters} | {f.table for f in drill})
     return Page(EMPLOYEE_LIST, "Employee list", visuals, filters=page_filters, drill_fields=drill, hidden=True,
                 keep_filters=False, interactions=interactions)

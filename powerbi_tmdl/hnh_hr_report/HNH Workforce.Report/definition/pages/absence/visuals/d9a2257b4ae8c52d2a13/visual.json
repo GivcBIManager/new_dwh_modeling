@@ -3,10 +3,10 @@
   "name": "d9a2257b4ae8c52d2a13",
   "position": {
     "x": 30.0,
-    "y": 1080,
+    "y": 454,
     "z": 30000,
     "height": 300,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 30000
   },
   "visual": {
@@ -42,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Sick Days"
+                  "Property": "Sick Leave Rate %"
                 }
               },
-              "queryRef": "_Measures.Sick Days",
-              "nativeQueryRef": "Sick Days"
+              "queryRef": "_Measures.Sick Leave Rate %",
+              "nativeQueryRef": "Sick Leave Rate %"
             }
           ]
         }
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Sick days, last 12 closed months'"
+                  "Value": "'Sick leave rate, last 12 closed months'"
                 }
               }
             }

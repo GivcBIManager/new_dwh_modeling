@@ -1,70 +1,76 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
-  "name": "85d1bba6b62459b72a77",
+  "name": "c5979badc98a854bf5fc",
   "position": {
-    "x": 1330,
-    "y": 276,
-    "z": 22000,
-    "height": 780,
-    "width": 560,
-    "tabOrder": 22000
+    "x": 30.0,
+    "y": 1546.0,
+    "z": 42000,
+    "height": 60,
+    "width": 604.0,
+    "tabOrder": 42000
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "card",
     "query": {
       "queryState": {
         "Values": {
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Worker Number"
+                  "Property": "HR Pay Notice"
                 }
               },
-              "queryRef": "Employee.Worker Number",
-              "nativeQueryRef": "Worker Number",
-              "displayName": "Worker number"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Employee Details"
-                    }
-                  },
-                  "Property": "Full Name"
-                }
-              },
-              "queryRef": "Employee Details.Full Name",
-              "nativeQueryRef": "Full Name",
-              "displayName": "Name"
+              "queryRef": "_Measures.HR Pay Notice",
+              "nativeQueryRef": "HR Pay Notice"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "Employee"
-                  }
-                },
-                "Property": "Worker Number"
+      }
+    },
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "16D"
+                }
               }
             },
-            "direction": "Ascending"
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
+                }
+              }
+            }
           }
-        ]
-      }
+        }
+      ],
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "visualContainerObjects": {
       "title": [
@@ -73,14 +79,46 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
-            },
-            "text": {
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "'Names in Fusion (pay access)'"
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -93,7 +131,7 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "9ff917727f8341d87781",
+        "name": "57e3642c154c5e80149c",
         "field": {
           "Measure": {
             "Expression": {
@@ -101,7 +139,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Headcount"
+            "Property": "HR Pay Notice"
           }
         },
         "type": "Advanced",
@@ -128,7 +166,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Headcount"
+                          "Property": "HR Pay Notice"
                         }
                       },
                       "Right": {

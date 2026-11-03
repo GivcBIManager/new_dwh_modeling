@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "291aa91db02bcbd0e741",
   "position": {
-    "x": 30.0,
-    "y": 1080,
+    "x": 972.0,
+    "y": 544,
     "z": 36000,
     "height": 300,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 36000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Worker Action"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Action Name"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "Worker Action.Action Name",
-              "nativeQueryRef": "Action Name",
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name",
               "active": true
             }
           ]
@@ -42,11 +42,27 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Hires"
+                  "Property": "BSC Turnover"
                 }
               },
-              "queryRef": "_Measures.Hires",
-              "nativeQueryRef": "Hires"
+              "queryRef": "_Measures.BSC Turnover",
+              "nativeQueryRef": "BSC Turnover",
+              "displayName": "Turnover"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Voluntary Turnover Rate %"
+                }
+              },
+              "queryRef": "_Measures.Voluntary Turnover Rate %",
+              "nativeQueryRef": "Voluntary Turnover Rate %",
+              "displayName": "Voluntary leaver rate in Fusion"
             }
           ]
         }
@@ -55,16 +71,16 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Date"
                   }
                 },
-                "Property": "Hires"
+                "Property": "Year Month Name"
               }
             },
-            "direction": "Descending"
+            "direction": "Ascending"
           }
         ]
       }
@@ -83,7 +99,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Hires by action (rehires included), top 15'"
+                  "Value": "'Turnover and voluntary leaver rate in Fusion, last 12 closed months'"
                 }
               }
             }
@@ -96,76 +112,24 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "f450494bb8d2b244f383",
+        "name": "1e251b165099f9db1666",
         "field": {
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Worker Action"
+                "Entity": "Date"
               }
             },
-            "Property": "Action Name"
+            "Property": "Month Offset"
           }
         },
-        "type": "TopN",
+        "type": "Categorical",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "w",
-                        "Entity": "Worker Action",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "w"
-                            }
-                          },
-                          "Property": "Action Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Hires"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "w",
-              "Entity": "Worker Action",
+              "Name": "d",
+              "Entity": "Date",
               "Type": 0
             }
           ],
@@ -178,18 +142,99 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "w"
+                            "Source": "d"
                           }
                         },
-                        "Property": "Action Name"
+                        "Property": "Month Offset"
                       }
                     }
                   ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "1L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "2L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "3L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "4L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "5L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "6L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "7L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "8L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "9L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "10L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "11L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "12L"
+                        }
+                      }
+                    ]
+                  ]
                 }
               }
             }

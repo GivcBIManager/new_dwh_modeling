@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0ffa1eba69b3b8c72afd",
   "position": {
-    "x": 1286.0,
-    "y": 1728,
+    "x": 30.0,
+    "y": 1840,
     "z": 44000,
     "height": 300,
     "width": 604.0,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Job"
+                      "Entity": "Headcount"
                     }
                   },
-                  "Property": "Full Part Time"
+                  "Property": "Age Band"
                 }
               },
-              "queryRef": "Job.Full Part Time",
-              "nativeQueryRef": "Full Part Time",
+              "queryRef": "Headcount.Age Band",
+              "nativeQueryRef": "Age Band",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount, full and part time'"
+                  "Value": "'Headcount by age band'"
                 }
               }
             }

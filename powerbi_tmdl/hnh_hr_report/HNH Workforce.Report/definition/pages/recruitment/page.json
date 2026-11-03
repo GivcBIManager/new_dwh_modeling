@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
   "name": "recruitment",
   "displayName": "Recruitment",
-  "displayOption": "FitToPage",
-  "height": 1080,
+  "displayOption": "FitToWidth",
+  "height": 1410,
   "width": 1920,
   "filterConfig": {
     "filters": [
@@ -66,12 +66,22 @@
   "visualInteractions": [
     {
       "source": "7184a32e3c5039b599fc",
-      "target": "a9858d79678c711d873c",
+      "target": "044e45331492ca2e88d0",
       "type": "NoFilter"
     },
     {
       "source": "7184a32e3c5039b599fc",
-      "target": "f710316dc984ab374974",
+      "target": "bd2a5acecb31e78335b9",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7184a32e3c5039b599fc",
+      "target": "a54da5fc7406ca91d8bd",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7184a32e3c5039b599fc",
+      "target": "31c2610d434764b86e48",
       "type": "NoFilter"
     }
   ]

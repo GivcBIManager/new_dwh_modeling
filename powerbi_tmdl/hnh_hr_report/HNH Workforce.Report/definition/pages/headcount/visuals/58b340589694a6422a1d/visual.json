@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "58b340589694a6422a1d",
   "position": {
-    "x": 30.0,
-    "y": 1728,
+    "x": 658.0,
+    "y": 1516,
     "z": 42000,
     "height": 300,
     "width": 604.0,
@@ -23,11 +23,11 @@
                       "Entity": "Headcount"
                     }
                   },
-                  "Property": "Age Band"
+                  "Property": "Gender"
                 }
               },
-              "queryRef": "Headcount.Age Band",
-              "nativeQueryRef": "Age Band",
+              "queryRef": "Headcount.Gender",
+              "nativeQueryRef": "Gender",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by age band'"
+                  "Value": "'Headcount by gender'"
                 }
               }
             }

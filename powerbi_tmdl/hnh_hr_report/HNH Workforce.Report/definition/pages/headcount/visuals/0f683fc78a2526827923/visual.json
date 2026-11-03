@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0f683fc78a2526827923",
   "position": {
-    "x": 658.0,
-    "y": 1080,
+    "x": 972.0,
+    "y": 868,
     "z": 37000,
     "height": 300,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 37000
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Position"
+                      "Entity": "Job"
                     }
                   },
-                  "Property": "Position Name"
+                  "Property": "Job Name"
                 }
               },
-              "queryRef": "Position.Position Name",
-              "nativeQueryRef": "Position Name",
+              "queryRef": "Job.Job Name",
+              "nativeQueryRef": "Job Name",
               "active": true
             }
           ]
@@ -83,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by position, top 15'"
+                  "Value": "'Headcount by job, top 15'"
                 }
               }
             }
@@ -101,10 +101,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Position"
+                "Entity": "Job"
               }
             },
-            "Property": "Position Name"
+            "Property": "Job Name"
           }
         },
         "type": "TopN",
@@ -119,8 +119,8 @@
                     "Version": 2,
                     "From": [
                       {
-                        "Name": "p",
-                        "Entity": "Position",
+                        "Name": "j",
+                        "Entity": "Job",
                         "Type": 0
                       },
                       {
@@ -134,10 +134,10 @@
                         "Column": {
                           "Expression": {
                             "SourceRef": {
-                              "Source": "p"
+                              "Source": "j"
                             }
                           },
-                          "Property": "Position Name"
+                          "Property": "Job Name"
                         },
                         "Name": "field"
                       }
@@ -164,8 +164,8 @@
               "Type": 2
             },
             {
-              "Name": "p",
-              "Entity": "Position",
+              "Name": "j",
+              "Entity": "Job",
               "Type": 0
             }
           ],
@@ -178,10 +178,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "p"
+                            "Source": "j"
                           }
                         },
-                        "Property": "Position Name"
+                        "Property": "Job Name"
                       }
                     }
                   ],

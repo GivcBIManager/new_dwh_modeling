@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leave Balance (days)"
+                  "Property": "Absence Days"
                 }
               },
-              "queryRef": "_Measures.Leave Balance (days)",
-              "nativeQueryRef": "Leave Balance (days)",
-              "displayName": "Leave balance (days)"
+              "queryRef": "_Measures.Absence Days",
+              "nativeQueryRef": "Absence Days",
+              "displayName": "Absence days, all kinds"
             }
           ]
         }
@@ -107,62 +107,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "54014d03a65d36718d04",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Leave Balance (days)"
-          }
-        },
-        "type": "Advanced",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "_",
-              "Entity": "_Measures",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "Not": {
-                  "Expression": {
-                    "Comparison": {
-                      "ComparisonKind": 0,
-                      "Left": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "_"
-                            }
-                          },
-                          "Property": "Leave Balance (days)"
-                        }
-                      },
-                      "Right": {
-                        "Literal": {
-                          "Value": "null"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

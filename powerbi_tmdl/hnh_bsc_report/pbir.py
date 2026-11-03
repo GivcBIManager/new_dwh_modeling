@@ -385,7 +385,9 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
 # ---- pages ---------------------------------------------------------------------------------------------------------
 
 def page_json(page: Page) -> dict:
-    out = {"$schema": SCHEMAS["page"], "name": page.name, "displayName": page.display, "displayOption": "FitToPage",
+    # A page taller than the 1080 px screen fits its width and scrolls; FitToPage would shrink it to one screen
+    fit = "FitToWidth" if page.height > 1080 else "FitToPage"
+    out = {"$schema": SCHEMAS["page"], "name": page.name, "displayName": page.display, "displayOption": fit,
            "height": page.height, "width": PAGE_WIDTH}
     filters = [filter_entry(stable_id(page.name, "page-filter", j), f) for j, f in enumerate(page.filters)]
     if page.drill_fields:

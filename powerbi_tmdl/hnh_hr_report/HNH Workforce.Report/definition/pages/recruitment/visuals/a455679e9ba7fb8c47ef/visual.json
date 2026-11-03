@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "a455679e9ba7fb8c47ef",
   "position": {
-    "x": 1443.0,
+    "x": 1160.4,
     "y": 186,
     "z": 25000,
     "height": 110,
-    "width": 447.0,
+    "width": 352.8,
     "tabOrder": 25000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FTE"
+                  "Property": "Requisitions Filled"
                 }
               },
-              "queryRef": "_Measures.FTE",
-              "nativeQueryRef": "FTE",
-              "displayName": "FTE"
+              "queryRef": "_Measures.Requisitions Filled",
+              "nativeQueryRef": "Requisitions Filled",
+              "displayName": "Requisitions filled"
             }
           ]
         }
