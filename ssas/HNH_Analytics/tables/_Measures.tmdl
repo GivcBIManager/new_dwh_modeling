@@ -7309,7 +7309,7 @@ table _Measures
 			SELECTEDVALUE ( 'Employee Details'[Full Name] )
 		formatString: General
 		displayFolder: HR Dashboard\Measures
-	/// Actual of the HR KPI in context: the measure named in its measure_name, for hospitals only and the days up to today (the scope of HR KPI Target and BSC Actual), evaluated without the HR KPI and HR Targets filters. Blank for a metric row and when no single KPI is in context.
+	/// Actual of the HR KPI in context: the measure named in its measure_name, over the branches in context, Head Office included (user decision 2026-11-03; BSC Actual stays hospitals only), and the days up to today (the scope of HR KPI Target), evaluated without the HR KPI and HR Targets filters. Blank for a metric row and when no single KPI is in context.
 	measure 'HR KPI Actual' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
@@ -7339,7 +7339,6 @@ table _Measures
 							BLANK ()
 						),
 						Past,
-						KEEPFILTERS ( Branch[Is Hospital] = "Yes" ),
 						REMOVEFILTERS ( 'HR KPI' ),
 						-- HR Targets column by column: REMOVEFILTERS ( 'HR Targets' ) would also clear Branch and Date (its expanded table)
 						-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
@@ -7361,13 +7360,13 @@ table _Measures
 				)
 
 		annotation hnh_guard_allow = HR KPI, HR Targets
-	/// 1 for an additive HR KPI, whose network value is the sum of the hospitals (HR_HEADCOUNT, HR_LEAVE_LIABILITY), else 0: its fixed target and watch are summed over the hospitals and a num value shows no decimals. The one list of these codes.
+	/// 1 for an additive HR KPI, whose network value is the sum of the branches (HR_HEADCOUNT, HR_LEAVE_LIABILITY), else 0: its fixed target and watch are summed over the branches (hospitals and Head Office) and a num value shows no decimals. The one list of these codes.
 	measure 'HR KPI Is Additive' =
-			-- additive KPIs (ruling R15): a network headcount or leave liability is the sum of the hospitals, so its target is too
+			-- additive KPIs (ruling R15): a network headcount or leave liability is the sum of the branches, so its target is too
 			IF ( SELECTEDVALUE ( 'HR KPI'[KPI Code] ) IN { "HR_HEADCOUNT", "HR_LEAVE_LIABILITY" }, 1, 0 )
 		formatString: 0
 		displayFolder: HR Dashboard\KPIs
-	/// Fixed target of the HR KPI in context from the HR Targets table, over hospitals and the days up to today: the average of the hospitals' monthly targets; an annual target with scale_with_months is pro-rated by the months in context (the BSC Fixed Target rule). For an additive KPI (HR KPI Is Additive) the sum over the hospitals of each hospital's own target by that rule. Blank when a KPI in context needs pay and the viewer has no pay access (a pay KPI's target is a pay level).
+	/// Fixed target of the HR KPI in context from the HR Targets table, over the branches in context (hospitals and Head Office) and the days up to today: the average of the branches' monthly targets; an annual target with scale_with_months is pro-rated by the months in context (the BSC Fixed Target rule). For an additive KPI (HR KPI Is Additive) the sum over the branches of each branch's own target by that rule. Blank when a KPI in context needs pay and the viewer has no pay access (a pay KPI's target is a pay level).
 	measure 'HR KPI Fixed Target' =
 			VAR __Value = ( -- measure body
 				VAR Additive = [HR KPI Is Additive] = 1
@@ -7392,8 +7391,7 @@ table _Measures
 								VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
 								RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, TargetValue * Months / 12, TargetValue )
 							),
-							Past,
-							KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							Past
 						)
 					)
 			) -- end of measure body
@@ -7410,7 +7408,7 @@ table _Measures
 					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
-	/// Fixed watch value of the HR KPI in context from the HR Targets table, by the HR KPI Fixed Target rule: the average of the hospitals' monthly watch values up to today, pro-rated by the months in context with scale_with_months; for an additive KPI the sum over the hospitals of each hospital's own watch value. Blank when a KPI in context needs pay and the viewer has no pay access.
+	/// Fixed watch value of the HR KPI in context from the HR Targets table, by the HR KPI Fixed Target rule: the average of the branches' monthly watch values up to today, pro-rated by the months in context with scale_with_months; for an additive KPI the sum over the branches of each branch's own watch value. Blank when a KPI in context needs pay and the viewer has no pay access.
 	measure 'HR KPI Fixed Watch' =
 			VAR __Value = ( -- measure body
 				VAR Additive = [HR KPI Is Additive] = 1
@@ -7435,8 +7433,7 @@ table _Measures
 								VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
 								RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, WatchValue * Months / 12, WatchValue )
 							),
-							Past,
-							KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
+							Past
 						)
 					)
 			) -- end of measure body
@@ -7453,7 +7450,7 @@ table _Measures
 					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
-	/// Target of the HR KPI in context: HR KPI Fixed Target when its target source is fixed; for the scorecard-sourced Revenue per FTE, BSC Target Revenue per FTE over hospitals and the days up to today (the scorecard's own target); blank when the source is none. Blank when a KPI in context needs pay and the viewer has no pay access (a pay KPI's target is a pay level).
+	/// Target of the HR KPI in context: HR KPI Fixed Target when its target source is fixed; for the scorecard-sourced Revenue per FTE, BSC Target Revenue per FTE over the branches in context and the days up to today (the scorecard's own target: Head Office has no budgeted revenue or scorecard FTE, so it adds nothing); blank when the source is none. Blank when a KPI in context needs pay and the viewer has no pay access (a pay KPI's target is a pay level).
 	measure 'HR KPI Target' =
 			VAR __Value = ( -- measure body
 				VAR TargetSource = SELECTEDVALUE ( 'HR KPI'[Target Source] )
@@ -7469,7 +7466,6 @@ table _Measures
 							CALCULATE (
 								[BSC Target Revenue per FTE],
 								Past,
-								KEEPFILTERS ( Branch[Is Hospital] = "Yes" ),
 								REMOVEFILTERS ( 'HR KPI' ),
 								-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
 								REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
@@ -7512,12 +7508,12 @@ table _Measures
 					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
-	/// 1 when any HR Targets row in context (hospitals, days up to today) is a placeholder target, else 0; always 0 for a KPI whose target source is bsc (its target is the scorecard's).
+	/// 1 when any HR Targets row in context (branches, Head Office included; days up to today) is a placeholder target, else 0; always 0 for a KPI whose target source is bsc (its target is the scorecard's).
 	measure 'HR KPI Is Placeholder' =
 			VAR __Value = ( -- measure body
 				VAR TargetSource = SELECTEDVALUE ( 'HR KPI'[Target Source] )
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-				RETURN IF ( TargetSource <> "bsc" && CALCULATE ( MAX ( 'HR Targets'[Is Placeholder] ), Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ) = 1, 1, 0 )
+				RETURN IF ( TargetSource <> "bsc" && CALCULATE ( MAX ( 'HR Targets'[Is Placeholder] ), Past ) = 1, 1, 0 )
 			) -- end of measure body
 			VAR __Wrong = [_Guard HR Targets]
 			RETURN IF ( __Wrong = "", __Value, """HR KPI Is Placeholder"" can't be analysed by " & __Wrong )
@@ -7924,37 +7920,37 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Issue Oasis Name"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// The month the HR story sentences describe, such as "October 2026": the last closed headcount month of the hospitals in the selection. Blank when the selection has no closed month for a hospital.
+	/// The month the HR story sentences describe, such as "October 2026": the last closed headcount month of the branches in the selection (hospitals and Head Office). Blank when the selection has no closed month.
 	measure 'HR Story Month' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN IF ( NOT ISBLANK ( MonthKey ), FORMAT ( DATE ( INT ( MonthKey / 10000 ), MOD ( INT ( MonthKey / 100 ), 100 ), 1 ), "MMMM yyyy" ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Headcount]
 			RETURN IF ( __Wrong = "", __Value, """HR Story Month"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Home summary in one or two sentences for the HR Story Month (hospitals only): headcount and its change on the previous month, turnover and Saudization with their HR KPI status, and the overtime share with its status for viewers with pay access (nothing about overtime otherwise). A status of On track, Watch or At risk against a placeholder target reads, for example, (On track, placeholder target).
+	/// Home summary in one or two sentences for the HR Story Month (the branches in the selection, Head Office included): headcount and its change on the previous month, turnover and Saudization with their HR KPI status, and the overtime share with its status for viewers with pay access (nothing about overtime otherwise). A status of On track, Watch or At risk against a placeholder target reads, for example, (On track, placeholder target).
 	measure 'HR Story Home' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					IF (
 						ISBLANK ( MonthKey ),
-						"No closed month for a hospital in the selection.",
+						"No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
-						VAR Heads = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR HeadsPrev = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Turn = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Heads = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR HeadsPrev = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Turn = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR TurnState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_TURNOVER", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR TurnPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_TURNOVER", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Saudi = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Saudi = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR SaudiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_SAUDIZATION", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR SaudiPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_SAUDIZATION", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Overtime = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Overtime = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR OvertimeState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_OVERTIME_SHARE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR OvertimePlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_OVERTIME_SHARE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						RETURN
@@ -7975,31 +7971,31 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Home"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Size block sentence for the HR Story Month (hospitals only): headcount and FTE at month end, the change on the previous month and on the same month last year ("no prior-year data" when that is blank), the HR_HEADCOUNT status with "(placeholder target)" when it applies, and the hospital with the largest change when more than one hospital is in context.
+	/// Size block sentence for the HR Story Month (the branches in the selection, Head Office included): headcount and FTE at month end, the change on the previous month and on the same month last year ("no prior-year data" when that is blank), the HR_HEADCOUNT status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest change when more than one branch is in context.
 	measure 'HR Story Size' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					IF (
 						ISBLANK ( MonthKey ),
-						"No closed month for a hospital in the selection.",
+						"No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
 						VAR PyYm = Ym - 100
 						VAR PrevText = FORMAT ( PrevStart, "MMMM" )
-						VAR Cur = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Prev = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Py = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR FteNow = CALCULATE ( [FTE], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Cur = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR Prev = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Py = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm )
+						VAR FteNow = CALCULATE ( [FTE], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR KpiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_HEADCOUNT", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR IsPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_HEADCOUNT", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Hospitals = CALCULATETABLE ( VALUES ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Branches = VALUES ( Branch[Branch Name] )
 						VAR Changes =
 							FILTER (
 								ADDCOLUMNS (
-									Hospitals,
+									Branches,
 									"@c", CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym ),
 									"@p", CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								),
@@ -8025,7 +8021,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Hospitals ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange, "+#,0;-#,0;0" ) & ")."
 									)
 							)
@@ -8035,32 +8031,32 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Size"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Flow block sentence for the HR Story Month (hospitals only): turnover (BSC Turnover) in the month, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_TURNOVER status with "(placeholder target)" when it applies, the hospital with the largest change when more than one hospital is in context, then the month's hires and leavers in Fusion.
+	/// Flow block sentence for the HR Story Month (the branches in the selection, Head Office included): turnover (BSC Turnover) in the month, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_TURNOVER status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when more than one branch is in context, then the month's hires and leavers in Fusion.
 	measure 'HR Story Flow' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					IF (
 						ISBLANK ( MonthKey ),
-						"No closed month for a hospital in the selection.",
+						"No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
 						VAR PyYm = Ym - 100
 						VAR PrevText = FORMAT ( PrevStart, "MMMM" )
-						VAR Cur = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Prev = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Py = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR HiresNow = CALCULATE ( [Hires], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR LeaversNow = CALCULATE ( [Leavers], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Cur = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR Prev = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Py = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm )
+						VAR HiresNow = CALCULATE ( [Hires], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR LeaversNow = CALCULATE ( [Leavers], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR KpiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_TURNOVER", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR IsPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_TURNOVER", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Hospitals = CALCULATETABLE ( VALUES ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Branches = VALUES ( Branch[Branch Name] )
 						VAR Changes =
 							FILTER (
 								ADDCOLUMNS (
-									Hospitals,
+									Branches,
 									"@c", CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym ),
 									"@p", CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								),
@@ -8081,7 +8077,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Hospitals ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.00;-0.00;0.00" ) & " pts)."
 									)
 							)
@@ -8093,33 +8089,33 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Flow"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Cost block sentence for the HR Story Month (hospitals only): payroll cost in SAR, its change on the previous month and on the same month last year ("no prior-year data" when that is blank), the overtime share and its change, the HR_OVERTIME_SHARE status with "(placeholder target)" when it applies, and the hospital with the largest payroll change when more than one hospital is in context. "Requires pay access." when HR Can See Pay is 0.
+	/// Cost block sentence for the HR Story Month (the branches in the selection, Head Office included): payroll cost in SAR, its change on the previous month and on the same month last year ("no prior-year data" when that is blank), the overtime share and its change, the HR_OVERTIME_SHARE status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest payroll change when more than one branch is in context. "Requires pay access." when HR Can See Pay is 0.
 	measure 'HR Story Cost' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					SWITCH (
 						TRUE (),
 						[HR Can See Pay] = 0, "Requires pay access.",
-						ISBLANK ( MonthKey ), "No closed month for a hospital in the selection.",
+						ISBLANK ( MonthKey ), "No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
 						VAR PyYm = Ym - 100
 						VAR PrevText = FORMAT ( PrevStart, "MMMM" )
-						VAR Cur = CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Prev = CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Py = CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Overtime = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR OvertimePrev = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Cur = CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR Prev = CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Py = CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm )
+						VAR Overtime = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR OvertimePrev = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 						VAR KpiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_OVERTIME_SHARE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR IsPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_OVERTIME_SHARE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Hospitals = CALCULATETABLE ( VALUES ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Branches = VALUES ( Branch[Branch Name] )
 						VAR Changes =
 							FILTER (
 								ADDCOLUMNS (
-									Hospitals,
+									Branches,
 									"@c", CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym ),
 									"@p", CALCULATE ( [Payroll Cost], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								),
@@ -8145,7 +8141,7 @@ table _Measures
 									)
 									& IF ( NOT ISBLANK ( KpiState ), " Overtime status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Hospitals ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange, "+#,0;-#,0;0" ) & " SAR)."
 									)
 							)
@@ -8155,30 +8151,30 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Cost"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Absence block sentence for the HR Story Month (hospitals only): the sick leave rate, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SICK_LEAVE_RATE status with "(placeholder target)" when it applies, the hospital with the largest change when more than one hospital is in context, then the leave liability in SAR and its change ("Leave liability: Requires pay access." when HR Can See Pay is 0).
+	/// Absence block sentence for the HR Story Month (the branches in the selection, Head Office included): the sick leave rate, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SICK_LEAVE_RATE status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when more than one branch is in context, then the leave liability in SAR and its change ("Leave liability: Requires pay access." when HR Can See Pay is 0).
 	measure 'HR Story Absence' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					IF (
 						ISBLANK ( MonthKey ),
-						"No closed month for a hospital in the selection.",
+						"No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
 						VAR PyYm = Ym - 100
 						VAR PrevText = FORMAT ( PrevStart, "MMMM" )
-						VAR Cur = CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Prev = CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Py = CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Cur = CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR Prev = CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Py = CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm )
 						VAR KpiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_SICK_LEAVE_RATE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR IsPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_SICK_LEAVE_RATE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Hospitals = CALCULATETABLE ( VALUES ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Branches = VALUES ( Branch[Branch Name] )
 						VAR Changes =
 							FILTER (
 								ADDCOLUMNS (
-									Hospitals,
+									Branches,
 									"@c", CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym ),
 									"@p", CALCULATE ( [Sick Leave Rate %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								),
@@ -8190,8 +8186,8 @@ table _Measures
 							IF (
 								[HR Can See Pay] = 0,
 								" Leave liability: Requires pay access.",
-								VAR Owed = CALCULATE ( [Leave Liability], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-								VAR OwedPrev = CALCULATE ( [Leave Liability], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+								VAR Owed = CALCULATE ( [Leave Liability], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+								VAR OwedPrev = CALCULATE ( [Leave Liability], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								RETURN
 									IF (
 										ISBLANK ( Owed ),
@@ -8213,7 +8209,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Hospitals ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.00;-0.00;0.00" ) & " pts)."
 									)
 							)
@@ -8224,30 +8220,30 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Absence"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Saudization block sentence for the HR Story Month (hospitals only): BSC Saudization at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SAUDIZATION status with "(placeholder target)" when it applies, and the hospital with the largest change when more than one hospital is in context.
+	/// Saudization block sentence for the HR Story Month (the branches in the selection, Head Office included): BSC Saudization at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_SAUDIZATION status with "(placeholder target)" when it applies, and the branch (hospital or Head Office) with the largest change when more than one branch is in context.
 	measure 'HR Story Saudization' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					IF (
 						ISBLANK ( MonthKey ),
-						"No closed month for a hospital in the selection.",
+						"No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
 						VAR PyYm = Ym - 100
 						VAR PrevText = FORMAT ( PrevStart, "MMMM" )
-						VAR Cur = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Prev = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Py = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Cur = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR Prev = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Py = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm )
 						VAR KpiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_SAUDIZATION", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR IsPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_SAUDIZATION", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Hospitals = CALCULATETABLE ( VALUES ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Branches = VALUES ( Branch[Branch Name] )
 						VAR Changes =
 							FILTER (
 								ADDCOLUMNS (
-									Hospitals,
+									Branches,
 									"@c", CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym ),
 									"@p", CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								),
@@ -8268,7 +8264,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Hospitals ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.0;-0.0;0.0" ) & " pts)."
 									)
 							)
@@ -8278,34 +8274,34 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Saudization"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Hiring block sentences for the HR Story Month (hospitals only): the vacancy rate (BSC Vacancy Rate) at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_VACANCY_RATE status with "(placeholder target)" when it applies, the hospital with the largest change when more than one hospital is in context; then the time to fill of the requisitions filled in the month with its change and the HR_TIME_TO_FILL status.
+	/// Hiring block sentences for the HR Story Month (the branches in the selection, Head Office included): the vacancy rate (BSC Vacancy Rate) at month end, its change on the previous month and on the same month last year in points ("no prior-year data" when that is blank), the HR_VACANCY_RATE status with "(placeholder target)" when it applies, the branch (hospital or Head Office) with the largest change when more than one branch is in context; then the time to fill of the requisitions filled in the month with its change and the HR_TIME_TO_FILL status.
 	measure 'HR Story Hiring' =
 			VAR __Value = ( -- measure body
-				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes" )
 				RETURN
 					IF (
 						ISBLANK ( MonthKey ),
-						"No closed month for a hospital in the selection.",
+						"No closed month in the selection.",
 						VAR Ym = INT ( MonthKey / 100 )
 						VAR MonthStart = DATE ( INT ( Ym / 100 ), MOD ( Ym, 100 ), 1 )
 						VAR PrevStart = EDATE ( MonthStart, -1 )
 						VAR PrevYm = YEAR ( PrevStart ) * 100 + MONTH ( PrevStart )
 						VAR PyYm = Ym - 100
 						VAR PrevText = FORMAT ( PrevStart, "MMMM" )
-						VAR Cur = CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Prev = CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Py = CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR Fill = CALCULATE ( [BSC Time to Fill (days)], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
-						VAR FillPrev = CALCULATE ( [BSC Time to Fill (days)], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Cur = CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR Prev = CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
+						VAR Py = CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PyYm )
+						VAR Fill = CALCULATE ( [BSC Time to Fill (days)], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR FillPrev = CALCULATE ( [BSC Time to Fill (days)], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 						VAR KpiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_VACANCY_RATE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR IsPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_VACANCY_RATE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR FillState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_TIME_TO_FILL", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR FillPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_TIME_TO_FILL", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
-						VAR Hospitals = CALCULATETABLE ( VALUES ( Branch[Branch Name] ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
+						VAR Branches = VALUES ( Branch[Branch Name] )
 						VAR Changes =
 							FILTER (
 								ADDCOLUMNS (
-									Hospitals,
+									Branches,
 									"@c", CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym ),
 									"@p", CALCULATE ( [BSC Vacancy Rate], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm )
 								),
@@ -8326,7 +8322,7 @@ table _Measures
 									) & "."
 									& IF ( NOT ISBLANK ( KpiState ), " Status: " & KpiState & IF ( IsPlaceholder = 1 && KpiState IN { "On track", "Watch", "At risk" }, " (placeholder target)" ) & "." )
 									& IF (
-										COUNTROWS ( Hospitals ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
+										COUNTROWS ( Branches ) > 1 && NOT ISBLANK ( BiggestChange ) && BiggestChange <> 0,
 										" Largest change since " & PrevText & ": " & MAXX ( Biggest, Branch[Branch Name] ) & " (" & FORMAT ( BiggestChange * 100, "+0.0;-0.0;0.0" ) & " pts)."
 									)
 							)
