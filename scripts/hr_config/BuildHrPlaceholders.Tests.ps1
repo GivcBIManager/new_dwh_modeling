@@ -45,13 +45,17 @@ Describe 'build_hr_placeholders.ps1' {
 }
 
 Describe 'build_hr_placeholders.ps1 additive KPIs' {
-    $sql = Invoke-Build '{"HR_HEADCOUNT":{"1":812.4,"2":1500,"3":2000},"HR_LEAVE_LIABILITY":{"1":1234567.5},"HR_STAFF_COST_PER_FTE":9000,"HR_VACANCY_RATE":null}'
+    $sql = Invoke-Build '{"HR_HEADCOUNT":{"1":812.4,"2":1500,"3":2000,"100":148},"HR_LEAVE_LIABILITY":{"1":1234567.5},"HR_STAFF_COST_PER_FTE":9000,"HR_VACANCY_RATE":null}'
     $rows = Get-InsertRows $sql 'map_hr_target'
 
-    It 'writes one row per hospital and year, and no network row' {
-        ($rows | Where-Object { $_ -match "'HR_HEADCOUNT'" }).Count | Should Be 6
+    It 'writes one row per branch and year, Head Office (100) included, and no network row' {
+        ($rows | Where-Object { $_ -match "'HR_HEADCOUNT'" }).Count | Should Be 8
         ($rows | Where-Object { $_ -match "'HR_HEADCOUNT', 0," }).Count | Should Be 0
+        ($rows | Where-Object { $_ -match "'HR_HEADCOUNT', 100, 2026, 0, 148, 163, 0," }).Count | Should Be 1
         ($rows | Where-Object { $_ -match "'HR_LEAVE_LIABILITY', 1, 2027, 0, 1234568, 1358024, 0," }).Count | Should Be 1
+    }
+    It 'refuses a branch 0 value for an additive KPI (branch_id 0 means every branch)' {
+        { Invoke-Build '{"HR_HEADCOUNT":{"0":4300,"1":800}}' } | Should Throw
     }
     It 'rounds a count to a whole number, on target with a watch 10 percent worse' {
         ($rows | Where-Object { $_ -match "'HR_HEADCOUNT', 1, 2026, 0, 812, 894, 0," }).Count | Should Be 1
@@ -116,7 +120,11 @@ Describe 'build_hr_placeholders.ps1 KPI lists' {
     It 'annualises exactly the flow KPIs ($FlowKpis)' {
         (Get-ScriptList 'FlowKpis') -join ', ' | Should Be ((@($Nature.Keys | Where-Object { $Nature[$_] -eq 'flow' }) | Sort-Object) -join ', ')
     }
-    It 'writes per-hospital rows for the codes of measure HR KPI Is Additive ($AdditiveKpis)' {
+    It 'queries every branch, Head Office included: no Is Hospital filter (user decision 2026-11-03)' {
+        $script | Should Not Match 'Is Hospital'
+        $script | Should Match 'Branch\[Branch Key\] <> 0'
+    }
+    It 'writes per-branch rows for the codes of measure HR KPI Is Additive ($AdditiveKpis)' {
         $measures = [IO.File]::ReadAllText((Join-Path $root 'ssas\HNH_Analytics\tables\_Measures.tmdl'))
         $block = [regex]::Match($measures, "(?s)measure 'HR KPI Is Additive' =.*?IN \{([^}]*)\}")
         $block.Success | Should Be $true

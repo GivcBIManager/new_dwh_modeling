@@ -9,13 +9,15 @@
   value is an object of branch id -> value. null or a missing code means blank.
 
   Value of a KPI: the measure behind [HR KPI Actual] (measure_name in the seed, the SWITCH in 'HR KPI Actual') over
-  'Date'[Year Month] 202601 to 202609 and Branch[Is Hospital] = "Yes", which is what [HR KPI Actual] returns for those
-  months. It is queried through the measure itself because [HR KPI Actual] needs the HR tables deployed in the model.
+  'Date'[Year Month] 202601 to 202609 and every branch, Head Office (100) included (user decision 2026-11-03), which
+  is what [HR KPI Actual] returns for those months. It is queried through the measure itself because [HR KPI Actual]
+  needs the HR tables deployed in the model.
   - Flow KPIs (scale_with_months = 1) hold a 9-month figure that the model pro-rates from an annual target, so the
     value is annualised x 12/9.
-  - Additive KPIs (HR KPI Is Additive in ssas\HNH_Analytics\tables\_Measures.tmdl) are written per hospital
-    (branch_id 1 to 8, each hospital's own level), because the model sums the hospital targets. Others get one
-    row per year with branch_id 0.
+  - Additive KPIs (HR KPI Is Additive in ssas\HNH_Analytics\tables\_Measures.tmdl) are written per branch
+    (branch_id 1 to 8 and 100, each branch's own level), because the model sums the branch targets. Others get one
+    row per year with branch_id 0, which applies to every branch, Head Office included. Branch 0 of the Branch
+    table (Group) is never queried or written as an additive branch: branch_id 0 means every branch.
   - Rounding: 4 decimals for pct (0.01 percentage point); every other format (num, days, sar) to a whole number when
     the absolute value is 100 or more, else to 2 decimals. The watch value is 10 percent worse than the UNROUNDED
     target in the KPI's direction (x 0.9 for higher, x 1.1 for lower, ceiling and on_target), then rounded by the same rule.
@@ -37,7 +39,7 @@ $dash = [string][char]0x2013
 # Jan-Sep 2026 (BSC Turnover 0.4% / 4.5%, Payroll Cost per FTE 9,289 / 85,589, BSC Revenue per Doctor 75,278 /
 # 1,191,354). BuildHrPlaceholders.Tests.ps1 keeps the nature of every fixed KPI of the seed and fails on a new one.
 $FlowKpis = @('HR_TURNOVER', 'HR_NEW_HIRE_TURNOVER', 'HR_STAFF_COST_PER_FTE', 'HR_REVENUE_PER_DOCTOR')
-# Additive KPIs: per hospital rows. Same two codes as measure 'HR KPI Is Additive' in ssas\HNH_Analytics\tables\_Measures.tmdl.
+# Additive KPIs: per branch rows (hospitals and Head Office). Same two codes as measure 'HR KPI Is Additive' in ssas\HNH_Analytics\tables\_Measures.tmdl.
 $AdditiveKpis = @('HR_HEADCOUNT', 'HR_LEAVE_LIABILITY')
 # Metrics re-inserted with needs_pay = 1.
 $PayGatedMetrics = @('HR_M_LEAVE_BALANCE', 'HR_M_CURRENT_LEAVE_BALANCE', 'HR_M_AVERAGE_LEAVE_BALANCE')
@@ -93,7 +95,10 @@ if ($Values) {
         if ($AdditiveKpis -contains $k.Code) {
             if ($null -eq $v.Value) { continue }
             $h = @{}
-            foreach ($p in $v.Value.PSObject.Properties) { $n = ConvertTo-Number $p.Value; if ($null -ne $n) { $h[[int]$p.Name] = $n } }
+            foreach ($p in $v.Value.PSObject.Properties) {
+                if ([int]$p.Name -eq 0) { throw "$($k.Code): branch 0 is not a branch (branch_id 0 means every branch); give the branches' own values" }
+                $n = ConvertTo-Number $p.Value; if ($null -ne $n) { $h[[int]$p.Name] = $n }
+            }
             if ($h.Count) { $valueOf[$k.Code] = $h }
         } else {
             $n = ConvertTo-Number $v.Value
@@ -103,27 +108,30 @@ if ($Values) {
 } else {
     Import-Module (Join-Path $PSScriptRoot '..\..\ssas\scripts\HnhSsas.psm1') -Force
     $window = "'Date'[Year Month] >= 202601, 'Date'[Year Month] <= 202609"
-    function Get-DaxValue([string]$Measure, [string]$Filters) {
-        $q = "EVALUATE ROW ( ""v"", CALCULATE ( [$Measure], $window, $Filters ) )"
+    function Get-DaxValue([string]$Measure, [string]$Filters = '') {
+        $more = if ($Filters) { ", $Filters" } else { '' }
+        $q = "EVALUATE ROW ( ""v"", CALCULATE ( [$Measure], $window$more ) )"
         # a measure that is not in the deployed model fails the query: reported and treated as blank
         try { $t = Invoke-HnhDax -Server $Server -Database $Database -Query $q }
         catch { Write-Warning ("[{0}]: {1}" -f $Measure, $_.Exception.Message); return $null }
         if ($t.Rows.Count -eq 0) { return $null }
         return ConvertTo-Number $t.Rows[0][0]
     }
-    $hq = 'EVALUATE SELECTCOLUMNS ( FILTER ( Branch, Branch[Is Hospital] = "Yes" ), "k", Branch[Branch Key] )'
-    $hospitals = @((Invoke-HnhDax -Server $Server -Database $Database -Query $hq).Rows | ForEach-Object { [int]$_[0] } | Sort-Object)
+    # every branch but the Group member (0): the hospitals and Head Office (100)
+    $bq = 'EVALUATE SELECTCOLUMNS ( FILTER ( Branch, Branch[Branch Key] <> 0 ), "k", Branch[Branch Key] )'
+    $branches = @((Invoke-HnhDax -Server $Server -Database $Database -Query $bq).Rows | ForEach-Object { [int]$_[0] } | Sort-Object)
     foreach ($k in $kpis) {
         Write-Host ("querying {0} ({1})" -f $k.Code, $k.Measure)
         if ($AdditiveKpis -contains $k.Code) {
             $h = @{}
-            foreach ($b in $hospitals) {
+            foreach ($b in $branches) {
                 $n = Get-DaxValue $k.Measure "Branch[Branch Key] = $b"
                 if ($null -ne $n) { $h[$b] = $n }
             }
             if ($h.Count) { $valueOf[$k.Code] = $h }
         } else {
-            $n = Get-DaxValue $k.Measure 'Branch[Is Hospital] = "Yes"'
+            # the network over every branch, as [HR KPI Actual] (no branch filter)
+            $n = Get-DaxValue $k.Measure
             if ($null -ne $n) { $valueOf[$k.Code] = $n }
         }
     }
@@ -175,7 +183,8 @@ $kpiCols = 'kpi_code, kind, kpi_name, short_label, area, definition, formula, so
 $targetCols = 'kpi_code, branch_id, year, month, target_value, watch_value, scale_with_months, source_basis, changed_at, changed_by, change_note, is_deleted'
 $lines = @(
     "-- HR placeholder update $((Get-Date).ToString('yyyy-MM-dd')): the target of each fixed KPI is its Jan-Sep 2026 level (flow KPIs x 12/9), for 2026 and 2027,",
-    "-- until HR confirms real targets (source_basis starts with Placeholder). Additive KPIs have one row per hospital.",
+    "-- until HR confirms real targets (source_basis starts with Placeholder). Additive KPIs have one row per branch (hospitals",
+    "-- and Head Office 100); the others one branch_id 0 row, which applies to every branch, Head Office included.",
     "-- The leave balance metrics become pay-gated (needs_pay = 1). Built by build_hr_placeholders.ps1.",
     "-- Applied with apply_hr_config.ps1 -Update; insert-only, the latest row per key wins.",
     "",
