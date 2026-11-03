@@ -142,8 +142,9 @@ if ($Values) {
             }
             if ($h.Count) { $valueOf[$k.Code] = $h }
         } else {
-            # the network over every branch, as [HR KPI Actual] (no branch filter)
-            $n = Get-DaxValue $k.Measure
+            # the network over every branch, Head Office included, as [HR KPI Actual] on the report's pages (their
+            # branches filter keeps Group out; Group has no HR data). Branch 0 left out as in the additive path.
+            $n = Get-DaxValue $k.Measure 'Branch[Branch Key] <> 0'
             if ($null -ne $n) { $valueOf[$k.Code] = $n }
         }
     }

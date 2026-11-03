@@ -156,6 +156,10 @@ Describe 'build_hr_placeholders.ps1 KPI lists' {
         $script | Should Not Match 'Is Hospital'
         $script | Should Match 'Branch\[Branch Key\] <> 0'
     }
+    It 'leaves out Group (0) in the non-additive query too, as the additive path (minor 3f)' {
+        $script | Should Match "\`$n = Get-DaxValue \`$k\.Measure 'Branch\[Branch Key\] <> 0'"
+        $script | Should Not Match '(?m)^\s*\$n = Get-DaxValue \$k\.Measure\s*$'
+    }
     It 'lists in $WordingKpis exactly the rows whose text differs from the seed as loaded at GATE G1 (4119ad1)' {
         $loaded = (& git -C $root show '4119ad1:scripts/hr_config/hr_config_seed.sql') -join "`n"
         if ($LASTEXITCODE -ne 0) { throw 'git show 4119ad1 failed' }
