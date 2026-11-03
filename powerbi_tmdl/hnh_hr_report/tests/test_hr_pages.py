@@ -318,7 +318,7 @@ STORY_MEASURES = ["HR Story Size", "HR Story Flow", "HR Story Cost", "HR Story A
                   "HR Story Hiring"]
 STORY_TILES = ["HR_HEADCOUNT", "HR_TURNOVER", "HR_STAFF_COST_PER_FTE", "HR_SICK_LEAVE_RATE", "HR_SAUDIZATION",
                "HR_VACANCY_RATE"]
-STORY_CHARTS = [["Headcount", "FTE"], ["BSC Turnover"], ["Payroll Cost", "Overtime Share %"], ["Sick Leave Rate %"],
+STORY_CHARTS = [["Headcount", "FTE"], ["BSC Turnover"], ["Payroll Cost"], ["Sick Leave Rate %"],
                 ["BSC Saudization"], ["BSC Vacancy Rate"]]
 
 

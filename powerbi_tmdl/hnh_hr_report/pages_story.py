@@ -3,7 +3,7 @@ sentence (left, 40 %), a 12-month line chart and a KPI tile:
 
     Size           Headcount, FTE                      HR_HEADCOUNT
     Flow           BSC Turnover                        HR_TURNOVER
-    Cost           Payroll Cost, Overtime Share %      HR_STAFF_COST_PER_FTE
+    Cost           Payroll Cost                        HR_STAFF_COST_PER_FTE
     Absence        Sick Leave Rate %                   HR_SICK_LEAVE_RATE
     Saudization    BSC Saudization                     HR_SAUDIZATION
     Hiring         BSC Vacancy Rate                    HR_VACANCY_RATE
@@ -38,15 +38,15 @@ YEAR_MONTH = col("Date", "Year Month Name")
 MONTH_OFFSET = col("Date", "Month Offset")
 LAST_12_CLOSED = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
 
-# (block, story measure, chart measures, chart title, KPI tile code, pay-only)
+# (story measure, chart measures, chart title, KPI tile code, pay-only)
 BLOCKS = [
-    ("Size", "HR Story Size", ["Headcount", "FTE"], "Headcount and FTE", "HR_HEADCOUNT", False),
-    ("Flow", "HR Story Flow", ["BSC Turnover"], "Turnover", "HR_TURNOVER", False),
-    ("Cost", "HR Story Cost", ["Payroll Cost", "Overtime Share %"], "Payroll cost and overtime share",
+    ("HR Story Size", ["Headcount", "FTE"], "Headcount and FTE", "HR_HEADCOUNT", False),
+    ("HR Story Flow", ["BSC Turnover"], "Turnover", "HR_TURNOVER", False),
+    ("HR Story Cost", ["Payroll Cost"], "Payroll cost",
      "HR_STAFF_COST_PER_FTE", True),
-    ("Absence", "HR Story Absence", ["Sick Leave Rate %"], "Sick leave rate", "HR_SICK_LEAVE_RATE", False),
-    ("Saudization", "HR Story Saudization", ["BSC Saudization"], "Saudization", "HR_SAUDIZATION", False),
-    ("Hiring", "HR Story Hiring", ["BSC Vacancy Rate"], "Vacancy rate", "HR_VACANCY_RATE", False),
+    ("HR Story Absence", ["Sick Leave Rate %"], "Sick leave rate", "HR_SICK_LEAVE_RATE", False),
+    ("HR Story Saudization", ["BSC Saudization"], "Saudization", "HR_SAUDIZATION", False),
+    ("HR Story Hiring", ["BSC Vacancy Rate"], "Vacancy rate", "HR_VACANCY_RATE", False),
 ]
 
 
@@ -79,7 +79,7 @@ def story_page() -> Page:
     month_slicer = bar[1]
     visuals = page_frame("story", bar) + [_heading()]
     charts: list[Visual] = []
-    for i, (_name, story, measures, title, code, pay) in enumerate(BLOCKS):
+    for i, (story, measures, title, code, pay) in enumerate(BLOCKS):
         y = BLOCKS_Y + i * (BLOCK_H + GAP)
         chart = _chart(y, measures, title)
         charts.append(chart)

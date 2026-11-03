@@ -47,20 +47,6 @@
               },
               "queryRef": "_Measures.Payroll Cost",
               "nativeQueryRef": "Payroll Cost"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Overtime Share %"
-                }
-              },
-              "queryRef": "_Measures.Overtime Share %",
-              "nativeQueryRef": "Overtime Share %"
             }
           ]
         }
@@ -97,7 +83,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Payroll cost and overtime share, last 12 closed months'"
+                  "Value": "'Payroll cost, last 12 closed months'"
                 }
               }
             }
