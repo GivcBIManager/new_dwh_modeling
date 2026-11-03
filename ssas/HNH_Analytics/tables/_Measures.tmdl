@@ -7516,7 +7516,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Story Month"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Story
-	/// Home summary in one or two sentences for the HR Story Month (hospitals only): headcount and its change on the previous month, turnover and Saudization with their HR KPI status, and the overtime share with its status for viewers with pay access (nothing about overtime otherwise).
+	/// Home summary in one or two sentences for the HR Story Month (hospitals only): headcount and its change on the previous month, turnover and Saudization with their HR KPI status, and the overtime share with its status for viewers with pay access (nothing about overtime otherwise). A status of On track, Watch or At risk against a placeholder target reads, for example, (On track, placeholder target).
 	measure 'HR Story Home' =
 			VAR __Value = ( -- measure body
 				VAR MonthKey = CALCULATE ( MAX ( Headcount[Month Date Key] ), Headcount[Is Closed Month] = "Yes", KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
@@ -7532,21 +7532,24 @@ table _Measures
 						VAR HeadsPrev = CALCULATE ( [Headcount], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = PrevYm, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
 						VAR Turn = CALCULATE ( [BSC Turnover], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
 						VAR TurnState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_TURNOVER", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR TurnPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_TURNOVER", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR Saudi = CALCULATE ( [BSC Saudization], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
 						VAR SaudiState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_SAUDIZATION", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR SaudiPlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_SAUDIZATION", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						VAR Overtime = CALCULATE ( [Overtime Share %], REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )
 						VAR OvertimeState = CALCULATE ( [HR KPI Status], 'HR KPI'[KPI Code] = "HR_OVERTIME_SHARE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
+						VAR OvertimePlaceholder = CALCULATE ( [HR KPI Is Placeholder], 'HR KPI'[KPI Code] = "HR_OVERTIME_SHARE", REMOVEFILTERS ( 'Date' ), 'Date'[Year Month] = Ym )
 						RETURN
 							FORMAT ( MonthStart, "MMMM yyyy" ) & ": headcount "
 								& IF ( ISBLANK ( Heads ), "not available", FORMAT ( Heads, "#,0" ) )
 								& IF ( NOT ISBLANK ( Heads ) && NOT ISBLANK ( HeadsPrev ), " (" & FORMAT ( Heads - HeadsPrev, "+#,0;-#,0;0" ) & " on " & FORMAT ( PrevStart, "MMMM" ) & ")" )
 								& ", turnover " & IF ( ISBLANK ( Turn ), "not available", FORMAT ( Turn, "0.00%" ) )
-								& IF ( NOT ISBLANK ( TurnState ), " (" & TurnState & ")" )
+								& IF ( NOT ISBLANK ( TurnState ), " (" & TurnState & IF ( TurnPlaceholder = 1 && TurnState IN { "On track", "Watch", "At risk" }, ", placeholder target" ) & ")" )
 								& " and Saudization " & IF ( ISBLANK ( Saudi ), "not available", FORMAT ( Saudi, "0.0%" ) )
-								& IF ( NOT ISBLANK ( SaudiState ), " (" & SaudiState & ")" ) & "."
+								& IF ( NOT ISBLANK ( SaudiState ), " (" & SaudiState & IF ( SaudiPlaceholder = 1 && SaudiState IN { "On track", "Watch", "At risk" }, ", placeholder target" ) & ")" ) & "."
 								& IF (
 									[HR Can See Pay] = 1 && NOT ISBLANK ( Overtime ),
-									" Overtime share " & FORMAT ( Overtime, "0.0%" ) & IF ( NOT ISBLANK ( OvertimeState ), " (" & OvertimeState & ")" ) & "."
+									" Overtime share " & FORMAT ( Overtime, "0.0%" ) & IF ( NOT ISBLANK ( OvertimeState ), " (" & OvertimeState & IF ( OvertimePlaceholder = 1 && OvertimeState IN { "On track", "Watch", "At risk" }, ", placeholder target" ) & ")" ) & "."
 								)
 					)
 			) -- end of measure body
@@ -7709,7 +7712,7 @@ table _Measures
 						RETURN
 							IF (
 								ISBLANK ( Cur ),
-								"No payroll cost in SAR for " & FORMAT ( MonthStart, "MMMM yyyy" ) & " yet.",
+								"No payroll cost for " & FORMAT ( MonthStart, "MMMM yyyy" ) & " yet.",
 								"Payroll cost SAR " & FORMAT ( Cur, "#,0" ) & " in " & FORMAT ( MonthStart, "MMMM yyyy" ) & ": "
 									& IF ( ISBLANK ( Prev ), "no previous-month data", FORMAT ( DIVIDE ( Cur - Prev, Prev ), "+0.0%;-0.0%;0.0%" ) & " on " & PrevText ) & "; "
 									& IF (
