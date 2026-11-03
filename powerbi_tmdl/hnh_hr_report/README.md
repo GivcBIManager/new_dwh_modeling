@@ -7,7 +7,18 @@ The generator reuses the Balanced Scorecard generator's modules in `powerbi_tmdl
 Code:
 
 - `hr_frame.py`: `HR_FRAME` (title "Workforce" / "Hayat Healthcare", tabs Home, Story, Scorecard, Details, Data quality, Guide, and the How to use and Definitions buttons), `HR_REPORT` (name, perspective, theme, logo), `page_frame(tab, bar)`, the filter bar (`filters()`: Hospital and Month, Month saved on "Last closed month"; `sub_tabs(current)`: the six detail pages), `kpi_tile(code, x, y, w, h)`, and the KPI list read from `scripts/hr_config/hr_config_seed.sql` (`seed_kpis()`, `home_tile_codes()`, `kpi_label()`).
-- `pages_home.py`: Home. `pages.py`: `PAGES` (in order) and `REPORT_FILTERS` (this year and last year).
+- `pages_home.py`: Home. `pages_story.py`: Story. `pages_scorecard.py`: Scorecard and KPI detail.
+- `pages_detail.py`: the six detail pages (Headcount & mix, Movements & turnover, Payroll & overtime, Absence & leave, Recruitment, Productivity) and the hidden Employee list. `pages.py`: `PAGES` (in order) and `REPORT_FILTERS` (this year and last year).
+
+## Detail pages and the Employee list
+
+Each detail page has the Details tab current and the six sub-tabs in the filter bar, its own slicers where every visual on it accepts them, a row of cards for the selected month, a 2 x 2 grid of charts and, below it, a row of three more (the page scrolls). Line charts show the last 12 closed months whatever the Month slicer says (as on Story). The pages show hospitals only, as Home's area cards.
+
+Every model measure returns "... can't be analysed by <table>" when a table its guard rejects is filtered. `pages_detail.blocked_tables` reads those tables from `_Measures.tmdl`: the build stops when a visual's axis, a page slicer or a drill field is one of them, and a click in a chart does not reach a visual whose measures reject the chart's tables (a NoFilter interaction, written by the generator). So Payroll has only a Department slicer (`Payroll Cost per FTE` rejects Pay Category), Absence & leave, Recruitment and Productivity have none.
+
+Pay figures (Payroll, Productivity, the leave figures on Absence & leave) have an `[HR Pay Notice]` card over them, shown only without pay access; their cards are filtered to non-blank, so they show nothing rather than "(Blank)". Fusion leaver figures are labelled "in Fusion"; the headline turnover is `[BSC Turnover]`.
+
+The Employee list is reached by drill-through on a hospital or an HR department, with "keep all filters" off (a source visual's own filters, such as 'HR KPI' or 'Pay Category', would turn `[Headcount]` into its guard message). The month and the Department, Job, Grade, Nationality and Worker type selections come from its slicers, synced with the detail pages'. Both tables are filtered to `[Headcount]` not blank, so branch security applies through the fact. Fusion names ('Employee Details', pay access only) are in their own table: a table grouped by a column with no visible rows has no rows, so names in the people table would empty it for readers without pay access.
 - `build.py`: the CLI.
 
 Test with `python -m pytest powerbi_tmdl/hnh_hr_report/tests -q`. Both report folders have a `pages.py` and a `build.py`; the HR tests load this folder's `pages.py` as `hr_pages` so that `python -m pytest powerbi_tmdl` runs both suites in one session.

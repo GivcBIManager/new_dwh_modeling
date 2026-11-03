@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "headcount",
+  "displayName": "Headcount & mix",
+  "displayOption": "FitToPage",
+  "height": 2058,
+  "width": 1920,
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "0885d1db1f3c74aa4348",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Is Hospital"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "b",
+              "Entity": "Branch",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "b"
+                          }
+                        },
+                        "Property": "Is Hospital"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "c767a68fe07c8fd21ceb",
+      "target": "a62d225c800a6ddaacd1",
+      "type": "NoFilter"
+    },
+    {
+      "source": "cddc8578e91c8b92d02c",
+      "target": "c829aa80f439232a05bd",
+      "type": "NoFilter"
+    },
+    {
+      "source": "ea6ed15ce76adaad7b7a",
+      "target": "c829aa80f439232a05bd",
+      "type": "NoFilter"
+    },
+    {
+      "source": "58b340589694a6422a1d",
+      "target": "c829aa80f439232a05bd",
+      "type": "NoFilter"
+    },
+    {
+      "source": "1be4887fb9d1ce82d699",
+      "target": "c829aa80f439232a05bd",
+      "type": "NoFilter"
+    }
+  ]
+}

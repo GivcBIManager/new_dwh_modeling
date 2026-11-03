@@ -468,3 +468,209 @@ def test_kpi_detail_charts_have_a_pay_notice():
                   next(v for v in page.visuals if v.sample == "barChart")):
         assert any(n.x == chart.x and n.w == chart.w and chart.y <= n.y and n.y + n.h <= chart.y + chart.h
                    for n in notices)
+
+
+# ---- Detail pages and Employee list ------------------------------------------------------------------------------
+
+HEADCOUNT = meas("Headcount")
+PAY_NOTICE = meas("HR Pay Notice")
+DEPARTMENT_NAME = col("HR Department", "Department Name")
+# The measures that read pay-gated tables (Payroll through 'Pay Category', 'Leave Balances', 'Staff Productivity')
+# and 'Employee Details'[Full Name]: on the pay pages and Absence & leave each such visual has an HR Pay Notice over it
+PAY_FIELDS = {meas(m) for m in ("Payroll Cost", "Gross Pay", "Gross Pay (Open Payroll)", "Overtime Share %",
+                                "Payroll Cost per FTE", "Leave Balance (days)", "Leave Liability", "Visits per FTE",
+                                "Revenue per Payroll SAR", "Payroll Cost per Visit")}
+FUSION_LEAVER_MEASURES = {"Leavers", "Voluntary Leavers", "Voluntary Turnover Rate %", "New Hire Turnover %"}
+
+
+def _detail_pages():
+    return [_page(n) for n in DETAIL_NAMES]
+
+
+def _index(page, visual):
+    return next(i for i, v in enumerate(page.visuals) if v is visual)
+
+
+def _month_slicer(page):
+    return next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
+
+
+def _measures(v):
+    return [f for fs in v.roles.values() for f in fs if f.kind == "measure"]
+
+
+def _data_visuals(page):
+    """Cards, charts and tables that show a measure other than the pay notice."""
+    return [v for v in page.visuals if v.sample in ("card", "lineChart", "barChart", "table", "matrix")
+            and any(m != PAY_NOTICE for m in _measures(v))]
+
+
+def _columns(v):
+    return [f for fs in v.roles.values() for f in fs if f.kind == "column"] + [
+        f.field for f in v.filters if f.field.kind == "column"]
+
+
+def _covers(notice, v):
+    """The notice lies over the visual: inside it vertically, overlapping it horizontally."""
+    return notice.x < v.x + v.w and v.x < notice.x + notice.w and v.y <= notice.y and notice.y + notice.h <= v.y + v.h
+
+
+def test_detail_pages_have_sub_tabs():
+    """The six detail pages, registered after KPI detail, each in the frame with the Details tab current, the six
+    sub-tabs (its own filled) and the shared Hospital and Month slicers in the filter bar."""
+    from hr_frame import page_frame
+    names = [p.name for p in PAGES]
+    assert names[4:10] == DETAIL_NAMES
+    for (name, display, _label), page in zip(DETAIL_PAGES, _detail_pages()):
+        assert page.display == display and not page.hidden
+        for v in page_frame("headcount", filters() + sub_tabs(name)):
+            assert v in page.visuals, name
+
+
+def test_detail_pages_cards_then_two_by_two_grid():
+    for page in _detail_pages():
+        cards = [v for v in _data_visuals(page) if v.sample == "card"]
+        top = min(c.y for c in cards)
+        assert len(cards) == len([c for c in cards if c.y == top]), page.name  # one row
+        assert 4 <= len(cards) <= 5, page.name
+        charts = [v for v in page.visuals if v.sample in ("lineChart", "barChart", "table") and v.y > top]
+        first = sorted(charts, key=lambda v: (v.y, v.x))[:4]
+        assert len({v.y for v in first}) == 2 and len({v.x for v in first}) == 2, page.name
+        assert all(v.y + v.h <= frame.CONTENT[1] + frame.CONTENT[3] for v in first), page.name
+
+
+def test_detail_cards_follow_month_and_trends_show_twelve_closed_months():
+    """Cards follow the selected month; each line chart is a 12-month trend that ignores the Month slicer (Story's
+    mechanism); every other data visual follows it."""
+    from model import interaction_indexes
+    for page in _detail_pages():
+        month = _index(page, _month_slicer(page))
+        no_filter = {t for s, t, k in interaction_indexes(page) if s == month and k == "NoFilter"}
+        lines = [v for v in page.visuals if v.sample == "lineChart"]
+        assert lines, page.name
+        for v in lines:
+            assert v.roles["Category"] == [col("Date", "Year Month Name")] and v.sort_dir == "asc"
+            assert (col("Date", "Month Offset"), "in", list(range(1, 13))) in _flt(v), page.name
+            assert _index(page, v) in no_filter, page.name
+        for v in _data_visuals(page):
+            if v.sample != "lineChart":
+                assert _index(page, v) not in no_filter, (page.name, v.title)
+
+
+def test_detail_visuals_never_hit_a_measure_guard():
+    """A measure returns "... can't be analysed by <table>" when a table its guard rejects is filtered. On every
+    detail page and the Employee list: a visual's own columns (axis, rows, visual filters), every slicer, page filter
+    and drill field are tables all its measures accept; a selection in a chart or table does not reach a visual
+    whose measures reject one of its tables (a NoFilter interaction)."""
+    from model import interaction_indexes
+    from pages_detail import blocked_tables
+    assert "Pay Category" in blocked_tables("Payroll Cost per FTE")
+    assert "Pay Category" not in blocked_tables("Payroll Cost") and blocked_tables("HR Pay Notice") == frozenset()
+    for page in _detail_pages() + [_page("employee_list")]:
+        slicer_tables = {f.table for v in page.visuals if v.sample.startswith("slicer") for f in v.roles["Values"]}
+        slicer_tables |= {f.field.table for f in page.filters} | {f.table for f in page.drill_fields or []}
+        no_filter = {(s, t) for s, t, k in interaction_indexes(page) if k == "NoFilter"}
+        data = _data_visuals(page)
+        for v in data:
+            for m in _measures(v):
+                assert not blocked_tables(m.name) & ({c.table for c in _columns(v)} | slicer_tables), (
+                    page.name, v.title, m.name)
+        for source in data:
+            tables = {c.table for fs in source.roles.values() for c in fs if c.kind == "column"}
+            for target in data:
+                if target is not source and any(blocked_tables(m.name) & tables for m in _measures(target)):
+                    assert (_index(page, source), _index(page, target)) in no_filter, (
+                        page.name, source.title, target.title)
+
+
+def test_detail_pay_visuals_carry_a_pay_notice():
+    """R22: on Payroll, Productivity and Absence & leave, every visual with a pay figure lies under an
+    [HR Pay Notice] card (non-blank filter) drawn after it; pay cards are filtered to non-blank, so a reader without
+    pay access sees the notice rather than "(Blank)"."""
+    for name in ("payroll", "absence", "productivity"):
+        page = _page(name)
+        notices = [v for v in page.visuals if v.roles.get("Values") == [PAY_NOTICE]]
+        assert notices and all(_flt(n) == [(PAY_NOTICE, "notblank", [])] for n in notices), name
+        pay = [v for v in _data_visuals(page) if set(_measures(v)) & PAY_FIELDS]
+        assert pay, name
+        for v in pay:
+            over = [n for n in notices if _covers(n, v)]
+            assert over and all(_index(page, n) > _index(page, v) for n in over), (name, v.title)
+            if v.sample == "card":
+                assert (_measures(v)[0], "notblank", []) in _flt(v), (name, v.roles)
+    for name in ("headcount", "movements", "recruitment"):
+        assert not [v for v in _data_visuals(_page(name)) if set(_measures(v)) & PAY_FIELDS], name
+
+
+def test_detail_fusion_leaver_figures_say_in_fusion():
+    for page in _detail_pages():
+        for v in page.visuals:
+            for m in _measures(v):
+                if m.name in FUSION_LEAVER_MEASURES:
+                    assert "in Fusion" in v.labels.get(m, ""), (page.name, v.title, m.name)
+    bound = {m.name for v in _page("movements").visuals for m in _measures(v)}
+    assert {"Hires", "Leavers", "Voluntary Leavers", "BSC Turnover", "Voluntary Turnover Rate %",
+            "New Hire Turnover %"} <= bound
+    assert "Turnover Rate %" not in bound  # headline turnover is BSC Turnover
+
+
+def test_detail_pages_use_underlying_measures_and_spec_breakdowns():
+    """No HR KPI measures on detail pages (so their slicers are free, R13); the spec's breakdowns."""
+    for page in _detail_pages():
+        assert not {m.name for v in page.visuals for m in _measures(v)} & KPI_MEASURES, page.name
+
+    def axes(name):
+        return {c for v in _page(name).visuals if v.sample in ("barChart", "table", "matrix")
+                for fs in v.roles.values() for c in fs if c.kind == "column"}
+
+    assert {BRANCH_NAME, DEPARTMENT_NAME, col("Job", "Job Name"), col("Grade", "Grade Name"),
+            col("Position", "Position Name"), col("Location", "Location Name"), col("Headcount", "Is Saudi"),
+            col("Headcount", "Gender"), col("Headcount", "Age Band"), col("Headcount", "Tenure Band"),
+            col("Employee", "Worker Type"), col("Job", "Full Part Time")} <= axes("headcount")
+    assert {col("Worker Action", "Action Reason Name"), col("Employee", "Tenure Band")} <= axes("movements")
+    assert {col("Pay Category", "Pay Category"), DEPARTMENT_NAME, col("Payroll", "Source"),
+            col("Payroll", "Payroll Status")} <= axes("payroll")
+    assert {col("Absence Type", "Absence Type Name"), BRANCH_NAME} <= axes("absence")
+    assert {col("Staff Productivity", "Staff Category"), BRANCH_NAME} <= axes("productivity")
+    card_measures = {m.name for v in _page("headcount").visuals if v.sample == "card" for m in _measures(v)}
+    assert "Contingent Share %" in card_measures  # contingent workers shown separately
+
+
+def test_recruitment_has_no_department():
+    page = _page("recruitment")
+    assert "HR Department" not in {f.table for f in page_fields(page)}
+    assert not any(v.sample.startswith("slicer") and v.roles["Values"][0].table == "HR Department"
+                   for v in page.visuals)
+    bound = {m.name for v in page.visuals for m in _measures(v)}
+    assert {"BSC Vacancy Rate", "BSC Time to Fill (days)"} <= bound
+
+
+def test_employee_list_filtered_by_headcount():
+    """Hidden drill-through on hospital and HR department. Employee has no branch relationship or row filter, so
+    every table is filtered to people with a [Headcount] in context (R4: branch security applies through the fact).
+    Keep all filters is off: only the drill fields arrive (a source visual's own filters, such as 'HR KPI' or
+    'Pay Category', would make Headcount return its guard message); the month and the other selections come from
+    the page's slicers, synced with the detail pages'."""
+    page = _page("employee_list")
+    assert page.hidden and page.display == "Employee list" and PAGES[-1] is page
+    assert page.drill_fields == [BRANCH_NAME, DEPARTMENT_NAME] and not page.keep_filters
+    tables = [v for v in page.visuals if v.sample == "table"]
+    for t in tables:
+        assert (HEADCOUNT, "notblank", []) in _flt(t), t.title
+    fields = [f for t in tables for f in t.roles["Values"]]
+    for f in (col("Employee", "Worker Number"), col("Employee Details", "Full Name"), BRANCH_NAME, DEPARTMENT_NAME,
+              col("Job", "Job Name"), col("Grade", "Grade Name"), col("Employee", "Hire Date"),
+              col("Employee", "Assignment Status")):
+        assert f in fields, f
+    # Fusion names need pay access (the role filters 'Employee Details'), and a table grouped by a column with no
+    # visible rows has no rows: the names have their own table (worker number and name) under an HR Pay Notice, and
+    # the table every reader sees has the worker number and the Oasis staff ID (spec "Security")
+    named = [t for t in tables if col("Employee Details", "Full Name") in t.roles["Values"]]
+    assert len(named) == 1 and len(tables) == 2
+    people = next(t for t in tables if t is not named[0])
+    assert "Employee Details" not in {f.table for f in people.roles["Values"]}
+    assert col("Staff", "Staff ID") in people.roles["Values"]
+    notices = [v for v in page.visuals if v.roles.get("Values") == [PAY_NOTICE]]
+    assert any(_covers(n, named[0]) and _index(page, n) > _index(page, named[0]) for n in notices)
+    assert {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")} >= {BRANCH_NAME, MONTH_PICK}
+    assert any(v.sample == "buttonNavigate" and "Back" in json.dumps(v.props) for v in page.visuals)

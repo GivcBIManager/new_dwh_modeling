@@ -1,0 +1,98 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "payroll",
+  "displayName": "Payroll & overtime",
+  "displayOption": "FitToPage",
+  "height": 1410,
+  "width": 1920,
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "32a64c6a518ee70acd20",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Is Hospital"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "b",
+              "Entity": "Branch",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "b"
+                          }
+                        },
+                        "Property": "Is Hospital"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "9889fe42a18ffedafed0",
+      "target": "e4e5a1d8071f138bea53",
+      "type": "NoFilter"
+    },
+    {
+      "source": "9889fe42a18ffedafed0",
+      "target": "75e813505c13403fb46e",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7de44af62d50e9897ed7",
+      "target": "2383e7cfadd4414f8775",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7de44af62d50e9897ed7",
+      "target": "e82e3eeea0859a69fa25",
+      "type": "NoFilter"
+    },
+    {
+      "source": "ffe1f890e94bda418648",
+      "target": "2383e7cfadd4414f8775",
+      "type": "NoFilter"
+    },
+    {
+      "source": "ffe1f890e94bda418648",
+      "target": "e82e3eeea0859a69fa25",
+      "type": "NoFilter"
+    }
+  ]
+}

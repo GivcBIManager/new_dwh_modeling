@@ -1,0 +1,148 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "productivity",
+  "displayName": "Productivity",
+  "displayOption": "FitToPage",
+  "height": 1410,
+  "width": 1920,
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "9acb6d15bb2a49b52231",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Branch"
+              }
+            },
+            "Property": "Is Hospital"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "b",
+              "Entity": "Branch",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "b"
+                          }
+                        },
+                        "Property": "Is Hospital"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "89a9f25640115bd16e56",
+      "target": "106fa9e22d91c6e81459",
+      "type": "NoFilter"
+    },
+    {
+      "source": "abf462a98c215fbd27cc",
+      "target": "cb94d28fe0f742d43673",
+      "type": "NoFilter"
+    },
+    {
+      "source": "abf462a98c215fbd27cc",
+      "target": "4a5e1ecdd61d692b7187",
+      "type": "NoFilter"
+    },
+    {
+      "source": "abf462a98c215fbd27cc",
+      "target": "69e8a6fa9d3f7dc8fa1a",
+      "type": "NoFilter"
+    },
+    {
+      "source": "abf462a98c215fbd27cc",
+      "target": "5d993bb94515e0cdbaf1",
+      "type": "NoFilter"
+    },
+    {
+      "source": "abf462a98c215fbd27cc",
+      "target": "6f30a6d74ca526adb52f",
+      "type": "NoFilter"
+    },
+    {
+      "source": "5f358f9dd64facb67582",
+      "target": "cb94d28fe0f742d43673",
+      "type": "NoFilter"
+    },
+    {
+      "source": "5f358f9dd64facb67582",
+      "target": "4a5e1ecdd61d692b7187",
+      "type": "NoFilter"
+    },
+    {
+      "source": "5f358f9dd64facb67582",
+      "target": "69e8a6fa9d3f7dc8fa1a",
+      "type": "NoFilter"
+    },
+    {
+      "source": "5f358f9dd64facb67582",
+      "target": "5d993bb94515e0cdbaf1",
+      "type": "NoFilter"
+    },
+    {
+      "source": "5f358f9dd64facb67582",
+      "target": "6f30a6d74ca526adb52f",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d3635e76685da83f11d0",
+      "target": "cb94d28fe0f742d43673",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d3635e76685da83f11d0",
+      "target": "4a5e1ecdd61d692b7187",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d3635e76685da83f11d0",
+      "target": "69e8a6fa9d3f7dc8fa1a",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d3635e76685da83f11d0",
+      "target": "5d993bb94515e0cdbaf1",
+      "type": "NoFilter"
+    },
+    {
+      "source": "d3635e76685da83f11d0",
+      "target": "6f30a6d74ca526adb52f",
+      "type": "NoFilter"
+    }
+  ]
+}
