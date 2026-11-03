@@ -7186,10 +7186,11 @@ table _Measures
 			IF ( CALCULATE ( COUNTROWS ( 'Pay Category' ), REMOVEFILTERS ( 'Pay Category' ) ) > 0, 1, 0 )
 		formatString: 0
 		displayFolder: HR Dashboard\Measures
-	/// Actual of the HR KPI in context: the measure named in its measure_name, evaluated without the HR KPI and HR Targets filters. Blank for a metric row and when no single KPI is in context.
+	/// Actual of the HR KPI in context: the measure named in its measure_name, for hospitals only and the days up to today (the scope of HR KPI Target and BSC Actual), evaluated without the HR KPI and HR Targets filters. Blank for a metric row and when no single KPI is in context.
 	measure 'HR KPI Actual' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
+				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					CALCULATE (
 						SWITCH (
@@ -7214,8 +7215,11 @@ table _Measures
 							"HR_REVENUE_PER_PAYROLL_SAR", [Revenue per Payroll SAR],
 							BLANK ()
 						),
+						Past,
+						KEEPFILTERS ( Branch[Is Hospital] = "Yes" ),
 						REMOVEFILTERS ( 'HR KPI' ),
 						-- HR Targets column by column: REMOVEFILTERS ( 'HR Targets' ) would also clear Branch and Date (its expanded table)
+						-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
 						REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
 					)
 			) -- end of measure body
@@ -7229,19 +7233,38 @@ table _Measures
 					"sar", "#,0",
 					"pct", "0.0%",
 					"days", "#,0.0",
+					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
 
 		annotation hnh_guard_allow = HR KPI, HR Targets
-	/// Fixed target of the HR KPI in context from the HR Targets table: the average of the hospitals' monthly targets over the days up to today; an annual target with scale_with_months is pro-rated by the months in context (the BSC Fixed Target rule).
+	/// 1 for an additive HR KPI, whose network value is the sum of the hospitals (HR_HEADCOUNT, HR_LEAVE_LIABILITY), else 0: its fixed target and watch are summed over the hospitals and a num value shows no decimals. The one list of these codes.
+	measure 'HR KPI Is Additive' =
+			-- additive KPIs (ruling R15): a network headcount or leave liability is the sum of the hospitals, so its target is too
+			IF ( SELECTEDVALUE ( 'HR KPI'[KPI Code] ) IN { "HR_HEADCOUNT", "HR_LEAVE_LIABILITY" }, 1, 0 )
+		formatString: 0
+		displayFolder: HR Dashboard\KPIs
+	/// Fixed target of the HR KPI in context from the HR Targets table, over hospitals and the days up to today: the average of the hospitals' monthly targets; an annual target with scale_with_months is pro-rated by the months in context (the BSC Fixed Target rule). For an additive KPI (HR KPI Is Additive) the sum over the hospitals of each hospital's own target by that rule.
 	measure 'HR KPI Fixed Target' =
 			VAR __Value = ( -- measure body
+				VAR Additive = [HR KPI Is Additive] = 1
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					CALCULATE (
-						VAR TargetValue = AVERAGE ( 'HR Targets'[Target Value] )
-						VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
-						RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, TargetValue * Months / 12, TargetValue ),
+						IF (
+							Additive,
+							SUMX (
+								VALUES ( Branch[Branch Key] ),
+								CALCULATE (
+									VAR BranchTarget = AVERAGE ( 'HR Targets'[Target Value] )
+									VAR BranchMonths = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
+									RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, BranchTarget * BranchMonths / 12, BranchTarget )
+								)
+							),
+							VAR TargetValue = AVERAGE ( 'HR Targets'[Target Value] )
+							VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
+							RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, TargetValue * Months / 12, TargetValue )
+						),
 						Past,
 						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 					)
@@ -7256,17 +7279,30 @@ table _Measures
 					"sar", "#,0",
 					"pct", "0.0%",
 					"days", "#,0.0",
+					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
-	/// Fixed watch value of the HR KPI in context from the HR Targets table, by the HR KPI Fixed Target rule: the average of the hospitals' monthly watch values up to today, pro-rated by the months in context with scale_with_months.
+	/// Fixed watch value of the HR KPI in context from the HR Targets table, by the HR KPI Fixed Target rule: the average of the hospitals' monthly watch values up to today, pro-rated by the months in context with scale_with_months; for an additive KPI the sum over the hospitals of each hospital's own watch value.
 	measure 'HR KPI Fixed Watch' =
 			VAR __Value = ( -- measure body
+				VAR Additive = [HR KPI Is Additive] = 1
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
 					CALCULATE (
-						VAR WatchValue = AVERAGE ( 'HR Targets'[Watch Value] )
-						VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
-						RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, WatchValue * Months / 12, WatchValue ),
+						IF (
+							Additive,
+							SUMX (
+								VALUES ( Branch[Branch Key] ),
+								CALCULATE (
+									VAR BranchWatch = AVERAGE ( 'HR Targets'[Watch Value] )
+									VAR BranchMonths = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
+									RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, BranchWatch * BranchMonths / 12, BranchWatch )
+								)
+							),
+							VAR WatchValue = AVERAGE ( 'HR Targets'[Watch Value] )
+							VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
+							RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, WatchValue * Months / 12, WatchValue )
+						),
 						Past,
 						KEEPFILTERS ( Branch[Is Hospital] = "Yes" )
 					)
@@ -7281,6 +7317,7 @@ table _Measures
 					"sar", "#,0",
 					"pct", "0.0%",
 					"days", "#,0.0",
+					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
 	/// Target of the HR KPI in context: HR KPI Fixed Target when its target source is fixed; for the scorecard-sourced Revenue per FTE, BSC Target Revenue per FTE over hospitals and the days up to today (the scorecard's own target); blank when the source is none.
@@ -7299,6 +7336,7 @@ table _Measures
 								Past,
 								KEEPFILTERS ( Branch[Is Hospital] = "Yes" ),
 								REMOVEFILTERS ( 'HR KPI' ),
+								-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
 								REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
 							),
 						BLANK ()
@@ -7314,6 +7352,7 @@ table _Measures
 					"sar", "#,0",
 					"pct", "0.0%",
 					"days", "#,0.0",
+					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
 
@@ -7333,13 +7372,15 @@ table _Measures
 					"sar", "#,0",
 					"pct", "0.0%",
 					"days", "#,0.0",
+					"num", IF ( [HR KPI Is Additive] = 1, "#,0", "#,0.00" ),
 					"#,0.00"
 				)
-	/// 1 when any HR Targets row in context (hospitals, days up to today) is a placeholder target, else 0.
+	/// 1 when any HR Targets row in context (hospitals, days up to today) is a placeholder target, else 0; always 0 for a KPI whose target source is bsc (its target is the scorecard's).
 	measure 'HR KPI Is Placeholder' =
 			VAR __Value = ( -- measure body
+				VAR TargetSource = SELECTEDVALUE ( 'HR KPI'[Target Source] )
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-				RETURN IF ( CALCULATE ( MAX ( 'HR Targets'[Is Placeholder] ), Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ) = 1, 1, 0 )
+				RETURN IF ( TargetSource <> "bsc" && CALCULATE ( MAX ( 'HR Targets'[Is Placeholder] ), Past, KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) ) = 1, 1, 0 )
 			) -- end of measure body
 			VAR __Wrong = [_Guard HR Targets]
 			RETURN IF ( __Wrong = "", __Value, """HR KPI Is Placeholder"" can't be analysed by " & __Wrong )
@@ -7363,6 +7404,7 @@ table _Measures
 						[BSC Status],
 						'BSC KPI'[KPI Code] = BscCode,
 						REMOVEFILTERS ( 'HR KPI' ),
+						-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
 						REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
 					)
 				VAR HasWatch = NOT ISBLANK ( W )
@@ -7436,7 +7478,7 @@ table _Measures
 		displayFolder: HR Dashboard\KPIs
 
 		annotation hnh_guard_allow = HR KPI, HR Targets
-	/// HR KPI Target as text in the KPI's value_format (pct 0.0%, sar #,0, days #,0.0, num #,0 or #,0.00), followed by " (placeholder)" for a placeholder target; Not set when there is no target. Blank when no single KPI is in context.
+	/// HR KPI Target as text in the KPI's value_format (pct 0.0%, sar #,0, days #,0.0, num #,0 for an additive KPI else #,0.00, as the format of HR KPI Target), followed by " (placeholder)" for a placeholder target; Not set when there is no target. Blank when no single KPI is in context.
 	measure 'HR KPI Target Text' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
@@ -7448,7 +7490,7 @@ table _Measures
 						"pct", FORMAT ( T, "0.0%" ),
 						"sar", FORMAT ( T, "#,0" ),
 						"days", FORMAT ( T, "#,0.0" ),
-						IF ( T = INT ( T ), FORMAT ( T, "#,0" ), FORMAT ( T, "#,0.00" ) )
+						IF ( [HR KPI Is Additive] = 1, FORMAT ( T, "#,0" ), FORMAT ( T, "#,0.00" ) )
 					)
 				RETURN
 					SWITCH (
