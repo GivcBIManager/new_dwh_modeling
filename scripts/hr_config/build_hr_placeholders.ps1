@@ -32,8 +32,11 @@ $ErrorActionPreference = 'Stop'
 $inv = [Globalization.CultureInfo]::InvariantCulture
 $dash = [string][char]0x2013
 
-# Flow KPIs: scale_with_months = 1, annualised x 12/9. The one list of them in this script.
-$FlowKpis = @('HR_TURNOVER', 'HR_NEW_HIRE_TURNOVER', 'HR_STAFF_COST_PER_FTE')
+# Flow KPIs: scale_with_months = 1, annualised x 12/9. The one list of them in this script: a KPI whose value over
+# several months grows with the months (a sum of the months over a level), checked 2026-11-03 by Sep 2026 against
+# Jan-Sep 2026 (BSC Turnover 0.4% / 4.5%, Payroll Cost per FTE 9,289 / 85,589, BSC Revenue per Doctor 75,278 /
+# 1,191,354). BuildHrPlaceholders.Tests.ps1 keeps the nature of every fixed KPI of the seed and fails on a new one.
+$FlowKpis = @('HR_TURNOVER', 'HR_NEW_HIRE_TURNOVER', 'HR_STAFF_COST_PER_FTE', 'HR_REVENUE_PER_DOCTOR')
 # Additive KPIs: per hospital rows. Same two codes as measure 'HR KPI Is Additive' in ssas\HNH_Analytics\tables\_Measures.tmdl.
 $AdditiveKpis = @('HR_HEADCOUNT', 'HR_LEAVE_LIABILITY')
 # Metrics re-inserted with needs_pay = 1.

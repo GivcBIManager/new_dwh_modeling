@@ -63,8 +63,14 @@ Describe 'build_hr_placeholders.ps1 additive KPIs' {
         $s2 = Invoke-Build '{"HR_STAFF_TO_BED":1.60,"HR_REVENUE_PER_DOCTOR":1191353.9495,"HR_VISITS_PER_FTE":99.994}'
         $r2 = Get-InsertRows $s2 'map_hr_target'
         ($r2 | Where-Object { $_ -match "'HR_STAFF_TO_BED', 0, 2026, 0, 1\.6, 1\.76, 0," }).Count | Should Be 1
-        ($r2 | Where-Object { $_ -match "'HR_REVENUE_PER_DOCTOR', 0, 2026, 0, 1191354, 1072219, 0," }).Count | Should Be 1
         ($r2 | Where-Object { $_ -match "'HR_VISITS_PER_FTE', 0, 2026, 0, 99\.99, 89\.99, 0," }).Count | Should Be 1
+    }
+    It 'annualises revenue per doctor, a flow KPI (final review C2: Sep 75,278, Jan-Sep 1,191,354)' {
+        $s4 = Invoke-Build '{"HR_REVENUE_PER_DOCTOR":1191353.9495}'
+        $r4 = Get-InsertRows $s4 'map_hr_target'
+        $r4.Count | Should Be 2
+        ($r4 | Where-Object { $_ -match "'HR_REVENUE_PER_DOCTOR', 0, 2026, 0, 1588472, 1429625, 1," }).Count | Should Be 1
+        ($r4 | Where-Object { $_ -match "'HR_REVENUE_PER_DOCTOR', 0, 2027, 0, 1588472, 1429625, 1," }).Count | Should Be 1
     }
     It 'rounds a pct to 4 decimals' {
         $s3 = Invoke-Build '{"HR_SICK_LEAVE_RATE":0.0014491631757735921}'
@@ -72,5 +78,50 @@ Describe 'build_hr_placeholders.ps1 additive KPIs' {
     }
     It 'skips a blank KPI' {
         ($rows | Where-Object { $_ -match "'HR_VACANCY_RATE'" }).Count | Should Be 0
+    }
+}
+
+# Final review M4: the builder's KPI lists stay in step with the model and the seed (C2 was a flow KPI missing here).
+Describe 'build_hr_placeholders.ps1 KPI lists' {
+    $root = Split-Path (Split-Path $here -Parent) -Parent
+    $script = [IO.File]::ReadAllText((Join-Path $here 'build_hr_placeholders.ps1'))
+    function Get-ScriptList([string]$Name) {
+        $m = [regex]::Match($script, '(?m)^\$' + $Name + ' = @\(([^)]*)\)')
+        return @([regex]::Matches($m.Groups[1].Value, "'([A-Z_]+)'") | ForEach-Object { $_.Groups[1].Value } | Sort-Object)
+    }
+    # The nature of every active fixed KPI of hr_config_seed.sql, checked 2026-11-03 on HNH_Analytics_Test by the
+    # value of Sep 2026 against Jan-Sep 2026 (hospitals; final-fix-report.md has the table):
+    #   flow      grows with the months (a sum over the months): the builder annualises it, scale_with_months = 1
+    #   ratio     a ratio or average of the months, about the size of one month
+    #   snapshot  the last closed month of the period (hnh_snapshot = 1 or the Time Calculation snapshot list)
+    # A new fixed KPI fails 'classifies every fixed KPI' until it is added here with its nature.
+    $Nature = @{
+        HR_HEADCOUNT = 'snapshot'; HR_CONTINGENT_SHARE = 'snapshot'; HR_SAUDIZATION = 'snapshot'; HR_FEMALE_SHARE = 'snapshot'
+        HR_LEAVE_LIABILITY = 'snapshot'; HR_VACANCY_RATE = 'snapshot'
+        HR_TURNOVER = 'flow'; HR_NEW_HIRE_TURNOVER = 'flow'; HR_STAFF_COST_PER_FTE = 'flow'; HR_REVENUE_PER_DOCTOR = 'flow'
+        HR_OVERTIME_SHARE = 'ratio'; HR_SICK_LEAVE_RATE = 'ratio'; HR_TIME_TO_FILL = 'ratio'; HR_STAFF_TO_BED = 'ratio'
+        HR_CLINICAL_TO_DOCTOR = 'ratio'; HR_VISITS_PER_FTE = 'ratio'; HR_REVENUE_PER_PAYROLL_SAR = 'ratio'
+    }
+    $fixed = @([regex]::Matches([IO.File]::ReadAllText((Join-Path $here 'hr_config_seed.sql')),
+            "(?m)^\s{4}\('([A-Z_]+)', 'kpi',.*?, '(fixed|bsc|none)', \d, \d, '(active|parked)',") |
+        Where-Object { $_.Groups[2].Value -eq 'fixed' -and $_.Groups[3].Value -eq 'active' } |
+        ForEach-Object { $_.Groups[1].Value } | Sort-Object)
+
+    It 'finds the fixed KPIs of the seed' {
+        $fixed.Count | Should Be 17
+    }
+    It 'classifies every fixed KPI of the seed' {
+        @($fixed | Where-Object { -not $Nature.ContainsKey($_) }) -join ', ' | Should Be ''
+    }
+    It 'annualises exactly the flow KPIs ($FlowKpis)' {
+        (Get-ScriptList 'FlowKpis') -join ', ' | Should Be ((@($Nature.Keys | Where-Object { $Nature[$_] -eq 'flow' }) | Sort-Object) -join ', ')
+    }
+    It 'writes per-hospital rows for the codes of measure HR KPI Is Additive ($AdditiveKpis)' {
+        $measures = [IO.File]::ReadAllText((Join-Path $root 'ssas\HNH_Analytics\tables\_Measures.tmdl'))
+        $block = [regex]::Match($measures, "(?s)measure 'HR KPI Is Additive' =.*?IN \{([^}]*)\}")
+        $block.Success | Should Be $true
+        $dax = @([regex]::Matches($block.Groups[1].Value, '"([A-Z_]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object)
+        $dax.Count | Should BeGreaterThan 0
+        (Get-ScriptList 'AdditiveKpis') -join ', ' | Should Be ($dax -join ', ')
     }
 }
