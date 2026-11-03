@@ -37,7 +37,11 @@ DETAIL_NAMES = ["headcount", "movements", "payroll", "absence", "recruitment", "
 # R13: the slicers a page with HR KPI Actual / Status / Status Text / Status Colour may carry
 KPI_MEASURES = {"HR KPI Actual", "HR KPI Actual Text", "HR KPI Status", "HR KPI Status Text", "HR KPI Status Colour"}
 AREA = col("HR KPI", "Area")
-ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK, AREA}  # R13: an Area slicer on the KPI list is allowed
+TIME_CALC = col("Time Calculation", "Time Calculation")
+# R13: an Area slicer on the KPI list is allowed; so is the Period slicer (final review I3): it picks a calculation
+# item, which every measure guard allows
+ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK, AREA, TIME_CALC}
+HOSPITALS = (IS_HOSPITAL, "in", ["Yes"])
 
 
 def lit(prop):
@@ -218,8 +222,8 @@ def test_kpi_tile():
     assert [c.sample for c in cards] == ["card"] * 3
     assert [c.roles["Values"] for c in cards] == [[meas("HR KPI Actual Text")], [meas("HR KPI Target Text")],
                                                   [meas("HR KPI Status Text")]]
-    for c in cards:
-        assert [(f.field, f.op, f.values) for f in c.filters] == [(KPI_CODE, "eq", ["HR_TURNOVER"])]
+    for c in cards:  # the KPI, hospitals only (final review I1: the scope of its measures)
+        assert [(f.field, f.op, f.values) for f in c.filters] == [(KPI_CODE, "eq", ["HR_TURNOVER"]), HOSPITALS]
         assert panel.x <= c.x and c.x + c.w <= panel.x + panel.w
         assert panel.y <= c.y and c.y + c.h <= panel.y + panel.h
     # the label is the seed's short label
@@ -409,11 +413,18 @@ def test_scorecard_filters_kind_kpi():
         assert ((col("HR KPI", "Kind"), "in", ["kpi"]) in _flt(v)
                 or (col("HR KPI", "Kind"), "eq", ["kpi"]) in _flt(v))
         assert (col("HR KPI", "Status"), "in", ["active"]) in _flt(v) or             (col("HR KPI", "Status"), "eq", ["active"]) in _flt(v)
-    # sorted by Display Order; text measures for the cells every user sees (R22); no variance measure exists
+    # sorted by Display Order; text measures for the cells every user sees (R22), so a reader without pay access
+    # reads "Requires pay access" in a pay KPI's actual, target, variance and watch cells (final review C1, I4, M2)
     assert table.sort == col("HR KPI", "Display Order") and table.sort_dir == "asc"
     values = table.roles["Values"]
     assert meas("HR KPI Actual Text") in values and meas("HR KPI Actual") not in values
     assert meas("HR KPI Target Text") in values and meas("HR KPI Status Text") in values
+    assert meas("HR KPI Variance Text") in values and meas("HR KPI Watch Text") in values
+    assert not {meas("HR KPI Target"), meas("HR KPI Watch"), meas("HR KPI Variance")} & set(values)
+    order = [f.name for f in values]
+    assert (order.index("HR KPI Actual Text") < order.index("HR KPI Target Text") < order.index("HR KPI Variance Text")
+            < order.index("HR KPI Watch Text"))
+    assert table.labels[meas("HR KPI Variance Text")] == "Variance" and table.labels[meas("HR KPI Watch Text")] == "Watch at"
     assert col("HR KPI", "KPI Code") in values  # the drill-through field is in the table
     assert matrix.roles["Values"] == [meas("HR KPI Status Text")] and matrix.roles["Columns"] == [BRANCH_NAME]
     # status cells are coloured by [HR KPI Status Colour]
@@ -452,7 +463,7 @@ def test_kpi_detail_is_drillthrough_on_code():
     # the bar by hospital
     bar = next(v for v in vs if v.sample == "barChart")
     assert bar.roles["Category"] == [BRANCH_NAME] and bar.roles["Y"] == [meas("HR KPI Actual")]
-    assert {v.roles["Values"][0] for v in vs if v.sample.startswith("slicer")} == {BRANCH_NAME, MONTH_PICK}
+    assert {v.roles["Values"][0] for v in vs if v.sample.startswith("slicer")} == {BRANCH_NAME, MONTH_PICK, TIME_CALC}
 
 
 def test_scorecard_and_kpi_detail_are_registered():
@@ -461,13 +472,84 @@ def test_scorecard_and_kpi_detail_are_registered():
 
 
 def test_kpi_detail_charts_have_a_pay_notice():
+    """Final review I2: the notice is [HR KPI Pay Notice], which reads the drilled KPI's needs_pay: a reader without
+    pay access sees it over the charts of a pay KPI only (Turnover's charts stay clear)."""
     page = _page("kpi_detail")
-    notices = _on(page, "HR Pay Notice")
+    assert _on(page, "HR Pay Notice") == []
+    notices = _on(page, "HR KPI Pay Notice")
     assert len(notices) == 2 and all(n.filters[0].op == "notblank" for n in notices)
     for chart in (next(v for v in page.visuals if v.sample == "lineChart"),
                   next(v for v in page.visuals if v.sample == "barChart")):
         assert any(n.x == chart.x and n.w == chart.w and chart.y <= n.y and n.y + n.h <= chart.y + chart.h
                    for n in notices)
+
+
+def _period(page):
+    return [v for v in page.visuals if v.sample.startswith("slicer") and v.roles["Values"] == [TIME_CALC]]
+
+
+def test_period_slicer_on_scorecard_and_kpi_detail_only():
+    """Final review I3: a single-select Period dropdown on 'Time Calculation', saved on Current, offering the items
+    that make sense for a KPI against its target; on Scorecard and KPI detail only (its sync group is its field, so
+    the two pages share it). Story stays on one month (R18)."""
+    with_period = [p.name for p in PAGES if _period(p)]
+    assert with_period == ["scorecard", "kpi_detail"]
+    for name in with_period:
+        page = _page(name)
+        (period,) = _period(page)
+        assert period.sample == "slicerDropdown" and period.labels == {TIME_CALC: "Period"}
+        selection = period.props["selection"][0]["properties"]
+        assert lit(selection["singleSelect"]) == "true" and lit(selection["selectAllCheckboxEnabled"]) == "false"
+        assert _flt(period) == [(TIME_CALC, "in", ["Current", "QTD", "YTD"])]
+        i = _index(page, period)
+        out = pbir.visual_json(page, period, i, "")["visual"]
+        cond = out["objects"]["general"][0]["properties"]["filter"]["filter"]["Where"][0]["Condition"]["In"]
+        assert cond["Values"] == [[{"Literal": {"Value": "'Current'"}}]]
+        assert cond["Expressions"][0]["Column"]["Property"] == "Time Calculation"
+        assert out["syncGroup"]["groupName"] == "bsc Time Calculation.Time Calculation"
+        # in the filter bar, clear of the other slicers and buttons there, left of the help buttons
+        assert frame.FILTER_BAR[1] <= period.y and period.y + period.h <= frame.FILTER_BAR[1] + frame.FILTER_BAR[3]
+        assert period.x + period.w < HELP[0][2][0]
+        for v in page.visuals:
+            if v is not period and v.y < frame.FILTER_BAR[1] + frame.FILTER_BAR[3] and v.y + v.h > frame.FILTER_BAR[1]:
+                if v.x >= frame.CONTENT[0] and v.x + v.w <= HELP[0][2][0] and v.sample != "panel":
+                    assert v.x + v.w <= period.x or period.x + period.w <= v.x, (name, v.sample)
+    assert not _period(story())
+
+
+def test_kpi_detail_trend_ignores_the_period():
+    """The 24-month line stays a monthly trend whatever Period says (NoFilter); the cards and the bar follow it."""
+    from model import interaction_indexes
+    page = _page("kpi_detail")
+    idx = {(s, t): k for s, t, k in interaction_indexes(page)}
+    (period,) = _period(page)
+    line = next(v for v in page.visuals if v.sample == "lineChart")
+    bar = next(v for v in page.visuals if v.sample == "barChart")
+    assert idx[(_index(page, period), _index(page, line))] == "NoFilter"
+    assert (_index(page, period), _index(page, bar)) not in idx
+
+
+# Pages whose figures are not hospitals-only: Data quality shows Head Office (100) records to those who may see them,
+# the Guide pages hold text and the KPI definitions.
+NOT_HOSPITALS_ONLY = {"data_quality", "guide", "guide_definitions"}
+
+
+def test_every_data_page_is_hospitals_only():
+    """Final review I1: every data page carries the hospitals-only filter, so a chart never includes Head Office.
+    Home carries it on each data visual instead of the page: its data quality strip counts Head Office records."""
+    data_samples = ("card", "lineChart", "barChart", "table", "matrix", "multiRowCard")
+    for page in PAGES:
+        if page.name in NOT_HOSPITALS_ONLY:
+            continue
+        page_filters = [(f.field, f.op, f.values) for f in page.filters]
+        if page.name != "home":
+            assert HOSPITALS in page_filters, page.name
+            continue
+        assert HOSPITALS not in page_filters
+        data = [v for v in page.visuals if v.sample in data_samples and _measures(v)]
+        dq = [v for v in data if meas("HR DQ Headline") in v.roles["Values"]]
+        assert len(dq) == 1 and HOSPITALS not in _flt(dq[0])
+        assert [v.roles for v in data if v not in dq and HOSPITALS not in _flt(v)] == []
 
 
 # ---- Detail pages and Employee list ------------------------------------------------------------------------------
@@ -798,6 +880,10 @@ def test_definitions_cover_all_kinds():
     for c in ("KPI Name", "Kind", "Definition", "Formula", "Source System", "Grain", "Direction", "Caveats"):
         assert col("HR KPI", c) in values
     assert meas("HR KPI Target Text") in values
+    # final review M2: the watch value beside the target, as text (placeholder mark, pay-aware)
+    names = [f.name for f in values]
+    assert names.index("HR KPI Watch Text") == names.index("HR KPI Target Text") + 1
+    assert table.labels[meas("HR KPI Watch Text")] == "Watch at"
     assert {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")} >= {AREA}
 
 
@@ -805,5 +891,5 @@ def test_guide_text_covers_the_rules():
     text = _text_of(_page("guide"))
     for needle in ("Last closed month", "● On track", "◆ Watch", "■ At risk", "○ No target yet", "– No data", "Parked",
                    "🔒 Requires pay access", "within the watch threshold", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
-                   "largest change", "nightly", "Back", "BSC turnover", "in Fusion"):
+                   "largest change", "nightly", "Back", "BSC turnover", "in Fusion", "Period", "pro-rated"):
         assert needle in text, needle

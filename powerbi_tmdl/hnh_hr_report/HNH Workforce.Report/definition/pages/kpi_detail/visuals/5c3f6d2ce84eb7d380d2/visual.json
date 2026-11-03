@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5c3f6d2ce84eb7d380d2",
   "position": {
-    "x": 754.0,
-    "y": 186,
+    "x": 30,
+    "y": 816,
     "z": 22000,
     "height": 150,
-    "width": 362.6666666666667,
+    "width": 700,
     "tabOrder": 22000
   },
   "visual": {
@@ -17,18 +17,17 @@
           "projections": [
             {
               "field": {
-                "Measure": {
+                "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "_Measures"
+                      "Entity": "HR KPI"
                     }
                   },
-                  "Property": "HR KPI Actual Text"
+                  "Property": "Caveats"
                 }
               },
-              "queryRef": "_Measures.HR KPI Actual Text",
-              "nativeQueryRef": "HR KPI Actual Text",
-              "displayName": "Actual"
+              "queryRef": "HR KPI.Caveats",
+              "nativeQueryRef": "Caveats"
             }
           ]
         }
@@ -41,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "28D"
+                  "Value": "12D"
                 }
               }
             },
@@ -84,6 +83,19 @@
                       "Value": "'#5B6B7D'"
                     }
                   }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "wordWrap": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
                 }
               }
             }

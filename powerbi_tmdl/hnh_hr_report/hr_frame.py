@@ -261,6 +261,7 @@ def kpi_label(code: str, path: Path = SEED) -> str:
 
 KPI_CODE = col("HR KPI", "KPI Code")
 HR_ACTUAL_TEXT, HR_TARGET_TEXT = meas("HR KPI Actual Text"), meas("HR KPI Target Text")
+HR_WATCH_TEXT, HR_VARIANCE_TEXT = meas("HR KPI Watch Text"), meas("HR KPI Variance Text")
 HR_STATUS_TEXT, HR_STATUS_COLOUR = meas("HR KPI Status Text"), meas("HR KPI Status Colour")
 TILE_PAD = 16
 
@@ -298,17 +299,18 @@ def white_panel(x: float, y: float, w: float, h: float) -> Visual:
 
 
 def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
-    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code: [HR KPI Actual Text] (the
-    formatted actual, "Requires pay access" for a pay KPI without pay access, "–" without data; ruling R22) under the
-    KPI's short label, [HR KPI Target Text] ("6.0% (placeholder)", "Not set") labelled "Target", and
-    [HR KPI Status Text] (shape and word, "◆ Watch") in the colour of [HR KPI Status Colour]: colour, shape and word."""
+    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code and to hospitals (the scope
+    of the HR KPI measures; final review I1): [HR KPI Actual Text] (the formatted actual, "Requires pay access" for a
+    pay KPI without pay access, "–" without data; ruling R22) under the KPI's short label, [HR KPI Target Text]
+    ("6.0% (placeholder)", "Not set", "Requires pay access") labelled "Target", and [HR KPI Status Text] (shape and
+    word, "◆ Watch") in the colour of [HR KPI Status Colour]: colour, shape and word."""
     label = kpi_label(code)
     pad, status_h, target_h = TILE_PAD, 48, 56
     ix, iw = x + pad, w - 2 * pad
     actual_h = h - 2 * pad - target_h - status_h
     if actual_h < 80:
         raise ValueError(f"kpi_tile {code}: {h} px is too low for a tile")
-    only = [Filter(KPI_CODE, "eq", [code])]
+    only = [Filter(KPI_CODE, "eq", [code]), hospitals()]
     actual = Visual("card", ix, y + pad, iw, actual_h, roles={"Values": [HR_ACTUAL_TEXT]}, filters=list(only),
                     title=label, props={**card_look(28, NAVY), **small_title()})
     target = Visual("card", ix, y + pad + actual_h, iw, target_h, roles={"Values": [HR_TARGET_TEXT]},

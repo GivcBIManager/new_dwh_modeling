@@ -15,7 +15,7 @@ KPIs and the metrics defined without a target are all listed.
 from __future__ import annotations
 
 from frame import CONTENT, NAVY
-from hr_frame import HR_TARGET_TEXT, bsc, card_look, filters, page_frame
+from hr_frame import HR_TARGET_TEXT, HR_WATCH_TEXT, bsc, card_look, filters, page_frame
 from model import Filter, Interaction, Page, Visual, col, meas
 from pages_detail import _guarded
 
@@ -103,6 +103,9 @@ GUIDE_SECTIONS = [
         "another month in the list to see it.",
         "The sentences on Story and the figures on the cards describe the one month you picked. The trend charts "
         "always show the last 12 closed months, whatever Month says.",
+        "Period, on Scorecard and KPI detail, reads each KPI for the month (Current), the quarter to date (QTD) or the "
+        "year to date (YTD) up to the month you picked. Annual targets of rates such as turnover are "
+        "pro-rated to the months; month-end figures such as headcount stay at the month end.",
         "Story rates show 2 decimals because monthly rates are small. The largest change names the hospital whose "
         "rate or number moved most."]),
     _section("Read the status", [
@@ -158,11 +161,11 @@ def definitions_page() -> Page:
     order = col("HR KPI", "Display Order")
     fields = ([AREA, name] + [col("HR KPI", c) for c in ("Kind", "Definition", "Formula", "Source System", "Grain",
                                                           "Direction")]
-              + [HR_TARGET_TEXT, col("HR KPI", "Caveats"), order])
+              + [HR_TARGET_TEXT, HR_WATCH_TEXT, col("HR KPI", "Caveats"), order])
     # No Kind filter: the scored KPIs and the metrics are all defined here
     table = Visual("table", X0, TABLE_Y, W0, END - TABLE_Y, title="Every KPI and metric", roles={"Values": fields},
-                   labels={name: "KPI or metric", HR_TARGET_TEXT: "Target", order: "Order"}, sort=order,
-                   sort_dir="asc", props=bsc.word_wrap())
+                   labels={name: "KPI or metric", HR_TARGET_TEXT: "Target", HR_WATCH_TEXT: "Watch at",
+                           order: "Order"}, sort=order, sort_dir="asc", props=bsc.word_wrap())
     hospital, month = filters()
     return Page("guide_definitions", "Definitions", page_frame("guide", [hospital, month]) + [area, table])
 

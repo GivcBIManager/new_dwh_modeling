@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "e8c49167adec4f67f334",
   "position": {
-    "x": 754,
-    "y": 360,
+    "x": 1527.3333333333335,
+    "y": 186,
     "z": 25000,
-    "height": 380,
-    "width": 1136,
+    "height": 150,
+    "width": 362.6666666666667,
     "tabOrder": 25000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Date"
-                    }
-                  },
-                  "Property": "Year Month Name"
-                }
-              },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,63 +23,48 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR KPI Actual"
+                  "Property": "HR KPI Status Text"
                 }
               },
-              "queryRef": "_Measures.HR KPI Actual",
-              "nativeQueryRef": "HR KPI Actual"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR KPI Target"
-                }
-              },
-              "queryRef": "_Measures.HR KPI Target",
-              "nativeQueryRef": "HR KPI Target"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR KPI Watch"
-                }
-              },
-              "queryRef": "_Measures.HR KPI Watch",
-              "nativeQueryRef": "HR KPI Watch"
+              "queryRef": "_Measures.HR KPI Status Text",
+              "nativeQueryRef": "HR KPI Status Text",
+              "displayName": "Status"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "Date"
-                  }
-                },
-                "Property": "Year Month Name"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
       }
     },
-    "visualContainerObjects": {
-      "title": [
+    "objects": {
+      "labels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "24D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "HR KPI Status Colour"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -108,10 +74,36 @@
                 }
               }
             },
-            "text": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "'Actual, target and watch, last 24 closed months'"
+                  "Value": "9D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -120,224 +112,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "add4488e91057f6f5092",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Date"
-              }
-            },
-            "Property": "Month Offset"
-          }
-        },
-        "type": "Categorical",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "d",
-              "Entity": "Date",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "d"
-                          }
-                        },
-                        "Property": "Month Offset"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "1L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "2L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "3L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "4L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "5L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "6L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "7L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "8L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "9L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "10L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "11L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "12L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "13L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "14L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "15L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "16L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "17L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "18L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "19L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "20L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "21L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "22L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "23L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "24L"
-                        }
-                      }
-                    ]
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

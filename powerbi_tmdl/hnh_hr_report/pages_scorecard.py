@@ -1,24 +1,36 @@
 """Scorecard and KPI detail (spec "Pages" 3 and 7).
 
-Scorecard (`scorecard_page`): Hospital, Month and Area dropdowns; a table of every active KPI (Area, KPI code and name,
-[HR KPI Status Text] coloured by [HR KPI Status Colour], [HR KPI Actual Text], [HR KPI Target Text], [HR KPI Watch]),
-sorted by Display Order; a "Drill through to KPI detail" button, enabled by one selected table row; a matrix of KPI x
-hospital showing [HR KPI Status Text] in the same colours. Both are filtered to Kind "kpi" and Status "active". There
-is no variance column: the model has no variance measure, and the report adds none (ruling R22).
+Scorecard (`scorecard_page`): Hospital, Month, Area and Period dropdowns; a table of every active KPI (Area, KPI code
+and name, [HR KPI Status Text] coloured by [HR KPI Status Colour], [HR KPI Actual Text], [HR KPI Target Text],
+[HR KPI Variance Text], [HR KPI Watch Text]), sorted by Display Order; a "Drill through to KPI detail" button, enabled
+by one selected table row; a matrix of KPI x hospital showing [HR KPI Status Text] in the same colours. Both are
+filtered to Kind "kpi" and Status "active". The cells are the model's text measures (R22): a reader without pay access
+reads "Requires pay access" for a pay KPI's figures, target, variance and watch value (final review C1). No sparkline
+column: the generator has no sparkline, and KPI detail has the trend.
 
-KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Code] only (keep_filters off: the scorecard's Month would otherwise AND with
-the line's Month Offset filter and leave one point); the page's own synced Hospital and Month slicers apply. Left, the
-KPI's name and the definition panel (Definition, Formula, Source System, Grain, Caveats); right, cards for
-[HR KPI Actual Text], target and status, the 24-month line of actual against target and watch, and the bar by
-hospital. The Month slicer (synced with every page) does not reach the line or the bar: NoFilter interactions, so they
-show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every hospital whatever the selection. Back returns
-to the page you came from.
+Period (final review I3): a single-select dropdown on 'Time Calculation' saved on Current, offering Current, QTD and
+YTD; on Scorecard and KPI detail only, synced between them (the sync group is the field). Under YTD the
+actual, target and status describe January to the selected month: a flow KPI's annual target is pro-rated by the
+months (scale_with_months), a snapshot KPI keeps its month-end value. Story stays on one month (R18).
+
+KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Code] only (keep_filters off: the
+scorecard's Month would otherwise AND with the line's Month Offset filter and leave one point); the page's own synced
+Hospital, Month and Period slicers apply. Left, the KPI's name and the definition panel (Definition, Formula, Source
+System, Grain, Caveats); right, cards for [HR KPI Actual Text], target and status, the 24-month line of actual against
+target and watch, and the bar by hospital. The Month slicer (synced with every page) does not reach the line or the
+bar: NoFilter interactions, so they show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every hospital
+whatever the selection. Period does not reach the line either (a monthly trend); the bar follows it. Over each chart,
+[HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2). Back
+returns to the page you came from.
+
+Both pages are filtered to hospitals (final review I1), the scope of the HR KPI measures.
 """
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit, button_props, no_container
-from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, KPI_CODE, SUB_TAB_X,
-                      SUB_TAB_Y, bsc, card_look, filters, hospitals, measure_colour, page_frame)
+from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
+                      HR_WATCH_TEXT, KPI_CODE, SUB_TAB_X, SUB_TAB_Y, bsc, card_look, filters, hospitals,
+                      measure_colour, page_frame, saved_selection, single_selection)
 from model import Filter, Interaction, Page, Visual, col, meas
 
 X0, Y0, W0, H0 = CONTENT  # 30, 186, 1860, ...
@@ -65,13 +77,35 @@ def _area_slicer() -> Visual:
                   props={**bsc.select_all_selection(), **bsc.dropdown_look()}, labels={AREA: "Area"})
 
 
+# ---- Period (final review I3) ---------------------------------------------------------------------------------------
+
+TIME_CALC = col("Time Calculation", "Time Calculation")
+# The calculation items a KPI is read against its target in: the month, the quarter to date, the year to date. MTD
+# equals Current for a month; PY and the YoY and MoM items compare periods and have no target to meet. Rolling 12M is
+# left out: the HR targets are yearly from 2026, so a window reaching into 2025 pro-rates a flow KPI's target over
+# fewer months than its actual covers.
+PERIODS = ["Current", "QTD", "YTD"]
+PERIOD_W = 270
+SLICER_GAP = 15  # as between the Hospital and Month slicers
+
+
+def period_slicer(x: float) -> Visual:
+    """Period: single-select on 'Time Calculation', saved on Current, at `x` in the filter bar."""
+    return Visual("slicerDropdown", x, AREA_SLICER[1], PERIOD_W, AREA_SLICER[3], roles={"Values": [TIME_CALC]},
+                  filters=[Filter(TIME_CALC, "in", list(PERIODS))],
+                  props={**single_selection(), **bsc.dropdown_look(), **saved_selection(TIME_CALC, "Current")},
+                  labels={TIME_CALC: "Period"})
+
+
 def scorecard_page() -> Page:
-    bar = filters() + [_area_slicer()]
-    watch = meas("HR KPI Watch")
-    table_fields = [AREA, KPI_CODE, KPI_NAME, HR_STATUS_TEXT, HR_ACTUAL_TEXT, HR_TARGET_TEXT, watch, DISPLAY_ORDER]
+    area = _area_slicer()
+    bar = filters() + [area, period_slicer(area.x + area.w + SLICER_GAP)]
+    table_fields = [AREA, KPI_CODE, KPI_NAME, HR_STATUS_TEXT, HR_ACTUAL_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
+                    HR_WATCH_TEXT, DISPLAY_ORDER]
     table = Visual("table", X0, TABLE_Y, W0, TABLE_H, title="Every active KPI: select a row, then drill through",
                    roles={"Values": table_fields}, filters=list(ACTIVE_KPIS), sort=DISPLAY_ORDER, sort_dir="asc",
-                   props=_wrap(status_colours()), labels={DISPLAY_ORDER: "Order", watch: "Watch at"})
+                   props=_wrap(status_colours()),
+                   labels={DISPLAY_ORDER: "Order", HR_VARIANCE_TEXT: "Variance", HR_WATCH_TEXT: "Watch at"})
     link = {"type": _lit("Drillthrough"), "drillthroughSection": _lit(KPI_DETAIL_NAME)}
     drill = Visual("buttonDrill", X0, DRILL_Y, DRILL_W, DRILL_H,
                    props={**button_props(link, "Drill through to KPI detail →", "primary"), **no_container()})
@@ -79,7 +113,7 @@ def scorecard_page() -> Page:
                     roles={"Rows": [KPI_NAME], "Columns": [BRANCH_NAME], "Values": [HR_STATUS_TEXT]},
                     filters=list(ACTIVE_KPIS) + [hospitals()], sort=KPI_NAME, sort_dir="asc", props=status_colours())
     return Page("scorecard", "Scorecard", page_frame("scorecard", bar) + [table, drill, matrix],
-                height=SCORECARD_H)
+                filters=[hospitals()], height=SCORECARD_H)
 
 
 # ---- KPI detail ---------------------------------------------------------------------------------------------------
@@ -104,7 +138,8 @@ DEFINITION = [("Definition", 150), ("Formula", 120), ("Source System", 90), ("Gr
 def kpi_detail_page() -> Page:
     hospital, month = filters()
     back = bsc.back_button(SUB_TAB_X, SUB_TAB_Y, BACK_W, 54)
-    visuals = page_frame(None, [hospital, month, back])
+    period = period_slicer(SUB_TAB_X + BACK_W + GAP)
+    visuals = page_frame(None, [hospital, month, back, period])
     wrap = {"wordWrap": [{"properties": {"show": _lit(True)}}]}
     visuals.append(Visual("card", X0, Y0, LEFT_W, TITLE_H, roles={"Values": [KPI_NAME]},
                           props={**card_look(20, NAVY, box=True), **wrap}))
@@ -128,13 +163,14 @@ def kpi_detail_page() -> Page:
     bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By hospital",
                   roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]}, filters=[hospitals()])
     visuals += [line, bars]
-    # Without pay access a pay KPI's charts are empty: [HR Pay Notice] (blank for pay readers, so filtered to
-    # non-blank) says why, over the middle of each chart, as Story's Cost block does
+    # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] (blank for pay readers and for a KPI that
+    # needs no pay, so filtered to non-blank) says why, over the middle of each chart (final review I2)
+    notice = meas("HR KPI Pay Notice")
     for chart in (line, bars):
         visuals.append(Visual("card", chart.x, chart.y + (chart.h - NOTICE_H) / 2, chart.w, NOTICE_H,
-                              roles={"Values": [meas("HR Pay Notice")]},
-                              filters=[Filter(meas("HR Pay Notice"), "notblank")], props=card_look(16, NAVY)))
+                              roles={"Values": [notice]}, filters=[Filter(notice, "notblank")],
+                              props=card_look(16, NAVY)))
     interactions = [Interaction(month, line, "NoFilter"), Interaction(month, bars, "NoFilter"),
-                    Interaction(hospital, bars, "NoFilter")]
-    return Page(KPI_DETAIL_NAME, "KPI detail", visuals, interactions=interactions, drill_fields=[KPI_CODE],
-                hidden=True, keep_filters=False)
+                    Interaction(hospital, bars, "NoFilter"), Interaction(period, line, "NoFilter")]
+    return Page(KPI_DETAIL_NAME, "KPI detail", visuals, filters=[hospitals()], interactions=interactions,
+                drill_fields=[KPI_CODE], hidden=True, keep_filters=False)

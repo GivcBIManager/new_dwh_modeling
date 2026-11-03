@@ -145,6 +145,21 @@
             },
             {
               "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR KPI Watch Text"
+                }
+              },
+              "queryRef": "_Measures.HR KPI Watch Text",
+              "nativeQueryRef": "HR KPI Watch Text",
+              "displayName": "Watch at"
+            },
+            {
+              "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {

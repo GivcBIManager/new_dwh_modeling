@@ -5,7 +5,9 @@
     6 area cards                    one figure each; a click opens the detail page
     the data quality strip          [HR DQ Headline] and Open data quality
 
-The filter bar holds Hospital and Month only (R13: the tiles show HR KPI Actual and Status).
+The filter bar holds Hospital and Month only (R13: the tiles show HR KPI Actual and Status). Every data visual but the
+data quality strip is filtered to hospitals (final review I1); the page has no page filter, so the strip still counts
+Head Office (100) records for those who may see them.
 """
 from __future__ import annotations
 
@@ -39,9 +41,9 @@ AREA_FIGURES = {
 
 
 def _story() -> Visual:
-    """[HR Story Home] on the theme's white panel, wrapped, 14pt ink."""
+    """[HR Story Home] on the theme's white panel, wrapped, 14pt ink; hospitals only, as its sentence."""
     props = {**card_look(14, NAVY, box=True), "wordWrap": [{"properties": {"show": _lit(True)}}]}
-    return Visual("card", *STORY, roles={"Values": [meas("HR Story Home")]}, props=props)
+    return Visual("card", *STORY, roles={"Values": [meas("HR Story Home")]}, filters=[hospitals()], props=props)
 
 
 def _tiles() -> list[Visual]:

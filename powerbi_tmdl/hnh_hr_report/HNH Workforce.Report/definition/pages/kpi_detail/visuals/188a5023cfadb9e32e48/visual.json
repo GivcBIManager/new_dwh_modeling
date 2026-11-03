@@ -3,9 +3,9 @@
   "name": "188a5023cfadb9e32e48",
   "position": {
     "x": 30,
-    "y": 270,
+    "y": 186,
     "z": 17000,
-    "height": 150,
+    "height": 60,
     "width": 700,
     "tabOrder": 17000
   },
@@ -23,11 +23,11 @@
                       "Entity": "HR KPI"
                     }
                   },
-                  "Property": "Definition"
+                  "Property": "KPI Name"
                 }
               },
-              "queryRef": "HR KPI.Definition",
-              "nativeQueryRef": "Definition"
+              "queryRef": "HR KPI.KPI Name",
+              "nativeQueryRef": "KPI Name"
             }
           ]
         }
@@ -40,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "20D"
                 }
               }
             },
@@ -64,25 +64,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6B7D'"
-                    }
-                  }
+                  "Value": "false"
                 }
               }
             }

@@ -3,14 +3,14 @@
   "name": "1a6f612ae3fd56c9be72",
   "position": {
     "x": 754,
-    "y": 764,
+    "y": 360,
     "z": 26000,
-    "height": 292,
+    "height": 380,
     "width": 1136,
     "tabOrder": 26000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name",
               "active": true
             }
           ]
@@ -47,9 +47,54 @@
               },
               "queryRef": "_Measures.HR KPI Actual",
               "nativeQueryRef": "HR KPI Actual"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR KPI Target"
+                }
+              },
+              "queryRef": "_Measures.HR KPI Target",
+              "nativeQueryRef": "HR KPI Target"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR KPI Watch"
+                }
+              },
+              "queryRef": "_Measures.HR KPI Watch",
+              "nativeQueryRef": "HR KPI Watch"
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Date"
+                  }
+                },
+                "Property": "Year Month Name"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
       }
     },
     "visualContainerObjects": {
@@ -66,7 +111,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'By hospital'"
+                  "Value": "'Actual, target and watch, last 24 closed months'"
                 }
               }
             }
@@ -84,10 +129,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Branch"
+                "Entity": "Date"
               }
             },
-            "Property": "Is Hospital"
+            "Property": "Month Offset"
           }
         },
         "type": "Categorical",
@@ -95,8 +140,8 @@
           "Version": 2,
           "From": [
             {
-              "Name": "b",
-              "Entity": "Branch",
+              "Name": "d",
+              "Entity": "Date",
               "Type": 0
             }
           ],
@@ -109,10 +154,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "b"
+                            "Source": "d"
                           }
                         },
-                        "Property": "Is Hospital"
+                        "Property": "Month Offset"
                       }
                     }
                   ],
@@ -120,7 +165,168 @@
                     [
                       {
                         "Literal": {
-                          "Value": "'Yes'"
+                          "Value": "1L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "2L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "3L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "4L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "5L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "6L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "7L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "8L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "9L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "10L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "11L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "12L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "13L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "14L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "15L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "16L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "17L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "18L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "19L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "20L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "21L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "22L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "23L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "24L"
                         }
                       }
                     ]

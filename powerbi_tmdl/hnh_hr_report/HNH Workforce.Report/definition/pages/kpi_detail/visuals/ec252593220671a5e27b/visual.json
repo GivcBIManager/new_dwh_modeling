@@ -2,58 +2,64 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "ec252593220671a5e27b",
   "position": {
-    "x": 1590,
-    "y": 96,
+    "x": 803,
+    "y": 90,
     "z": 14000,
-    "height": 54,
-    "width": 140,
+    "height": 66,
+    "width": 270,
     "tabOrder": 14000
   },
   "visual": {
-    "visualType": "actionButton",
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Time Calculation"
+                    }
+                  },
+                  "Property": "Time Calculation"
+                }
+              },
+              "queryRef": "Time Calculation.Time Calculation",
+              "nativeQueryRef": "Time Calculation",
+              "displayName": "Period",
+              "active": true
+            }
+          ]
+        }
+      }
+    },
     "objects": {
-      "text": [
+      "data": [
         {
           "properties": {
-            "show": {
+            "mode": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dropdown'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "selection": [
+        {
+          "properties": {
+            "singleSelect": {
               "expr": {
                 "Literal": {
                   "Value": "true"
                 }
               }
-            }
-          }
-        },
-        {
-          "properties": {
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'How to use'"
-                }
-              }
             },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
-          }
-        }
-      ],
-      "fill": [
-        {
-          "properties": {
-            "show": {
+            "selectAllCheckboxEnabled": {
               "expr": {
                 "Literal": {
                   "Value": "false"
@@ -63,7 +69,7 @@
           }
         }
       ],
-      "outline": [
+      "header": [
         {
           "properties": {
             "show": {
@@ -72,39 +78,72 @@
                   "Value": "true"
                 }
               }
-            }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
+            },
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "9D"
+                }
+              }
+            },
+            "fontColor": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1478BE'"
+                      "Value": "'#5B6B7D'"
                     }
                   }
                 }
               }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
+            }
+          }
+        }
+      ],
+      "general": [
+        {
+          "properties": {
+            "filter": {
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "t",
+                    "Entity": "Time Calculation",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "t"
+                                }
+                              },
+                              "Property": "Time Calculation"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'Current'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
               }
             }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ]
@@ -123,7 +162,7 @@
           }
         }
       ],
-      "visualLink": [
+      "border": [
         {
           "properties": {
             "show": {
@@ -133,56 +172,28 @@
                 }
               }
             },
-            "type": {
-              "expr": {
-                "Literal": {
-                  "Value": "'PageNavigation'"
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#CBD3DC'"
+                    }
+                  }
                 }
               }
             },
-            "navigationSection": {
+            "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "'guide'"
+                  "Value": "6D"
                 }
               }
-            }
-          }
-        }
-      ],
-      "background": [
-        {
-          "properties": {
-            "show": {
+            },
+            "width": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "border": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualHeader": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "1D"
                 }
               }
             }
@@ -190,6 +201,83 @@
         }
       ]
     },
+    "syncGroup": {
+      "groupName": "bsc Time Calculation.Time Calculation",
+      "fieldChanges": true,
+      "filterChanges": true
+    },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "64a13544180b224ce4b4",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Time Calculation"
+              }
+            },
+            "Property": "Time Calculation"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "t",
+              "Entity": "Time Calculation",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "t"
+                          }
+                        },
+                        "Property": "Time Calculation"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Current'"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'QTD'"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'YTD'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

@@ -2,169 +2,43 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "2ab8130f3a502329212a",
   "position": {
-    "x": 30,
-    "y": 186,
+    "x": 1745,
+    "y": 96,
     "z": 17000,
-    "height": 480,
-    "width": 1860,
+    "height": 54,
+    "width": 145,
     "tabOrder": 17000
   },
   "visual": {
-    "visualType": "tableEx",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "HR KPI"
-                    }
-                  },
-                  "Property": "Area"
-                }
-              },
-              "queryRef": "HR KPI.Area",
-              "nativeQueryRef": "Area"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "HR KPI"
-                    }
-                  },
-                  "Property": "KPI Code"
-                }
-              },
-              "queryRef": "HR KPI.KPI Code",
-              "nativeQueryRef": "KPI Code"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "HR KPI"
-                    }
-                  },
-                  "Property": "KPI Name"
-                }
-              },
-              "queryRef": "HR KPI.KPI Name",
-              "nativeQueryRef": "KPI Name"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR KPI Status Text"
-                }
-              },
-              "queryRef": "_Measures.HR KPI Status Text",
-              "nativeQueryRef": "HR KPI Status Text"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR KPI Actual Text"
-                }
-              },
-              "queryRef": "_Measures.HR KPI Actual Text",
-              "nativeQueryRef": "HR KPI Actual Text"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR KPI Target Text"
-                }
-              },
-              "queryRef": "_Measures.HR KPI Target Text",
-              "nativeQueryRef": "HR KPI Target Text"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR KPI Watch"
-                }
-              },
-              "queryRef": "_Measures.HR KPI Watch",
-              "nativeQueryRef": "HR KPI Watch",
-              "displayName": "Watch at"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "HR KPI"
-                    }
-                  },
-                  "Property": "Display Order"
-                }
-              },
-              "queryRef": "HR KPI.Display Order",
-              "nativeQueryRef": "Display Order",
-              "displayName": "Order"
-            }
-          ]
-        }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "HR KPI"
-                  }
-                },
-                "Property": "Display Order"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
-      }
-    },
+    "visualType": "actionButton",
     "objects": {
-      "values": [
+      "text": [
         {
           "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Definitions'"
+                }
+              }
+            },
             "fontColor": {
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "HR KPI Status Colour"
+                    "Literal": {
+                      "Value": "'#1478BE'"
                     }
                   }
                 }
@@ -172,38 +46,65 @@
             }
           },
           "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "_Measures.HR KPI Status Text"
+            "id": "default"
           }
-        },
+        }
+      ],
+      "fill": [
         {
           "properties": {
-            "wordWrap": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
           }
         }
       ],
-      "columnHeaders": [
+      "outline": [
         {
           "properties": {
-            "wordWrap": {
+            "show": {
               "expr": {
                 "Literal": {
                   "Value": "true"
                 }
               }
             }
+          }
+        },
+        {
+          "properties": {
+            "lineColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#1478BE'"
+                    }
+                  }
+                }
+              }
+            },
+            "weight": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
           }
         }
       ]
@@ -215,14 +116,73 @@
             "show": {
               "expr": {
                 "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualLink": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
                   "Value": "true"
                 }
               }
             },
-            "text": {
+            "type": {
               "expr": {
                 "Literal": {
-                  "Value": "'Every active KPI: select a row, then drill through'"
+                  "Value": "'PageNavigation'"
+                }
+              }
+            },
+            "navigationSection": {
+              "expr": {
+                "Literal": {
+                  "Value": "'guide_definitions'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -231,117 +191,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "c00246f9a0eff6c246ce",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "HR KPI"
-              }
-            },
-            "Property": "Kind"
-          }
-        },
-        "type": "Categorical",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "h",
-              "Entity": "HR KPI",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "h"
-                          }
-                        },
-                        "Property": "Kind"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "'kpi'"
-                        }
-                      }
-                    ]
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      },
-      {
-        "name": "cda042bd67c460e6fa56",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "HR KPI"
-              }
-            },
-            "Property": "Status"
-          }
-        },
-        "type": "Categorical",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "h",
-              "Entity": "HR KPI",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "h"
-                          }
-                        },
-                        "Property": "Status"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "'active'"
-                        }
-                      }
-                    ]
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

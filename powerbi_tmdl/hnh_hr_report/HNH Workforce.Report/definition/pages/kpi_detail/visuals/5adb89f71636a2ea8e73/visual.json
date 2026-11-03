@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5adb89f71636a2ea8e73",
   "position": {
-    "x": 1140.6666666666667,
+    "x": 754.0,
     "y": 186,
     "z": 23000,
     "height": 150,
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR KPI Target Text"
+                  "Property": "HR KPI Actual Text"
                 }
               },
-              "queryRef": "_Measures.HR KPI Target Text",
-              "nativeQueryRef": "HR KPI Target Text",
-              "displayName": "Target"
+              "queryRef": "_Measures.HR KPI Actual Text",
+              "nativeQueryRef": "HR KPI Actual Text",
+              "displayName": "Actual"
             }
           ]
         }
