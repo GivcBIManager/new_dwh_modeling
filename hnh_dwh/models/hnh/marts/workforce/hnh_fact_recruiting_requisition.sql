@@ -1,8 +1,11 @@
 {{ config(alias='fact_recruiting_requisition', order_by='requisition_id') }}
 
--- Oracle Recruiting requisitions for the scorecard (bsc ssas spec 6.2, KPIs 47 and 48): approved, not deleted, with a
--- branch 1-8 department, as in bsc.vw_work_force. days_to_fill is approval to fill, NULL when not filled or when the
--- fill is before the approval. Only some branches use Oracle Recruiting (mostly Abha and Head Office).
+-- Oracle Recruiting requisitions (bsc ssas spec 6.2, KPIs 47 and 48; HR dashboard): approved, not deleted, with a
+-- department of a hospital (branches 1-8) or of Head Office (100; ruling R32, 2026-11-03: the HR report covers Head
+-- Office). The scorecard keeps hospitals only: every BSC measure reads this fact under Branch[Is Hospital] = "Yes",
+-- and bsc.vw_work_force reads the staging model with its own branch filter. days_to_fill is approval to fill, NULL
+-- when not filled or when the fill is before the approval. Only some branches use Oracle Recruiting (mostly Abha and
+-- Head Office).
 select
     q.requisition_id                                                        as requisition_id,
     d.branch_key                                                            as branch_key,
@@ -13,4 +16,4 @@ select
        toInt32(dateDiff('day', assumeNotNull(q.approved_date), assumeNotNull(q.filled_date)))) as days_to_fill
 from {{ ref('stg_fusion__recruiting_requisitions') }} as q
 inner join {{ ref('hnh_dim_hr_department') }} as d on d.organization_id = q.department_id
-where q.is_deleted = 0 and q.approved_date is not null and d.branch_key between 1 and 8
+where q.is_deleted = 0 and q.approved_date is not null and (d.branch_key between 1 and 8 or d.branch_key = 100)

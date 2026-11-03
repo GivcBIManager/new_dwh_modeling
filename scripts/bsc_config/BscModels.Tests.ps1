@@ -204,19 +204,36 @@ Describe 'fact_bsc_workforce_monthly unit fixture' {
 }
 
 Describe 'fact_recruiting_requisition' {
-    # Same rows as the requisitions CTE of bsc_vw_work_force: approved, not deleted, branch 1-8.
+    # The requisitions CTE of bsc_vw_work_force (approved, not deleted, branch 1-8) plus Head Office's (100; ruling R32).
     $wrap = "select count() as n, uniqExact(requisition_id) as u, countIf(filled_date_key is not null) as filled, " +
-            "countIf(days_to_fill < 0) as negative, (select count() from stg.stg_fusion__recruiting_requisitions as q " +
+            "countIf(days_to_fill < 0) as negative, countIf(branch_key = 100) as head_office, " +
+            "countIf(branch_key not between 1 and 8 and branch_key != 100) as other, " +
+            "(select count() from stg.stg_fusion__recruiting_requisitions as q " +
             "inner join gold.hnh_dim_hr_department as d on d.organization_id = q.department_id " +
-            "where q.is_deleted = 0 and q.approved_date is not null and d.branch_key between 1 and 8) as expected from ({model})"
+            "where q.is_deleted = 0 and q.approved_date is not null and (d.branch_key between 1 and 8 or d.branch_key = 100)) as expected, " +
+            "(select count() from stg.stg_fusion__recruiting_requisitions as q " +
+            "inner join gold.hnh_dim_hr_department as d on d.organization_id = q.department_id " +
+            "where q.is_deleted = 0 and q.approved_date is not null and d.branch_key = 100) as expected_head_office from ({model})"
     $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') hnh_fact_recruiting_requisition --wrap $wrap) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw 'render failed: hnh_fact_recruiting_requisition' }
     $r = (Invoke-HnhSelect -Dsn HNH_Gold -Sql ($sql -replace '(?m)^\s*--.*$', ''))[0]
     It 'has the bsc requisitions, one row each, no negative time to fill' {
-        Write-Host "requisitions: $($r.n), filled: $($r.filled)"
+        Write-Host "requisitions: $($r.n), filled: $($r.filled), Head Office: $($r.head_office)"
         [int]$r.n | Should Be ([int]$r.expected)
         [int]$r.u | Should Be ([int]$r.n)
         [int]$r.negative | Should Be 0
+    }
+    It 'R32: keeps Head Office requisitions, no other branch' {
+        [int]$r.head_office | Should Be ([int]$r.expected_head_office)
+        [int]$r.other | Should Be 0
+    }
+}
+
+Describe 'hnh_fact_recruiting_requisition unit fixture' {
+    $r = Invoke-DbtUnitFixture (Join-Path $root 'hnh_dwh\models\hnh\marts\workforce\_workforce_marts_unit_tests.yml') 'hnh_fact_recruiting_requisition_keeps_hospitals_and_head_office'
+    It 'R32: keeps the hospital and Head Office requisitions only' {
+        [int]$r.extra | Should Be 0
+        [int]$r.missing | Should Be 0
     }
 }
 

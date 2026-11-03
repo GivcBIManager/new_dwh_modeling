@@ -97,7 +97,7 @@ TABLES = [
     Table("ssas_fact_bsc_ar_collection_monthly", "BSC AR Collections", "fact", "Credit-patient AR receipts and the credit AR balance per hospital and month (net collection rate)."),
     Table("ssas_fact_gl_fs_monthly", "GL FS Monthly", "fact", "Monthly GL balances per hospital and account, Oasis before each branch's Fusion cutover and Fusion after it."),
     Table("ssas_fact_bsc_workforce_monthly", "Workforce Monthly", "fact", "Heads, part-time doctors and resignations per hospital, month end and person, by the scorecard rules."),
-    Table("ssas_fact_recruiting_requisition", "Requisitions", "fact", "Approved Oracle Recruiting requisitions of the hospitals."),
+    Table("ssas_fact_recruiting_requisition", "Requisitions", "fact", "Approved Oracle Recruiting requisitions of the hospitals and Head Office."),
     # HR dashboard: KPI catalogue, monthly targets and the data quality issues with their records.
     Table("ssas_dim_hr_kpi", "HR KPI", "dim", "HR dashboard KPIs with definition, formula, direction and target source."),
     Table("ssas_fact_hr_target_monthly", "HR Targets", "fact", "HR KPI targets and watch values per branch (hospitals 1-8 and Head Office) and month."),
