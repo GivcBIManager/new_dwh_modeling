@@ -406,7 +406,8 @@ def test_scorecard_filters_kind_kpi():
     table = next(v for v in page.visuals if v.sample == "table")
     matrix = next(v for v in page.visuals if v.sample == "matrix")
     for v in (table, matrix):
-        assert (col("HR KPI", "Kind"), "in", ["kpi"]) in _flt(v) or (col("HR KPI", "Kind"), "eq", ["kpi"]) in _flt(v)
+        assert ((col("HR KPI", "Kind"), "in", ["kpi"]) in _flt(v)
+                or (col("HR KPI", "Kind"), "eq", ["kpi"]) in _flt(v))
         assert (col("HR KPI", "Status"), "in", ["active"]) in _flt(v) or             (col("HR KPI", "Status"), "eq", ["active"]) in _flt(v)
     # sorted by Display Order; text measures for the cells every user sees (R22); no variance measure exists
     assert table.sort == col("HR KPI", "Display Order") and table.sort_dir == "asc"
@@ -427,7 +428,7 @@ def test_scorecard_filters_kind_kpi():
 
 def test_kpi_detail_is_drillthrough_on_code():
     page = _page("kpi_detail")
-    assert page.hidden and page.drill_fields == [KPI_CODE] and page.keep_filters
+    assert page.hidden and page.drill_fields == [KPI_CODE] and not page.keep_filters
     assert page.display == "KPI detail" and page.name == "kpi_detail"
     vs = page.visuals
     # a Back button, and the frame without a current tab
@@ -457,3 +458,13 @@ def test_kpi_detail_is_drillthrough_on_code():
 def test_scorecard_and_kpi_detail_are_registered():
     names = [p.name for p in PAGES]
     assert names[:4] == ["home", "story", "scorecard", "kpi_detail"]
+
+
+def test_kpi_detail_charts_have_a_pay_notice():
+    page = _page("kpi_detail")
+    notices = _on(page, "HR Pay Notice")
+    assert len(notices) == 2 and all(n.filters[0].op == "notblank" for n in notices)
+    for chart in (next(v for v in page.visuals if v.sample == "lineChart"),
+                  next(v for v in page.visuals if v.sample == "barChart")):
+        assert any(n.x == chart.x and n.w == chart.w and chart.y <= n.y and n.y + n.h <= chart.y + chart.h
+                   for n in notices)

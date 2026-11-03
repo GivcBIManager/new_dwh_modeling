@@ -6,7 +6,8 @@ sorted by Display Order; a "Drill through to KPI detail" button, enabled by one 
 hospital showing [HR KPI Status Text] in the same colours. Both are filtered to Kind "kpi" and Status "active". There
 is no variance column: the model has no variance measure, and the report adds none (ruling R22).
 
-KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Code] with all filters kept. Left, the
+KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Code] only (keep_filters off: the scorecard's Month would otherwise AND with
+the line's Month Offset filter and leave one point); the page's own synced Hospital and Month slicers apply. Left, the
 KPI's name and the definition panel (Definition, Formula, Source System, Grain, Caveats); right, cards for
 [HR KPI Actual Text], target and status, the 24-month line of actual against target and watch, and the bar by
 hospital. The Month slicer (synced with every page) does not reach the line or the bar: NoFilter interactions, so they
@@ -94,6 +95,7 @@ LINE_H = 380
 BAR_Y = LINE_Y + LINE_H + GAP
 BAR_H = Y0 + H0 - BAR_Y
 BACK_W = 110
+NOTICE_H = 60
 
 # (HR KPI column, panel height)
 DEFINITION = [("Definition", 150), ("Formula", 120), ("Source System", 90), ("Grain", 90), ("Caveats", 150)]
@@ -126,7 +128,13 @@ def kpi_detail_page() -> Page:
     bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By hospital",
                   roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]}, filters=[hospitals()])
     visuals += [line, bars]
+    # Without pay access a pay KPI's charts are empty: [HR Pay Notice] (blank for pay readers, so filtered to
+    # non-blank) says why, over the middle of each chart, as Story's Cost block does
+    for chart in (line, bars):
+        visuals.append(Visual("card", chart.x, chart.y + (chart.h - NOTICE_H) / 2, chart.w, NOTICE_H,
+                              roles={"Values": [meas("HR Pay Notice")]},
+                              filters=[Filter(meas("HR Pay Notice"), "notblank")], props=card_look(16, NAVY)))
     interactions = [Interaction(month, line, "NoFilter"), Interaction(month, bars, "NoFilter"),
                     Interaction(hospital, bars, "NoFilter")]
     return Page(KPI_DETAIL_NAME, "KPI detail", visuals, interactions=interactions, drill_fields=[KPI_CODE],
-                hidden=True)
+                hidden=True, keep_filters=False)
