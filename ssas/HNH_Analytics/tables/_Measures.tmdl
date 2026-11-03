@@ -1625,6 +1625,78 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Voluntary Turnover Rate %"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Workforce\Movements
+	/// Fusion assignment actions in the period, of every kind (hires, leavers, transfers, promotions, contract and manager changes); slice by Worker Action for one kind.
+	measure Movements =
+			VAR __Value = ( -- measure body
+				COUNTROWS ( 'Worker Movements' )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Movements"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Movements whose branch differs from the worker's branch the day before (moves between hospitals). Hires are never counted: their previous branch defaults to the current one.
+	measure 'Branch Transfers' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( 'Worker Movements' ), KEEPFILTERS ( 'Worker Movements'[Is Branch Transfer] = "Yes" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Branch Transfers"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Movements with the Fusion action Promotion (action code PROMOTION), HR to confirm. Not the same as Grade Changes: most promotions in 2026 change the position but not the grade.
+	measure Promotions =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( 'Worker Movements' ), KEEPFILTERS ( 'Worker Action'[Action Code] = "PROMOTION" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Promotions"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Movements that change the worker's job, whatever the action.
+	measure 'Job Changes' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( 'Worker Movements' ), KEEPFILTERS ( 'Worker Movements'[Is Job Changed] = "Yes" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Job Changes"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Movements that change the worker's grade, whatever the action.
+	measure 'Grade Changes' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( 'Worker Movements' ), KEEPFILTERS ( 'Worker Movements'[Is Grade Changed] = "Yes" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Grade Changes"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Movements that change the worker's position, whatever the action.
+	measure 'Position Changes' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( 'Worker Movements' ), KEEPFILTERS ( 'Worker Movements'[Is Position Changed] = "Yes" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Position Changes"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Movements that change the worker's location, whatever the action.
+	measure 'Location Changes' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( 'Worker Movements' ), KEEPFILTERS ( 'Worker Movements'[Is Location Changed] = "Yes" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Location Changes"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
+	/// Leavers in Fusion that are not voluntary (end of contract, Articles 74, 77 and 80, end in probation): Leavers − Voluntary Leavers. Fusion figures, not the BSC turnover.
+	measure 'Involuntary Leavers' =
+			VAR __Value = ( -- measure body
+				[Leavers] - [Voluntary Leavers]
+			) -- end of measure body
+			VAR __Wrong = [_Guard Worker Movements]
+			RETURN IF ( __Wrong = "", __Value, """Involuntary Leavers"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Movements
 	/// Gross pay in SAR: Σ gross_pay, parallel-run rows already excluded; open Oasis payroll included (Phase 4 spec section 7; receiving notes).
 	measure 'Gross Pay' =
 			VAR __Value = ( -- measure body
@@ -1701,6 +1773,18 @@ table _Measures
 			VAR __Wrong = [_Guard Absence Days + Headcount]
 			RETURN IF ( __Wrong = "", __Value, """Sick Leave Rate %"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
+		displayFolder: Workforce\Absence
+	/// Counted absence days of every category and type up to today (planned absence runs into 2027); Sick Days is the sick part.
+	measure 'Absence Days' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'Absence Days'[Absence Days] ),
+					'Date'[Is Past] = "Yes"
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Absence Days]
+			RETURN IF ( __Wrong = "", __Value, """Absence Days"" can't be analysed by " & __Wrong )
+		formatString: #,0
 		displayFolder: Workforce\Absence
 	/// Leave balance in days at the last closed accrual month of the selection per branch: the latest period of each employee and plan in that month (receiving notes). Snapshot.
 	measure 'Leave Balance (days)' =
@@ -1807,6 +1891,46 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Payroll Cost per Visit"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Workforce\Productivity
+	/// Recruiting requisitions approved in the period, each counted once whatever its number of openings; dated by the approval date (the inactive Approved Date relationship).
+	measure 'Requisitions Approved' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( Requisitions ), USERELATIONSHIP ( Requisitions[Approved Date Key], 'Date'[Date Key] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Requisitions]
+			RETURN IF ( __Wrong = "", __Value, """Requisitions Approved"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Recruitment
+	/// Recruiting requisitions filled in the period, dated by the fill date; a requisition not filled yet is never counted.
+	measure 'Requisitions Filled' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( COUNTROWS ( Requisitions ), KEEPFILTERS ( NOT ISBLANK ( Requisitions[Filled Date Key] ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Requisitions]
+			RETURN IF ( __Wrong = "", __Value, """Requisitions Filled"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Recruitment
+	/// Openings (number to hire) of the requisitions approved by the end of the period, up to today, and not filled by then: the numerator of BSC Vacancy Rate (KPI 47), which calls it. Snapshot.
+	measure 'Open Openings' =
+			VAR __Value = ( -- measure body
+				VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR LastKey = YEAR ( PeriodEnd ) * 10000 + MONTH ( PeriodEnd ) * 100 + DAY ( PeriodEnd )
+				RETURN
+					IF (
+						NOT ISBLANK ( PeriodEnd ),
+						CALCULATE (
+							SUM ( Requisitions[Number To Hire] ),
+							REMOVEFILTERS ( 'Date' ),
+							Requisitions[Approved Date Key] <= LastKey,
+							FILTER ( ALL ( Requisitions[Filled Date Key] ), ISBLANK ( Requisitions[Filled Date Key] ) || Requisitions[Filled Date Key] > LastKey )
+						)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Requisitions]
+			RETURN IF ( __Wrong = "", __Value, """Open Openings"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Recruitment
+
+		annotation hnh_snapshot = 1
 	/// Consumption quantity in primary units of consumption movements (patient sales − returns + department issues) (Phase 5 spec section 7).
 	measure 'Consumption Quantity' =
 			VAR __Value = ( -- measure body
@@ -4780,14 +4904,8 @@ table _Measures
 	measure 'BSC Vacancy Rate' =
 			VAR __Value = ( -- measure body
 				VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-				VAR LastKey = YEAR ( PeriodEnd ) * 10000 + MONTH ( PeriodEnd ) * 100 + DAY ( PeriodEnd )
-				VAR Openings =
-					CALCULATE (
-						SUM ( Requisitions[Number To Hire] ),
-						REMOVEFILTERS ( 'Date' ),
-						Requisitions[Approved Date Key] <= LastKey,
-						FILTER ( ALL ( Requisitions[Filled Date Key] ), ISBLANK ( Requisitions[Filled Date Key] ) || Requisitions[Filled Date Key] > LastKey )
-					)
+				-- the unguarded twin: this measure's guard covers Requisitions, and the scorecard payload reads its twin under filters an inner guard would reject
+				VAR Openings = [_Unguarded Open Openings]
 				VAR Budgeted = CALCULATE ( SUM ( 'BSC Budgeted FTE'[Budgeted FTE] ), REMOVEFILTERS ( 'Date' ), 'Date'[Year] = YEAR ( PeriodEnd ) )
 				RETURN IF ( NOT ISBLANK ( PeriodEnd ), DIVIDE ( Openings, Budgeted ) )
 			) -- end of measure body
@@ -7185,6 +7303,11 @@ table _Measures
 	measure 'HR Can See Pay' =
 			IF ( CALCULATE ( COUNTROWS ( 'Pay Category' ), REMOVEFILTERS ( 'Pay Category' ) ) > 0, 1, 0 )
 		formatString: 0
+		displayFolder: HR Dashboard\Measures
+	/// Fusion full name of the one employee in context. Blank for several employees, and for readers without pay access: HNH Readers shows Employee Details only to them, for their branches.
+	measure 'HR Employee Name' =
+			SELECTEDVALUE ( 'Employee Details'[Full Name] )
+		formatString: General
 		displayFolder: HR Dashboard\Measures
 	/// Actual of the HR KPI in context: the measure named in its measure_name, for hospitals only and the days up to today (the scope of HR KPI Target and BSC Actual), evaluated without the HR KPI and HR Targets filters. Blank for a metric row and when no single KPI is in context.
 	measure 'HR KPI Actual' =
@@ -16309,14 +16432,8 @@ table _Measures
 	/// The expression of BSC Vacancy Rate without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
 	measure '_Unguarded BSC Vacancy Rate' =
 			VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
-			VAR LastKey = YEAR ( PeriodEnd ) * 10000 + MONTH ( PeriodEnd ) * 100 + DAY ( PeriodEnd )
-			VAR Openings =
-				CALCULATE (
-					SUM ( Requisitions[Number To Hire] ),
-					REMOVEFILTERS ( 'Date' ),
-					Requisitions[Approved Date Key] <= LastKey,
-					FILTER ( ALL ( Requisitions[Filled Date Key] ), ISBLANK ( Requisitions[Filled Date Key] ) || Requisitions[Filled Date Key] > LastKey )
-				)
+			-- the unguarded twin: this measure's guard covers Requisitions, and the scorecard payload reads its twin under filters an inner guard would reject
+			VAR Openings = [_Unguarded Open Openings]
 			VAR Budgeted = CALCULATE ( SUM ( 'BSC Budgeted FTE'[Budgeted FTE] ), REMOVEFILTERS ( 'Date' ), 'Date'[Year] = YEAR ( PeriodEnd ) )
 			RETURN IF ( NOT ISBLANK ( PeriodEnd ), DIVIDE ( Openings, Budgeted ) )
 		formatString: General
@@ -16362,6 +16479,24 @@ table _Measures
 				Encounters[Is Arrived] = "Yes",
 				Encounters[Is Cancelled] = "No"
 			)
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Unguarded
+
+	/// The expression of Open Openings without its guard, for measures whose own guard covers its facts; generated by ssas/tools/measure_guards.py.
+	measure '_Unguarded Open Openings' =
+			VAR PeriodEnd = CALCULATE ( MAX ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR LastKey = YEAR ( PeriodEnd ) * 10000 + MONTH ( PeriodEnd ) * 100 + DAY ( PeriodEnd )
+			RETURN
+				IF (
+					NOT ISBLANK ( PeriodEnd ),
+					CALCULATE (
+						SUM ( Requisitions[Number To Hire] ),
+						REMOVEFILTERS ( 'Date' ),
+						Requisitions[Approved Date Key] <= LastKey,
+						FILTER ( ALL ( Requisitions[Filled Date Key] ), ISBLANK ( Requisitions[Filled Date Key] ) || Requisitions[Filled Date Key] > LastKey )
+					)
+				)
 		formatString: General
 		isHidden
 		displayFolder: Diagnostics\Unguarded

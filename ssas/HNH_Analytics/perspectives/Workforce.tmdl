@@ -64,23 +64,35 @@ perspective Workforce
 		includeAll
 
 	perspectiveTable _Measures
+		perspectiveMeasure 'Absence Days'
 		perspectiveMeasure 'Average FTE'
 		perspectiveMeasure 'Average Headcount'
+		perspectiveMeasure 'Branch Transfers'
 		perspectiveMeasure 'Current Leave Balance (days)'
 		perspectiveMeasure 'Current Leave Liability'
 		perspectiveMeasure 'Current User'
 		perspectiveMeasure FTE
+		perspectiveMeasure 'Grade Changes'
 		perspectiveMeasure 'Gross Pay'
 		perspectiveMeasure 'Gross Pay (Open Payroll)'
 		perspectiveMeasure Headcount
 		perspectiveMeasure Hires
+		perspectiveMeasure 'Involuntary Leavers'
+		perspectiveMeasure 'Job Changes'
 		perspectiveMeasure 'Leave Balance (days)'
 		perspectiveMeasure 'Leave Liability'
 		perspectiveMeasure Leavers
+		perspectiveMeasure 'Location Changes'
+		perspectiveMeasure Movements
+		perspectiveMeasure 'Open Openings'
 		perspectiveMeasure 'Overtime Share %'
 		perspectiveMeasure 'Payroll Cost'
 		perspectiveMeasure 'Payroll Cost per FTE'
 		perspectiveMeasure 'Payroll Cost per Visit'
+		perspectiveMeasure 'Position Changes'
+		perspectiveMeasure Promotions
+		perspectiveMeasure 'Requisitions Approved'
+		perspectiveMeasure 'Requisitions Filled'
 		perspectiveMeasure 'Revenue per Payroll SAR'
 		perspectiveMeasure 'Saudisation Rate %'
 		perspectiveMeasure 'Sick Days'
@@ -251,5 +263,6 @@ perspective Workforce
 		perspectiveMeasure '_Unguarded NPS (5-point)'
 		perspectiveMeasure '_Unguarded NPS Answers'
 		perspectiveMeasure '_Unguarded OP Visits'
+		perspectiveMeasure '_Unguarded Open Openings'
 		perspectiveMeasure '_Unguarded Overall Satisfaction (0-100)'
 		perspectiveMeasure '_Unguarded Respondents'
