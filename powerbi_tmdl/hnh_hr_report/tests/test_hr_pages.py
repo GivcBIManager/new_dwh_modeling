@@ -757,7 +757,12 @@ def test_dq_page_content_and_measures():
     assert {"HR Open Issues", "HR Issue Records", "HR Affected Employees"} <= cards
     bar = by_sample("barChart")[0]
     assert bar.roles["Category"] == [col("HR Data Issues", "Fix In")] and bar.roles["Y"] == [meas("HR Issue Records")]
-    issue_table, records = by_sample("table")
+    tables = by_sample("table")
+    issue_table = next(v for v in tables if meas("HR Issue Records") in v.roles["Values"])
+    records = next(v for v in tables if col("HR Data Issue Records", "Issue Code") in v.roles["Values"])
+    fix = next(v for v in tables if v.roles["Values"] == [col("HR Data Issues", "Issue Name"),
+                                                        col("HR Data Issues", "How To Fix")])
+    assert (col("HR Data Issues", "Status"), "eq", ["active"]) in _flt(fix) and fix.title == "How to fix"
     for c in ("Issue Name", "Severity", "Fix In", "Owner"):
         assert col("HR Data Issues", c) in issue_table.roles["Values"]
     assert meas("HR Issue Records") in issue_table.roles["Values"]
@@ -767,7 +772,8 @@ def test_dq_page_content_and_measures():
     matrix = by_sample("matrix")[0]
     assert matrix.roles["Rows"] == [col("HR Data Issues", "Issue Name")]
     assert matrix.roles["Columns"] == [BRANCH_NAME]
-    assert any(col("HR Data Issues", "How To Fix") in v.roles.get("Values", []) for v in by_sample("card"))
+    assert not any(col("HR Data Issues", "How To Fix") in v.roles.get("Values", []) for v in by_sample("card"))
+    assert not [i for i in page.interactions if i.source is issue_table and i.target is fix]
     # the records table follows the issue table (default cross-filter), not the other way round
     assert not [i for i in page.interactions if i.source is issue_table and i.target is records]
 
@@ -798,6 +804,6 @@ def test_definitions_cover_all_kinds():
 def test_guide_text_covers_the_rules():
     text = _text_of(_page("guide"))
     for needle in ("Last closed month", "● On track", "◆ Watch", "■ At risk", "○ No target yet", "– No data", "Parked",
-                   "Requires pay access", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
+                   "🔒 Requires pay access", "within the watch threshold", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
                    "largest change", "nightly", "Back", "BSC turnover", "in Fusion"):
         assert needle in text, needle

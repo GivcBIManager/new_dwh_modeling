@@ -10,7 +10,7 @@
     "tabOrder": 22000
   },
   "visual": {
-    "visualType": "card",
+    "visualType": "tableEx",
     "query": {
       "queryState": {
         "Values": {
@@ -23,58 +23,67 @@
                       "Entity": "HR Data Issues"
                     }
                   },
+                  "Property": "Issue Name"
+                }
+              },
+              "queryRef": "HR Data Issues.Issue Name",
+              "nativeQueryRef": "Issue Name",
+              "displayName": "Issue"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Data Issues"
+                    }
+                  },
                   "Property": "How To Fix"
                 }
               },
               "queryRef": "HR Data Issues.How To Fix",
-              "nativeQueryRef": "How To Fix"
+              "nativeQueryRef": "How To Fix",
+              "displayName": "How to fix"
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "HR Data Issues"
+                  }
+                },
+                "Property": "Issue Name"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ]
       }
     },
     "objects": {
-      "labels": [
+      "values": [
         {
           "properties": {
-            "fontSize": {
+            "wordWrap": {
               "expr": {
                 "Literal": {
-                  "Value": "14D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#0A1E32'"
-                    }
-                  }
+                  "Value": "true"
                 }
               }
             }
           }
         }
       ],
-      "categoryLabels": [
+      "columnHeaders": [
         {
           "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "wordWrap": [
-        {
-          "properties": {
-            "show": {
+            "wordWrap": {
               "expr": {
                 "Literal": {
                   "Value": "true"
@@ -99,7 +108,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'How to fix the selected issue'"
+                  "Value": "'How to fix'"
                 }
               }
             }

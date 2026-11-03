@@ -5,7 +5,7 @@ slicer only: the records carry no month (the model has no relationship to Date, 
 filter), so there is no Month slicer. A page filter keeps the active issues ('HR Data Issues'[Status]). Top: cards for
 [HR Open Issues], [HR Issue Records] and [HR Affected Employees] (distinct people), and the records by "Fix In".
 Middle: the issue table and the issue x hospital matrix. Bottom: the records table (cross-filtered by the issue table
-and the matrix: a selection in either narrows it) and the How To Fix text of the issue in context. Head Office (100)
+and the matrix: a selection in either narrows it) and a table of Issue Name and How To Fix (every issue's fix; one row once an issue is selected). Head Office (100)
 records show to administrators only: the role filters the rest. The records table does not filter the other visuals.
 
 How to use (`guide_page`) and Definitions (`definitions_page`) are the two Guide pages the help buttons open; the
@@ -14,7 +14,7 @@ KPIs and the metrics defined without a target are all listed.
 """
 from __future__ import annotations
 
-from frame import CONTENT, NAVY, _lit
+from frame import CONTENT, NAVY
 from hr_frame import HR_TARGET_TEXT, bsc, card_look, filters, page_frame
 from model import Filter, Interaction, Page, Visual, col, meas
 from pages_detail import _guarded
@@ -73,10 +73,9 @@ def data_quality_page() -> Page:
     records = Visual("table", X0, BOT_Y, RECORDS_W, END - BOT_Y, title="Records behind the selected issue",
                      roles={"Values": [f for f, _ in records_cols]}, labels=dict(records_cols),
                      sort=records_cols[0][0], sort_dir="asc")
-    wrap = {"wordWrap": [{"properties": {"show": _lit(True)}}]}
-    fix = Visual("card", X0 + RECORDS_W + GAP, BOT_Y, FIX_W, END - BOT_Y, title="How to fix the selected issue",
-                 roles={"Values": [HOW_TO_FIX]}, filters=[ACTIVE_ISSUES],
-                 props={**card_look(14, NAVY, box=True), **wrap})
+    fix = Visual("table", X0 + RECORDS_W + GAP, BOT_Y, FIX_W, END - BOT_Y, title="How to fix",
+                 roles={"Values": [ISSUE_NAME, HOW_TO_FIX]}, labels={ISSUE_NAME: "Issue", HOW_TO_FIX: "How to fix"},
+                 filters=[ACTIVE_ISSUES], sort=ISSUE_NAME, sort_dir="asc", props=bsc.word_wrap())
     data = cards + [bar, issues, matrix, records, fix]
     # the records table follows the issue table and the matrix; it does not narrow the rest
     interactions = [Interaction(records, v, "NoFilter") for v in data if v is not records]
@@ -108,12 +107,13 @@ GUIDE_SECTIONS = [
         "rate or number moved most."]),
     _section("Read the status", [
         "● On track (green): the actual meets the target.",
-        "◆ Watch (amber): it misses the target, but by no more than the watch value.",
+        "◆ Watch (amber): short of the target but still within the watch threshold. For on-target KPIs, the "
+        "distance from the target is compared with the distance from the watch value to the target.",
         "■ At risk (red): it is worse than the watch value.",
         "○ No target yet (grey): no target is set, so the KPI is not scored.",
         "– No data (grey): there is no figure for the month.",
         "Parked: the KPI is listed but not scored for now.",
-        "Requires pay access: pay figures (payroll, overtime, leave, productivity) show only to users with pay "
+        "🔒 Requires pay access: pay figures (payroll, overtime, leave, productivity) show only to users with pay "
         "access; others see this note instead of a number.",
         "Every target marked (placeholder) is a starting value, the current level, until HR sets the real one. HR "
         "decides the targets; the BI manager enters them (docs/hr_config.md). The mark goes when a real target is "
