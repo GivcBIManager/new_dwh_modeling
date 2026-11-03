@@ -115,9 +115,9 @@ try {
 
                 if ($hasHrKpi) {
                     # HR dashboard final review C1: a pay KPI's target and watch value are pay levels. Without pay access
-                    # they are blank and the texts say Requires pay access; with pay access the texts never do.
+                    # they are blank and the texts say Requires pay access; with pay access the texts never do (and the notice is "").
                     $rpa = '"Requires pay access"'
-                    if ($pay) { $want = "NOT EXACT([HR KPI Target Text], $rpa) && NOT EXACT([HR KPI Watch Text], $rpa) && ISBLANK([HR KPI Pay Notice])" }
+                    if ($pay) { $want = "NOT EXACT([HR KPI Target Text], $rpa) && NOT EXACT([HR KPI Watch Text], $rpa) && EXACT([HR KPI Pay Notice], """")" }
                     else { $want = "ISBLANK([HR KPI Target]) && ISBLANK([HR KPI Watch]) && ISBLANK([HR KPI Variance]) && EXACT([HR KPI Target Text], $rpa) && EXACT([HR KPI Watch Text], $rpa) && EXACT([HR KPI Variance Text], $rpa) && EXACT([HR KPI Pay Notice], $rpa)" }
                     $payKpis = "CALCULATETABLE(VALUES('HR KPI'[KPI Code]), 'HR KPI'[Kind] = ""kpi"", 'HR KPI'[Needs Pay] = 1)"
                     $hrQuery = 'EVALUATE ROW("bad", COUNTROWS(FILTER({0}, CALCULATE(NOT ({1}), ''Date''[Year] = 2026))) + 0, "kpis", COUNTROWS({0}))' -f $payKpis, $want

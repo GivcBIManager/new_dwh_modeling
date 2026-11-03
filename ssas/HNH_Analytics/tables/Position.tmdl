@@ -24,6 +24,11 @@ table Position
 		summarizeBy: none
 		sourceColumn: position_name
 
+	column 'Position Base Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: position_base_name
+
 	column 'Is Current'
 		dataType: string
 		summarizeBy: none
