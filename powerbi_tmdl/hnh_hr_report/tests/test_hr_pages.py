@@ -1076,5 +1076,5 @@ def test_guide_text_covers_the_rules():
                    "Unknown", "FTE equals headcount", "zero FTE", "budgeted FTE",
                    # user decision 2026-11-03: Head Office everywhere; the scorecard report stays hospitals only
                    "Branch lists the eight hospitals and Head Office", "covers the hospitals only",
-                   "no Head Office data"):
+                   "no Head Office data", "include Head Office's requisitions"):  # ruling R32
         assert needle in text, needle

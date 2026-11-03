@@ -127,9 +127,10 @@ GUIDE_SECTIONS = [
         "decides the targets; the BI manager enters them (docs/hr_config.md). The mark goes when a real target is "
         "in.",
         "Turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor and revenue per FTE "
-        "and per doctor use the balanced scorecard's formulas; the scorecard report covers the hospitals only. Their "
-        "sources hold no Head Office data today, so Head Office reads No data and the totals equal the scorecard's; "
-        "Head Office data arriving there would make them differ. Visits per FTE and revenue per payroll SAR count "
+        "and per doctor use the balanced scorecard's formulas; the scorecard report covers the hospitals only. "
+        "Vacancy rate and time to fill include Head Office's requisitions, so their all-branch figures differ from "
+        "the scorecard's. The others' sources hold no Head Office data today, so Head Office reads No data and the "
+        "totals equal the scorecard's. Visits per FTE and revenue per payroll SAR count "
         "doctors and nurses linked to Oasis: none at Head Office."]),
     _section("Know the figures", [
         "Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5 and Fusion voluntary leavers for "
