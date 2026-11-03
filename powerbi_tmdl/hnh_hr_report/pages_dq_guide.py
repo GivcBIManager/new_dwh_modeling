@@ -129,7 +129,7 @@ GUIDE_SECTIONS = [
         "Turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor and revenue per FTE "
         "and per doctor use the balanced scorecard's formulas; the scorecard report covers the hospitals only. "
         "Vacancy rate and time to fill include Head Office's requisitions, so their all-branch figures differ from "
-        "the scorecard's. The others' sources hold no Head Office data today, so Head Office reads No data and the "
+        "the scorecard's; the vacancy rate needs Head Office's budgeted FTE loaded with the budget. The others' sources hold no Head Office data today, so Head Office reads No data and the "
         "totals equal the scorecard's. Visits per FTE and revenue per payroll SAR count "
         "doctors and nurses linked to Oasis: none at Head Office."]),
     _section("Know the figures", [

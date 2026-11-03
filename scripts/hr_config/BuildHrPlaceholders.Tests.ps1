@@ -160,9 +160,9 @@ Describe 'build_hr_placeholders.ps1 KPI lists' {
         $script | Should Match "\`$n = Get-DaxValue \`$k\.Measure 'Branch\[Branch Key\] <> 0'"
         $script | Should Not Match '(?m)^\s*\$n = Get-DaxValue \$k\.Measure\s*$'
     }
-    It 'lists in $WordingKpis exactly the rows whose text differs from the seed as loaded at GATE G1 (4119ad1)' {
-        $loaded = (& git -C $root show '4119ad1:scripts/hr_config/hr_config_seed.sql') -join "`n"
-        if ($LASTEXITCODE -ne 0) { throw 'git show 4119ad1 failed' }
+    It 'lists in $WordingKpis exactly the rows whose text differs from the seed as loaded at GATE G1 (fixture)' {
+        # tests\hr_config_seed_g1.sql: the seed as loaded at G1 (commit 4119ad1), frozen so the test needs no git history
+        $loaded = [IO.File]::ReadAllText((Join-Path $here 'tests\hr_config_seed_g1.sql'))
         $was = Get-SeedKpiRows $loaded
         $now = Get-SeedKpiRows ([IO.File]::ReadAllText((Join-Path $here 'hr_config_seed.sql')))
         $changed = @($now.Keys | Where-Object { ($now[$_] -join '|') -ne ($was[$_] -join '|') } | ForEach-Object { $_.Trim("'") } | Sort-Object)

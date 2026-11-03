@@ -92,7 +92,7 @@ TABLES = [
     Table("ssas_fact_bsc_target_monthly", "BSC Targets", "fact", "Fixed KPI targets per hospital and month."),
     Table("ssas_fact_bsc_weight", "BSC Weights", "fact", "Weight of each active KPI inside its pillar, per hospital."),
     Table("ssas_fact_bsc_manual_value", "BSC Manual Values", "fact", "Monthly KPI values entered by the BI manager."),
-    Table("ssas_fact_bsc_budgeted_fte", "BSC Budgeted FTE", "fact", "Budgeted FTE per hospital and year (job vacancy rate)."),
+    Table("ssas_fact_bsc_budgeted_fte", "BSC Budgeted FTE", "fact", "Budgeted FTE per hospital and Head Office and year (job vacancy rate)."),
     Table("ssas_fact_bsc_licensed_beds", "BSC Licensed Beds", "fact", "Licensed beds per hospital and year (activated bed rate)."),
     Table("ssas_fact_bsc_ar_collection_monthly", "BSC AR Collections", "fact", "Credit-patient AR receipts and the credit AR balance per hospital and month (net collection rate)."),
     Table("ssas_fact_gl_fs_monthly", "GL FS Monthly", "fact", "Monthly GL balances per hospital and account, Oasis before each branch's Fusion cutover and Fusion after it."),

@@ -223,7 +223,9 @@ models:
   - name: hnh_fact_recruiting_requisition
     description: >
       Approved, not deleted Oracle Recruiting requisitions of the hospitals (branches 1-8) and Head Office (100;
-      ruling R32) (bsc ssas spec 6.2, KPIs 47 and 48; HR dashboard). The scorecard's measures keep hospitals only.
+      ruling R32) (bsc ssas spec 6.2, KPIs 47 and 48; HR dashboard). The scorecard (BSC Actual and its payload
+      measures) keeps hospitals only; the standalone measures BSC Time to Fill (days), BSC Vacancy Rate and Open
+      Openings include Head Office at network level.
       days_to_fill is NULL when not filled or filled before approval.
     columns:
       - name: requisition_id

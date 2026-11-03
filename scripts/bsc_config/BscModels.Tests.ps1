@@ -229,6 +229,16 @@ Describe 'fact_recruiting_requisition' {
     }
 }
 
+Describe 'fact_bsc_budgeted_fte keeps Head Office (R32 fix round)' {
+    $stg = "select toUInt8(b) as branch_id, toUInt16(2026) as year, toFloat64(f) as budgeted_fte " +
+           "from values('b UInt8, f Float64', (0, 5000), (6, 820), (100, 300), (9, 1))"
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_bsc_budgeted_fte' @{ stg_ref__bsc_budgeted_fte = $stg }) @{}
+    It 'keeps the hospitals and Head Office (100), not Group (0) or an unknown branch' {
+        (@($rows | ForEach-Object { [int]$_.branch_key }) | Sort-Object) -join ',' | Should Be '6,100'
+        [double](@($rows | Where-Object { [int]$_.branch_key -eq 100 })[0].budgeted_fte) | Should Be 300
+    }
+}
+
 Describe 'hnh_fact_recruiting_requisition unit fixture' {
     $r = Invoke-DbtUnitFixture (Join-Path $root 'hnh_dwh\models\hnh\marts\workforce\_workforce_marts_unit_tests.yml') 'hnh_fact_recruiting_requisition_keeps_hospitals_and_head_office'
     It 'R32: keeps the hospital and Head Office requisitions only' {

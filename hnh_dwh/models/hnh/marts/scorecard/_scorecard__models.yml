@@ -56,7 +56,7 @@ models:
         tests:
           - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
   - name: fact_bsc_budgeted_fte
-    description: Budgeted FTE per hospital and year (job vacancy rate denominator).
+    description: Budgeted FTE per hospital and Head Office (100) and year (job vacancy rate denominator).
     tests:
       - hnh_unique_combination:
           columns: [branch_key, year_date_key]
@@ -64,7 +64,7 @@ models:
     columns:
       - name: branch_key
         tests:
-          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 100], quote: false, config: {severity: warn}}
   - name: dim_bsc_parameter
     description: Scorecard parameters as one row (clinic hours per day, patients per hour, ancillary target share).
   - name: fact_bsc_licensed_beds

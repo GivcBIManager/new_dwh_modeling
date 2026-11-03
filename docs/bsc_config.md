@@ -153,7 +153,7 @@ Key: `list_name`, `code`.
 
 ### `map_bsc_budgeted_fte`: budgeted FTE
 
-Key: `branch_id` (1–8), `year`. It is the job vacancy rate denominator (KPI 47); the KPI shows "No data yet" for a hospital without a row.
+Key: `branch_id` (1–8, and 100 for Head Office), `year`. It is the job vacancy rate denominator (KPI 47); the KPI shows "No data yet" for a hospital without a row. The scorecard reads hospitals only; enter Head Office's row (100) with the budget all the same: the HR report's vacancy rate includes Head Office's requisitions (ruling R32) and needs its budgeted FTE (`docs/hr_config.md`).
 
 ```sql
 INSERT INTO default.map_bsc_budgeted_fte (branch_id, year, budgeted_fte, changed_at, changed_by, change_note, is_deleted)

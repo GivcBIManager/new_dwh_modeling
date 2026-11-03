@@ -2,8 +2,10 @@
 
 -- Oracle Recruiting requisitions (bsc ssas spec 6.2, KPIs 47 and 48; HR dashboard): approved, not deleted, with a
 -- department of a hospital (branches 1-8) or of Head Office (100; ruling R32, 2026-11-03: the HR report covers Head
--- Office). The scorecard keeps hospitals only: every BSC measure reads this fact under Branch[Is Hospital] = "Yes",
--- and bsc.vw_work_force reads the staging model with its own branch filter. days_to_fill is approval to fill, NULL
+-- Office). The scorecard keeps hospitals only: BSC Actual and the scorecard payload measures read this fact under
+-- Branch[Is Hospital] = "Yes", and bsc.vw_work_force reads the staging model with its own branch filter. The
+-- standalone measures BSC Time to Fill (days), BSC Vacancy Rate and Open Openings have no branch filter, so used on
+-- their own at network level they include Head Office. days_to_fill is approval to fill, NULL
 -- when not filled or when the fill is before the approval. Only some branches use Oracle Recruiting (mostly Abha and
 -- Head Office).
 select
