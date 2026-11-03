@@ -36,7 +36,8 @@ TAB_NAMES = ["home", "story", "scorecard", "headcount", "data_quality", "guide"]
 DETAIL_NAMES = ["headcount", "movements", "payroll", "absence", "recruitment", "productivity"]
 # R13: the slicers a page with HR KPI Actual / Status / Status Text / Status Colour may carry
 KPI_MEASURES = {"HR KPI Actual", "HR KPI Actual Text", "HR KPI Status", "HR KPI Status Text", "HR KPI Status Colour"}
-ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK}
+AREA = col("HR KPI", "Area")
+ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK, AREA}  # R13: an Area slicer on the KPI list is allowed
 
 
 def lit(prop):
@@ -384,6 +385,75 @@ def test_story_cost_pay_notice_and_slicers():
     assert cost.x <= notice[0].x and notice[0].y >= cost.y and notice[0].y + notice[0].h <= cost.y + cost.h
     assert notice[0].filters[0].op == "notblank"  # a blank notice would print "(Blank)" over the chart
     slicers = {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")}
-    assert slicers == ALLOWED_KPI_PAGE_SLICERS  # R13 / R18
+    assert slicers == {BRANCH_NAME, MONTH_PICK}  # R13 / R18
     month = next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
     assert month.props["selection"][0]["properties"]["singleSelect"]
+
+
+# ---- Scorecard and KPI detail ------------------------------------------------------------------------------------
+
+def _page(name):
+    return next(p for p in PAGES if p.name == name)
+
+
+def _flt(v):
+    return [(f.field, f.op, f.values) for f in v.filters]
+
+
+def test_scorecard_filters_kind_kpi():
+    page = _page("scorecard")
+    assert not page.hidden and page.display == "Scorecard"
+    table = next(v for v in page.visuals if v.sample == "table")
+    matrix = next(v for v in page.visuals if v.sample == "matrix")
+    for v in (table, matrix):
+        assert (col("HR KPI", "Kind"), "in", ["kpi"]) in _flt(v) or (col("HR KPI", "Kind"), "eq", ["kpi"]) in _flt(v)
+        assert (col("HR KPI", "Status"), "in", ["active"]) in _flt(v) or             (col("HR KPI", "Status"), "eq", ["active"]) in _flt(v)
+    # sorted by Display Order; text measures for the cells every user sees (R22); no variance measure exists
+    assert table.sort == col("HR KPI", "Display Order") and table.sort_dir == "asc"
+    values = table.roles["Values"]
+    assert meas("HR KPI Actual Text") in values and meas("HR KPI Actual") not in values
+    assert meas("HR KPI Target Text") in values and meas("HR KPI Status Text") in values
+    assert col("HR KPI", "KPI Code") in values  # the drill-through field is in the table
+    assert matrix.roles["Values"] == [meas("HR KPI Status Text")] and matrix.roles["Columns"] == [BRANCH_NAME]
+    # status cells are coloured by [HR KPI Status Colour]
+    for v in (table, matrix):
+        fc = [e for e in v.props["values"] if "fontColor" in e["properties"]]
+        assert STATUS_COLOUR.name in json.dumps(fc) and "HR KPI Status Text" in fc[0]["selector"]["metadata"]
+    assert {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")} == ALLOWED_KPI_PAGE_SLICERS
+    drill = [v for v in page.visuals if v.sample == "buttonDrill"]
+    assert len(drill) == 1
+    assert "kpi_detail" in json.dumps(drill[0].props)
+
+
+def test_kpi_detail_is_drillthrough_on_code():
+    page = _page("kpi_detail")
+    assert page.hidden and page.drill_fields == [KPI_CODE] and page.keep_filters
+    assert page.display == "KPI detail" and page.name == "kpi_detail"
+    vs = page.visuals
+    # a Back button, and the frame without a current tab
+    assert any(v.sample == "buttonNavigate" and "Back" in json.dumps(v.props) for v in vs)
+    assert not any(v.sample == "buttonNavigate" and nav_target(v) in TAB_NAMES and
+                   "primary" in json.dumps(v.props) for v in vs)
+    # definition panel
+    defs = {v.roles["Values"][0].name for v in vs if v.sample == "card" and v.roles["Values"][0].table == "HR KPI"}
+    assert {"Definition", "Formula", "Source System", "Grain", "Caveats"} <= defs
+    # cards for actual (text), target, status
+    for m in ("HR KPI Actual Text", "HR KPI Target Text", "HR KPI Status Text"):
+        assert len(_on(page, m)) == 1, m
+    # the 24-month line: actual against target and watch, last 24 closed months whatever the Month slicer says
+    line = next(v for v in vs if v.sample == "lineChart")
+    assert line.roles["Y"] == [meas("HR KPI Actual"), meas("HR KPI Target"), meas("HR KPI Watch")]
+    assert _flt(line) == [(col("Date", "Month Offset"), "in", list(range(1, 25)))]
+    from model import interaction_indexes
+    idx = {(s, t): k for s, t, k in interaction_indexes(page)}
+    month = next(i for i, v in enumerate(vs) if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
+    assert idx[(month, next(i for i, v in enumerate(vs) if v is line))] == "NoFilter"
+    # the bar by hospital
+    bar = next(v for v in vs if v.sample == "barChart")
+    assert bar.roles["Category"] == [BRANCH_NAME] and bar.roles["Y"] == [meas("HR KPI Actual")]
+    assert {v.roles["Values"][0] for v in vs if v.sample.startswith("slicer")} == {BRANCH_NAME, MONTH_PICK}
+
+
+def test_scorecard_and_kpi_detail_are_registered():
+    names = [p.name for p in PAGES]
+    assert names[:4] == ["home", "story", "scorecard", "kpi_detail"]

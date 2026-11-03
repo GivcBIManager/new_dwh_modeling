@@ -1,0 +1,67 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "kpi_detail",
+  "displayName": "KPI detail",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "a1b2f6d0f65a8f5fc12e",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "Param_7431cc738d9ea1004850",
+        "boundFilter": "7431cc738d9ea1004850",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "HR KPI"
+              }
+            },
+            "Property": "KPI Code"
+          }
+        }
+      }
+    ],
+    "acceptsFilterContext": "Default"
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "7431cc738d9ea1004850",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "HR KPI"
+              }
+            },
+            "Property": "KPI Code"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode",
+  "visualInteractions": [
+    {
+      "source": "ef31b764f43d30094ab1",
+      "target": "e8c49167adec4f67f334",
+      "type": "NoFilter"
+    },
+    {
+      "source": "ef31b764f43d30094ab1",
+      "target": "1a6f612ae3fd56c9be72",
+      "type": "NoFilter"
+    },
+    {
+      "source": "9750df0ba7e796a0f78b",
+      "target": "1a6f612ae3fd56c9be72",
+      "type": "NoFilter"
+    }
+  ]
+}
