@@ -1,12 +1,13 @@
 {{ config(order_by='(hr_kpi_key, branch_key, month_date_key)') }}
 
--- HR KPI targets per hospital and month, from the first target year to the current year. Same fallback as
+-- HR KPI targets per branch and month, from the first target year to the current year. Same fallback as
 -- fact_bsc_target_monthly. For a KPI, branch and month the first match wins:
---   1. rows of that year: the branch's row for the month, the branch's annual row (month 0), the all-hospitals row
---      (branch_id 0) for the month, the all-hospitals annual row;
---   2. otherwise the latest earlier annual row, the branch's before the all-hospitals one.
+--   1. rows of that year: the branch's row for the month, the branch's annual row (month 0), the every-branch row
+--      (branch_id 0) for the month, the every-branch annual row;
+--   2. otherwise the latest earlier annual row, the branch's before the every-branch one.
 -- Only active KPIs whose target_source is 'fixed' (BSC-sourced KPIs take their target from the scorecard).
--- Branches 1-8 only.
+-- Branches: the hospitals 1-8 and Head Office (100); branch_id 0 applies to all nine (user decision 2026-11-03: Head
+-- Office everywhere in the HR dashboard). Not the Group member (0) of dim_branch.
 with
     toYear(ifNull(toDateOrNull('{{ var('hnh_bsc_as_of') }}'), today())) as this_year_,
 targets as (
@@ -27,7 +28,7 @@ kpi_years as (
 grid as (
     select ky.kpi_code as kpi_code, b.branch_key as branch_key, ky.year as year, toUInt8(m.number + 1) as month
     from kpi_years as ky
-    cross join (select toUInt8(number + 1) as branch_key from numbers(8)) as b
+    cross join (select arrayJoin([toUInt8(1), 2, 3, 4, 5, 6, 7, 8, 100]) as branch_key) as b
     cross join (select number from numbers(12)) as m
 ),
 

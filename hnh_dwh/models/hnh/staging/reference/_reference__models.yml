@@ -380,8 +380,9 @@ models:
         tests:
           - relationships: {to: ref('stg_ref__hr_kpi'), field: kpi_code, config: {severity: warn}}
       - name: branch_id
+        description: 0 = every branch (the hospitals 1-8 and Head Office), 1-8 a hospital, 100 Head Office.
         tests:
-          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+          - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 100], quote: false, config: {severity: warn}}
       - name: month
         tests:
           - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false, config: {severity: warn}}

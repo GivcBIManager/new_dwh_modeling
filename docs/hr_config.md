@@ -70,7 +70,7 @@ A new KPI also needs its measure in the SSAS model. Add the row with `status = '
 ### `map_hr_target`: targets and watch values
 
 Key: `kpi_code`, `branch_id`, `year`, `month`.
-- `branch_id`: 0 = every hospital, 1–8 = one hospital (wins over 0).
+- `branch_id`: 0 = every branch: the eight hospitals **and Head Office**; 1–8 = one hospital; 100 = Head Office. A branch's own row wins over the 0 row. (The HR dashboard includes Head Office everywhere, user decision 2026-11-03; the BSC's `map_bsc_target` 0 still means the hospitals only.)
 - `month`: 0 = the whole year, 1–12 = one month (wins over 0).
 - `target_value`: the value that is On track.
 - `watch_value`: the value beyond which the KPI is At risk. Between the target and `watch_value` it is Watch. For `on_target` KPIs the distance from the target is compared with the distance from `watch_value` to the target.
@@ -89,7 +89,9 @@ INSERT INTO default.map_hr_target
 VALUES ('HR_TURNOVER', 0, 2027, 0, 0.08, 0.10, 1, 'HR Director, FY2027 plan', now64(3), 'bi_manager', 'FY2027 target approved by HR', 0);
 ```
 
-A hospital with its own target gets a second row with its `branch_id`; a hospital's own row wins over the `branch_id` 0 row. The network target (all hospitals selected) is the average of the hospital targets, except for `HR_HEADCOUNT` and `HR_LEAVE_LIABILITY` (measure `HR KPI Is Additive`): their network value is the sum of the hospitals, so their target is the sum of the hospital targets. For these two, enter one row per hospital (`branch_id` 1–8) and no `branch_id` 0 row: a 0 row gives each hospital without its own row the whole number, which the network then adds up.
+A hospital or Head Office with its own target gets a second row with its `branch_id`; a branch's own row wins over the `branch_id` 0 row. The network target (every branch selected) is the average of the targets of the nine branches, Head Office included, except for `HR_HEADCOUNT` and `HR_LEAVE_LIABILITY` (measure `HR KPI Is Additive`): their network value is the sum of the branches, so their target is the sum of the branch targets. For these two, enter one row per branch (`branch_id` 1–8 and 100) and no `branch_id` 0 row: a 0 row gives each branch without its own row the whole number, which the network then adds up.
+
+**Head Office and the scorecard KPIs.** The HR actual of a KPI that is also a balanced scorecard KPI reads the scorecard measure, and eight of those measures have no Head Office rows in their facts (turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor, revenue per FTE and per doctor; so do visits per FTE and revenue per payroll SAR, which read the doctors and nurses linked to Oasis; `powerbi_tmdl/hnh_hr_report/README.md` lists them). For these KPIs a `branch_id` 100 row is never compared with an actual (Head Office reads No data) and a `branch_id` 0 row's Head Office copy does not change the network target, which is the same value. For an averaged KPI with branch rows that differ, the Head Office row does count in the network average: give Head Office its own row, or none, accordingly.
 
 **Placeholder targets inserted at launch:** none yet.
 

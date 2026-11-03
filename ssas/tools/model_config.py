@@ -100,7 +100,7 @@ TABLES = [
     Table("ssas_fact_recruiting_requisition", "Requisitions", "fact", "Approved Oracle Recruiting requisitions of the hospitals."),
     # HR dashboard: KPI catalogue, monthly targets and the data quality issues with their records.
     Table("ssas_dim_hr_kpi", "HR KPI", "dim", "HR dashboard KPIs with definition, formula, direction and target source."),
-    Table("ssas_fact_hr_target_monthly", "HR Targets", "fact", "HR KPI targets and watch values per hospital and month."),
+    Table("ssas_fact_hr_target_monthly", "HR Targets", "fact", "HR KPI targets and watch values per branch (hospitals 1-8 and Head Office) and month."),
     Table("ssas_dim_hr_dq_issue", "HR Data Issues", "dim", "HR data quality issues with owner, severity and how to fix them."),
     Table("ssas_fact_hr_dq_record", "HR Data Issue Records", "fact", "One HR record that has a data quality issue."),
 ]

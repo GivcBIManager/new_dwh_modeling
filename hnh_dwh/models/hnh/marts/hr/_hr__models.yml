@@ -14,7 +14,7 @@ models:
           - unique: {config: {severity: warn}}
           - not_null: {config: {severity: warn}}
   - name: fact_hr_target_monthly
-    description: Fixed HR KPI targets per hospital and month; the most specific config row wins.
+    description: Fixed HR KPI targets per branch (the hospitals 1-8 and Head Office 100) and month; the most specific config row wins.
     tests:
       - hnh_unique_combination:
           columns: [hr_kpi_key, branch_key, month_date_key]
@@ -25,7 +25,7 @@ models:
           - relationships: {to: ref('dim_hr_kpi'), field: hr_kpi_key, config: {severity: warn}}
       - name: branch_key
         tests:
-          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 100], quote: false, config: {severity: warn}}
   - name: dim_hr_dq_issue
     description: One row per HR data quality issue type, with where and how to fix it.
     columns:

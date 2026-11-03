@@ -1,4 +1,4 @@
--- HR KPI targets; branch_id 0 = every hospital, month 0 = the whole year (HR dashboard design, model changes). default.map_hr_target is an insert-only
+-- HR KPI targets; branch_id 0 = every branch (hospitals 1-8 and Head Office 100), month 0 = the whole year (HR dashboard design, model changes). default.map_hr_target is an insert-only
 -- change log: the latest row per key wins and a latest row with is_deleted = 1 removes the key. is_placeholder marks a target HR has not yet confirmed.
 select
     kpi_code,

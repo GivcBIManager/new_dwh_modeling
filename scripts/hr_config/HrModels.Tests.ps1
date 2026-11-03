@@ -104,11 +104,21 @@ Describe 'fact_hr_target_monthly' {
     $over = Get-HrTargets "('HR_TURNOVER', 0, 2026, 0, 0.06, 0.07), ('HR_TURNOVER', 6, 2026, 3, 0.05, 0.06)"
     $carry = Get-HrTargets "('HR_TURNOVER', 0, 2026, 0, 0.06, 0.07), ('HR_REVENUE_PER_FTE', 0, 2026, 0, 1, 2), ('HR_PARKED', 0, 2026, 0, 1, 2)"
     function Cell($rows, $b, $d) { @($rows | Where-Object { [int]$_.branch_key -eq $b -and [int]$_.month_date_key -eq $d }) }
-    It 'fallback_branch0_fills_all_hospitals' {
-        @($base | Where-Object { [int]$_.month_date_key -lt 20270101 }).Count | Should Be 96
+    It 'fallback_branch0_fills_every_branch_incl_head_office' {
+        # user decision 2026-11-03: Head Office (100) everywhere; branch_id 0 applies to the 8 hospitals and Head Office
+        @($base | Where-Object { [int]$_.month_date_key -lt 20270101 }).Count | Should Be 108
         foreach ($r in @($base | Where-Object { [int]$_.month_date_key -lt 20270101 })) { [double]$r.target_value | Should Be 0.06 }
+        (@($base | ForEach-Object { [int]$_.branch_key }) | Sort-Object -Unique) -join ',' | Should Be '1,2,3,4,5,6,7,8,100'
         [double](Cell $base 3 20260901)[0].watch_value | Should Be 0.07
+        [double](Cell $base 100 20260901)[0].target_value | Should Be 0.06
         [int64](Cell $base 3 20260901)[0].hr_kpi_key | Should Be $key
+    }
+    It 'head_office_row_wins_at_head_office_only' {
+        $ho = Get-HrTargets "('HR_TURNOVER', 0, 2026, 0, 0.06, 0.07), ('HR_TURNOVER', 100, 2026, 0, 0.02, 0.03)"
+        [double](Cell $ho 100 20260501)[0].target_value | Should Be 0.02
+        [double](Cell $ho 100 20260501)[0].watch_value | Should Be 0.03
+        [double](Cell $ho 4 20260501)[0].target_value | Should Be 0.06
+        @($ho | Where-Object { [double]$_.target_value -eq 0.02 }).Count | Should Be 24
     }
     It 'branch_month_wins' {
         [double](Cell $over 6 20260301)[0].target_value | Should Be 0.05
@@ -119,13 +129,13 @@ Describe 'fact_hr_target_monthly' {
     }
     It 'earlier_year_carries_forward' {
         $rows2027 = @($base | Where-Object { [int]$_.month_date_key -ge 20270101 })
-        $rows2027.Count | Should Be 96
+        $rows2027.Count | Should Be 108
         [double](Cell $base 1 20270501)[0].target_value | Should Be 0.06
     }
     It 'bsc_sourced_kpi_has_no_target_rows' {
         @($carry | Where-Object { [int64]$_.hr_kpi_key -eq (Get-HrKey 'HR_REVENUE_PER_FTE') }).Count | Should Be 0
         @($carry | Where-Object { [int64]$_.hr_kpi_key -eq (Get-HrKey 'HR_PARKED') }).Count | Should Be 0
-        @($carry | Where-Object { [int64]$_.hr_kpi_key -eq $key }).Count | Should Be 192
+        @($carry | Where-Object { [int64]$_.hr_kpi_key -eq $key }).Count | Should Be 216
     }
 }
 
