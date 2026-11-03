@@ -41,7 +41,11 @@ TIME_CALC = col("Time Calculation", "Time Calculation")
 # R13: an Area slicer on the KPI list is allowed; so is the Period slicer (final review I3): it picks a calculation
 # item, which every measure guard allows
 ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK, AREA, TIME_CALC}
-HOSPITALS = (IS_HOSPITAL, "in", ["Yes"])
+# User decision 2026-11-03: Head Office everywhere. The report's branches are the eight hospitals and Head Office
+# (100); the dimension's synthetic Group member (0) has no HR data and is kept out of the slicer and the pages.
+BRANCH_KEY = col("Branch", "Branch Key")
+HEAD_OFFICE = 100
+BRANCHES = (BRANCH_KEY, "in", [1, 2, 3, 4, 5, 6, 7, 8, HEAD_OFFICE])
 
 
 def lit(prop):
@@ -163,13 +167,14 @@ def test_kpi_pages_carry_only_hospital_and_month_slicers():
 
 # ---- building blocks ---------------------------------------------------------------------------------------------
 
-def test_filters_hospital_and_month_dropdowns():
-    hospital, month = filters()
-    assert hospital.sample == month.sample == "slicerDropdown"
-    assert hospital.roles == {"Values": [BRANCH_NAME]} and month.roles == {"Values": [MONTH_PICK]}
-    assert [(f.field, f.op, f.values) for f in hospital.filters] == [(IS_HOSPITAL, "in", ["Yes"])]
-    assert hospital.labels == {BRANCH_NAME: "Hospital"} and month.labels == {MONTH_PICK: "Month"}
-    for v in (hospital, month):  # inside the filter bar, left of the help buttons
+def test_filters_branch_and_month_dropdowns():
+    """The Branch slicer lists the eight hospitals and Head Office (user decision 2026-11-03), not the Group member."""
+    branch, month = filters()
+    assert branch.sample == month.sample == "slicerDropdown"
+    assert branch.roles == {"Values": [BRANCH_NAME]} and month.roles == {"Values": [MONTH_PICK]}
+    assert [(f.field, f.op, f.values) for f in branch.filters] == [BRANCHES]
+    assert branch.labels == {BRANCH_NAME: "Branch"} and month.labels == {MONTH_PICK: "Month"}
+    for v in (branch, month):  # inside the filter bar, left of the help buttons
         assert frame.FILTER_BAR[1] <= v.y and v.y + v.h <= frame.FILTER_BAR[1] + frame.FILTER_BAR[3]
         assert v.x + v.w < HELP[0][2][0]
 
@@ -224,8 +229,8 @@ def test_kpi_tile():
     assert [c.sample for c in cards] == ["card"] * 3
     assert [c.roles["Values"] for c in cards] == [[meas("HR KPI Actual Text")], [meas("HR KPI Target Text")],
                                                   [meas("HR KPI Status Text")]]
-    for c in cards:  # the KPI, hospitals only (final review I1: the scope of its measures)
-        assert [(f.field, f.op, f.values) for f in c.filters] == [(KPI_CODE, "eq", ["HR_TURNOVER"]), HOSPITALS]
+    for c in cards:  # the KPI only: the page filter keeps the branches (Head Office included, 2026-11-03)
+        assert [(f.field, f.op, f.values) for f in c.filters] == [(KPI_CODE, "eq", ["HR_TURNOVER"])]
         assert panel.x <= c.x and c.x + c.w <= panel.x + panel.w
         assert panel.y <= c.y and c.y + c.h <= panel.y + panel.h
     # the label is the seed's short label
@@ -578,27 +583,66 @@ def test_kpi_detail_trend_ignores_the_period():
     assert (_index(page, period), _index(page, bar)) not in idx
 
 
-# Pages whose figures are not hospitals-only: Data quality shows Head Office (100) records to those who may see them,
-# the Guide pages hold text and the KPI definitions.
-NOT_HOSPITALS_ONLY = {"data_quality", "guide", "guide_definitions"}
+# The Guide pages hold text and the KPI definitions: no branch page filter.
+GUIDE_PAGES = {"guide", "guide_definitions"}
 
 
-def test_every_data_page_is_hospitals_only():
-    """Final review I1: every data page carries the hospitals-only filter, so a chart never includes Head Office.
-    Home carries it on each data visual instead of the page: its data quality strip counts Head Office records."""
-    data_samples = ("card", "lineChart", "barChart", "table", "matrix", "multiRowCard")
+def test_no_page_filters_out_head_office():
+    """User decision 2026-11-03 (supersedes final review I1): Head Office is on every page. No page, visual or report
+    filter is on 'Branch'[Is Hospital]; every filter on Branch keeps Head Office (100); every data page carries the
+    branches filter (the hospitals and Head Office), which keeps out only the Group member (0), a synthetic row of
+    the dimension with no HR data."""
+    branch_tables = {"Branch"}
+    assert [f for f in REPORT_FILTERS if f.field.table in branch_tables] == []
     for page in PAGES:
-        if page.name in NOT_HOSPITALS_ONLY:
-            continue
-        page_filters = [(f.field, f.op, f.values) for f in page.filters]
-        if page.name != "home":
-            assert HOSPITALS in page_filters, page.name
-            continue
-        assert HOSPITALS not in page_filters
-        data = [v for v in page.visuals if v.sample in data_samples and _measures(v)]
-        dq = [v for v in data if meas("HR DQ Headline") in v.roles["Values"]]
-        assert len(dq) == 1 and HOSPITALS not in _flt(dq[0])
-        assert [v.roles for v in data if v not in dq and HOSPITALS not in _flt(v)] == []
+        filters_here = [(page.name, f) for f in page.filters]
+        filters_here += [(f"{page.name}/{v.sample}/{v.title}", f) for v in page.visuals for f in v.filters]
+        for where, f in filters_here:
+            assert f.field != IS_HOSPITAL, where
+            if f.field.table in branch_tables:
+                assert (f.field, f.op, f.values) == BRANCHES, where
+                assert HEAD_OFFICE in f.values and 0 not in f.values, where
+        if page.name not in GUIDE_PAGES:
+            assert BRANCHES in [(f.field, f.op, f.values) for f in page.filters], page.name
+
+
+def test_branch_wording():
+    """Head Office is a branch, not a hospital: no visual title or field label says "hospital"; the Branch slicer
+    is labelled Branch on every page."""
+    for page in PAGES:
+        for v in page.visuals:
+            assert "hospital" not in (v.title or "").lower(), (page.name, v.title)
+            for label in v.labels.values():
+                assert "hospital" not in label.lower(), (page.name, v.title, label)
+            if v.sample.startswith("slicer") and v.roles["Values"] == [BRANCH_NAME]:
+                assert v.labels == {BRANCH_NAME: "Branch"}, page.name
+
+
+# Long lists get a search box in their dropdown (Desktop's slicer "Search": objects.general selfFilterEnabled)
+SEARCH_SLICERS = {col("HR Department", "Department Base Name"), col("Job", "Job Name"), col("Grade", "Grade Name"),
+                  col("Employee", "Nationality")}
+
+
+def _search_on(v):
+    return any(e["properties"].get("selfFilterEnabled", {}).get("expr", {}).get("Literal", {}).get("Value") == "true"
+               for e in v.props.get("general", []))
+
+
+def test_long_slicers_have_a_search_box():
+    """The Department slicer lists about 270 prefix-free names (screens fix): it, Job, Grade and Nationality have
+    the dropdown's search box; the short lists (Branch, Month, Worker type, Area, Period) do not."""
+    seen = set()
+    for page in PAGES:
+        for i, v in enumerate(page.visuals):
+            if not v.sample.startswith("slicer"):
+                continue
+            field = v.roles["Values"][0]
+            assert _search_on(v) == (field in SEARCH_SLICERS), (page.name, field)
+            if field in SEARCH_SLICERS:
+                seen.add(field)
+                general = pbir.visual_json(page, v, i, "")["visual"]["objects"]["general"]
+                assert general == [{"properties": {"selfFilterEnabled": {"expr": {"Literal": {"Value": "true"}}}}}]
+    assert seen == SEARCH_SLICERS
 
 
 # ---- Detail pages and Employee list ------------------------------------------------------------------------------
@@ -989,5 +1033,8 @@ def test_guide_text_covers_the_rules():
     for needle in ("Last closed month", "● On track", "◆ Watch", "■ At risk", "○ No target yet", "– No data", "Parked",
                    "🔒 Requires pay access", "within the watch threshold", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
                    "largest change", "nightly", "Back", "BSC turnover", "in Fusion", "Period", "pro-rated",
-                   "Unknown", "FTE equals headcount", "zero FTE", "budgeted FTE"):
+                   "Unknown", "FTE equals headcount", "zero FTE", "budgeted FTE",
+                   # user decision 2026-11-03: Head Office everywhere; the scorecard report stays hospitals only
+                   "Branch lists the eight hospitals and Head Office", "covers the hospitals only",
+                   "no Head Office data"):
         assert needle in text, needle

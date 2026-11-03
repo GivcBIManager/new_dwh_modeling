@@ -5,14 +5,14 @@
     6 area cards                    one figure each; a click opens the detail page
     the data quality strip          [HR DQ Headline] and Open data quality
 
-The filter bar holds Hospital and Month only (R13: the tiles show HR KPI Actual and Status). Every data visual but the
-data quality strip is filtered to hospitals (final review I1); the page has no page filter, so the strip still counts
-Head Office (100) records for those who may see them.
+The filter bar holds Branch and Month only (R13: the tiles show HR KPI Actual and Status). The page filter keeps the
+report's branches, the eight hospitals and Head Office (user decision 2026-11-03: Head Office everywhere): every
+figure, the data quality strip included, counts Head Office (100) for those who may see it.
 """
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _colour, _lit
-from hr_frame import (DETAIL_PAGES, bsc, card_look, filters, home_tile_codes, hospitals, kpi_tile, nav_button,
+from hr_frame import (DETAIL_PAGES, branches, bsc, card_look, filters, home_tile_codes, kpi_tile, nav_button,
                       page_frame, white_panel)
 from model import Page, Visual, meas
 
@@ -41,9 +41,9 @@ AREA_FIGURES = {
 
 
 def _story() -> Visual:
-    """[HR Story Home] on the theme's white panel, wrapped, 14pt ink; hospitals only, as its sentence."""
+    """[HR Story Home] on the theme's white panel, wrapped, 14pt ink."""
     props = {**card_look(14, NAVY, box=True), "wordWrap": [{"properties": {"show": _lit(True)}}]}
-    return Visual("card", *STORY, roles={"Values": [meas("HR Story Home")]}, filters=[hospitals()], props=props)
+    return Visual("card", *STORY, roles={"Values": [meas("HR Story Home")]}, props=props)
 
 
 def _tiles() -> list[Visual]:
@@ -57,14 +57,13 @@ def _tiles() -> list[Visual]:
 
 
 def _areas() -> list[Visual]:
-    """One card per detail page (hospitals only, as the tiles' figures), titled with the page's name, and a
+    """One card per detail page, titled with the page's name, and a
     transparent button over it that opens the page (BSC Overview's card buttons: tooltip "Open <page>")."""
     out: list[Visual] = []
     for i, (name, display, _label) in enumerate(DETAIL_PAGES):
         measure, label = AREA_FIGURES[name]
         rect = (X0 + (AREA_W + GAP) * i, AREAS_Y, AREA_W, AREA_H)
-        out.append(Visual("card", *rect, roles={"Values": [meas(measure)]}, filters=[hospitals()],
-                          title=f"{display} ›", labels={meas(measure): label},
+        out.append(Visual("card", *rect, roles={"Values": [meas(measure)]}, title=f"{display} ›", labels={meas(measure): label},
                           props=card_look(20, NAVY, category=True, box=True)))
         out.append(bsc._card_button(rect, name, display))
     return out
@@ -72,7 +71,7 @@ def _areas() -> list[Visual]:
 
 def _dq_strip() -> list[Visual]:
     """A white strip: [HR DQ Headline] ("7 open issues · ...") under the title "Data quality", and Open data
-    quality on its right. Not filtered to hospitals: Head Office (100) records count for those who may see them."""
+    quality on its right. Head Office (100) records count for those who may see them."""
     bx = X0 + W0 - 16 - DQ_BUTTON_W
     headline = Visual("card", X0 + 16, DQ_Y + 4, bx - 16 - (X0 + 16), DQ_H - 8,
                       roles={"Values": [meas("HR DQ Headline")]}, title="Data quality",
@@ -84,4 +83,4 @@ def _dq_strip() -> list[Visual]:
 
 def home_page() -> Page:
     visuals = page_frame("home", filters()) + [_story()] + _tiles() + _areas() + _dq_strip()
-    return Page("home", "Home", visuals)
+    return Page("home", "Home", visuals, filters=[branches()])

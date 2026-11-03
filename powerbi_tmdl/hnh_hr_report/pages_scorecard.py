@@ -1,9 +1,9 @@
 """Scorecard and KPI detail (spec "Pages" 3 and 7).
 
-Scorecard (`scorecard_page`): Hospital, Month, Area and Period dropdowns; a table of every active KPI (Area, KPI
+Scorecard (`scorecard_page`): Branch, Month, Area and Period dropdowns; a table of every active KPI (Area, KPI
 name, Status: [HR KPI Status Text] coloured by [HR KPI Status Colour], Actual, Target, Variance, Watch at: the text
 measures; Order), sorted by Display Order, with fixed column widths that fill the table (no total row); a "Drill
-through to KPI detail" button, enabled by one selected table row; a matrix of KPI x hospital showing
+through to KPI detail" button, enabled by one selected table row; a matrix of KPI x branch showing
 [HR KPI Status Text] in the same colours. The drill-through field is 'HR KPI'[KPI Name] (unique, as the code), a
 column of both the table and the matrix, so the table needs no KPI Code column and a matrix row drills too. Both are
 filtered to Kind "kpi" and Status "active". The cells are the model's text measures (R22): a reader without pay access
@@ -17,22 +17,23 @@ months (scale_with_months), a snapshot KPI keeps its month-end value. Story stay
 
 KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Name] only (keep_filters off: the
 scorecard's Month would otherwise AND with the line's Month Offset filter and leave one point); the page's own synced
-Hospital, Month and Period slicers apply. Left, [HR KPI Detail Title] (the KPI's name) and the definition panel
+Branch, Month and Period slicers apply. Left, [HR KPI Detail Title] (the KPI's name) and the definition panel
 ([HR KPI Definition Text], Formula, Source System, Grain, Caveats): opened without a drill-through, the title and the
 definition say how to pick a KPI instead of "(Blank)"; right, cards for [HR KPI Actual Text], target and status, the 24-month line of actual against
-target and watch, and the bar by hospital. The Month slicer (synced with every page) does not reach the line or the
-bar: NoFilter interactions, so they show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every hospital
+target and watch, and the bar by branch. The Month slicer (synced with every page) does not reach the line or the
+bar: NoFilter interactions, so they show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every branch
 whatever the selection. Period does not reach the line either (a monthly trend); the bar follows it. Over each chart,
 [HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2), and
 "" (an empty card, no filter) otherwise. Back returns to the page you came from.
 
-Both pages are filtered to hospitals (final review I1), the scope of the HR KPI measures.
+Both pages carry the branches page filter: the eight hospitals and Head Office (user decision 2026-11-03, the scope
+of the HR KPI measures), not the Branch dimension's Group member, which would be a matrix column of "– No data".
 """
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit, button_props, no_container
 from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
-                      HR_WATCH_TEXT, SUB_TAB_X, SUB_TAB_Y, bsc, card_look, filters, fixed_table, hospitals,
+                      HR_WATCH_TEXT, SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, fixed_table,
                       measure_colour, page_frame, saved_selection, single_selection)
 from model import Filter, Interaction, Page, Visual, col, meas
 
@@ -115,11 +116,11 @@ def scorecard_page() -> Page:
     link = {"type": _lit("Drillthrough"), "drillthroughSection": _lit(KPI_DETAIL_NAME)}
     drill = Visual("buttonDrill", X0, DRILL_Y, DRILL_W, DRILL_H,
                    props={**button_props(link, "Drill through to KPI detail →", "primary"), **no_container()})
-    matrix = Visual("matrix", X0, MATRIX_Y, W0, MATRIX_H, title="Status by hospital",
+    matrix = Visual("matrix", X0, MATRIX_Y, W0, MATRIX_H, title="Status by branch",
                     roles={"Rows": [KPI_NAME], "Columns": [BRANCH_NAME], "Values": [HR_STATUS_TEXT]},
-                    filters=list(ACTIVE_KPIS) + [hospitals()], sort=KPI_NAME, sort_dir="asc", props=status_colours())
+                    filters=list(ACTIVE_KPIS), sort=KPI_NAME, sort_dir="asc", props=status_colours())
     return Page("scorecard", "Scorecard", page_frame("scorecard", bar) + [table, drill, matrix],
-                filters=[hospitals()], height=SCORECARD_H)
+                filters=[branches()], height=SCORECARD_H)
 
 
 # ---- KPI detail ---------------------------------------------------------------------------------------------------
@@ -142,10 +143,10 @@ DEFINITION = [("Definition", 150), ("Formula", 120), ("Source System", 90), ("Gr
 
 
 def kpi_detail_page() -> Page:
-    hospital, month = filters()
+    branch, month = filters()
     back = bsc.back_button(SUB_TAB_X, SUB_TAB_Y, BACK_W, 54)
     period = period_slicer(SUB_TAB_X + BACK_W + GAP)
-    visuals = page_frame(None, [hospital, month, back, period])
+    visuals = page_frame(None, [branch, month, back, period])
     wrap = {"wordWrap": [{"properties": {"show": _lit(True)}}]}
     # the heading and the definition are measures that say how to pick a KPI when no drill-through brought one
     visuals.append(Visual("card", X0, Y0, LEFT_W, TITLE_H, roles={"Values": [meas("HR KPI Detail Title")]},
@@ -169,8 +170,8 @@ def kpi_detail_page() -> Page:
                   roles={"Category": [YEAR_MONTH],
                          "Y": [meas("HR KPI Actual"), meas("HR KPI Target"), meas("HR KPI Watch")]},
                   filters=[Filter(MONTH_OFFSET, "in", list(range(1, 25)))], sort=YEAR_MONTH, sort_dir="asc")
-    bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By hospital",
-                  roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]}, filters=[hospitals()])
+    bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By branch",
+                  roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]})
     visuals += [line, bars]
     # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] says why, over the middle of each chart
     # (final review I2). It is "" for pay readers and for a KPI that needs no pay, so the card shows nothing; no
@@ -180,6 +181,6 @@ def kpi_detail_page() -> Page:
         visuals.append(Visual("card", chart.x, chart.y + (chart.h - NOTICE_H) / 2, chart.w, NOTICE_H,
                               roles={"Values": [notice]}, props=card_look(16, NAVY)))
     interactions = [Interaction(month, line, "NoFilter"), Interaction(month, bars, "NoFilter"),
-                    Interaction(hospital, bars, "NoFilter"), Interaction(period, line, "NoFilter")]
-    return Page(KPI_DETAIL_NAME, "KPI detail", visuals, filters=[hospitals()], interactions=interactions,
+                    Interaction(branch, bars, "NoFilter"), Interaction(period, line, "NoFilter")]
+    return Page(KPI_DETAIL_NAME, "KPI detail", visuals, filters=[branches()], interactions=interactions,
                 drill_fields=[KPI_NAME], hidden=True, keep_filters=False)

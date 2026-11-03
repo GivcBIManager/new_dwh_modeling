@@ -56,7 +56,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• On the Scorecard, select a row and use Drill through to KPI detail for its trend, hospitals and definition. Right-click a hospital or department bar and choose Drill through > Employee list for the people behind a number. Back, beside the Month slicer, returns to the page you came from.",
+                    "value": "• On the Scorecard, select a row and use Drill through to KPI detail for its trend, branches and definition. Right-click a branch or department bar and choose Drill through > Employee list for the people behind a number. Back, beside the Month slicer, returns to the page you came from.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -68,7 +68,19 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Hospital and Month carry over to every page. Month opens on Last closed month, the month just ended; pick another month in the list to see it.",
+                    "value": "• Branch lists the eight hospitals and Head Office; every page, KPI and target includes Head Office, so a figure for all branches is the hospitals plus Head Office. Head Office shows only to users whose access includes it.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "12pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Branch and Month carry over to every page. Month opens on Last closed month, the month just ended; pick another month in the list to see it.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -104,7 +116,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Story rates show 2 decimals because monthly rates are small. The largest change names the hospital whose rate or number moved most.",
+                    "value": "• Story rates show 2 decimals because monthly rates are small. The largest change names the branch (a hospital or Head Office) whose rate or number moved most.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

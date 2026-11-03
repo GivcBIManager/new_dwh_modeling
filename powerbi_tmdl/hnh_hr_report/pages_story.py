@@ -11,14 +11,14 @@ sentence (left, 40 %), a 12-month line chart and a KPI tile:
 The page is taller than 1080 px and scrolls (STORY_H). The Month slicer is single-select (ruling R18), so the tiles
 and the sentences describe the one month. The charts show twelve months regardless: each carries a visual filter on
 'Date'[Month Offset] 1 to 12 (the last 12 closed months; offset 0 is the open month) and ignores the Month slicer
-(a NoFilter interaction). The Hospital slicer still applies, and a page filter keeps the page to hospitals (Head
-Office is in no chart, as in no sentence). Trade-off: the window ends at the last closed month, not at an arbitrary
-selected month.
+(a NoFilter interaction). The Branch slicer still applies, and the page filter keeps the report's branches: the
+eight hospitals and Head Office, in every chart, sentence and tile (user decision 2026-11-03). Trade-off: the window
+ends at the last closed month, not at an arbitrary selected month.
 """
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit
-from hr_frame import card_look, filters, hospitals, kpi_tile, page_frame
+from hr_frame import branches, card_look, filters, kpi_tile, page_frame
 from model import Filter, Interaction, Page, Visual, col, meas
 
 GAP = 24
@@ -90,5 +90,5 @@ def story_page() -> Page:
             visuals.append(_note(y, note))
         visuals += kpi_tile(code, TILE_X, y, TILE_W, BLOCK_H)
     interactions = [Interaction(month_slicer, c, "NoFilter") for c in charts]
-    # hospitals only, as the sentences and tiles (final review I1): Head Office is not in the charts
-    return Page("story", "Story", visuals, filters=[hospitals()], interactions=interactions, height=STORY_H)
+    # the hospitals and Head Office, as the sentences and tiles (user decision 2026-11-03)
+    return Page("story", "Story", visuals, filters=[branches()], interactions=interactions, height=STORY_H)

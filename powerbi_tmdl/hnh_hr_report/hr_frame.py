@@ -3,7 +3,8 @@ model, pbir; spec docs/superpowers/specs/2026-11-02-hr-dashboard-design.md, "Pag
 
     HR_FRAME, HR_REPORT      the frame (title, tabs, help buttons) and the report (name, perspective, theme, logo)
     page_frame(tab, bar)     the BSC frame with the HR title and tabs; `bar`: the visuals in the filter bar
-    filters()                Hospital and Month dropdowns, synced across pages
+    filters()                Branch and Month dropdowns, synced across pages
+    branches()               the report's branches: the eight hospitals and Head Office (a page filter)
     sub_tabs(current)        the six detail pages as a second row of tabs in the filter bar
     kpi_tile(code, x, y, w, h)  a KPI's actual, target and status on a white panel
     seed_kpis(), home_tile_codes()  the KPI list as scripts/hr_config/hr_config_seed.sql inserts it
@@ -78,19 +79,32 @@ def page_frame(tab: str | None, bar: list[Visual]) -> list[Visual]:
 # ---- filter bar ---------------------------------------------------------------------------------------------------
 
 BRANCH_NAME = col("Branch", "Branch Name")
-IS_HOSPITAL = col("Branch", "Is Hospital")
+BRANCH_KEY = col("Branch", "Branch Key")
+# User decision 2026-11-03 (supersedes final review I1): Head Office is on every page and in every KPI. The report's
+# branches are the eight hospitals and Head Office (100). The Branch dimension's Group member (0) is a synthetic
+# all-hospitals row with no HR data: kept out of the slicer, and of the pages, where a text measure such as
+# [HR KPI Status Text] ("– No data") would give it a column. The hospital keys are those of 'Branch'[Is Hospital]
+# (dbt hnh_dim_branch); a new hospital is added here too.
+HEAD_OFFICE = 100
+BRANCH_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, HEAD_OFFICE]
 # "Last closed month" for the previous calendar month (relabelled by the nightly build), else as Year Month Name
 # ("2026-Sep"); sorted by 'Date'[Year Month] (ruling R21)
 MONTH_PICK = col("Date", "Month Pick")
 LAST_CLOSED_MONTH = "Last closed month"
-HOSPITAL_SLICER: Rect = (30, 90, 330, 66)  # the BSC's slicer rects: the bar (84..162) less 6 px top and bottom
+BRANCH_SLICER: Rect = (30, 90, 330, 66)  # the BSC's slicer rects: the bar (84..162) less 6 px top and bottom
 MONTH_SLICER: Rect = (375, 90, 270, 66)
 SUB_TAB_X, SUB_TAB_GAP = 669, 6  # right of the Month slicer (ends 645); the row ends before How to use (1590)
 SUB_TAB_Y, SUB_TAB_H = 96, 54  # as the help buttons
 
 
-def hospitals() -> Filter:
-    return Filter(IS_HOSPITAL, "in", ["Yes"])
+def branches() -> Filter:
+    """The report's branches: the eight hospitals and Head Office, not the Group member (BRANCH_KEYS)."""
+    return Filter(BRANCH_KEY, "in", list(BRANCH_KEYS))
+
+
+def search_box() -> dict:
+    """A dropdown slicer's search box (Desktop's slicer "Search": `general.selfFilterEnabled`), for a long list."""
+    return {"general": [{"properties": {"selfFilterEnabled": _lit(True)}}]}
 
 
 def saved_selection(column: Field, value: str) -> dict:
@@ -109,13 +123,14 @@ def single_selection() -> dict:
 
 
 def filters() -> list[Visual]:
-    """Hospital (hospitals only, multi-select with Select all) and Month dropdowns. pbir.py gives each slicer the
-    sync group of its field, so a selection carries to every page. Month (ruling R21) is single-select on
-    'Date'[Month Pick], saved on "Last closed month": the model gives that label to the previous month each day, so
-    the report opens on the last closed month without a rebuild, the month HR Story Home describes."""
+    """Branch (the eight hospitals and Head Office, multi-select with Select all) and Month dropdowns. pbir.py gives
+    each slicer the sync group of its field, so a selection carries to every page. Month (ruling R21) is
+    single-select on 'Date'[Month Pick], saved on "Last closed month": the model gives that label to the previous
+    month each day, so the report opens on the last closed month without a rebuild, the month HR Story Home
+    describes. Head Office shows only to users whose access grants it (the HNH Readers role)."""
     return [
-        Visual("slicerDropdown", *HOSPITAL_SLICER, roles={"Values": [BRANCH_NAME]}, filters=[hospitals()],
-               props={**bsc.select_all_selection(), **bsc.dropdown_look()}, labels={BRANCH_NAME: "Hospital"}),
+        Visual("slicerDropdown", *BRANCH_SLICER, roles={"Values": [BRANCH_NAME]}, filters=[branches()],
+               props={**bsc.select_all_selection(), **bsc.dropdown_look()}, labels={BRANCH_NAME: "Branch"}),
         Visual("slicerDropdown", *MONTH_SLICER, roles={"Values": [MONTH_PICK]},
                props={**single_selection(), **bsc.dropdown_look(), **saved_selection(MONTH_PICK, LAST_CLOSED_MONTH)},
                labels={MONTH_PICK: "Month"}),
@@ -321,8 +336,8 @@ def white_panel(x: float, y: float, w: float, h: float) -> Visual:
 
 
 def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
-    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code and to hospitals (the scope
-    of the HR KPI measures; final review I1): [HR KPI Actual Text] (the formatted actual, "Requires pay access" for a
+    """A KPI tile: a white panel, then three cards on it, each filtered to the KPI's code (the page's branches filter
+    keeps the hospitals and Head Office, the scope of the HR KPI measures): [HR KPI Actual Text] (the formatted actual, "Requires pay access" for a
     pay KPI without pay access, "–" without data; ruling R22) under the KPI's short label, [HR KPI Target Text]
     ("6.0% (placeholder)", "Not set", "Requires pay access") labelled "Target", and [HR KPI Status Text] (shape and
     word, "◆ Watch") in the colour of [HR KPI Status Colour]: colour, shape and word."""
@@ -332,7 +347,7 @@ def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
     actual_h = h - 2 * pad - target_h - status_h
     if actual_h < 80:
         raise ValueError(f"kpi_tile {code}: {h} px is too low for a tile")
-    only = [Filter(KPI_CODE, "eq", [code]), hospitals()]
+    only = [Filter(KPI_CODE, "eq", [code])]
     actual = Visual("card", ix, y + pad, iw, actual_h, roles={"Values": [HR_ACTUAL_TEXT]}, filters=list(only),
                     title=label, props={**card_look(28, NAVY), **small_title()})
     target = Visual("card", ix, y + pad + actual_h, iw, target_h, roles={"Values": [HR_TARGET_TEXT]},
@@ -349,6 +364,7 @@ def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: st
                   props={**button_props(_navigate(page_name), label, "outline"), **no_container()})
 
 
-__all__ = ["BSC_DIR", "DETAIL_PAGES", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY", "SEED", "TABS", "WHITE",
-           "card_look", "filters", "fixed_table", "home_tile_codes", "hospitals", "kpi_label", "kpi_tile",
-           "measure_colour", "nav_button", "page_frame", "seed_kpis", "small_title", "sub_tabs", "white_panel"]
+__all__ = ["BRANCH_KEYS", "BSC_DIR", "DETAIL_PAGES", "HEAD_OFFICE", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY",
+           "SEED", "TABS", "WHITE", "branches", "card_look", "filters", "fixed_table", "home_tile_codes", "kpi_label",
+           "kpi_tile", "measure_colour", "nav_button", "page_frame", "search_box", "seed_kpis", "small_title",
+           "sub_tabs", "white_panel"]

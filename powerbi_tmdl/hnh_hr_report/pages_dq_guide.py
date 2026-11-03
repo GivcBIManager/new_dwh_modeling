@@ -1,10 +1,11 @@
 """Data quality, How to use and Definitions (spec "Data quality page", "Pages" 5 and 6).
 
-Data quality (`data_quality_page`): the issue catalogue with its records behind it. The filter bar has the Hospital
+Data quality (`data_quality_page`): the issue catalogue with its records behind it. The filter bar has the Branch
 slicer only: the records carry no month (the model has no relationship to Date, and the measures allow no Date
-filter), so there is no Month slicer. A page filter keeps the active issues ('HR Data Issues'[Status]). Top: cards for
+filter), so there is no Month slicer. Page filters keep the active issues ('HR Data Issues'[Status]) and the report's
+branches (the hospitals and Head Office, as every data page). Top: cards for
 [HR Open Issues], [HR Issue Records] and [HR Affected Employees] (distinct people), and the records by "Fix In".
-Middle: the issue table and the issue x hospital matrix. Bottom: the records table (cross-filtered by the issue table
+Middle: the issue table and the issue x branch matrix. Bottom: the records table (cross-filtered by the issue table
 and the matrix: a selection in either narrows it) and a table of Issue Name and How To Fix (every issue's fix; one row once an issue is selected). Head Office (100)
 records show to administrators only: the role filters the rest. The records table does not filter the other visuals.
 
@@ -15,7 +16,7 @@ KPIs and the metrics defined without a target are all listed.
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit
-from hr_frame import HR_TARGET_TEXT, HR_WATCH_TEXT, bsc, card_look, filters, fixed_table, page_frame
+from hr_frame import HR_TARGET_TEXT, HR_WATCH_TEXT, branches, bsc, card_look, filters, fixed_table, page_frame
 from model import Filter, Interaction, Page, Visual, col, meas
 from pages_detail import _guarded
 
@@ -46,8 +47,8 @@ RECORDS_W = W0 - FIX_W - GAP
 
 
 def data_quality_page() -> Page:
-    hospital = filters()[0]
-    visuals = page_frame("data_quality", [hospital])
+    branch = filters()[0]
+    visuals = page_frame("data_quality", [branch])
     cards = []
     for i, (m, label) in enumerate([("HR Open Issues", "Open issues"), ("HR Issue Records", "Records to fix"),
                                     ("HR Affected Employees", "People affected")]):
@@ -60,10 +61,10 @@ def data_quality_page() -> Page:
                                       col("HR Data Issues", "Owner"), ISSUE_RECORDS]},
                     labels={ISSUE_NAME: "Issue", ISSUE_RECORDS: "Records"}, filters=[ACTIVE_ISSUES],
                     sort=ISSUE_RECORDS)
-    matrix = Visual("matrix", MATRIX_X, MID_Y, X0 + W0 - MATRIX_X, MID_H, title="Records by issue and hospital",
+    matrix = Visual("matrix", MATRIX_X, MID_Y, X0 + W0 - MATRIX_X, MID_H, title="Records by issue and branch",
                     roles={"Rows": [ISSUE_NAME], "Columns": [BRANCH_NAME], "Values": [ISSUE_RECORDS]},
                     labels={ISSUE_NAME: "Issue", ISSUE_RECORDS: "Records"}, sort=ISSUE_NAME, sort_dir="asc")
-    records_cols = [(col("HR Data Issue Records", "Issue Code"), "Issue code"), (BRANCH_NAME, "Hospital"),
+    records_cols = [(col("HR Data Issue Records", "Issue Code"), "Issue code"), (BRANCH_NAME, "Branch"),
                     (col("HR Data Issue Records", "Worker Number"), "Worker number"),
                     (col("HR Data Issue Records", "Staff ID"), "Oasis staff ID"),
                     (meas("HR Issue Oasis Name"), "Oasis name"),  # "" without an Oasis staff record
@@ -81,7 +82,7 @@ def data_quality_page() -> Page:
     # the records table follows the issue table and the matrix; it does not narrow the rest
     interactions = [Interaction(records, v, "NoFilter") for v in data if v is not records]
     interactions += [Interaction(s, t, "NoFilter") for s, t in _guarded("data_quality", data, {"Branch"})]
-    return Page("data_quality", "Data quality", visuals + data, filters=[ACTIVE_ISSUES],
+    return Page("data_quality", "Data quality", visuals + data, filters=[ACTIVE_ISSUES, branches()],
                 interactions=interactions)
 
 
@@ -97,18 +98,21 @@ GUIDE_SECTIONS = [
         "Scorecard (every KPI and its status), Details (six pages, opened with the buttons beside the Month "
         "slicer), Data quality and Guide.",
         "How to use and Definitions, top right, open this Guide.",
-        "On the Scorecard, select a row and use Drill through to KPI detail for its trend, hospitals and definition. "
-        "Right-click a hospital or department bar and choose Drill through > Employee list for the people behind "
+        "On the Scorecard, select a row and use Drill through to KPI detail for its trend, branches and definition. "
+        "Right-click a branch or department bar and choose Drill through > Employee list for the people behind "
         "a number. Back, beside the Month slicer, returns to the page you came from.",
-        "Hospital and Month carry over to every page. Month opens on Last closed month, the month just ended; pick "
+        "Branch lists the eight hospitals and Head Office; every page, KPI and target includes Head Office, so a "
+        "figure for all branches is the hospitals plus Head Office. Head Office shows only to users whose access "
+        "includes it.",
+        "Branch and Month carry over to every page. Month opens on Last closed month, the month just ended; pick "
         "another month in the list to see it.",
         "The sentences on Story and the figures on the cards describe the one month you picked. The trend charts "
         "always show the last 12 closed months, whatever Month says.",
         "Period, on Scorecard and KPI detail, reads each KPI for the month (Current), the quarter to date (QTD) or the "
         "year to date (YTD) up to the month you picked. Annual targets of rates such as turnover are "
         "pro-rated to the months; month-end figures such as headcount stay at the month end.",
-        "Story rates show 2 decimals because monthly rates are small. The largest change names the hospital whose "
-        "rate or number moved most."]),
+        "Story rates show 2 decimals because monthly rates are small. The largest change names the branch (a "
+        "hospital or Head Office) whose rate or number moved most."]),
     _section("Read the status", [
         "● On track (green): the actual meets the target.",
         "◆ Watch (amber): short of the target but still within the watch threshold. For on-target KPIs, the "
@@ -121,7 +125,12 @@ GUIDE_SECTIONS = [
         "access; others see this note instead of a number.",
         "Every target marked (placeholder) is a starting value, the current level, until HR sets the real one. HR "
         "decides the targets; the BI manager enters them (docs/hr_config.md). The mark goes when a real target is "
-        "in."]),
+        "in.",
+        "Turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor and revenue per FTE "
+        "and per doctor use the balanced scorecard's formulas; the scorecard report covers the hospitals only. Their "
+        "sources hold no Head Office data today, so Head Office reads No data and the totals equal the scorecard's; "
+        "Head Office data arriving there would make them differ. Visits per FTE and revenue per payroll SAR count "
+        "doctors and nurses linked to Oasis: none at Head Office."]),
     _section("Know the figures", [
         "Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5 and Fusion voluntary leavers for "
         "hospitals 6 to 8. The leaver figures marked in Fusion count Fusion leavers and do not reconcile with "
@@ -179,8 +188,8 @@ def definitions_page() -> Page:
     table = Visual("table", X0, TABLE_Y, W0, END - TABLE_Y, title="Every KPI and metric", roles={"Values": fields},
                    labels={name: "KPI or metric", HR_TARGET_TEXT: "Target", HR_WATCH_TEXT: "Watch at",
                            order: "Order"}, sort=order, sort_dir="asc", props=fixed_table(widths, 10, left=(HR_TARGET_TEXT, HR_WATCH_TEXT)))
-    hospital, month = filters()
-    return Page("guide_definitions", "Definitions", page_frame("guide", [hospital, month]) + [area, table])
+    branch, month = filters()
+    return Page("guide_definitions", "Definitions", page_frame("guide", [branch, month]) + [area, table])
 
 
 def guide_pages() -> list[Page]:
