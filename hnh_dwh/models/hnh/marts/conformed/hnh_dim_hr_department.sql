@@ -35,5 +35,7 @@ select * from departments
 
 union all
 
-select toInt64(-1), null, 'Unknown', null, null, 'Unknown', toUInt8(0), toUInt8(1)
+-- the Unknown member reads Unknown in department_base_name too (the model-wide label, ruling R30); toNullable keeps the
+-- column Nullable(String), the type of the view contract
+select toInt64(-1), null, 'Unknown', null, toNullable('Unknown'), 'Unknown', toUInt8(0), toUInt8(1)
 {{ hnh_settings() }}

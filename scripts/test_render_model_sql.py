@@ -93,3 +93,33 @@ def test_hnh_code_title_and_oasis_source_render_their_macro_sql(project):
         "select nullIf(upper(trimBoth(ifNull(toString(s.staff_id), ''))), '') as c, "
         "if(match(o.name, '[a-z]') and match(o.name, '[A-Z]'), o.name, initcap(o.name)) as n\n"
         "from oasis.staff_master_data final")
+
+
+def test_surrogate_key_renders_the_macro_sql(project):
+    (project / "marts" / "finance" / "dim_d.sql").write_text(
+        "select {{ hnh_surrogate_key(['position_id']) }} as k, {{ hnh_surrogate_key(['a', 'b.c']) }} as k2 from t",
+        encoding="utf-8")
+    assert r.render("dim_d") == (
+        "select if(isNull(position_id), toInt64(-1), "
+        "toInt64(bitShiftRight(cityHash64(concat(toString(assumeNotNull(position_id)), '|')), 1))) as k, "
+        "if(isNull(a) or isNull(b.c), toInt64(-1), "
+        "toInt64(bitShiftRight(cityHash64(concat(toString(assumeNotNull(a)), '|', toString(assumeNotNull(b.c)), '|')), 1)))"
+        " as k2 from t")
+
+
+def test_plain_macro_renders_its_body_with_the_arguments(project, tmp_path, monkeypatch):
+    macros = tmp_path / "macros"
+    (macros / "hnh").mkdir(parents=True)
+    (macros / "hnh" / "rules.sql").write_text(
+        "{% macro hnh_pick(prefix, other) -%}\n"
+        "multiIf(ifNull({{ prefix }}, '') = 'RBW', 1, {{other}})\n"
+        "{%- endmacro %}\n\n"
+        "{% macro hnh_loop(cols) -%}\n{% for c in cols %}{{ c }}{% endfor %}\n{%- endmacro %}\n", encoding="utf-8")
+    monkeypatch.setattr(r, "MACROS", macros)
+    (project / "marts" / "finance" / "dim_e.sql").write_text(
+        "select {{ hnh_pick(\"splitByChar(' ', ifNull(n, ''))[1]\", '0') }} as b", encoding="utf-8")
+    assert r.render("dim_e") == "select multiIf(ifNull(splitByChar(' ', ifNull(n, ''))[1], '') = 'RBW', 1, 0) as b"
+    # a macro with Jinja statements in its body is not a plain macro
+    (project / "marts" / "finance" / "dim_f.sql").write_text("select {{ hnh_loop('x') }}", encoding="utf-8")
+    with pytest.raises(SystemExit, match="unsupported"):
+        r.render("dim_f")

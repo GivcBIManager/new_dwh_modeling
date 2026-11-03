@@ -2,7 +2,9 @@
 
 dbt is not installed on HNHANALYTICSSRV. This handles only the Jinja the bsc and hr models use: config(), ref(), source(),
 var(), hnh_settings(), hnh_oasis_gl_source(), hnh_fusion_source(), hnh_oasis_source() (as the oasis source),
-hnh_code() and hnh_title() on a column name; anything else stops with an error.
+hnh_code() and hnh_title() on a column name, hnh_surrogate_key([...]) on column names, and any macro of hnh_dwh/macros
+whose body has no Jinja statement (its parameters substituted by the quoted arguments); anything else stops with an
+error.
 
   python scripts/render_model_sql.py bsc_vw_financial --inline fact_gl_fs_monthly,stg_bsc__oasis_gl_line \
       --replace stg_ref__gl_cutover=scripts/fixtures/gl_cutover_stub.sql --wrap "DESCRIBE ({model})" --out m.sql
@@ -18,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MODELS = ROOT / "hnh_dwh" / "models" / "hnh"
 PROJECT = ROOT / "hnh_dwh" / "dbt_project.yml"
+MACROS = ROOT / "hnh_dwh" / "macros"
 SOURCE_SCHEMAS = {"reference": "default", "gold_oasis_gl": "gold", "oasis": "oasis", "fusion": "fusion",
                   "press_ganey": "press_ganey", "hnh_log": "gold"}
 LAYER_SCHEMAS = {"staging": "stg", "intermediate": "int", "marts": "gold"}
@@ -45,6 +48,45 @@ def project_vars():
         if m:
             found[m.group(1)] = m.group(2).strip("\"'")
     return found
+
+
+def plain_macros():
+    """{name: (parameters, body)} of the macros in MACROS whose body holds no Jinja statement ({% ... %})."""
+    found = {}
+    for path in sorted(MACROS.rglob("*.sql")):
+        text = path.read_text(encoding="utf-8")
+        for m in re.finditer(r"\{%-?\s*macro\s+(\w+)\(([^)]*)\)\s*-?%\}(.*?)\{%-?\s*endmacro\s*-?%\}", text, re.S):
+            params = [p.split("=")[0].strip() for p in m.group(2).split(",") if p.strip()]
+            body = m.group(3).strip()
+            if "{%" not in body:
+                found[m.group(1)] = (params, body)
+    return found
+
+
+ARGUMENT = r"""\s*('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")\s*"""  # a quoted Jinja string
+
+
+def render_macro(expr):
+    """A call of a plain macro with quoted arguments, rendered; None when `expr` is not one."""
+    m = re.fullmatch(r"(\w+)\((.*)\)", expr, re.S)
+    if not m:
+        return None
+    macros = plain_macros()
+    if m.group(1) not in macros:
+        return None
+    params, body = macros[m.group(1)]
+    args = re.findall(ARGUMENT + r"(?:,|$)", m.group(2))
+    if re.sub(r"(?:" + ARGUMENT + r"(?:,|$))", "", m.group(2)).strip() or len(args) != len(params):
+        return None
+    values = dict(zip(params, (a[1:-1] for a in args)))
+    return re.sub(r"\{\{\s*(\w+)\s*\}\}", lambda x: values[x.group(1)], body)
+
+
+def surrogate_key(columns):
+    """hnh_surrogate_key(columns) (macros/hnh/hnh_core.sql), on one line."""
+    nulls = " or ".join(f"isNull({c})" for c in columns)
+    parts = ", ".join(f"toString(assumeNotNull({c})), '|'" for c in columns)
+    return f"if({nulls}, toInt64(-1), toInt64(bitShiftRight(cityHash64(concat({parts})), 1)))"
 
 
 def render(name, inline=frozenset(), replace=None, depth=0):
@@ -90,6 +132,12 @@ def render(name, inline=frozenset(), replace=None, depth=0):
         m = re.fullmatch(r"var\('(\w+)'\)", expr)
         if m:
             return variables[m.group(1)]
+        m = re.fullmatch(r"hnh_surrogate_key\(\[([^\]]*)\]\)", expr)
+        if m:
+            return surrogate_key([c.strip().strip("'\"") for c in m.group(1).split(",")])
+        macro = render_macro(expr)
+        if macro is not None:
+            return macro
         raise SystemExit(f"{name}: unsupported Jinja {{{{ {expr} }}}}")
 
     return re.sub(r"\{\{(.*?)\}\}", sub, sql, flags=re.S).strip()

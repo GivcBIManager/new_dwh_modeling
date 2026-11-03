@@ -23,3 +23,24 @@ unit_tests:
         select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(1)), '|')), 1)) as employee_key,
                toInt64(bitShiftRight(cityHash64(concat(toString(toUInt8(4)), '|', '500', '|')), 1)) as staff_key,
                toUInt8(4) as branch_key, '500' as worker_number, 'worker_number' as match_method
+
+  - name: hnh_dim_position_base_name_drops_the_hospital_prefix
+    description: >
+      Ruling R30: "RBW Staff Nurse" and "JAZ Staff Nurse" share the base name "Staff Nurse"; "HQ Recruitment Officer"
+      loses the Head Office prefix; "Medical Director" has no hospital prefix and is kept whole; the Unknown member
+      reads Unknown.
+    model: hnh_dim_position
+    given:
+      - input: ref('stg_fusion__positions')
+        format: sql
+        rows: |
+          select toNullable(toInt64(i)) as position_id, toNullable(c) as position_code, toNullable(n) as position_name,
+                 toUInt8(1) as is_current
+          from values('i Int64, c String, n String', (1, 'P1', 'RBW Staff Nurse'), (2, 'P2', 'JAZ Staff Nurse'),
+                      (3, 'P3', 'Medical Director'), (4, 'P4', 'HQ Recruitment Officer'))
+    expect:
+      format: sql
+      rows: |
+        select toNullable(c) as position_code, toNullable(b) as position_base_name
+        from values('c Nullable(String), b String', ('P1', 'Staff Nurse'), ('P2', 'Staff Nurse'), ('P3', 'Medical Director'),
+                    ('P4', 'Recruitment Officer'), (null, 'Unknown'))

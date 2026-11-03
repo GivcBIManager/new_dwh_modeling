@@ -954,6 +954,8 @@ models:
         data_type: "Nullable(String)"
       - name: position_name
         data_type: "Nullable(String)"
+      - name: position_base_name
+        data_type: "Nullable(String)"
       - name: is_current
         data_type: "String"
   - name: ssas_dim_preauth_outcome

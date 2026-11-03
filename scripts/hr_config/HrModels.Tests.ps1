@@ -514,3 +514,35 @@ Describe 'dim_date month_pick (ruling R21)' {
         foreach ($r in $rows | Where-Object { [int]$_.month_offset -ne 1 }) { $r.month_pick | Should BeExactly $r.year_month_name }
     }
 }
+
+Describe 'hnh_dim_position position_base_name (ruling R30)' {
+    $src = "select toNullable(toInt64(i)) as position_id, toNullable(c) as position_code, toNullable(n) as position_name, toUInt8(1) as is_current " +
+           "from values('i Int64, c String, n Nullable(String)', (1, 'P1', 'RBW Staff Nurse'), (2, 'P2', 'JAZ Staff Nurse'), " +
+           "(3, 'P3', 'Medical Director'), (4, 'P4', 'HQ Recruitment Officer'), (5, 'P5', null))"
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'hnh_dim_position' @{ stg_fusion__positions = $src }) @{}
+    $r = @{}; foreach ($x in $rows) { $r[[string]$x.position_code] = $x }
+    It 'drops a hospital prefix, so a position groups across hospitals' {
+        $r['P1'].position_base_name | Should BeExactly 'Staff Nurse'
+        $r['P2'].position_base_name | Should BeExactly 'Staff Nurse'
+        $r['P4'].position_base_name | Should BeExactly 'Recruitment Officer'
+        $r['P1'].position_name | Should BeExactly 'RBW Staff Nurse'
+    }
+    It 'keeps a name whose first word is not a hospital prefix, and the Unknown member' {
+        $r['P3'].position_base_name | Should BeExactly 'Medical Director'
+        [string]$r['P5'].position_base_name | Should BeExactly ''
+        $unknown = @($rows | Where-Object { [int64]$_.position_key -eq -1 })
+        $unknown.Count | Should Be 1
+        $unknown[0].position_base_name | Should BeExactly 'Unknown'
+    }
+}
+
+Describe 'hnh_dim_hr_department Unknown member (ruling R30)' {
+    $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') 'hnh_dim_hr_department' '--wrap' (
+        'select department_name, department_base_name, toTypeName(department_base_name) as t from ({model}) where hr_department_key = -1')) -join "`n"
+    $rows = Invoke-HnhSelect -Dsn HNH_Gold -Sql ($sql -replace '(?m)^\s*--.*$', '')
+    It 'names the Unknown member Unknown in department_base_name too, still Nullable(String)' {
+        $rows.Count | Should Be 1
+        $rows[0].department_base_name | Should BeExactly 'Unknown'
+        $rows[0].t | Should BeExactly 'Nullable(String)'
+    }
+}
