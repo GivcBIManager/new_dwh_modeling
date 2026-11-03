@@ -231,6 +231,7 @@ SORT_BY = {
     ("ssas_dim_date", "day_name"): "day_of_week",
     ("ssas_dim_date", "quarter_name"): "quarter",
     ("ssas_dim_date", "year_month_name"): "year_month",
+    ("ssas_dim_date", "month_pick"): "year_month",  # HR report default month (ruling R21)
     ("ssas_dim_date", "hijri_month_name"): "hijri_month",
     ("ssas_dim_time", "time_label"): "time_key",
     ("ssas_dim_budget_line", "budget_line_name"): "sort_order",

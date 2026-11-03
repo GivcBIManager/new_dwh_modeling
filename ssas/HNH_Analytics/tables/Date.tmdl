@@ -211,6 +211,12 @@ table Date
 		summarizeBy: none
 		sourceColumn: is_past
 
+	column 'Month Pick'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'Year Month'
+		sourceColumn: month_pick
+
 	partition Date = m
 		source =
 				let

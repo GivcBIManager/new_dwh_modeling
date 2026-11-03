@@ -366,6 +366,8 @@ models:
         data_type: "Int64"
       - name: is_past
         data_type: "String"
+      - name: month_pick
+        data_type: "String"
   - name: ssas_dim_department
     config:
       contract: {enforced: true}

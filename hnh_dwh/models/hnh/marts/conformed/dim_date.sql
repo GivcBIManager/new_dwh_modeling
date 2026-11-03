@@ -38,7 +38,11 @@ select
     dateDiff('month', d.date_day, today())          as month_offset,
     dateDiff('quarter', d.date_day, today())        as quarter_offset,
     dateDiff('year', d.date_day, today())           as year_offset,
-    toUInt8(d.date_day < today())                   as is_past
+    toUInt8(d.date_day < today())                   as is_past,
+    -- HR report Month slicer (ruling R21): a saved selection of 'Last closed month' follows the daily build.
+    -- A repo label, not title-cased; one label per year_month on any given day, so SSAS sorts it by year_month.
+    if(dateDiff('month', d.date_day, today()) = 1, 'Last closed month',
+       formatDateTime(d.date_day, '%Y-%b'))          as month_pick
 from days as d
 left join {{ ref('stg_ref__hijri_calendar') }} as h on h.date_day = d.date_day
 left join {{ ref('stg_ref__public_holiday') }} as p on p.date_day = d.date_day

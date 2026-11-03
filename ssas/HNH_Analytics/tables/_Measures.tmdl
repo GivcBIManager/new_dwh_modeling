@@ -7506,6 +7506,78 @@ table _Measures
 		displayFolder: HR Dashboard\KPIs
 
 		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// HR KPI Actual as text for a KPI tile, in the KPI's value_format as HR KPI Target Text (pct 0.0%, sar #,0, days #,0.0, num #,0 for an additive KPI else #,0.00): Requires pay access when the KPI needs pay and the viewer has no pay access; – when there is no actual. Blank when no single KPI is in context.
+	measure 'HR KPI Actual Text' =
+			VAR __Value = ( -- measure body
+				-- ruling R22: a tile shows the pay message, never (Blank), to a viewer without pay access
+				VAR Code = SELECTEDVALUE ( 'HR KPI'[KPI Code] )
+				VAR ValueFormat = SELECTEDVALUE ( 'HR KPI'[Value Format] )
+				VAR NeedsPay = SELECTEDVALUE ( 'HR KPI'[Needs Pay] )
+				VAR A = [HR KPI Actual]
+				VAR Shown =
+					SWITCH (
+						ValueFormat,
+						"pct", FORMAT ( A, "0.0%" ),
+						"sar", FORMAT ( A, "#,0" ),
+						"days", FORMAT ( A, "#,0.0" ),
+						IF ( [HR KPI Is Additive] = 1, FORMAT ( A, "#,0" ), FORMAT ( A, "#,0.00" ) )
+					)
+				RETURN
+					SWITCH (
+						TRUE (),
+						ISBLANK ( Code ), BLANK (),
+						NeedsPay = 1 && [HR Can See Pay] = 0, "Requires pay access",
+						ISBLANK ( A ), "–",
+						Shown
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard 12 facts #3285a6da]
+			RETURN IF ( __Wrong = "", __Value, """HR KPI Actual Text"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\KPIs
+
+		annotation hnh_guard_allow = HR KPI, HR Targets
+	/// Requires pay access when the viewer has no pay access (HR Can See Pay = 0), else blank: the header note of the pay visuals (payroll, productivity, leave).
+	measure 'HR Pay Notice' =
+			IF ( [HR Can See Pay] = 0, "Requires pay access" )
+		formatString: General
+		displayFolder: HR Dashboard\Story
+	/// Payroll Cost as compact text for the Home area card: SAR and one decimal in millions, such as SAR 33.6M (B for billions, K for thousands, whole SAR below 1,000); Requires pay access without pay access; – when there is no payroll cost. Same scope as Payroll Cost.
+	measure 'HR Payroll Cost Text' =
+			VAR __Value = ( -- measure body
+				VAR C = [Payroll Cost]
+				VAR Size = ABS ( C )
+				RETURN
+					SWITCH (
+						TRUE (),
+						[HR Can See Pay] = 0, "Requires pay access",
+						ISBLANK ( C ), "–",
+						Size >= 1000000000, "SAR " & FORMAT ( C / 1000000000, "#,0.0" ) & "B",
+						Size >= 1000000, "SAR " & FORMAT ( C / 1000000, "#,0.0" ) & "M",
+						Size >= 1000, "SAR " & FORMAT ( C / 1000, "#,0.0" ) & "K",
+						"SAR " & FORMAT ( C, "#,0" )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Payroll]
+			RETURN IF ( __Wrong = "", __Value, """HR Payroll Cost Text"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\Story
+	/// Visits per FTE as text for the Home area card, in its own format #,0.0; Requires pay access without pay access; – when there is no value. Same scope as Visits per FTE.
+	measure 'HR Visits per FTE Text' =
+			VAR __Value = ( -- measure body
+				VAR V = [Visits per FTE]
+				RETURN
+					SWITCH (
+						TRUE (),
+						[HR Can See Pay] = 0, "Requires pay access",
+						ISBLANK ( V ), "–",
+						FORMAT ( V, "#,0.0" )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Staff Productivity]
+			RETURN IF ( __Wrong = "", __Value, """HR Visits per FTE Text"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\Story
 	/// The month the HR story sentences describe, such as "October 2026": the last closed headcount month of the hospitals in the selection. Blank when the selection has no closed month for a hospital.
 	measure 'HR Story Month' =
 			VAR __Value = ( -- measure body

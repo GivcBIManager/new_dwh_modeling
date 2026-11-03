@@ -13,6 +13,8 @@ models:
         tests: [unique, not_null]
       - name: hijri_year
         tests: [not_null]
+      - name: month_pick
+        tests: [not_null]
   - name: dim_time
     columns:
       - name: time_key

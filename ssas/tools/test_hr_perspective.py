@@ -35,3 +35,19 @@ def test_hr_records_have_no_date_relationship():
     bad = [b.splitlines()[0] for b in blocks
            if "fromColumn: 'HR Data Issue Records'." in b and "toColumn: Date." in b]
     assert bad == []
+
+
+def test_date_month_pick_sorts_by_year_month():
+    """Ruling R21: the HR report's Month slicer defaults to 'Last closed month' through 'Date'[Month Pick]."""
+    date = (MODEL / "tables" / "Date.tmdl").read_text(encoding="utf-8")
+    block = t.re.search(r"(?ms)^\tcolumn 'Month Pick'\n(.*?)(?=^\t\S|\Z)", date)
+    assert block, "'Date'[Month Pick] missing"
+    assert "\t\tdataType: string\n" in block.group(1)
+    assert "\t\tsortByColumn: 'Year Month'\n" in block.group(1)
+    assert "\t\tsourceColumn: month_pick\n" in block.group(1)
+
+
+def test_date_contract_ends_with_month_pick():
+    contracts = (MODEL.parents[1] / "hnh_dwh" / "models" / "hnh" / "marts" / "ssas" / "_ssas__models.yml")
+    columns = t.contract_columns(contracts.read_text(encoding="utf-8"))["ssas_dim_date"]
+    assert (columns[-1].name, columns[-1].ch_type) == ("month_pick", "String")

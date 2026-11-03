@@ -480,3 +480,20 @@ Describe 'fact_hr_dq_record keeps only active issues' {
         (Of (Get-DqRecords @{ hnh_dim_employee = $e } 'DQ_NO_HOSPITAL') 'DQ_NO_HOSPITAL').Count | Should Be 0
     }
 }
+
+Describe 'dim_date month_pick (ruling R21)' {
+    $sql = (& python (Join-Path $root 'scripts\render_model_sql.py') 'dim_date' '--wrap' (
+        'select month_offset, year_month_name, month_pick, count() as days from ({model}) ' +
+        'where month_offset between 0 and 13 group by month_offset, year_month_name, month_pick order by month_offset')) -join "`n"
+    # Invoke-HnhSelect returns the row array as one object, so it is not wrapped in @() here.
+    $rows = Invoke-HnhSelect -Dsn HNH_Gold -Sql ($sql -replace '(?m)^\s*--.*$', '')
+    It 'reads Last closed month for the month before this one only' {
+        $rows.Count | Should Be 14
+        @($rows | Where-Object { [int]$_.days -lt 28 }).Count | Should Be 0
+        @($rows | Where-Object { $_.month_pick -eq 'Last closed month' }).Count | Should Be 1
+        [int]($rows | Where-Object { $_.month_pick -eq 'Last closed month' }).month_offset | Should Be 1
+    }
+    It 'reads the year-month name for every other month' {
+        foreach ($r in $rows | Where-Object { [int]$_.month_offset -ne 1 }) { $r.month_pick | Should BeExactly $r.year_month_name }
+    }
+}

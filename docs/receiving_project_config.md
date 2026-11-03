@@ -124,7 +124,8 @@ Design and plan in `docs/superpowers/specs/` and `docs/superpowers/plans/` (HR d
 - **Create the config tables first** (before any build: the models and the 8 warn tests above read them): `scripts\hr_config\apply_hr_config.ps1` on HNHANALYTICSSRV (`-DryRun` first).
 - **Build:** `dbt build --select stg_ref__hr_*+ fact_hr_dq_record+`.
 - **Dagster:** add `stg_ref__hr_*+ fact_hr_dq_record+` to the nightly dbt job's selector so data quality refreshes nightly.
-- **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`).
+- **Default month (ruling R21):** copy the changed `marts/conformed/dim_date.sql`. It adds the last column `month_pick`: `Last closed month` for the month before today's, else the `year_month_name` text (`2026-Sep`). The HR report's Month slicer saves the selection `Last closed month`, so it moves to the new month with the first daily build of each month. Build `dbt build --select dim_date+`. What matters is `dim_date` and then the view `ssas_dim_date`, which lists the table's columns when it compiles; the `+` also rebuilds the `bsc_vw_*` views and `agg_clinic_capacity_daily`, none of which reads `month_pick`. The `ssas_dim_date` contract already has `month_pick String` (added by hand).
+- **After the build:** regenerate the SSAS view contracts (`python scripts/gen_view_contracts.py`) and check that the only change to `ssas_dim_date` is that `month_pick` stays last as `String`.
 
 ## Reference tables that must exist in `default`
 
