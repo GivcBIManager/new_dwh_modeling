@@ -310,3 +310,80 @@ def test_no_visual_groups_or_bookmarks_in_pages():
         if k.endswith("visual.json"):
             assert "visualGroup" not in json.loads(b.decode("utf-8")), k
     assert not any("bookmarks" in k for k in files)
+
+
+# ---- Story -------------------------------------------------------------------------------------------------------
+
+STORY_MEASURES = ["HR Story Size", "HR Story Flow", "HR Story Cost", "HR Story Absence", "HR Story Saudization",
+                  "HR Story Hiring"]
+STORY_TILES = ["HR_HEADCOUNT", "HR_TURNOVER", "HR_STAFF_COST_PER_FTE", "HR_SICK_LEAVE_RATE", "HR_SAUDIZATION",
+               "HR_VACANCY_RATE"]
+STORY_CHARTS = [["Headcount", "FTE"], ["BSC Turnover"], ["Payroll Cost", "Overtime Share %"], ["Sick Leave Rate %"],
+                ["BSC Saudization"], ["BSC Vacancy Rate"]]
+
+
+def story():
+    return next(p for p in PAGES if p.name == "story")
+
+
+def _on(page, measure_name):
+    return [v for v in page.visuals if meas(measure_name) in v.roles.get("Values", [])]
+
+
+def test_story_block_order():
+    page = story()
+    ys = []
+    for name in STORY_MEASURES:
+        found = _on(page, name)
+        assert len(found) == 1, name
+        assert found[0].sample == "card" and found[0].w == round(1860 * 0.4)  # 40 %, left
+        ys.append(found[0].y)
+    assert ys == sorted(ys) and len(set(ys)) == 6  # Size < Flow < Cost < Absence < Saudization < Hiring
+    heading = _on(page, "HR Story Month")
+    assert len(heading) == 1 and heading[0].y < ys[0]
+
+
+def test_story_blocks_hold_chart_and_tile():
+    page = story()
+    sentences = [_on(page, n)[0] for n in STORY_MEASURES]
+    charts = [v for v in page.visuals if v.sample == "lineChart"]
+    assert [[f.name for f in c.roles["Y"]] for c in charts] == STORY_CHARTS
+    assert [c.y for c in charts] == [s.y for s in sentences]
+    assert kpi_codes(page.visuals) == STORY_TILES
+    for c in charts:
+        assert c.roles["Category"] == [col("Date", "Year Month Name")] and c.sort_dir == "asc"
+        assert all(f.kind == "measure" for f in c.roles["Y"])
+
+
+def test_story_page_is_tall_and_inside_its_height():
+    from pages_story import STORY_H as story_h
+    assert story().height == story_h > 1080
+    assert max(v.y + v.h for v in story().visuals) <= story_h
+
+
+def test_story_charts_show_twelve_closed_months_whatever_the_month_slicer_says():
+    page = story()
+    charts = [v for v in page.visuals if v.sample == "lineChart"]
+    offset = col("Date", "Month Offset")
+    for c in charts:
+        assert [(f.field, f.op, f.values) for f in c.filters] == [(offset, "in", list(range(1, 13)))]
+    month = next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
+    from model import interaction_indexes
+    idx = {(s, t): k for s, t, k in interaction_indexes(page)}
+    month_i = next(i for i, v in enumerate(page.visuals) if v is month)
+    for c in charts:
+        ci = next(i for i, v in enumerate(page.visuals) if v is c)
+        assert idx[(month_i, ci)] == "NoFilter"
+
+
+def test_story_cost_pay_notice_and_slicers():
+    page = story()
+    notice = _on(page, "HR Pay Notice")
+    assert len(notice) == 1
+    cost = next(v for v in page.visuals if v.sample == "lineChart" and meas("Payroll Cost") in v.roles["Y"])
+    assert cost.x <= notice[0].x and notice[0].y >= cost.y and notice[0].y + notice[0].h <= cost.y + cost.h
+    assert notice[0].filters[0].op == "notblank"  # a blank notice would print "(Blank)" over the chart
+    slicers = {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")}
+    assert slicers == ALLOWED_KPI_PAGE_SLICERS  # R13 / R18
+    month = next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
+    assert month.props["selection"][0]["properties"]["singleSelect"]
