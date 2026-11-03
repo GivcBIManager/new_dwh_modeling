@@ -79,16 +79,19 @@ Same route as above, with the HR report's paths. It is built against `HNH_Analyt
 1. `python powerbi_tmdl/hnh_hr_report/build.py` (prints `report schemas: passed` and `Desktop project reader: opened`).
 2. `python powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py "powerbi_tmdl/hnh_hr_report/HNH Workforce.pbip" --out "C:\HNH\report\HNH Workforce.pbix"` (14 pages, 501 visuals).
 3. `pbix.check_upload_rules` on the file must return `[]` (run from `powerbi_tmdl/hnh_bsc_report`: `python -c "from pbix import check_upload_rules; print(check_upload_rules(r'C:\HNH\report\HNH Workforce.pbix'))"`).
-4. Open the `.pbix` in Desktop for Report Server without saving; upload it to `http://hnhanalyticssrv/reports` only on the user's go-ahead.
+4. Open the `.pbix` in Desktop for Report Server without saving; upload it into the report's folder at `http://hnhanalyticssrv/reports` only on the user's go-ahead.
 
 **Switch to production.** After the model is deployed to production (a separate go-ahead), rebuild with `python powerbi_tmdl/hnh_hr_report/build.py --database HNH_Analytics`, convert again, and upload that file (a separate go-ahead). Until then the report points at `HNH_Analytics_Test`.
 
-**Check on first open** (Desktop for Report Server, then the portal):
+**How to test as a user.** Log in to Windows (or the browser) as `HNHANALYTICSSRV\HRM_CORP` and then as `HNHANALYTICSSRV\EXE_ABH`. Both must be non-admin members of `HNH_BI_Users`: an SSAS server administrator bypasses the row filters. A domain reader needs a `bi_users.csv` row with the UPN `<name>@hnhriyadh.com`, or sees no data.
+
+**To check on first open** (not yet done; Desktop for Report Server, then the portal):
 
 - The Month slicer shows "Last closed month" on every page.
-- The tall pages (Story, Headcount, Movements, Payroll, Absence, Productivity, and Scorecard if it is tall) scroll at full width instead of shrinking.
-- Status text is coloured (green / amber / red, grey for No target yet and No data).
+- The tall pages scroll at full width instead of shrinking: Story (2100 px), Headcount & mix (2170), Movements & turnover (1846), Absence & leave (1756), Payroll & overtime (1410), Productivity (1410), Recruitment (1410) and Scorecard (1398). Home, Data quality, the guide pages and the hidden KPI detail and Employee list are 1080 px (fit to page).
+- Status text is coloured: teal `#0E9F8E` On track, amber `#EF8B00` Watch, red `#DB280A` At risk, grey `#9AA7B5` for No target yet, No data, Parked and Requires pay access.
 - Pay notices: as `HRM_CORP` they show nothing; as `EXE_ABH` they show "Requires pay access" (pay tiles, the Cost story block, Payroll and Productivity).
 - The Employee list keeps its rows for a reader without pay access, with the names blank.
 - The KPI detail 24-month line shows 24 points after drilling from the Scorecard.
-- `EXE_ABH` sees only Abha and no Head Office (100) data quality records; `HRM_CORP` sees all hospitals, Head Office records and the placeholder marks on the targets.
+- `HRM_CORP` sees all hospitals, pay figures, Head Office data quality records and the placeholder marks on the targets.
+- `EXE_ABH` sees Abha only, no Head Office (100) data quality records and no Fusion names on the Employee list.
