@@ -12,8 +12,8 @@ What it writes (shapes from `powerbi_tmdl/test isual.pbix`, written by Desktop f
 legacy pbix and `LAYOUT_FORMAT.md`):
 
 - `Report/Layout`: every page as a `sections[]` entry (filters as the legacy list: `expression` for `field`,
-  `howCreated` 1 = User, 5 = Drillthrough; hidden state, drillthrough binding and visual interactions in the page
-  `config`), every visual as a `visualContainers[]` entry (`projections` role -> queryRef, a `prototypeQuery` with
+  `howCreated` 1 = User, 5 = Drillthrough; hidden state, page type and visual interactions as `relationships` in
+  the page `config`), each drill-through binding as a root `pods` entry bound to its section, every visual as a `visualContainers[]` entry (`projections` role -> queryRef, a `prototypeQuery` with
   From aliases, Select named by queryRef and OrderBy from the sort, `columnProperties` for display names,
   `objects`, `vcObjects` = visualContainerObjects, `syncGroup`, the visual's filters), and the report `config`
   (theme collection, settings) as a JSON string;
@@ -41,7 +41,13 @@ DEFAULT_BASE_THEME = HERE / "theme" / "CY26SU05.json"
 THEME_VERSION = {"visual": "2.9.0", "report": "3.3.0", "page": "2.3.1"}  # what Desktop for Report Server writes
 DISPLAY_OPTION = {"FitToPage": 1, "FitToWidth": 2, "ActualSize": 3}
 HOW_CREATED = {"User": 1, "Drillthrough": 5}
+# Legacy enums as Desktop for Report Server (May 2026) reads them (desktop.min.js): visual interaction types (a
+# section's `relationships`), page types (section config `type`), and the drill-through binding of a page (a root
+# `pods` entry: pod type, config acceptsFilterContext).
 INTERACTION = {"Default": 0, "DataFilter": 1, "HighlightFilter": 2, "NoFilter": 3}
+PAGE_TYPE = {"Tooltip": 1, "Drillthrough": 2}
+POD_TYPE = {"Default": 0, "Drillthrough": 1, "Tooltip": 2}
+ACCEPTS_FILTER_CONTEXT = {"Default": 0, "None": 1}
 SORT = {"Ascending": 1, "Descending": 2}
 RESOURCE_ITEM = {"Image": 100, "CustomTheme": 201}
 # Version, Settings, Metadata and DiagramLayout are UTF-16 LE without a byte-order mark, [Content_Types].xml is UTF-8
@@ -185,11 +191,15 @@ def convert_page(page: dict, visuals: list[dict], ordinal: int) -> dict:
     config: dict = {}
     if page.get("visibility") == "HiddenInViewMode":
         config["visibility"] = 1
-    if page.get("pageBinding"):
-        config["pageBinding"] = page["pageBinding"]
-    if page.get("visualInteractions"):
-        config["visualInteractions"] = [{"source": i["source"], "target": i["target"], "type": INTERACTION[i["type"]]}
-                                        for i in page["visualInteractions"]]
+    # A page bound as a drill-through target is a Drillthrough page even without a PBIR page type, as Desktop's
+    # layout upgrade v5_38 makes it (upgradeDrillthroughTargetRegularSections).
+    page_type = page.get("type") or (page.get("pageBinding") or {}).get("type")
+    if page_type in PAGE_TYPE:
+        config["type"] = PAGE_TYPE[page_type]
+    relationships = [{"source": i["source"], "target": i["target"], "type": INTERACTION[i["type"]]}
+                     for i in page.get("visualInteractions", []) if i["type"] != "Default"]
+    if relationships:  # the legacy name; a section config `visualInteractions` is ignored
+        config["relationships"] = relationships
     if page.get("objects"):
         config["objects"] = page["objects"]
     containers = [convert_visual(v, f"{where}, visual {v['name']}") for v in sorted(visuals, key=lambda v: v["position"]["z"])]
@@ -205,6 +215,32 @@ def convert_page(page: dict, visuals: list[dict], ordinal: int) -> dict:
         "height": page["height"],
         "visualContainers": containers,
     }
+
+
+def convert_page_binding(page: dict) -> dict:
+    """A page's PBIR pageBinding as the legacy root `pods` entry bound to its section (a pageBinding in the section
+    config is ignored, and the page is then "not a valid drill-through destination")."""
+    binding = page["pageBinding"]
+    where = f"page {page['displayName']}"
+    if binding.get("referenceScope", "Default") != "Default":
+        raise Unsupported(f"{where}: pageBinding referenceScope {binding['referenceScope']!r}")
+    filters = {f["name"]: f for f in page.get("filterConfig", {}).get("filters", [])}
+    params = []
+    for p in binding.get("parameters", []):
+        entry = {"name": p["name"], "boundFilter": p["boundFilter"]}
+        field = p.get("fieldExpr") or filters.get(p["boundFilter"], {}).get("field")
+        if field:
+            entry["fieldExpr"] = field
+        if "asAggregation" in p:
+            entry["asAggregation"] = p["asAggregation"]
+        params.append(entry)
+    pod = {"name": binding["name"], "boundSection": page["name"],
+           "config": dump({"acceptsFilterContext": ACCEPTS_FILTER_CONTEXT[binding.get("acceptsFilterContext", "Default")]})}
+    if params:
+        pod["parameters"] = dump(params)
+    if POD_TYPE[binding.get("type", "Default")]:
+        pod["type"] = POD_TYPE[binding["type"]]
+    return pod
 
 
 # ---- report -------------------------------------------------------------------------------------------------------
@@ -233,12 +269,14 @@ def convert(pbip: Path, base_theme: Path = DEFAULT_BASE_THEME) -> tuple[list[tup
         raise Unsupported("bookmarks are not translated")
     report = read(definition / "report.json")
     order = read(definition / "pages" / "pages.json")["pageOrder"]
-    sections = []
+    sections, pods = [], []
     for i, name in enumerate(order):
         page_dir = definition / "pages" / name
         page = read(page_dir / "page.json")
         visuals = [read(p) for p in sorted(page_dir.glob("visuals/*/visual.json"))]
         sections.append(convert_page(page, visuals, i))
+        if page.get("pageBinding"):
+            pods.append(convert_page_binding(page))
 
     parts: dict[str, bytes] = {}
     registered, custom_theme, visual_packages = [], None, []
@@ -292,6 +330,8 @@ def convert(pbip: Path, base_theme: Path = DEFAULT_BASE_THEME) -> tuple[list[tup
     }
     layout = {"id": 0, "resourcePackages": resource_packages, "sections": sections, "config": dump(config),
               "layoutOptimization": 0}
+    if pods:
+        layout["pods"] = pods
     report_filters = report.get("filterConfig", {}).get("filters", [])
     if report_filters:  # the report-level filters, as the legacy layout's own `filters`
         layout["filters"] = dump(convert_filters(report_filters, "report.json"))

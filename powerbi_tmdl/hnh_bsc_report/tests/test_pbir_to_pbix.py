@@ -64,11 +64,36 @@ def test_press_ganey_shapes(tmp_path):
                        if '"queryRef":"Date.Date"' in c["config"])
     assert json.loads(date_slicer["filters"])[0]["howCreated"] == 1
     hidden = [s for s in layout["sections"] if json.loads(s["config"]).get("visibility") == 1]
-    assert len(hidden) == 2 and all(json.loads(s["config"])["pageBinding"]["type"] == "Drillthrough" for s in hidden)
+    assert len(hidden) == 2 and all(json.loads(s["config"])["type"] == 2 for s in hidden)  # Drillthrough page
+    assert {p["boundSection"] for p in layout["pods"]} == {s["name"] for s in hidden}
     assert all(json.loads(s["filters"])[0]["howCreated"] == 5 for s in hidden)
     participation = layout["sections"][1]
     assert participation["displayOption"] == 2  # FitToWidth
-    assert json.loads(participation["config"])["visualInteractions"][0]["type"] == 3  # NoFilter
+    assert json.loads(participation["config"])["relationships"][0]["type"] == 3  # NoFilter
+
+
+def test_scorecard_drillthrough_and_interactions_in_the_legacy_shape(tmp_path):
+    # As Desktop for Report Server reads the legacy layout (desktop.min.js, LayoutSerializer): the drill-through
+    # binding is a root `pods` entry bound to its section, with parameters and config as JSON strings, pod type
+    # Drillthrough = 1, section config type Drillthrough = 2; visual interactions are the section's `relationships`.
+    # A PBIR `pageBinding` or `visualInteractions` in the section config is ignored ("not a valid drill-through
+    # destination", the hospital chart not filtered), as on the server on 2026-11-04.
+    layout = pbir_to_pbix.write(SCORECARD, tmp_path / "r.pbix")
+    sections = {s["name"]: s for s in layout["sections"]}
+    for s in layout["sections"]:
+        cfg = json.loads(s["config"])
+        assert "pageBinding" not in cfg and "visualInteractions" not in cfg
+    pod = next(p for p in layout["pods"] if p["boundSection"] == "kpi_detail")
+    assert pod["type"] == 1
+    assert json.loads(pod["config"]) == {"acceptsFilterContext": 0}
+    [param] = json.loads(pod["parameters"])
+    assert param["boundFilter"] == "7431cc738d9ea1004850"
+    assert param["fieldExpr"] == {"Column": {"Expression": {"SourceRef": {"Entity": "BSC KPI"}}, "Property": "KPI Code"}}
+    assert json.loads(sections["kpi_detail"]["config"])["type"] == 2
+    relationships = json.loads(sections["financial"]["config"])["relationships"]
+    assert {"source": "b9fa694d2041eaeb8a7d", "target": "f5d5edb844ccd8462460", "type": 1} in relationships  # DataFilter
+    assert {"source": "f5d5edb844ccd8462460", "target": "b9fa694d2041eaeb8a7d", "type": 3} in relationships  # NoFilter
+    assert "type" not in json.loads(sections["financial"]["config"])
 
 
 def test_report_level_measures_are_refused(tmp_path):

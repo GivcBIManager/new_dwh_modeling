@@ -270,12 +270,12 @@ def test_interactions_name_visuals_of_the_page(tmp_path):
 
 
 def test_project_converts_with_the_interactions(project, tmp_path):
-    """The Report Server package (pbir_to_pbix.py) carries the pillar pages' interactions (legacy NoFilter 3,
-    DataFilter 1)."""
+    """The Report Server package (pbir_to_pbix.py) carries the pillar pages' interactions as the section's legacy
+    `relationships` (NoFilter 3, DataFilter 1)."""
     import pbir_to_pbix
     layout = pbir_to_pbix.write(project[1], tmp_path / "r.pbix")
     for s in layout["sections"]:
-        got = json.loads(s["config"]).get("visualInteractions")
+        got = json.loads(s["config"]).get("relationships")
         if s["name"] in PILLAR_PAGE_NAMES:
             assert [i["type"] for i in got] == [3, 3, 1]
             legacy = {"NoFilter": 3, "DataFilter": 1}
