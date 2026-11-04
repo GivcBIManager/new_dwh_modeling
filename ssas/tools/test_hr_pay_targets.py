@@ -60,3 +60,15 @@ def test_pay_check_comes_before_not_set():
         pay = body.index('"Requires pay access"')
         blank = min(i for i in (body.find('"Not set"'), body.find('"–"')) if i >= 0)
         assert pay < blank, name
+
+
+def test_readers_role_hides_pay_target_rows():
+    """User decision 2026-11-04: the hidden target and watch columns are readable through Excel or DAX, so the
+    HNH Readers role also filters the HR Targets rows of a pay KPI to readers with Can See Pay."""
+    role = (ROOT / "ssas" / "HNH_Analytics" / "roles" / "HNH Readers.tmdl").read_text(encoding="utf-8")
+    block = re.search(r"tablePermission 'HR Targets' =(.*?)(?=\n\ttablePermission |\Z)", role, re.S)
+    assert block, "HNH Readers has no row filter on 'HR Targets'"
+    expression = " ".join(block.group(1).split())
+    assert "RELATED ( 'HR KPI'[Needs Pay] ) = 0 ||" in expression
+    assert "'User Access'[Login Name] = USERPRINCIPALNAME ()" in expression
+    assert "'User Access'[Can See Pay] = 1" in expression

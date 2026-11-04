@@ -78,7 +78,7 @@ The filter bar on every page: Hospital (branch) and Month (default: the last clo
    - **Headcount & mix:** headcount and FTE trend; by hospital, HR department, job, grade, position, location; by nationality (Saudi / non-Saudi), gender, age band, tenure band, worker type, full/part time; contingent workers shown separately.
    - **Movements & turnover:** hires, leavers, voluntary and involuntary, rehires, transfers between hospitals, promotions and other changes (job, grade, position, location); turnover and voluntary turnover trend; leavers by action reason and by tenure band; new-hire leavers (left within 12 months).
    - **Payroll & overtime** (`Can See Pay`): payroll cost, gross pay, overtime amount and share, cost per FTE; by pay category, department, job; Oasis vs Fusion source and open vs closed payroll shown so a reader knows when a month is not final.
-   - **Absence & leave:** sick days and sick leave rate, absence days by category and type, by department; leave balance days and leave liability. The whole `Leave Balances` table is behind `Can See Pay` in `HNH Readers`, so both leave figures need pay access; the role is not changed (my call: no security change in this project).
+   - **Absence & leave:** sick days and sick leave rate, absence days by category and type, by department; leave balance days and leave liability. The whole `Leave Balances` table is behind `Can See Pay` in `HNH Readers`, so both leave figures need pay access; the role is not changed for them (my call; the one security change is the HR Targets row filter, see "Security").
    - **Recruitment:** requisitions approved and filled, openings, vacancy rate against budgeted FTE, time to fill, by hospital. Not by department: `Requisitions` has no department and budgeted FTE is per hospital and year (my call: no new source data).
    - **Productivity** (`Can See Pay`): doctors and nurses: visits per FTE, revenue per payroll SAR, payroll cost per visit; revenue per FTE, revenue per doctor, staff to bed, clinical to doctor.
 5. **Data quality.** See its section.
@@ -194,6 +194,7 @@ Where a `warn_*` test already holds the logic, the data quality model and the te
 
 - Branch row security (`User Access[Branch Key]`) applies to every new table that has a branch, including data quality records.
 - Pay pages and blocks follow the existing `Can See Pay` rule; a user without it sees the page with a "requires pay access" message, not an error.
+- **HR Targets row filter (2026-11-04, user decision):** a pay KPI's target and watch value are pay levels, and hidden columns can still be read through Excel or DAX, so `HNH Readers` filters the `HR Targets` rows whose `'HR KPI'[Needs Pay]` is 1 to readers with `Can See Pay`. This is the one security change of the project.
 - **Employee names:** Fusion names are in `Employee Details`, which requires `Can See Pay`; Oasis `Staff Name` is visible to every reader (P15). The report adds no new exposure: the Employee list shows Fusion names only to pay users and otherwise worker number and Oasis staff ID; the data quality page shows the Oasis staff name only where the model shows it today (my call).
 - Security tests as a non-admin `HNH_BI_Users` member (an SSAS admin bypasses row filters).
 

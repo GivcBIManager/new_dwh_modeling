@@ -56,6 +56,16 @@ role 'HNH Readers'
 				)
 			)
 
+	tablePermission 'HR Targets' =
+			RELATED ( 'HR KPI'[Needs Pay] ) = 0
+				|| NOT ISEMPTY (
+					CALCULATETABLE (
+						'User Access',
+						'User Access'[Login Name] = USERPRINCIPALNAME (),
+						'User Access'[Can See Pay] = 1
+					)
+				)
+
 	tablePermission 'Patient Details' =
 			NOT ISEMPTY (
 				CALCULATETABLE (

@@ -123,6 +123,14 @@ try {
                     $hrQuery = 'EVALUATE ROW("bad", COUNTROWS(FILTER({0}, CALCULATE(NOT ({1}), ''Date''[Year] = 2026))) + 0, "kpis", COUNTROWS({0}))' -f $payKpis, $want
                     $hrResult = (Dax $hrQuery $login).Rows[0]
                     Report "$($p.Name) HR pay targets" (([int64]$hrResult[0] -eq 0) -and ([int64]$hrResult[1] -gt 0)) "$($hrResult[0]) of $($hrResult[1]) pay KPIs show a target, watch or variance against can_see_pay: $pay"
+                    # HNH Readers row filter (user decision 2026-11-04): the HR Targets rows of a pay KPI need Can See Pay,
+                    # so a no-pay reader can't read the hidden target and watch columns through Excel or DAX either.
+                    $payTargetRows = Get-HnhScalar (Dax 'EVALUATE ROW("n", COUNTROWS(FILTER(''HR Targets'', RELATED(''HR KPI''[Needs Pay]) = 1)) + 0)' $login)
+                    $payTargetExpected = 0
+                    if ($pay -and $branches.Count -gt 0) {
+                        $payTargetExpected = Get-HnhScalar (Sql ('select count() from gold.ssas_fact_hr_target_monthly where branch_key in ({0}) and hr_kpi_key in (select hr_kpi_key from gold.ssas_dim_hr_kpi where needs_pay = 1)' -f ($branches -join ',')))
+                    }
+                    Report "$($p.Name) HR pay target rows" ($payTargetRows -eq $payTargetExpected) "pay KPI target rows visible: $payTargetRows, expected $payTargetExpected (can_see_pay: $pay)"
                 }
 
                 if ($specialties.Count -eq 0) {
@@ -131,6 +139,9 @@ try {
                         try {
                             $view = Get-HnhAnnotation $f 'hnh_view'
                             if ($branches.Count -eq 0 -or (($payTables -contains $f.Name) -and -not $pay)) { $expected = 0 }
+                            elseif ($f.Name -eq 'HR Targets' -and -not $pay) {
+                                $expected = Get-HnhScalar (Sql ('select count() from gold.{0} where branch_key in ({1}) and hr_kpi_key in (select hr_kpi_key from gold.ssas_dim_hr_kpi where needs_pay = 0)' -f $view, ($branches -join ',')))
+                            }
                             else { $expected = Get-HnhScalar (Sql ('select count() from gold.{0} where branch_key in ({1})' -f $view, ($branches -join ','))) }
                             $got = CountRows $f.Name $login
                             Report "$($p.Name) rows $($f.Name)" ($got -eq $expected) "sees $got, expected $expected"
