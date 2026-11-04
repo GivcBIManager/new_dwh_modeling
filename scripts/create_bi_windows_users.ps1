@@ -66,9 +66,15 @@ $rows = @(Import-Csv -Path $CsvPath -Encoding UTF8)
 $problems = @()
 # A domain account is written as its user principal name (<name>@hnhriyadh.com): it gets no local account or password,
 # only the group memberships (HNH_BI_Users is the member of the SSAS role HNH Readers).
-function Test-DomainLogin([string]$Login) { return $Login -match '^[^\\@\s]+@[^\\@\s]+$' }
+# A UPN may hold inner spaces (RCM Manager@HnhRiyadh.com). The account is resolved to its SID here, so an unknown login or
+# an unreachable trusted domain stops the script before any change, and memberships are compared by SID: the same
+# name in two domains (opd@HnhRiyadh.com, opd@HnhGhirnatah.com) is two members.
+function Test-DomainLogin([string]$Login) { return $Login -match '^[^\\@\s]([^\\@]*[^\\@\s])?@[^\\@\s]+$' }
+$domainSids = @{}
 foreach ($r in $rows) {
     if (Test-DomainLogin $r.login_name) {
+        try { $domainSids[$r.login_name] = (New-Object System.Security.Principal.NTAccount $r.login_name).Translate([System.Security.Principal.SecurityIdentifier]) }
+        catch { $problems += "$($r.login_name): not resolved in the domain ($($_.Exception.InnerException.Message))" }
         if (-not $r.dep.Trim()) { $problems += "$($r.login_name): no dep" }
         if ($r.branch_key -and -not $Branches.Contains($r.branch_key)) { $problems += "$($r.login_name): branch_key '$($r.branch_key)' is not 1-8" }
         continue
@@ -98,8 +104,8 @@ foreach ($g in $groups) {
 foreach ($r in $rows) {
     $domainLogin = Test-DomainLogin $r.login_name
     if ($domainLogin) {
-        # no local account; the memberships below use the UPN, which Add-LocalGroupMember resolves through the domain
-        $name = $r.login_name; $member = $r.login_name; $user = $null; $builtIn = $false
+        # no local account; the memberships below use the account's SID
+        $name = $r.login_name; $member = $domainSids[$r.login_name]; $user = $null; $builtIn = $false
     } else {
         $name = $r.login_name.Split('\')[1]; $member = "$machine\$name"
         $user = Get-LocalUser -Name $name -ErrorAction SilentlyContinue
@@ -127,11 +133,11 @@ foreach ($r in $rows) {
     foreach ($g in $wanted) {
         $isMember = $false
         if (-not ($newGroups -contains $g)) {
-            $isMember = @(Get-LocalGroupMember -Group $g | Where-Object { $_.Name -eq $member -or ($domainLogin -and $_.Name -like ('*\' + $member.Split('@')[0])) }).Count -gt 0
+            $isMember = @(Get-LocalGroupMember -Group $g | Where-Object { if ($domainLogin) { $_.SID -eq $member } else { $_.Name -eq $member } }).Count -gt 0
         }
         if (-not $isMember) {
             $joined++
-            if (-not $DryRun) { Add-LocalGroupMember -Group $g -Member $member }
+            if (-not $DryRun) { Add-LocalGroupMember -Group $g -Member $(if ($domainLogin) { $member.Value } else { $member }) }
         }
     }
 }

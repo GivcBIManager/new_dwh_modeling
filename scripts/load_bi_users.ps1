@@ -20,9 +20,10 @@ $machine = $env:COMPUTERNAME
 $rows = @(Import-Csv -Path $CsvPath -Encoding UTF8)
 $problems = @()
 # A login is a local account, MACHINE\<name> (create_bi_windows_users.ps1 creates it), or a domain account written as
-# its user principal name, <name>@hnhriyadh.com: the HNH Readers role compares USERPRINCIPALNAME(), which is the UPN of
-# a domain account. The server joined HnhRiyadh.com in October 2026; a domain reader gets no local account.
-$upn = '^[^\\@\s]+@[^\\@\s]+$'
+# its user principal name, <name>@<domain>: the HNH Readers role compares USERPRINCIPALNAME(), which is the UPN of
+# a domain account. The server joined HnhRiyadh.com in October 2026 (it trusts the branch domains); a domain reader
+# gets no local account. A UPN may hold inner spaces (RCM Manager@HnhRiyadh.com).
+$upn = '^[^\\@\s]([^\\@]*[^\\@\s])?@[^\\@\s]+$'
 foreach ($r in $rows) {
     if ($r.login_name -notmatch ('^' + [regex]::Escape($machine) + '\\[^\\]+$') -and $r.login_name -notmatch $upn) {
         $problems += "$($r.login_name): login must be $machine\<name> or <name>@<domain> (the UPN of a domain account)"
