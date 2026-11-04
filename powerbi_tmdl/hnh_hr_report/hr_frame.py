@@ -6,7 +6,9 @@ model, pbir; spec docs/superpowers/specs/2026-11-02-hr-dashboard-design.md, "Pag
     filters()                Branch and Month dropdowns, synced across pages
     branches()               the report's branches: the eight hospitals and Head Office (a page filter)
     sub_tabs(current)        the six detail pages as a second row of tabs in the filter bar
-    kpi_tile(code, x, y, w, h)  a KPI's actual, target and status on a white panel
+    kpi_tile(code, x, y, w, h)  a KPI's actual, target and status on a white panel, with the KPI's icon
+    icon(name, x, y, size)   one of icons/hr_icon_<name>.svg (registered with the report) as an image visual
+    line_look(), bar_look(), column_look()  chart format: every data label (and line marker), no value axis
     seed_kpis(), home_tile_codes()  the KPI list as scripts/hr_config/hr_config_seed.sql inserts it
 
 The geometry, colours, buttons and the theme are the BSC's; nothing is copied. Labels here are this repo's (not
@@ -59,7 +61,9 @@ TABS: list[tuple[str, str]] = [("home", "Home"), ("story", "Story"), ("scorecard
 HELP: list[tuple[str, str, Rect]] = [("guide", "How to use", frame.HELP_BUTTONS[0][2]),
                                      ("guide_definitions", "Definitions", frame.HELP_BUTTONS[1][2])]
 HR_FRAME = frame.FrameSpec("Workforce", "Hayat Healthcare", TABS, HELP, logo=LOGO.name)
-HR_REPORT = ReportSpec("HNH Workforce", "HR Dashboard", THEME, LOGO, custom_visual=False)
+ICON_DIR = HERE / "icons"
+ICON_FILES = tuple(sorted(ICON_DIR.glob("hr_icon_*.svg")))
+HR_REPORT = ReportSpec("HNH Workforce", "HR Dashboard", THEME, LOGO, custom_visual=False, images=ICON_FILES)
 
 # The detail pages under the Details tab: (page name, display name, sub-tab label).
 DETAIL_PAGES: list[tuple[str, str, str]] = [
@@ -308,6 +312,64 @@ def kpi_label(code: str, path: Path = SEED) -> str:
     return row["short_label"]
 
 
+# ---- icons --------------------------------------------------------------------------------------------------------
+# Decorative line icons on a light-blue disc (icons/hr_icon_<name>.svg, 48 x 48), registered with the report and drawn
+# by image visuals over the cards. An icon is drawn after the card it decorates (z order).
+ICON_SIZE = 44
+
+# A KPI's icon on its tile (Home, Story)
+KPI_ICONS = {
+    "HR_HEADCOUNT": "users", "HR_CONTINGENT_SHARE": "badge", "HR_SAUDIZATION": "flag", "HR_FEMALE_SHARE": "female",
+    "HR_TURNOVER": "swap", "HR_NEW_HIRE_TURNOVER": "user_minus", "HR_STAFF_COST_PER_FTE": "coins",
+    "HR_REVENUE_PER_FTE": "banknote", "HR_OVERTIME_SHARE": "clock", "HR_SICK_LEAVE_RATE": "pulse",
+    "HR_LEAVE_LIABILITY": "wallet", "HR_VACANCY_RATE": "target", "HR_TIME_TO_FILL": "hourglass",
+    "HR_STAFF_TO_BED": "bed", "HR_CLINICAL_TO_DOCTOR": "stethoscope", "HR_REVENUE_PER_DOCTOR": "stethoscope",
+    "HR_VISITS_PER_FTE": "chart", "HR_REVENUE_PER_PAYROLL_SAR": "trend_up",
+}
+
+
+def icon(name: str, x: float, y: float, size: float = ICON_SIZE) -> Visual:
+    """icons/hr_icon_<name>.svg as an image visual, `size` px square."""
+    file = ICON_DIR / f"hr_icon_{name}.svg"
+    if file not in ICON_FILES:
+        raise ValueError(f"no icon {name!r} in {ICON_DIR}")
+    return frame.image(x, y, size, size, logo=file.name)
+
+
+# ---- chart format -------------------------------------------------------------------------------------------------
+# User request 2026-11-04: every data label and line marker shown; no value axis (the Y axis of line and column
+# charts, the X axis of bar charts) and no gridlines, since the labels carry the values; no axis titles (the chart
+# title names both). Object and property names as Desktop 2.158's cartesian visuals read them (labels.show,
+# markers.show, valueAxis.show / gridlineShow, categoryAxis.showAxisTitle / maxMarginFactor).
+
+def _axes_off() -> dict:
+    return {"valueAxis": [{"properties": {"show": _lit(False), "gridlineShow": _lit(False),
+                                          "showAxisTitle": _lit(False)}}],
+            "categoryAxis": [{"properties": {"showAxisTitle": _lit(False), "gridlineShow": _lit(False)}}],
+            "labels": [{"properties": {"show": _lit(True)}}]}
+
+
+def line_look() -> dict:
+    """A line chart: labels on every point, markers on, no value axis."""
+    return {**_axes_off(), "markers": [{"properties": {"show": _lit(True)}}],
+            "lineStyles": [{"properties": {"showMarker": _lit(True)}}]}
+
+
+BAR_LABEL_MARGIN = 40  # % of a bar chart's width its category labels may take (Desktop's default 25 cut names)
+
+
+def bar_look() -> dict:
+    """A bar chart: labels on every bar, no value (X) axis; category labels may take BAR_LABEL_MARGIN % of the width."""
+    out = _axes_off()
+    out["categoryAxis"][0]["properties"]["maxMarginFactor"] = {"expr": {"Literal": {"Value": f"{BAR_LABEL_MARGIN}L"}}}
+    return out
+
+
+def column_look() -> dict:
+    """A column or waterfall chart: labels on every column, no value (Y) axis."""
+    return _axes_off()
+
+
 # ---- KPI tile -----------------------------------------------------------------------------------------------------
 
 KPI_CODE = col("HR KPI", "KPI Code")
@@ -391,7 +453,10 @@ def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
                     labels={HR_TARGET_TEXT: "Target"})
     status = Visual("card", ix, y + pad + actual_h + target_h, iw, status_h, roles={"Values": [HR_STATUS_TEXT]},
                     filters=list(only), props=card_look(14, measure_colour(HR_STATUS_COLOUR.name)))
-    return [white_panel(x, y, w, h), actual, target, status]
+    out = [white_panel(x, y, w, h), actual, target, status]
+    if code in KPI_ICONS:  # top right of the panel, beside the label
+        out.append(icon(KPI_ICONS[code], x + w - pad - ICON_SIZE, y + pad))
+    return out
 
 
 # ---- notices in a chart's title band (ruling R31) ----------------------------------------------------------------
@@ -441,8 +506,9 @@ def nav_button(x: float, y: float, w: float, h: float, page_name: str, label: st
                   props={**button_props(_navigate(page_name), label, "outline"), **no_container()})
 
 
-__all__ = ["BRANCH_KEYS", "BSC_DIR", "DETAIL_PAGES", "HEAD_OFFICE", "HELP", "HR_FRAME", "HR_REPORT", "MUTED", "NAVY",
-           "NOTICE_PT", "SEED", "TABS", "TITLE_BAND_H", "WHITE", "branches", "card_look", "filters", "fixed_table",
-           "home_tile_codes", "kpi_label", "kpi_tile", "lock_branch_filters", "lock_branch_filters_on_disk",
-           "measure_colour", "nav_button", "notice_text_width", "page_frame", "search_box", "seed_kpis", "small_title",
-           "sub_tabs", "title_notice", "title_text_width", "white_panel"]
+__all__ = ["BRANCH_KEYS", "BSC_DIR", "DETAIL_PAGES", "HEAD_OFFICE", "HELP", "HR_FRAME", "HR_REPORT", "ICON_FILES",
+           "ICON_SIZE", "KPI_ICONS", "MUTED", "NAVY", "NOTICE_PT", "SEED", "TABS", "TITLE_BAND_H", "WHITE", "bar_look",
+           "branches", "card_look", "column_look", "filters", "fixed_table", "home_tile_codes", "icon", "kpi_label",
+           "kpi_tile", "line_look", "lock_branch_filters", "lock_branch_filters_on_disk", "measure_colour",
+           "nav_button", "notice_text_width", "page_frame", "search_box", "seed_kpis", "small_title", "sub_tabs",
+           "title_notice", "title_text_width", "white_panel"]

@@ -8,12 +8,12 @@
   - `extra` appends select expressions; `joins` follows `from <model> as t`.
   A name in drop/decimals/floats/int_flags that is not a column fails compilation (typo guard).
 #}
-{% macro hnh_ssas_view(model_name, drop=[], decimals=[], floats=[], int_flags=[], extra=[], joins='') -%}
+{% macro hnh_ssas_view(model_name, drop=[], decimals=[], floats=[], int_flags=[], extra=[], joins='', titles=[]) -%}
 {%- set relation = ref(model_name) -%}
 {%- if execute -%}
     {%- set columns = adapter.get_columns_in_relation(relation) -%}
     {%- set names = columns | map(attribute='name') | list -%}
-    {%- for listed in drop + decimals + floats + int_flags -%}
+    {%- for listed in drop + decimals + floats + int_flags + titles -%}
         {%- if listed not in names -%}
             {{ exceptions.raise_compiler_error('hnh_ssas_view(' ~ model_name ~ '): unknown column ' ~ listed) }}
         {%- endif -%}
@@ -21,7 +21,10 @@
     {%- set expressions = [] -%}
     {%- for c in columns -%}
         {%- if c.name not in drop and not c.name.startswith('legacy_') and c.name != '_loaded_at' -%}
-            {%- do expressions.append(hnh_ssas_column(model_name, c.name, c.data_type, decimals, floats, int_flags) ~ ' as ' ~ c.name) -%}
+            {%- set expression = hnh_ssas_column(model_name, c.name, c.data_type, decimals, floats, int_flags) -%}
+            {#- `titles`: a label this repo defines in the mart ('oasis'), title-cased for the report only (the mart and its tests keep it) -#}
+            {%- if c.name in titles -%}{%- set expression = hnh_title(expression) -%}{%- endif -%}
+            {%- do expressions.append(expression ~ ' as ' ~ c.name) -%}
         {%- endif -%}
     {%- endfor %}
 select

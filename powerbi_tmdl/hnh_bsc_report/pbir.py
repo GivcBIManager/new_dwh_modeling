@@ -42,12 +42,14 @@ SYNC_PREFIX = "bsc "
 class ReportSpec:
     """What differs between reports built by this generator: the project / report name (folder and file names, the
     `displayName`), the perspective of the live connection, the custom theme, the logo, and whether the report carries
-    the HNH custom visual (False: no `CustomVisuals/` folder and no .pbiviz is looked for)."""
+    the HNH custom visual (False: no `CustomVisuals/` folder and no .pbiviz is looked for). `images`: more images
+    registered beside the logo (RegisteredResources, by file name), for image visuals such as card icons."""
     name: str
     perspective: str
     theme: Path
     logo: Path
     custom_visual: bool
+    images: tuple[Path, ...] = ()
 
 
 BSC_REPORT = ReportSpec(REPORT_NAME, PERSPECTIVE, THEME, LOGO, True)
@@ -70,6 +72,7 @@ SCHEMAS = {  # every URL as the handover project has it, except modelReference (
 VISUAL_TYPES = {
     "card": "card", "multiRowCard": "multiRowCard", "table": "tableEx", "matrix": "pivotTable",
     "barChart": "clusteredBarChart", "lineChart": "lineChart", "slicerDropdown": "slicer",
+    "stackedColumnChart": "columnChart", "waterfallChart": "waterfallChart",
     "slicerDateRange": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
     "buttonDrill": "actionButton", "hnhVisual": None,
     "panel": "textbox",  # frame.panel: a text box without text, filled by its container background
@@ -202,7 +205,8 @@ def report_json(visual_package: dict | None, report_filters: list[Filter] = (),
                         "type": "BaseTheme"}]},
             {"name": "RegisteredResources", "type": "RegisteredResources",
              "items": [{"name": report.theme.name, "path": report.theme.name, "type": "CustomTheme"},
-                       {"name": report.logo.name, "path": report.logo.name, "type": "Image"}]},
+                       {"name": report.logo.name, "path": report.logo.name, "type": "Image"}]
+                      + [{"name": i.name, "path": i.name, "type": "Image"} for i in report.images]},
         ] + ([visual_package] if report.custom_visual else []),
         "settings": {
             "useStylableVisualContainerHeader": True, "exportDataMode": "AllowSummarized",
@@ -451,6 +455,8 @@ def project_files(pages: list[Page], database: str, server: str = SERVER, perspe
     files[f"{rep}/StaticResources/SharedResources/BaseThemes/{BASE_THEME_NAME}.json"] = BASE_THEME.read_bytes()
     files[f"{rep}/StaticResources/RegisteredResources/{report.theme.name}"] = report.theme.read_bytes()
     files[f"{rep}/StaticResources/RegisteredResources/{report.logo.name}"] = report.logo.read_bytes()
+    for i in report.images:
+        files[f"{rep}/StaticResources/RegisteredResources/{i.name}"] = i.read_bytes()
     files.update({f"{rep}/{k}": b for k, b in cv_files.items()})
     return files
 

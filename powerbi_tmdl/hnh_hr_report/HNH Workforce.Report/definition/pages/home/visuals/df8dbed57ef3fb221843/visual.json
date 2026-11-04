@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "df8dbed57ef3fb221843",
   "position": {
-    "x": 1286.0,
+    "x": 30.0,
     "y": 850,
     "z": 57000,
     "height": 100,
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR Vacancy Rate Text"
+                  "Property": "Headcount"
                 }
               },
-              "queryRef": "_Measures.HR Vacancy Rate Text",
-              "nativeQueryRef": "HR Vacancy Rate Text",
-              "displayName": "Vacancy rate"
+              "queryRef": "_Measures.Headcount",
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -105,7 +105,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Recruitment ›'"
+                  "Value": "'Headcount & mix ›'"
                 }
               }
             }

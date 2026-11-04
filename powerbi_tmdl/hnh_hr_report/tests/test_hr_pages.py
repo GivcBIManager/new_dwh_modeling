@@ -224,7 +224,11 @@ def test_slicers_sync_across_pages():
 
 def test_kpi_tile():
     vs = kpi_tile("HR_TURNOVER", 30, 300, 447, 236)
-    panel, cards = vs[0], vs[1:]
+    panel, cards, decor = vs[0], vs[1:4], vs[4:]
+    # the KPI's icon, top right on the panel, drawn after the cards (user request 2026-11-04)
+    assert [v.sample for v in decor] == ["image"]
+    assert panel.x + panel.w / 2 < decor[0].x and decor[0].x + decor[0].w <= panel.x + panel.w
+    assert panel.y <= decor[0].y and decor[0].y + decor[0].h <= panel.y + panel.h
     assert panel.sample == "panel" and (panel.x, panel.y, panel.w, panel.h) == (30, 300, 447, 236)
     assert [c.sample for c in cards] == ["card"] * 3
     assert [c.roles["Values"] for c in cards] == [[meas("HR KPI Actual Text")], [meas("HR KPI Target Text")],
@@ -740,11 +744,12 @@ def _measures(v):
 
 
 NOTES = {PAY_NOTICE, meas("HR Vacancy Note")}  # text cards over a visual ("" when there is nothing to say)
+CHARTS = ("lineChart", "barChart", "stackedColumnChart", "waterfallChart")
 
 
 def _data_visuals(page):
     """Cards, charts and tables that show a measure other than a note (the pay notice, the vacancy note)."""
-    return [v for v in page.visuals if v.sample in ("card", "lineChart", "barChart", "table", "matrix")
+    return [v for v in page.visuals if v.sample in ("card", "table", "matrix") + CHARTS
             and any(m not in NOTES for m in _measures(v))]
 
 
@@ -777,7 +782,7 @@ def test_chart_notices_sit_in_the_title_band():
     from hr_frame import NOTICE_PT, TITLE_BAND_H, notice_text_width
     seen = 0
     for page in PAGES:
-        titled = [v for v in page.visuals if v.sample in ("lineChart", "barChart", "table", "matrix")]
+        titled = [v for v in page.visuals if v.sample in CHARTS + ("table", "matrix")]
         cards = [v for v in page.visuals if v.sample == "card" and not set(m.name for m in _measures(v)) & NOTICE_MEASURES]
         for n in (v for v in page.visuals if v.sample == "card" and {m.name for m in _measures(v)} & NOTICE_MEASURES):
             under = [c for c in titled if _overlaps(n, c)]
@@ -811,21 +816,100 @@ def test_detail_pages_have_sub_tabs():
             assert v in page.visuals, name
 
 
-def test_detail_pages_cards_then_two_by_two_grid():
-    """One or two rows of cards (4 or 5 in the first), then a 2 x 2 grid right under them: filling the screen, or
-    at least 300 px high."""
+def test_detail_pages_cards_then_charts_that_fit():
+    """Each section: one or two rows of 3 to 5 cards, then its charts below them. User request 2026-11-04: a bar chart
+    is as high as its bars and labels need (chart_height: the axis's count of bars, or the top 15), line, column and
+    waterfall charts LINE_H; no two data visuals overlap and every one is on the page."""
+    from pages_detail import AXIS_COUNTS, BAR_CHROME, BAR_LEGEND_H, BAR_MIN_H, BAR_SERIES_PX, LINE_H, TOP
     for page in _detail_pages():
-        cards = [v for v in _data_visuals(page) if v.sample == "card"]
+        data = _data_visuals(page)
+        cards = [v for v in data if v.sample == "card"]
         rows = sorted({c.y for c in cards})
-        assert len(rows) in (1, 2), page.name
-        assert 4 <= len([c for c in cards if c.y == rows[0]]) <= 5, page.name
-        assert all(1 <= len([c for c in cards if c.y == y]) <= 5 for y in rows), page.name
-        cards_end = max(c.y + c.h for c in cards)
-        charts = [v for v in page.visuals if v.sample in ("lineChart", "barChart", "table") and v.y > cards_end]
-        first = sorted(charts, key=lambda v: (v.y, v.x))[:4]
-        assert len({v.y for v in first}) == 2 and len({v.x for v in first}) == 2, page.name
-        assert min(v.y for v in first) - cards_end <= 24, page.name
-        assert min(v.h for v in first) >= 300 or max(v.y + v.h for v in first) == 1056, page.name
+        assert all(3 <= len([c for c in cards if c.y == y]) <= 5 or y != rows[0] for y in rows), page.name
+        for i, a in enumerate(data):
+            assert a.y + a.h <= page.height, (page.name, a.title)
+            for b in data[i + 1:]:
+                assert not _overlaps(a, b), (page.name, a.title, b.title)
+        for v in data:
+            if v.sample == "barChart":
+                k = len(v.roles["Y"])
+                by = v.roles["Category"][0]
+                n = TOP if v.top_n else AXIS_COUNTS.get(by)
+                if n is not None:
+                    want = max(BAR_MIN_H, BAR_CHROME + (BAR_LEGEND_H if k > 1 else 0) + n * (8 + BAR_SERIES_PX * k))
+                    assert v.h == want, (page.name, v.title, v.h, want)
+            elif v.sample in ("lineChart", "stackedColumnChart", "waterfallChart"):
+                assert v.h == LINE_H, (page.name, v.title)
+
+
+def test_chart_format_labels_markers_no_value_axis():
+    """User request 2026-11-04: every chart shows its data labels (and a line chart its markers) and no value axis or
+    gridlines (the Y axis of line and column charts, the X axis of bar charts); a bar chart's category labels may take
+    40 % of its width."""
+    seen = set()
+    for page in PAGES:
+        for v in page.visuals:
+            if v.sample not in CHARTS:
+                continue
+            seen.add(v.sample)
+            assert lit(v.props["labels"][0]["properties"]["show"]) == "true", (page.name, v.title)
+            axis = v.props["valueAxis"][0]["properties"]
+            assert lit(axis["show"]) == "false" and lit(axis["gridlineShow"]) == "false", (page.name, v.title)
+            if v.sample == "lineChart":
+                assert lit(v.props["markers"][0]["properties"]["show"]) == "true", (page.name, v.title)
+            if v.sample == "barChart":
+                margin = v.props["categoryAxis"][0]["properties"]["maxMarginFactor"]
+                assert margin == {"expr": {"Literal": {"Value": "40L"}}}, (page.name, v.title)
+    assert seen == set(CHARTS)
+
+
+def test_cards_carry_icons():
+    """User request 2026-11-04: the cards have decorative icons (icons/hr_icon_*.svg, registered with the report): every
+    KPI tile, every detail-page card, the Home area cards and the data quality cards; each icon is drawn after the
+    card it sits on and lies inside it."""
+    from hr_frame import ICON_FILES
+    registered = {i.name for i in HR_REPORT.images}
+    assert registered == {f.name for f in ICON_FILES} and len(registered) >= 20
+    report = pbir.report_json(None, report=HR_REPORT)
+    items = {i["name"] for pkg in report["resourcePackages"] if pkg["name"] == "RegisteredResources"
+             for i in pkg["items"] if i["type"] == "Image"}
+    assert registered <= items
+    for name in ["home", "story", "data_quality"] + DETAIL_NAMES:
+        page = _page(name)
+        images = [v for v in page.visuals if v.sample == "image" and v.w < 100]
+        cards = [v for v in _data_visuals(page) if v.sample == "card"]
+        if name in DETAIL_NAMES:
+            assert len(images) == len(cards), name
+        assert images, name
+        for im in images:
+            host = [c for c in page.visuals if c.sample in ("card", "panel") and c.x <= im.x and im.x + im.w <= c.x + c.w
+                    and c.y <= im.y and im.y + im.h <= c.y + c.h]
+            assert host and _index(page, im) > min(_index(page, c) for c in host), (name, im)
+            file = im.props["image"][0]["properties"]["sourceFile"]["image"]["name"]
+            assert lit(file).strip("'") in registered, (name, file)
+
+
+def test_payroll_page_separates_gross_pay_and_payroll_cost():
+    """User request 2026-11-04: Payroll has two sections, gross pay (what employees are paid) and payroll cost (what the
+    employer pays), each with its own cards and breakdowns, and the step between them: a waterfall of payroll cost by
+    pay group (cost categories only) and gross pay plus employer charges stacked by month."""
+    page = _page("payroll")
+    headings = [v for v in page.visuals if v.sample == "textbox" and v.y > 162]
+    texts = [v.props["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]["value"] for v in headings]
+    assert texts == ["Gross pay: what employees are paid", "Payroll cost: what the employer pays"]
+    split = headings[1].y
+    data = _data_visuals(page)
+    gross = {m.name for v in data if v.y < split for m in _measures(v)}
+    cost = {m.name for v in data if v.y > split for m in _measures(v)}
+    assert {"Gross Pay", "Overtime Share %", "HR Open Payroll Text"} <= gross and "Payroll Cost" not in gross
+    assert {"Payroll Cost", "Employer Charges", "Employer Charges Share %", "Payroll Cost per FTE"} <= cost
+    fall = next(v for v in data if v.sample == "waterfallChart")
+    assert fall.y > split and fall.roles["Category"] == [col("Pay Category", "Pay Group")]
+    assert _flt(fall) == [(col("Pay Category", "Is Cost"), "eq", ["Yes"])]
+    stack = next(v for v in data if v.sample == "stackedColumnChart")
+    assert stack.y > split and [m.name for m in stack.roles["Y"]] == ["Gross Pay", "Employer Charges"]
+    open_card = next(v for v in data if v.sample == "card" and meas("HR Open Payroll Text") in _measures(v))
+    assert open_card.labels[meas("HR Open Payroll Text")] == "Gross pay in open payroll"  # a text: never "(Blank)"
 
 
 def test_tall_pages_fit_width_and_scroll():
@@ -874,20 +958,20 @@ def test_detail_movements_recruitment_absence_detail():
 
 
 def test_detail_cards_follow_month_and_trends_show_twelve_closed_months():
-    """Cards follow the selected month; each line chart is a 12-month trend that ignores the Month slicer (Story's
-    mechanism); every other data visual follows it."""
+    """Cards follow the selected month; each line chart (and stacked column chart) is a 12-month trend that ignores
+    the Month slicer (Story's mechanism); every other data visual follows it."""
     from model import interaction_indexes
     for page in _detail_pages():
         month = _index(page, _month_slicer(page))
         no_filter = {t for s, t, k in interaction_indexes(page) if s == month and k == "NoFilter"}
-        lines = [v for v in page.visuals if v.sample == "lineChart"]
+        lines = [v for v in page.visuals if v.sample in ("lineChart", "stackedColumnChart")]
         assert lines, page.name
         for v in lines:
             assert v.roles["Category"] == [col("Date", "Year Month Name")] and v.sort_dir == "asc"
             assert (col("Date", "Month Offset"), "in", list(range(1, 13))) in _flt(v), page.name
             assert _index(page, v) in no_filter, page.name
         for v in _data_visuals(page):
-            if v.sample != "lineChart":
+            if v.sample not in ("lineChart", "stackedColumnChart"):
                 assert _index(page, v) not in no_filter, (page.name, v.title)
 
 

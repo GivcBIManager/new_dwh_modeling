@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "1556f686a414af68ce78",
   "position": {
-    "x": 783.6,
-    "y": 276,
+    "x": 1286.0,
+    "y": 344.0,
     "z": 25000,
     "height": 110,
-    "width": 352.8,
+    "width": 604.0,
     "tabOrder": 25000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Overtime Share %"
+                  "Property": "HR Open Payroll Text"
                 }
               },
-              "queryRef": "_Measures.Overtime Share %",
-              "nativeQueryRef": "Overtime Share %",
-              "displayName": "Overtime share of gross pay"
+              "queryRef": "_Measures.HR Open Payroll Text",
+              "nativeQueryRef": "HR Open Payroll Text",
+              "displayName": "Gross pay in open payroll"
             }
           ]
         }
@@ -119,7 +119,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Overtime Share %"
+            "Property": "HR Open Payroll Text"
           }
         },
         "type": "Advanced",
@@ -146,7 +146,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Overtime Share %"
+                          "Property": "HR Open Payroll Text"
                         }
                       },
                       "Right": {

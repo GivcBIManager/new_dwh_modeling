@@ -3,9 +3,9 @@
   "name": "ac36a17c00ef00d431c0",
   "position": {
     "x": 988.0,
-    "y": 502,
+    "y": 346,
     "z": 28000,
-    "height": 48,
+    "height": 100,
     "width": 415.0,
     "tabOrder": 28000
   },
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR KPI Status Text"
+                  "Property": "HR KPI Actual Text"
                 }
               },
-              "queryRef": "_Measures.HR KPI Status Text",
-              "nativeQueryRef": "HR KPI Status Text"
+              "queryRef": "_Measures.HR KPI Actual Text",
+              "nativeQueryRef": "HR KPI Actual Text"
             }
           ]
         }
@@ -40,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "14D"
+                  "Value": "28D"
                 }
               }
             },
@@ -48,13 +48,8 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "HR KPI Status Colour"
+                    "Literal": {
+                      "Value": "'#0A1E32'"
                     }
                   }
                 }
@@ -84,7 +79,32 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Turnover'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
                 }
               }
             }

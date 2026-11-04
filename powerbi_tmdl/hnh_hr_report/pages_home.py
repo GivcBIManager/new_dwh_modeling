@@ -12,7 +12,7 @@ figure, the data quality strip included, counts Head Office (100) for those who 
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _colour, _lit
-from hr_frame import (DETAIL_PAGES, branches, bsc, card_look, filters, home_tile_codes, kpi_tile, nav_button,
+from hr_frame import (DETAIL_PAGES, branches, bsc, card_look, filters, home_tile_codes, icon, kpi_tile, nav_button,
                       page_frame, white_panel)
 from model import Page, Visual, meas
 
@@ -38,6 +38,9 @@ AREA_FIGURES = {
     "recruitment": ("HR Vacancy Rate Text", "Vacancy rate"),  # says why there is none (no budgeted FTE)
     "productivity": ("HR Visits per FTE Text", "Visits per FTE"),
 }
+AREA_ICONS = {"headcount": "users", "movements": "swap", "payroll": "coins", "absence": "calendar",
+              "recruitment": "briefcase", "productivity": "chart"}
+AREA_ICON = 30  # px, in the area card's top right corner (clear of a long figure), under the card's button
 
 
 def _story() -> Visual:
@@ -65,6 +68,7 @@ def _areas() -> list[Visual]:
         rect = (X0 + (AREA_W + GAP) * i, AREAS_Y, AREA_W, AREA_H)
         out.append(Visual("card", *rect, roles={"Values": [meas(measure)]}, title=f"{display} ›", labels={meas(measure): label},
                           props=card_look(20, NAVY, category=True, box=True)))
+        out.append(icon(AREA_ICONS[name], rect[0] + AREA_W - 10 - AREA_ICON, AREAS_Y + 8, AREA_ICON))
         out.append(bsc._card_button(rect, name, display))
     return out
 

@@ -3,9 +3,9 @@
   "name": "e4e5a1d8071f138bea53",
   "position": {
     "x": 30.0,
-    "y": 410.0,
+    "y": 802.0,
     "z": 28000,
-    "height": 311.0,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 28000
   },
@@ -42,27 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Payroll Cost"
+                  "Property": "Overtime Share %"
                 }
               },
-              "queryRef": "_Measures.Payroll Cost",
-              "nativeQueryRef": "Payroll Cost",
-              "displayName": "Payroll cost (SAR)"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Gross Pay"
-                }
-              },
-              "queryRef": "_Measures.Gross Pay",
-              "nativeQueryRef": "Gross Pay",
-              "displayName": "Gross pay (SAR)"
+              "queryRef": "_Measures.Overtime Share %",
+              "nativeQueryRef": "Overtime Share %"
             }
           ]
         }
@@ -85,6 +69,94 @@
         ]
       }
     },
+    "objects": {
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "gridlineShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "gridlineShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "markers": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "lineStyles": [
+        {
+          "properties": {
+            "showMarker": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
     "visualContainerObjects": {
       "title": [
         {
@@ -99,7 +171,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Payroll cost and gross pay, last 12 closed months'"
+                  "Value": "'Overtime share, last 12 closed months'"
                 }
               }
             }

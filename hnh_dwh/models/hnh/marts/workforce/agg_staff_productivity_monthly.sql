@@ -49,7 +49,7 @@ select
     l.branch_key                                as branch_key,
     {{ hnh_date_key('m.month_start') }}         as month_date_key,
     m.month_start                               as month_start,
-    any(l.staff_category)                       as staff_category,
+    {{ hnh_title('any(l.staff_category)') }}    as staff_category,  -- Oasis staff category: DOCTORS -> Doctors
     sum(m.encounters_seen)                      as encounters_seen,
     sum(m.revenue_amount)                       as revenue_amount,
     sum(m.payroll_cost)                         as payroll_cost,

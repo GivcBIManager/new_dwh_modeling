@@ -3,10 +3,10 @@
   "name": "a14b6a8b5ba28d403085",
   "position": {
     "x": 30.0,
-    "y": 276,
+    "y": 344.0,
     "z": 23000,
     "height": 110,
-    "width": 352.8,
+    "width": 604.0,
     "tabOrder": 23000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Payroll Cost"
+                  "Property": "Gross Pay"
                 }
               },
-              "queryRef": "_Measures.Payroll Cost",
-              "nativeQueryRef": "Payroll Cost",
-              "displayName": "Payroll cost (SAR)"
+              "queryRef": "_Measures.Gross Pay",
+              "nativeQueryRef": "Gross Pay",
+              "displayName": "Gross pay (SAR)"
             }
           ]
         }
@@ -119,7 +119,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Payroll Cost"
+            "Property": "Gross Pay"
           }
         },
         "type": "Advanced",
@@ -146,7 +146,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Payroll Cost"
+                          "Property": "Gross Pay"
                         }
                       },
                       "Right": {

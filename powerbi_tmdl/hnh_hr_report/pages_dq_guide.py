@@ -16,7 +16,8 @@ KPIs and the metrics defined without a target are all listed.
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit
-from hr_frame import HR_TARGET_TEXT, HR_WATCH_TEXT, branches, bsc, card_look, filters, fixed_table, page_frame
+from hr_frame import (HR_TARGET_TEXT, HR_WATCH_TEXT, ICON_SIZE, bar_look, branches, bsc, card_look, filters, fixed_table,
+                      icon, page_frame)
 from model import Filter, Interaction, Page, Visual, col, meas
 from pages_detail import _guarded
 
@@ -49,13 +50,16 @@ RECORDS_W = W0 - FIX_W - GAP
 def data_quality_page() -> Page:
     branch = filters()[0]
     visuals = page_frame("data_quality", [branch])
-    cards = []
-    for i, (m, label) in enumerate([("HR Open Issues", "Open issues"), ("HR Issue Records", "Records to fix"),
-                                    ("HR Affected Employees", "People affected")]):
+    cards, icons = [], []
+    for i, (m, label, name) in enumerate([("HR Open Issues", "Open issues", "alert"),
+                                          ("HR Issue Records", "Records to fix", "list"),
+                                          ("HR Affected Employees", "People affected", "users")]):
         cards.append(Visual("card", X0 + i * (CARD_W + GAP), Y0, CARD_W, TOP_H, roles={"Values": [meas(m)]},
                             labels={meas(m): label}, props=card_look(32, NAVY, category=True, box=True)))
+        icons.append(icon(name, X0 + i * (CARD_W + GAP) + 16, Y0 + 16))  # top left, clear of the centred figure
     bar = Visual("barChart", BAR_X, Y0, X0 + W0 - BAR_X, TOP_H, title="Records by where to fix them",
-                 roles={"Category": [FIX_IN], "Y": [ISSUE_RECORDS]}, labels={ISSUE_RECORDS: "Records"})
+                 roles={"Category": [FIX_IN], "Y": [ISSUE_RECORDS]}, labels={ISSUE_RECORDS: "Records"},
+                 props=bar_look())
     issues = Visual("table", X0, MID_Y, ISSUES_W, MID_H, title="Issues: select one to see its records",
                     roles={"Values": [ISSUE_NAME, col("HR Data Issues", "Severity"), FIX_IN,
                                       col("HR Data Issues", "Owner"), ISSUE_RECORDS]},
@@ -82,7 +86,7 @@ def data_quality_page() -> Page:
     # the records table follows the issue table and the matrix; it does not narrow the rest
     interactions = [Interaction(records, v, "NoFilter") for v in data if v is not records]
     interactions += [Interaction(s, t, "NoFilter") for s, t in _guarded("data_quality", data, {"Branch"})]
-    return Page("data_quality", "Data quality", visuals + data, filters=[ACTIVE_ISSUES, branches()],
+    return Page("data_quality", "Data quality", visuals + data + icons, filters=[ACTIVE_ISSUES, branches()],
                 interactions=interactions)
 
 

@@ -18,7 +18,7 @@ ends at the last closed month, not at an arbitrary selected month.
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit
-from hr_frame import branches, card_look, filters, kpi_tile, page_frame, title_notice
+from hr_frame import branches, card_look, filters, kpi_tile, line_look, page_frame, title_notice
 from model import Filter, Interaction, Page, Visual, col, meas
 
 GAP = 24
@@ -64,7 +64,8 @@ def _sentence(y: float, measure: str) -> Visual:
 def _chart(y: float, measures: list[str], title: str) -> Visual:
     return Visual("lineChart", CHART_X, y, CHART_W, BLOCK_H,
                   roles={"Category": [YEAR_MONTH], "Y": [meas(m) for m in measures]},
-                  title=f"{title}, last 12 closed months", filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc")
+                  title=f"{title}, last 12 closed months", filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc",
+                  props=line_look())
 
 
 def _note(chart: Visual, measure: str) -> Visual:

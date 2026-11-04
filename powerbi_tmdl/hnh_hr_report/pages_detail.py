@@ -1,9 +1,11 @@
 """The six detail pages under the Details tab (spec "Pages" 4) and the hidden Employee list (spec "Pages" 7).
 
 Each detail page has the frame with the Details tab current, Branch, Month and the six sub-tabs in the filter bar,
-then in the content box: the page's own slicers when every visual on it accepts them, one or two rows of 4 or 5
-cards for the selected month, a 2 x 2 grid of charts, and below it rows of three charts for the rest of the spec's
-breakdowns. Pages taller than 1080 px fit their width and scroll (pbir.page_json, ruling R24).
+then in the content box: the page's own slicers when every visual on it accepts them, then one or more sections,
+each an optional heading, one or two rows of 3 to 5 cards for the selected month (each with an icon), and charts in
+two columns, then three. A bar chart is as high as its bars and labels need, other charts LINE_H, and charts fill
+their columns top-down (user request 2026-11-04). Every chart shows its data labels (line charts their markers) and
+no value axis. Pages taller than 1080 px fit their width and scroll (pbir.page_json, ruling R24).
 
     headcount     Headcount, FTE, average headcount and FTE, Saudization, female and contingent share; trend, by
                   branch, department, job, grade, position, location, Saudi, gender, worker type, age band, tenure
@@ -12,9 +14,11 @@ breakdowns. Pages taller than 1080 px fit their width and scroll (pbir.page_json
                   branch transfers, promotions; trends, movements by movement group, changes by kind (job, grade,
                   position, location), leavers by action reason and current tenure band, hires by action, by branch
                   and department
-    payroll       Payroll cost, gross pay, overtime share, cost per FTE, gross pay in open payroll; trend, gross pay
-                  by pay category, cost by department, source and payroll status by branch, overtime. Not by job
-                  (ruling R26): Payroll has no job.
+    payroll       Two sections (user request 2026-11-04). Gross pay, what employees are paid: gross pay, overtime
+                  share, gross pay in open payroll; trends, by pay category, branch and department, source and
+                  payroll status by branch. Payroll cost, what the employer pays: payroll cost, employer charges and
+                  their share, cost per FTE; the step from gross pay to cost (waterfall by pay group, monthly
+                  stack), cost by pay category, department and branch. Not by job (ruling R26): Payroll has no job.
     absence       Sick days and rate, absence days of all kinds, leave balance and liability (month end, average,
                   now); trends, absence days by category and type, sick days by type, by branch. Not by department
                   (ruling R26): the absence and leave facts have no HR department.
@@ -24,8 +28,9 @@ breakdowns. Pages taller than 1080 px fit their width and scroll (pbir.page_json
                   FTE and per doctor, staff to bed, clinical to doctor
 
 Rules the pages keep:
-- Cards and bar charts follow the selected month. Line charts are 12-month trends: 'Date'[Month Offset] 1 to 12 (the
-  last 12 closed months) and a NoFilter interaction from the Month slicer, as on Story.
+- Cards, bar and waterfall charts follow the selected month. Line and stacked column charts are 12-month trends:
+  'Date'[Month Offset] 1 to 12 (the last 12 closed months) and a NoFilter interaction from the Month slicer, as on
+  Story.
 - The branches page filter: the eight hospitals and Head Office (user decision 2026-11-03: Head Office everywhere),
   as Home, so the figures agree with Home; it keeps out only the Branch dimension's Group member (no HR data).
 - Long slicer lists (Department, about 270 names; Job, Grade, Nationality) have the dropdown's search box.
@@ -64,9 +69,9 @@ import re
 from functools import lru_cache
 
 from fields import MODEL_DIR
-from frame import CONTENT, NAVY, _lit
-from hr_frame import (SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, page_frame, search_box, sub_tabs,
-                      title_notice)
+from frame import CONTENT, NAVY, _lit, no_container
+from hr_frame import (ICON_SIZE, MUTED, SUB_TAB_X, SUB_TAB_Y, bar_look, branches, bsc, card_look, column_look, filters,
+                      icon, line_look, page_frame, search_box, sub_tabs, title_notice)
 from model import Field, Filter, Interaction, Page, Visual, col, meas
 
 GAP = 24
@@ -75,8 +80,6 @@ CONTENT_END = Y0 + H0  # 1056
 SLICER_H = 66  # as the filter bar's slicers
 CARD_H = 110
 NOTICE_H = 60
-EXTRA_H = 300  # the charts below the grid, three to a row
-CHART_MIN_H = 300  # the grid's charts: the rest of the screen, but no lower than this
 BOTTOM_MARGIN = 30
 TOP = 15  # bars on a long axis: the top 15 by the chart's first measure
 BACK_W = 110
@@ -153,30 +156,46 @@ def _guarded(page_name: str, data: list[Visual], page_tables: set[str]) -> list[
 # ---- building blocks ----------------------------------------------------------------------------------------------
 
 def card(measure: str, label: str, pay: bool = False, decimals: int | None = None) -> dict:
-    """A card for the selected month: the figure over its label. `pay`: needs pay access. `decimals`: the value's
-    decimal places, whatever the measure's format."""
+    """A card for the selected month: the figure over its label, with the measure's icon (CARD_ICONS). `pay`: needs
+    pay access. `decimals`: the value's decimal places, whatever the measure's format."""
     return {"kind": "card", "measures": [measure], "labels": {measure: label}, "pay": pay, "decimals": decimals}
 
 
 def trend(title: str, measures: list[str], labels: dict | None = None, pay: bool = False,
-          note: str | None = None) -> dict:
-    """A line chart of the last 12 closed months. `note`: as bars()."""
-    return {"kind": "lineChart", "title": f"{title}, last 12 closed months", "measures": measures,
-            "labels": labels or {}, "pay": pay, "note": note}
+          note: str | None = None, stacked: bool = False) -> dict:
+    """A line chart of the last 12 closed months; `stacked`: a stacked column chart instead (parts of a total).
+    `note`: as bars()."""
+    return {"kind": "stackedColumnChart" if stacked else "lineChart", "title": f"{title}, last 12 closed months",
+            "measures": measures, "labels": labels or {}, "pay": pay, "note": note}
 
 
 def bars(title: str, by: Field, measures: list[str], labels: dict | None = None, top: bool = False,
-         pay: bool = False, note: str | None = None) -> dict:
+         pay: bool = False, note: str | None = None, filters: list[Filter] = (), n: int | None = None) -> dict:
     """A bar chart for the selected month, sorted by its first measure; `top`: only the top 15. `note`: a text measure
-    shown on a card over the chart ("" when there is nothing to say)."""
+    shown on a card over the chart ("" when there is nothing to say). `filters`: the visual's own filters. `n`: the
+    number of bars when the axis is not in AXIS_COUNTS (the chart's height fits its bars)."""
     return {"kind": "barChart", "title": title, "by": by, "measures": measures, "labels": labels or {}, "top": top,
-            "pay": pay, "note": note}
+            "pay": pay, "note": note, "filters": list(filters), "n": n}
+
+
+def waterfall(title: str, by: Field, measure: str, labels: dict | None = None, pay: bool = False,
+              filters: list[Filter] = ()) -> dict:
+    """A waterfall for the selected month: `measure` by `by` (in `by`'s order), then the total."""
+    return {"kind": "waterfallChart", "title": title, "by": by, "measures": [measure], "labels": labels or {},
+            "pay": pay, "note": None, "filters": list(filters)}
 
 
 def table(title: str, columns: list[tuple[Field, str]], measures: list[str], labels: dict | None = None,
-          pay: bool = False) -> dict:
+          pay: bool = False, h: float | None = None) -> dict:
     return {"kind": "table", "title": title, "columns": columns, "measures": measures, "labels": labels or {},
-            "pay": pay}
+            "pay": pay, "h": h}
+
+
+def section(cards: list[dict], blocks: list[tuple[int, list[dict]]], title: str | None = None,
+            subtitle: str | None = None) -> dict:
+    """A part of a detail page: an optional heading (`title` over `subtitle`), a row or two of cards, then blocks of
+    charts, each (columns, charts)."""
+    return {"title": title, "subtitle": subtitle, "cards": cards, "blocks": blocks}
 
 
 # A measure's name in charts and tables (legend, tooltip, header) unless the chart gives one: Fusion leaver measures
@@ -193,12 +212,65 @@ LABELS = {"Leavers": "Leavers in Fusion", "Voluntary Leavers": "Voluntary leaver
           "Promotions": "Promotions (Fusion action)", "Job Changes": "Job changes", "Grade Changes": "Grade changes",
           "Position Changes": "Position changes", "Location Changes": "Location changes",
           "Requisitions Approved": "Requisitions approved", "Requisitions Filled": "Requisitions filled",
-          "Open Openings": "Open openings", "Absence Days": "Absence days"}
+          "Open Openings": "Open openings", "Absence Days": "Absence days",
+          "Employer Charges": "Employer charges (SAR)",
+          "Employer Charges Share %": "Employer charges' share of payroll cost"}
+
+# A card's icon (hr_frame.icon), by its measure
+CARD_ICONS = {
+    "Headcount": "users", "FTE": "users", "Average Headcount": "users", "Average FTE": "users",
+    "BSC Saudization": "flag", "Female Share %": "female", "Contingent Share %": "badge",
+    "Hires": "user_plus", "Leavers": "user_minus", "Involuntary Leavers": "user_minus", "BSC Turnover": "swap",
+    "Voluntary Turnover Rate %": "percent", "New Hire Turnover %": "percent", "Branch Transfers": "swap",
+    "Promotions": "trend_up",
+    "Gross Pay": "banknote", "Overtime Share %": "clock", "HR Open Payroll Text": "receipt",
+    "Payroll Cost": "coins", "Employer Charges": "building", "Employer Charges Share %": "percent",
+    "Payroll Cost per FTE": "coins",
+    "Sick Days": "pulse", "Sick Leave Rate %": "pulse", "Absence Days": "calendar", "Leave Balance (days)": "sun",
+    "Leave Liability": "wallet", "Average Leave Balance (days)": "sun", "Current Leave Balance (days)": "sun",
+    "Current Leave Liability": "wallet",
+    "HR Vacancy Rate Text": "target", "BSC Time to Fill (days)": "hourglass", "Requisitions Approved": "briefcase",
+    "Requisitions Filled": "check", "Open Openings": "briefcase",
+    "Visits per FTE": "chart", "Revenue per Payroll SAR": "trend_up", "Payroll Cost per Visit": "coins",
+    "BSC Revenue per FTE": "banknote", "BSC Revenue per Doctor": "stethoscope",
+}
 
 
 def _labels(spec: dict) -> dict[Field, str]:
     names = {**LABELS, **spec["labels"]}
     return {meas(m): names[m] for m in spec["measures"] if m in names}
+
+
+# ---- chart sizes --------------------------------------------------------------------------------------------------
+# User request 2026-11-04: a bar chart is as high as its bars and labels need: the title band and padding, a legend
+# when it has more than one measure, and per category 8 px plus BAR_SERIES_PX for each measure. Line, column and
+# waterfall charts are LINE_H; tables TABLE_H unless the spec gives a height.
+LINE_H = 300
+TABLE_H = 330
+SECTION_HEAD_H = 56  # a section heading: title over subtitle
+TRENDS = ("lineChart", "stackedColumnChart")  # 12-month charts: the Month slicer does not filter them
+BAR_MIN_H, BAR_CHROME, BAR_LEGEND_H, BAR_SERIES_PX = 150, 64, 24, 18
+# The number of bars on an axis for the report's branches and a month (HNH_Analytics_Test, 2026-11-04); a top N axis
+# has TOP. An axis not listed needs the spec's `n`.
+AXIS_COUNTS = {
+    BRANCH_NAME: 9, col("Worker Action", "Movement Group"): 8, col("Headcount", "Is Saudi"): 2,
+    col("Headcount", "Gender"): 2, col("Employee", "Worker Type"): 2, col("Headcount", "Age Band"): 6,
+    col("Headcount", "Tenure Band"): 5, col("Job", "Full Part Time"): 2, col("Employee", "Tenure Band"): 5,
+    col("Absence Type", "Absence Category"): 5, col("Staff Productivity", "Staff Category"): 2,
+}
+
+
+def chart_height(spec: dict) -> float:
+    """The height a chart spec is drawn at (see "chart sizes")."""
+    if spec["kind"] == "barChart":
+        n = spec.get("n") or (TOP if spec["top"] else AXIS_COUNTS.get(spec["by"]))
+        if n is None:
+            raise ValueError(f"bar chart '{spec['title']}': give n, the number of bars on {spec['by']}")
+        k = len(spec["measures"])
+        return max(BAR_MIN_H, BAR_CHROME + (BAR_LEGEND_H if k > 1 else 0) + n * (8 + BAR_SERIES_PX * k))
+    if spec["kind"] == "table":
+        return spec.get("h") or TABLE_H
+    return LINE_H
 
 
 def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
@@ -208,13 +280,20 @@ def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
         return Visual("card", x, y, w, h, roles={"Values": ms}, labels=_labels(spec),
                       filters=[Filter(ms[0], "notblank")] if spec["pay"] else [],
                       props=card_look(24, NAVY, category=True, box=True, decimals=spec.get("decimals")))
-    if kind == "lineChart":
-        return Visual("lineChart", x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": ms}, title=spec["title"],
-                      labels=_labels(spec), filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc")
+    if kind in TRENDS:
+        look = line_look() if kind == "lineChart" else column_look()
+        return Visual(kind, x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": ms}, title=spec["title"],
+                      labels=_labels(spec), filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc", props=look)
     if kind == "barChart":
         by = spec["by"]
         return Visual("barChart", x, y, w, h, roles={"Category": [by], "Y": ms}, title=spec["title"],
-                      labels=_labels(spec), sort=ms[0], top_n=(ms[0], TOP) if spec["top"] else None)
+                      labels=_labels(spec), sort=ms[0], top_n=(ms[0], TOP) if spec["top"] else None,
+                      filters=list(spec.get("filters", [])), props=bar_look())
+    if kind == "waterfallChart":
+        by = spec["by"]
+        return Visual("waterfallChart", x, y, w, h, roles={"Category": [by], "Y": ms}, title=spec["title"],
+                      labels=_labels(spec), sort=by, sort_dir="asc", filters=list(spec.get("filters", [])),
+                      props=column_look())
     columns = [c for c, _label in spec["columns"]]
     return Visual("table", x, y, w, h, roles={"Values": columns + ms}, title=spec["title"],
                   labels={**{c: label for c, label in spec["columns"]}, **_labels(spec)}, sort=columns[0],
@@ -249,20 +328,70 @@ def _slicer_row(fields: list[tuple[Field, str]], y: float) -> list[Visual]:
 def _interactions(page_name: str, month: Visual, slicers: list[Visual], data: list[Visual],
                   page_tables: set[str]) -> list[Interaction]:
     tables = page_tables | {f.table for s in slicers for f in s.roles["Values"]}
-    out = [Interaction(month, v, "NoFilter") for v in data if v.sample == "lineChart"]
+    out = [Interaction(month, v, "NoFilter") for v in data if v.sample in TRENDS]
     out += [Interaction(s, t, "NoFilter") for s, t in _guarded(page_name, data, tables)]
     return out
 
 
-def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], extras: list[dict] = (),
-                page_slicers: list[tuple[Field, str]] = ()) -> Page:
+def _place(specs: list[dict], cols: int, y0: float) -> tuple[list[tuple], float]:
+    """Charts in `cols` columns, each at its chart_height(), each into the column whose bottom is highest so far
+    (then the leftmost): (spec, x, y, w, h) per chart, and the lowest bottom."""
+    w = _row(cols)
+    tops = [y0] * cols
+    placed = []
+    for spec in specs:
+        h = chart_height(spec)
+        c = min(range(cols), key=lambda i: (tops[i], i))
+        placed.append((spec, X0 + c * (w + GAP), tops[c], w, h))
+        tops[c] += h + GAP
+    return placed, max(tops) - GAP
+
+
+def _heading(title: str, subtitle: str | None, y: float) -> Visual:
+    """A section heading: `title` (Segoe UI Semibold 14pt, navy) over `subtitle` (10pt, grey)."""
+    runs = [(title, {"fontFamily": "Segoe UI Semibold", "fontSize": "14pt", "color": NAVY})]
+    if subtitle:
+        runs.append((subtitle, {"fontFamily": "Segoe UI", "fontSize": "10pt", "color": MUTED}))
+    paragraphs = [{"textRuns": [{"value": v, "textStyle": st}]} for v, st in runs]
+    return Visual("textbox", X0, y, W0, SECTION_HEAD_H,
+                  props={"general": [{"properties": {"paragraphs": paragraphs}}], **no_container()})
+
+
+def _cards(name: str, specs: list[dict], y: float) -> tuple[list[Visual], list[Visual], float]:
+    """A row or two of 3 to 5 cards from y: (the cards, their icons and pay notices, the y below them). A run of pay
+    cards next to each other in a row gets one notice over it."""
+    per_row = len(specs) if len(specs) <= 5 else math.ceil(len(specs) / 2)
+    if not 3 <= per_row <= 5 or len(specs) > 10:
+        raise ValueError(f"page {name}: one or two rows of 3 to 5 cards")
+    w = _row(per_row)
+    cards, decor, runs = [], [], []
+    for i, spec in enumerate(specs):
+        v = _visual(spec, X0 + (i % per_row) * (w + GAP), y + (i // per_row) * (CARD_H + GAP), w, CARD_H)
+        m = spec["measures"][0]
+        if m in CARD_ICONS:  # left of the figure, centred in the card's height
+            decor.append(icon(CARD_ICONS[m], v.x + 18, v.y + (CARD_H - ICON_SIZE) / 2))
+        if spec["pay"]:
+            prev = cards[-1] if cards else None
+            if runs and runs[-1][-1] is prev and prev.y == v.y:
+                runs[-1].append(v)
+            elif runs and runs[-1][-1].y == v.y:
+                raise ValueError(f"page {name}: the pay cards must be next to each other")
+            else:
+                runs.append([v])
+        cards.append(v)
+    decor += [_notice(r[0].x, r[0].y, r[-1].x + r[-1].w - r[0].x, CARD_H) for r in runs]
+    return cards, decor, y + math.ceil(len(specs) / per_row) * (CARD_H + GAP)
+
+
+def detail_page(name: str, display: str, cards: list[dict] = (), grid: list[dict] = (), extras: list[dict] = (),
+                page_slicers: list[tuple[Field, str]] = (), sections: list[dict] | None = None) -> Page:
     """A detail page: the frame (Details tab current, Branch, Month and the sub-tabs in the filter bar), the page's
-    slicers, one or two rows of 4 or 5 cards, a 2 x 2 grid of charts (filling the screen, at least CHART_MIN_H
-    high), and `extras` three to a row below it (the page then scrolls). Pay visuals get an HR Pay Notice over them:
-    one over each pay chart, one over each row's run of pay cards."""
-    per_row = len(cards) if len(cards) <= 5 else math.ceil(len(cards) / 2)
-    if not 4 <= per_row <= 5 or len(cards) > 10 or len(grid) != 4:
-        raise ValueError(f"page {name}: one or two rows of 4 or 5 cards and a 2 x 2 grid")
+    slicers, then its sections, each an optional heading, a row or two of 3 to 5 cards (with icons) and blocks of
+    charts. Without `sections`: one section of `cards`, `grid` in two columns and `extras` in three. Charts are as high
+    as they need (chart_height) and fill their columns top-down (_place); the page grows and scrolls when they go
+    below the screen. Pay visuals get an HR Pay Notice: in each pay chart's title band, over each run of pay cards."""
+    if sections is None:
+        sections = [section(list(cards), [(2, list(grid))] + ([(3, list(extras))] if extras else []))]
     branch, month = filters()
     visuals = page_frame("headcount", [branch, month] + sub_tabs(name))
     y = Y0
@@ -271,40 +400,31 @@ def detail_page(name: str, display: str, cards: list[dict], grid: list[dict], ex
     if own_slicers:
         y += SLICER_H + GAP
     data: list[Visual] = []
-    notices: list[Visual] = []
-    w = _row(per_row)
-    pay_runs: list[list[Visual]] = []  # per row, the pay cards (next to each other)
-    for i, spec in enumerate(cards):
-        v = _visual(spec, X0 + (i % per_row) * (w + GAP), y + (i // per_row) * (CARD_H + GAP), w, CARD_H)
-        data.append(v)
-        if spec["pay"]:
-            if pay_runs and pay_runs[-1][-1] is data[-2] and pay_runs[-1][-1].y == v.y:
-                pay_runs[-1].append(v)
-            elif pay_runs and pay_runs[-1][-1] is not data[-2]:
-                raise ValueError(f"page {name}: the pay cards must be next to each other")
-            else:
-                pay_runs.append([v])
-    for run in pay_runs:
-        notices.append(_notice(run[0].x, run[0].y, run[-1].x + run[-1].w - run[0].x, CARD_H))
-    y += math.ceil(len(cards) / per_row) * (CARD_H + GAP)
-    chart_w, chart_h = _row(2), max(CHART_MIN_H, (CONTENT_END - y - GAP) / 2)
-    placed = [(spec, X0 + (i % 2) * (chart_w + GAP), y + (i // 2) * (chart_h + GAP), chart_w, chart_h)
-              for i, spec in enumerate(grid)]
-    grid_end = y + 2 * chart_h + GAP
-    extra_w = _row(3)
-    placed += [(spec, X0 + (i % 3) * (extra_w + GAP), grid_end + GAP + (i // 3) * (EXTRA_H + GAP), extra_w,
-                EXTRA_H) for i, spec in enumerate(extras)]
-    for spec, x, cy, cw, ch in placed:
-        v = _visual(spec, x, cy, cw, ch)
-        data.append(v)
-        if spec["pay"]:  # in the chart's title band (ruling R31)
-            notices.append(title_notice(v, PAY_NOTICE.name))
-        if spec.get("note"):
-            notices.append(title_notice(v, spec["note"]))
-    visuals += data + notices
-    rows = math.ceil(len(extras) / 3)
-    bottom = grid_end + rows * (GAP + EXTRA_H)
-    height = max(1080, math.ceil(bottom + BOTTOM_MARGIN)) if bottom > CONTENT_END else 1080
+    decor: list[Visual] = []  # headings, icons and notices: drawn over the data visuals
+    for i, sec in enumerate(sections):
+        if i:
+            y += GAP  # more room between sections
+        if sec["title"]:
+            decor.append(_heading(sec["title"], sec["subtitle"], y))
+            y += SECTION_HEAD_H + GAP / 2
+        if sec["cards"]:
+            cards_, more, y = _cards(name, sec["cards"], y)
+            data += cards_
+            decor += more
+        for cols, specs in sec["blocks"]:
+            if not specs:
+                continue
+            placed, bottom = _place(specs, cols, y)
+            for spec, x, cy, cw, ch in placed:
+                v = _visual(spec, x, cy, cw, ch)
+                data.append(v)
+                if spec["pay"]:  # in the chart's title band (ruling R31)
+                    decor.append(title_notice(v, PAY_NOTICE.name))
+                if spec.get("note"):
+                    decor.append(title_notice(v, spec["note"]))
+            y = bottom + GAP
+    visuals += data + decor
+    height = max(1080, math.ceil(y - GAP + BOTTOM_MARGIN))
     page_filters = [branches()]
     interactions = _interactions(name, month, own_slicers + [branch], data,
                                  {f.field.table for f in page_filters})
@@ -366,27 +486,54 @@ def movements_page() -> Page:
         page_slicers=WORKFORCE_SLICERS)
 
 
+PAY_CATEGORY = col("Pay Category", "Pay Category")
+PAY_GROUP = col("Pay Category", "Pay Group")
+GROSS_PAY_CATEGORIES = Filter(col("Pay Category", "Is Gross Pay"), "eq", ["Yes"])
+COST_CATEGORIES = Filter(col("Pay Category", "Is Cost"), "eq", ["Yes"])
+
+
 def payroll_page() -> Page:
-    """Payroll & overtime. Not by job (ruling R26): Payroll has no job, and only the Department slicer suits every
+    """Payroll & overtime, in two sections (user request 2026-11-04): gross pay, what employees are paid (earnings and
+    earnings adjustments), and payroll cost, what the employer pays (gross pay plus the employer charges: GOSI employer
+    charge and other employer charges). The cost section shows the step from one to the other: a waterfall by pay
+    group and the 12-month split of payroll cost into gross pay and employer charges ([Employer Charges] = [Payroll
+    Cost] - [Gross Pay]). Not by job (ruling R26): Payroll has no job, and only the Department slicer suits every
     visual ([Payroll Cost per FTE] rejects Pay Category and Payroll)."""
-    return detail_page(
-        "payroll", "Payroll & overtime",
-        cards=[card("Payroll Cost", "Payroll cost (SAR)", pay=True), card("Gross Pay", "Gross pay (SAR)", pay=True),
+    gross = section(
+        cards=[card("Gross Pay", "Gross pay (SAR)", pay=True),
                card("Overtime Share %", "Overtime share of gross pay", pay=True),
-               card("Payroll Cost per FTE", "Payroll cost per FTE (SAR)", pay=True),
-               card("Gross Pay (Open Payroll)", "Gross pay in open payroll (SAR)", pay=True)],
-        grid=[trend("Payroll cost and gross pay", ["Payroll Cost", "Gross Pay"], pay=True),
-              bars("Gross pay by pay category (overtime included)", col("Pay Category", "Pay Category"),
-                   ["Gross Pay"], pay=True),
-              bars("Payroll cost by department, top 15", DEPARTMENT, ["Payroll Cost"], top=True, pay=True),
-              table("Payroll source and status by branch: an open month is not final",
-                    [(BRANCH_NAME, "Branch"), (col("Payroll", "Source"), "Source"),
-                     (col("Payroll", "Payroll Status"), "Payroll status")],
-                    ["Payroll Cost", "Gross Pay (Open Payroll)"], pay=True)],
-        extras=[trend("Overtime share", ["Overtime Share %"], pay=True),  # short: the title band holds the notice (R31)
-                bars("Payroll cost per FTE by branch (SAR)", BRANCH_NAME, ["Payroll Cost per FTE"], pay=True),
-                bars("Overtime share of gross pay by branch", BRANCH_NAME, ["Overtime Share %"], pay=True)],
-        page_slicers=[(DEPARTMENT, "Department")])
+               card("HR Open Payroll Text", "Gross pay in open payroll", pay=True)],
+        blocks=[(2, [trend("Gross pay", ["Gross Pay"], pay=True),
+                     bars("Gross pay by pay category (overtime included)", PAY_CATEGORY, ["Gross Pay"], pay=True,
+                          filters=[GROSS_PAY_CATEGORIES], n=11),
+                     trend("Overtime share", ["Overtime Share %"], pay=True),
+                     bars("Overtime share of gross pay by branch", BRANCH_NAME, ["Overtime Share %"], pay=True),
+                     table("Payroll source and status by branch: an open month is not final",
+                           [(BRANCH_NAME, "Branch"), (col("Payroll", "Source"), "Source"),
+                            (col("Payroll", "Payroll Status"), "Payroll status")],
+                           ["Gross Pay", "Gross Pay (Open Payroll)"], pay=True),
+                     bars("Gross pay by department, top 15", DEPARTMENT, ["Gross Pay"], top=True, pay=True)])],
+        title="Gross pay: what employees are paid",
+        subtitle="Earnings (basic, allowances, overtime, leave pay, end of service, awards) and earnings adjustments "
+                 "(absence and lateness deductions), before employee deductions.")
+    cost = section(
+        cards=[card("Payroll Cost", "Payroll cost (SAR)", pay=True),
+               card("Employer Charges", "Employer charges (SAR)", pay=True),
+               card("Employer Charges Share %", "Employer charges' share of payroll cost", pay=True),
+               card("Payroll Cost per FTE", "Payroll cost per FTE (SAR)", pay=True)],
+        blocks=[(2, [waterfall("From gross pay to payroll cost, by pay group", PAY_GROUP, "Payroll Cost", pay=True,
+                               filters=[COST_CATEGORIES]),
+                     trend("Payroll cost: gross pay and employer charges", ["Gross Pay", "Employer Charges"],
+                           pay=True, stacked=True),
+                     bars("Payroll cost by pay category (employer charges included)", PAY_CATEGORY, ["Payroll Cost"],
+                          pay=True, filters=[COST_CATEGORIES], n=13),
+                     bars("Payroll cost by department, top 15", DEPARTMENT, ["Payroll Cost"], top=True, pay=True),
+                     bars("Payroll cost per FTE by branch (SAR)", BRANCH_NAME, ["Payroll Cost per FTE"], pay=True),
+                     bars("Employer charges by branch (SAR)", BRANCH_NAME, ["Employer Charges"], pay=True)])],
+        title="Payroll cost: what the employer pays",
+        subtitle="Gross pay plus employer charges (GOSI employer charge and other employer charges). Payroll cost per "
+                 "FTE and the BSC's staff cost per FTE use it.")
+    return detail_page("payroll", "Payroll & overtime", sections=[gross, cost], page_slicers=[(DEPARTMENT, "Department")])
 
 
 def absence_page() -> Page:

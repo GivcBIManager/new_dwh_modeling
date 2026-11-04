@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "21b909e83bc9f72e8d8d",
   "position": {
-    "x": 406.8,
-    "y": 276,
+    "x": 658.0,
+    "y": 344.0,
     "z": 24000,
     "height": 110,
-    "width": 352.8,
+    "width": 604.0,
     "tabOrder": 24000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Gross Pay"
+                  "Property": "Overtime Share %"
                 }
               },
-              "queryRef": "_Measures.Gross Pay",
-              "nativeQueryRef": "Gross Pay",
-              "displayName": "Gross pay (SAR)"
+              "queryRef": "_Measures.Overtime Share %",
+              "nativeQueryRef": "Overtime Share %",
+              "displayName": "Overtime share of gross pay"
             }
           ]
         }
@@ -119,7 +119,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Gross Pay"
+            "Property": "Overtime Share %"
           }
         },
         "type": "Advanced",
@@ -146,7 +146,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Gross Pay"
+                          "Property": "Overtime Share %"
                         }
                       },
                       "Right": {

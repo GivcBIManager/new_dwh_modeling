@@ -34,7 +34,8 @@ from __future__ import annotations
 from frame import CONTENT, NAVY, _lit, button_props, no_container
 from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
                       HR_WATCH_TEXT, SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, fixed_table,
-                      measure_colour, page_frame, saved_selection, single_selection, title_notice)
+                      bar_look, line_look, measure_colour, page_frame, saved_selection, single_selection,
+                      title_notice)
 from model import Filter, Interaction, Page, Visual, col, meas
 
 X0, Y0, W0, H0 = CONTENT  # 30, 186, 1860, ...
@@ -168,9 +169,10 @@ def kpi_detail_page() -> Page:
                   title="Actual, target and watch, last 24 closed months",
                   roles={"Category": [YEAR_MONTH],
                          "Y": [meas("HR KPI Actual"), meas("HR KPI Target"), meas("HR KPI Watch")]},
-                  filters=[Filter(MONTH_OFFSET, "in", list(range(1, 25)))], sort=YEAR_MONTH, sort_dir="asc")
+                  filters=[Filter(MONTH_OFFSET, "in", list(range(1, 25)))], sort=YEAR_MONTH, sort_dir="asc",
+                  props=line_look())
     bars = Visual("barChart", RIGHT_X, BAR_Y, RIGHT_W, BAR_H, title="By branch",
-                  roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]})
+                  roles={"Category": [BRANCH_NAME], "Y": [meas("HR KPI Actual")]}, props=bar_look())
     visuals += [line, bars]
     # Without pay access a pay KPI's charts are empty: [HR KPI Pay Notice] says why (final review I2), in each chart's
     # title band (ruling R31: over the plot it took the hover and clicks). It is "" for pay readers and for a KPI that

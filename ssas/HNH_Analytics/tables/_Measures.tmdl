@@ -1715,6 +1715,45 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Gross Pay (Open Payroll)"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Workforce\Payroll
+	/// Payroll cost less gross pay: the employer charges (GOSI employer charge, other employer charges), which are a cost but not pay.
+	measure 'Employer Charges' =
+			VAR __Value = ( -- measure body
+				VAR C = [Payroll Cost]
+				VAR G = [Gross Pay]
+				RETURN IF ( NOT ISBLANK ( C ) || NOT ISBLANK ( G ), C - G )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Payroll]
+			RETURN IF ( __Wrong = "", __Value, """Employer Charges"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Workforce\Payroll
+	/// The employer charges' share of payroll cost.
+	measure 'Employer Charges Share %' =
+			VAR __Value = ( -- measure body
+				DIVIDE ( [Employer Charges], [Payroll Cost] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Payroll]
+			RETURN IF ( __Wrong = "", __Value, """Employer Charges Share %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Workforce\Payroll
+	/// Gross pay in open (not yet closed) payroll as text: "None open" when every payroll of the selection is closed, never blank, and "Requires pay access" without pay access.
+	measure 'HR Open Payroll Text' =
+			VAR __Value = ( -- measure body
+				VAR G = [Gross Pay (Open Payroll)]
+				VAR Size = ABS ( G )
+				RETURN
+					SWITCH (
+						TRUE (),
+						[HR Can See Pay] = 0, "Requires pay access",
+						ISBLANK ( G ) || G = 0, "None open",
+						Size >= 1000000, "SAR " & FORMAT ( G / 1000000, "#,0.0" ) & "M",
+						Size >= 1000, "SAR " & FORMAT ( G / 1000, "#,0.0" ) & "K",
+						"SAR " & FORMAT ( G, "#,0" )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Payroll]
+			RETURN IF ( __Wrong = "", __Value, """HR Open Payroll Text"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: HR Dashboard\Payroll
 	/// Overtime gross pay ÷ gross pay (Phase 4 spec section 7).
 	measure 'Overtime Share %' =
 			VAR __Value = ( -- measure body
@@ -7534,14 +7573,6 @@ table _Measures
 				VAR A = [HR KPI Actual]
 				VAR T = [HR KPI Target]
 				VAR W = [HR KPI Watch]
-				VAR BscState =
-					CALCULATE (
-						[BSC Status],
-						'BSC KPI'[KPI Code] = BscCode,
-						REMOVEFILTERS ( 'HR KPI' ),
-						-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
-						REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
-					)
 				VAR HasWatch = NOT ISBLANK ( W )
 				RETURN
 					SWITCH (
@@ -7550,7 +7581,18 @@ table _Measures
 						KpiState = "parked", "Parked",
 						NeedsPay = 1 && [HR Can See Pay] = 0, "Requires pay access",
 						ISBLANK ( A ), "No data",
-						TargetSource = "bsc", IF ( ISBLANK ( BscState ), "No target yet", BscState ),
+						-- the BSC's status only in this branch: declared before the SWITCH it was evaluated for every KPI,
+						-- which made the status 3 to 10 times slower (2026-11-04 timings: 14.3 s to 1.2 s for a pay user)
+						TargetSource = "bsc",
+							VAR BscState =
+								CALCULATE (
+									[BSC Status],
+									'BSC KPI'[KPI Code] = BscCode,
+									REMOVEFILTERS ( 'HR KPI' ),
+									-- every column of ssas\HNH_Analytics\tables\HR Targets.tmdl: keep this list in sync when a column is added
+									REMOVEFILTERS ( 'HR Targets'[HR KPI Key], 'HR Targets'[Branch Key], 'HR Targets'[Month Date Key], 'HR Targets'[Target Value], 'HR Targets'[Watch Value], 'HR Targets'[Scale With Months], 'HR Targets'[Source Basis], 'HR Targets'[Is Placeholder] )
+								)
+							RETURN IF ( ISBLANK ( BscState ), "No target yet", BscState ),
 						ISBLANK ( T ), "No target yet",
 						Direction = "higher", IF ( A >= T, "On track", IF ( HasWatch && A >= W, "Watch", "At risk" ) ),
 						Direction IN { "lower", "ceiling" }, IF ( A <= T, "On track", IF ( HasWatch && A <= W, "Watch", "At risk" ) ),
@@ -7915,8 +7957,12 @@ table _Measures
 	/// Oasis name of the staff record behind the data quality records in context: "" when they have no Oasis staff record (the Staff table's Unknown member, which the model names Unknown) or several; blank where there is no record, so a table of records gains no rows.
 	measure 'HR Issue Oasis Name' =
 			VAR __Value = ( -- measure body
-				VAR Names = CALCULATETABLE ( VALUES ( Staff[Staff Name] ), 'HR Data Issue Records', KEEPFILTERS ( Staff[Staff Key] <> -1 ) )
-				RETURN IF ( NOT ISEMPTY ( 'HR Data Issue Records' ), IF ( COUNTROWS ( Names ) = 1, MAXX ( Names, Staff[Staff Name] ), "" ) )
+				-- the records' staff names through RELATED (a row the Staff row filter hides gives a blank): 0.3 s for the 3,379
+				-- records of the data quality table, against 16.9 s for a table filter on the records (2026-11-04)
+				VAR Linked = FILTER ( 'HR Data Issue Records', 'HR Data Issue Records'[Staff Key] <> -1 )
+				VAR Lo = MINX ( Linked, RELATED ( Staff[Staff Name] ) )
+				VAR Hi = MAXX ( Linked, RELATED ( Staff[Staff Name] ) )
+				RETURN IF ( NOT ISEMPTY ( 'HR Data Issue Records' ), IF ( NOT ISBLANK ( Hi ) && Lo = Hi, Hi, "" ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard HR Data Issue Records]
 			RETURN IF ( __Wrong = "", __Value, """HR Issue Oasis Name"" can't be analysed by " & __Wrong )
