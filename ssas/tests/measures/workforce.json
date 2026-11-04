@@ -40,7 +40,7 @@
    "sql": "select (sum(toFloat64(cost_amount)) - sum(toFloat64(gross_pay))) / sum(toFloat64(cost_amount)) from gold.ssas_fact_payroll_monthly where month_date_key = 20260801"},
   {"name": "HR Open Payroll Text says None open for a closed month, 2026-08", "tolerance": 0,
    "dax": "EVALUATE ROW(\"v\", INT(CALCULATE([HR Open Payroll Text], 'Date'[Year Month] = 202608) = \"None open\"))",
-   "sql": "select toUInt8(sumIf(toFloat64(gross_pay), is_closed_payroll = 'No') = 0) from gold.ssas_fact_payroll_monthly where month_date_key = 20260801"},
+   "sql": "select toUInt8(ifNull(sumIf(toFloat64(gross_pay), is_closed_payroll = 'No'), 0) = 0) from gold.ssas_fact_payroll_monthly where month_date_key = 20260801"},
   {"name": "Average FTE, 2026 Q3", "tolerance": 0.0001,
    "dax": "EVALUATE ROW(\"v\", CALCULATE([Average FTE], 'Date'[Year Quarter] = 20263))",
    "sql": "select avg(f) from (select month_date_key, sum(fte) as f from gold.ssas_fact_headcount_monthly where is_contingent = 'No' and is_closed_month = 'Yes' and month_date_key in (20260731, 20260831, 20260930) group by month_date_key)"},
