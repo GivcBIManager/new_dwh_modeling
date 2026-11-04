@@ -7382,12 +7382,13 @@ table _Measures
 								SUMX (
 									VALUES ( Branch[Branch Key] ),
 									CALCULATE (
-										VAR BranchTarget = AVERAGE ( 'HR Targets'[Target Value] )
+										-- the column is fixed decimal (4 places): DOUBLE before scaling by months, or a monthly share of an annual target rounds
+										VAR BranchTarget = CONVERT ( AVERAGE ( 'HR Targets'[Target Value] ), DOUBLE )
 										VAR BranchMonths = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
 										RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, BranchTarget * BranchMonths / 12, BranchTarget )
 									)
 								),
-								VAR TargetValue = AVERAGE ( 'HR Targets'[Target Value] )
+								VAR TargetValue = CONVERT ( AVERAGE ( 'HR Targets'[Target Value] ), DOUBLE )
 								VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
 								RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, TargetValue * Months / 12, TargetValue )
 							),
@@ -7424,12 +7425,13 @@ table _Measures
 								SUMX (
 									VALUES ( Branch[Branch Key] ),
 									CALCULATE (
-										VAR BranchWatch = AVERAGE ( 'HR Targets'[Watch Value] )
+										-- the column is fixed decimal (4 places): DOUBLE before scaling by months, or a monthly share of an annual target rounds
+										VAR BranchWatch = CONVERT ( AVERAGE ( 'HR Targets'[Watch Value] ), DOUBLE )
 										VAR BranchMonths = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
 										RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, BranchWatch * BranchMonths / 12, BranchWatch )
 									)
 								),
-								VAR WatchValue = AVERAGE ( 'HR Targets'[Watch Value] )
+								VAR WatchValue = CONVERT ( AVERAGE ( 'HR Targets'[Watch Value] ), DOUBLE )
 								VAR Months = DISTINCTCOUNT ( 'HR Targets'[Month Date Key] )
 								RETURN IF ( MAX ( 'HR Targets'[Scale With Months] ) = 1, WatchValue * Months / 12, WatchValue )
 							),
