@@ -273,6 +273,15 @@ def chart_height(spec: dict) -> float:
     return LINE_H
 
 
+# SAR amounts in millions: their chart labels read "31.3M" and "0.4M" (Desktop's auto units gave small bars "0M")
+MONEY = {"Gross Pay", "Payroll Cost", "Employer Charges", "Gross Pay (Open Payroll)", "Leave Liability",
+         "Current Leave Liability"}
+
+
+def _units(spec: dict) -> str:
+    return "millions" if set(spec["measures"]) <= MONEY else "none"
+
+
 def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
     ms = [meas(m) for m in spec["measures"]]
     kind = spec["kind"]
@@ -281,19 +290,19 @@ def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
                       filters=[Filter(ms[0], "notblank")] if spec["pay"] else [],
                       props=card_look(24, NAVY, category=True, box=True, decimals=spec.get("decimals")))
     if kind in TRENDS:
-        look = line_look() if kind == "lineChart" else column_look()
+        look = line_look() if kind == "lineChart" else column_look(_units(spec))
         return Visual(kind, x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": ms}, title=spec["title"],
                       labels=_labels(spec), filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc", props=look)
     if kind == "barChart":
         by = spec["by"]
         return Visual("barChart", x, y, w, h, roles={"Category": [by], "Y": ms}, title=spec["title"],
                       labels=_labels(spec), sort=ms[0], top_n=(ms[0], TOP) if spec["top"] else None,
-                      filters=list(spec.get("filters", [])), props=bar_look())
+                      filters=list(spec.get("filters", [])), props=bar_look(_units(spec)))
     if kind == "waterfallChart":
         by = spec["by"]
         return Visual("waterfallChart", x, y, w, h, roles={"Category": [by], "Y": ms}, title=spec["title"],
                       labels=_labels(spec), sort=by, sort_dir="asc", filters=list(spec.get("filters", [])),
-                      props=column_look())
+                      props=column_look(_units(spec)))
     columns = [c for c, _label in spec["columns"]]
     return Visual("table", x, y, w, h, roles={"Values": columns + ms}, title=spec["title"],
                   labels={**{c: label for c, label in spec["columns"]}, **_labels(spec)}, sort=columns[0],
@@ -473,7 +482,7 @@ def movements_page() -> Page:
         grid=[trend("Hires and leavers in Fusion", ["Hires"] + leavers + ["Involuntary Leavers"]),
               trend("Turnover and voluntary leaver rate in Fusion", ["BSC Turnover", "Voluntary Turnover Rate %"]),
               bars("Movements by movement group", col("Worker Action", "Movement Group"), ["Movements"]),
-              bars("Changes by kind and branch", BRANCH_NAME, CHANGES)],
+              bars("Changes by kind and branch", BRANCH_NAME, CHANGES, n=5)],  # a month's changes are at a few branches
         extras=[bars("Leavers in Fusion by action reason, top 15", col("Worker Action", "Action Reason Name"), leavers,
                      top=True),
                 bars("Leavers in Fusion by current tenure band (years)", col("Employee", "Tenure Band"), leavers),

@@ -342,11 +342,22 @@ def icon(name: str, x: float, y: float, size: float = ICON_SIZE) -> Visual:
 # title names both). Object and property names as Desktop 2.158's cartesian visuals read them (labels.show,
 # markers.show, valueAxis.show / gridlineShow, categoryAxis.showAxisTitle / maxMarginFactor).
 
-def _axes_off() -> dict:
+def _axes_off(units: str = "auto") -> dict:
+    """`units`: the data labels' display units. "auto" is Desktop's (one unit for the chart, by its largest value);
+    "none" shows the figure as its format has it (a count of 13 beside 3,816 reads 13, not "0.0K"); "millions" shows
+    SAR amounts as "31.3M" and "0.4M" (with auto, small bars read "0M")."""
+    labels = {"show": _lit(True)}
+    if units == "none":
+        labels["labelDisplayUnits"] = _num(1)
+    elif units == "millions":
+        labels["labelDisplayUnits"] = _num(1000000)
+        labels["labelPrecision"] = {"expr": {"Literal": {"Value": "1L"}}}
+    elif units != "auto":
+        raise ValueError(f"units: auto, none or millions, not {units!r}")
     return {"valueAxis": [{"properties": {"show": _lit(False), "gridlineShow": _lit(False),
                                           "showAxisTitle": _lit(False)}}],
             "categoryAxis": [{"properties": {"showAxisTitle": _lit(False), "gridlineShow": _lit(False)}}],
-            "labels": [{"properties": {"show": _lit(True)}}]}
+            "labels": [{"properties": labels}]}
 
 
 def line_look() -> dict:
@@ -358,16 +369,17 @@ def line_look() -> dict:
 BAR_LABEL_MARGIN = 40  # % of a bar chart's width its category labels may take (Desktop's default 25 cut names)
 
 
-def bar_look() -> dict:
-    """A bar chart: labels on every bar, no value (X) axis; category labels may take BAR_LABEL_MARGIN % of the width."""
-    out = _axes_off()
+def bar_look(units: str = "none") -> dict:
+    """A bar chart: labels on every bar (in `units`, see _axes_off), no value (X) axis; category labels may take
+    BAR_LABEL_MARGIN % of the width."""
+    out = _axes_off(units)
     out["categoryAxis"][0]["properties"]["maxMarginFactor"] = {"expr": {"Literal": {"Value": f"{BAR_LABEL_MARGIN}L"}}}
     return out
 
 
-def column_look() -> dict:
-    """A column or waterfall chart: labels on every column, no value (Y) axis."""
-    return _axes_off()
+def column_look(units: str = "auto") -> dict:
+    """A column or waterfall chart: labels on every column (in `units`, see _axes_off), no value (Y) axis."""
+    return _axes_off(units)
 
 
 # ---- KPI tile -----------------------------------------------------------------------------------------------------

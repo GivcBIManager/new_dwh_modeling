@@ -745,6 +745,8 @@ def _measures(v):
 
 NOTES = {PAY_NOTICE, meas("HR Vacancy Note")}  # text cards over a visual ("" when there is nothing to say)
 CHARTS = ("lineChart", "barChart", "stackedColumnChart", "waterfallChart")
+MONEY = {"Gross Pay", "Payroll Cost", "Employer Charges", "Gross Pay (Open Payroll)", "Leave Liability",
+         "Current Leave Liability"}
 
 
 def _data_visuals(page):
@@ -816,6 +818,9 @@ def test_detail_pages_have_sub_tabs():
             assert v in page.visuals, name
 
 
+SIZED_BY_N = {"Changes by kind and branch"}  # a spec's n: fewer bars than the axis has (a month's changes)
+
+
 def test_detail_pages_cards_then_charts_that_fit():
     """Each section: one or two rows of 3 to 5 cards, then its charts below them. User request 2026-11-04: a bar chart
     is as high as its bars and labels need (chart_height: the axis's count of bars, or the top 15), line, column and
@@ -835,7 +840,7 @@ def test_detail_pages_cards_then_charts_that_fit():
                 k = len(v.roles["Y"])
                 by = v.roles["Category"][0]
                 n = TOP if v.top_n else AXIS_COUNTS.get(by)
-                if n is not None:
+                if n is not None and v.title not in SIZED_BY_N:
                     want = max(BAR_MIN_H, BAR_CHROME + (BAR_LEGEND_H if k > 1 else 0) + n * (8 + BAR_SERIES_PX * k))
                     assert v.h == want, (page.name, v.title, v.h, want)
             elif v.sample in ("lineChart", "stackedColumnChart", "waterfallChart"):
@@ -860,6 +865,13 @@ def test_chart_format_labels_markers_no_value_axis():
             if v.sample == "barChart":
                 margin = v.props["categoryAxis"][0]["properties"]["maxMarginFactor"]
                 assert margin == {"expr": {"Literal": {"Value": "40L"}}}, (page.name, v.title)
+            # SAR amounts in millions ("0.4M", not "0M"); other bars as their format has them (13, not "0.0K")
+            units = v.props["labels"][0]["properties"].get("labelDisplayUnits")
+            names = {m.name for m in _measures(v)}
+            if page.name in DETAIL_NAMES and v.sample != "lineChart" and names <= MONEY:
+                assert lit(units) == "1000000D", (page.name, v.title)
+            elif v.sample == "barChart":
+                assert lit(units) == "1D", (page.name, v.title)
     assert seen == set(CHARTS)
 
 
