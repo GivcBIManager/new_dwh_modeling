@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "332c280ffe252bc79b9f",
   "position": {
-    "x": 30.0,
-    "y": 1878.0,
+    "x": 501.0,
+    "y": 2202.0,
     "z": 36000,
-    "height": 300,
-    "width": 918.0,
+    "height": 128,
+    "width": 447.0,
     "tabOrder": 36000
   },
   "visual": {
-    "visualType": "waterfallChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Pay Category"
-                    }
-                  },
-                  "Property": "Pay Group"
-                }
-              },
-              "queryRef": "Pay Category.Pay Group",
-              "nativeQueryRef": "Pay Group",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,83 +23,50 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Payroll Cost"
+                  "Property": "Employer Charges"
                 }
               },
-              "queryRef": "_Measures.Payroll Cost",
-              "nativeQueryRef": "Payroll Cost",
-              "displayName": "Payroll cost (SAR)"
+              "queryRef": "_Measures.Employer Charges",
+              "nativeQueryRef": "Employer Charges",
+              "displayName": "Employer charges (SAR)"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "Pay Category"
-                  }
-                },
-                "Property": "Pay Group"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
       }
     },
     "objects": {
-      "valueAxis": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryAxis": [
-        {
-          "properties": {
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
       "labels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -128,17 +76,21 @@
                 }
               }
             },
-            "labelDisplayUnits": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "1000000D"
+                  "Value": "12D"
                 }
               }
             },
-            "labelPrecision": {
-              "expr": {
-                "Literal": {
-                  "Value": "1L"
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
                 }
               }
             }
@@ -153,14 +105,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'From gross pay to payroll cost, by pay group'"
+                  "Value": "false"
                 }
               }
             }
@@ -175,50 +120,49 @@
       {
         "name": "128c74d46fb3e489da64",
         "field": {
-          "Column": {
+          "Measure": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Pay Category"
+                "Entity": "_Measures"
               }
             },
-            "Property": "Is Cost"
+            "Property": "Employer Charges"
           }
         },
-        "type": "Categorical",
+        "type": "Advanced",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "p",
-              "Entity": "Pay Category",
+              "Name": "_",
+              "Entity": "_Measures",
               "Type": 0
             }
           ],
           "Where": [
             {
               "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "p"
-                          }
-                        },
-                        "Property": "Is Cost"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
+                "Not": {
+                  "Expression": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "_"
+                            }
+                          },
+                          "Property": "Employer Charges"
+                        }
+                      },
+                      "Right": {
                         "Literal": {
-                          "Value": "'Yes'"
+                          "Value": "null"
                         }
                       }
-                    ]
-                  ]
+                    }
+                  }
                 }
               }
             }

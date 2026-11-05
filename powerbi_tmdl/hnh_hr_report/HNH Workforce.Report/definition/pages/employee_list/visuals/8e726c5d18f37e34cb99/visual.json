@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "8e726c5d18f37e34cb99",
   "position": {
-    "x": 30,
-    "y": 276,
+    "x": 1537.2,
+    "y": 186,
     "z": 21000,
-    "height": 780,
-    "width": 1860,
+    "height": 66,
+    "width": 352.8,
     "tabOrder": 21000
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "slicer",
     "query": {
       "queryState": {
         "Values": {
@@ -23,192 +23,77 @@
                       "Entity": "Employee"
                     }
                   },
-                  "Property": "Worker Number"
+                  "Property": "Worker Type"
                 }
               },
-              "queryRef": "Employee.Worker Number",
-              "nativeQueryRef": "Worker Number",
-              "displayName": "Worker number"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Employee"
-                    }
-                  },
-                  "Property": "Person Number"
-                }
-              },
-              "queryRef": "Employee.Person Number",
-              "nativeQueryRef": "Person Number",
-              "displayName": "Person number"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Employee Name"
-                }
-              },
-              "queryRef": "_Measures.HR Employee Name",
-              "nativeQueryRef": "HR Employee Name",
-              "displayName": "Name (pay access)"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Employee Staff ID"
-                }
-              },
-              "queryRef": "_Measures.HR Employee Staff ID",
-              "nativeQueryRef": "HR Employee Staff ID",
-              "displayName": "Oasis staff ID"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Employee Hospital"
-                }
-              },
-              "queryRef": "_Measures.HR Employee Hospital",
-              "nativeQueryRef": "HR Employee Hospital",
-              "displayName": "Branch"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Employee Department"
-                }
-              },
-              "queryRef": "_Measures.HR Employee Department",
-              "nativeQueryRef": "HR Employee Department",
-              "displayName": "Department"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Employee Job"
-                }
-              },
-              "queryRef": "_Measures.HR Employee Job",
-              "nativeQueryRef": "HR Employee Job",
-              "displayName": "Job"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Employee Grade"
-                }
-              },
-              "queryRef": "_Measures.HR Employee Grade",
-              "nativeQueryRef": "HR Employee Grade",
-              "displayName": "Grade"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Employee"
-                    }
-                  },
-                  "Property": "Hire Date"
-                }
-              },
-              "queryRef": "Employee.Hire Date",
-              "nativeQueryRef": "Hire Date",
-              "displayName": "Hire date"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Employee"
-                    }
-                  },
-                  "Property": "Assignment Status"
-                }
-              },
-              "queryRef": "Employee.Assignment Status",
-              "nativeQueryRef": "Assignment Status",
-              "displayName": "Status"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Headcount"
-                }
-              },
-              "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount",
-              "displayName": "Headcount"
+              "queryRef": "Employee.Worker Type",
+              "nativeQueryRef": "Worker Type",
+              "displayName": "Worker type",
+              "active": true
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Column": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "Employee"
-                  }
-                },
-                "Property": "Worker Number"
-              }
-            },
-            "direction": "Ascending"
-          }
-        ]
       }
     },
     "objects": {
-      "total": [
+      "data": [
         {
           "properties": {
-            "totals": {
+            "mode": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dropdown'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "selection": [
+        {
+          "properties": {
+            "singleSelect": {
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            },
+            "selectAllCheckboxEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "header": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "9D"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
                 }
               }
             }
@@ -223,14 +108,45 @@
             "show": {
               "expr": {
                 "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "border": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
                   "Value": "true"
                 }
               }
             },
-            "text": {
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#CBD3DC'"
+                    }
+                  }
+                }
+              }
+            },
+            "radius": {
               "expr": {
                 "Literal": {
-                  "Value": "'People in the headcount of the month'"
+                  "Value": "6D"
+                }
+              }
+            },
+            "width": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
                 }
               }
             }
@@ -238,63 +154,11 @@
         }
       ]
     },
+    "syncGroup": {
+      "groupName": "bsc Employee.Worker Type",
+      "fieldChanges": true,
+      "filterChanges": true
+    },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "deb7e0d0ed0cf6d235d8",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Headcount"
-          }
-        },
-        "type": "Advanced",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "_",
-              "Entity": "_Measures",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "Not": {
-                  "Expression": {
-                    "Comparison": {
-                      "ComparisonKind": 0,
-                      "Left": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "_"
-                            }
-                          },
-                          "Property": "Headcount"
-                        }
-                      },
-                      "Right": {
-                        "Literal": {
-                          "Value": "null"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

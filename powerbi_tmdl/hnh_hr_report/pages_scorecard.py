@@ -15,14 +15,15 @@ YTD; on Scorecard and KPI detail only, synced between them (the sync group is th
 actual, target and status describe January to the selected month: a flow KPI's annual target is pro-rated by the
 months (scale_with_months), a snapshot KPI keeps its month-end value. Story stays on one month (R18).
 
-KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Name] only (keep_filters off: the
-scorecard's Month would otherwise AND with the line's Month Offset filter and leave one point); the page's own synced
-Branch, Month and Period slicers apply. Left, [HR KPI Detail Title] (the KPI's name) and the definition panel
-([HR KPI Definition Text], Formula, Source System, Grain, Caveats): opened without a drill-through, the title and the
-definition say how to pick a KPI instead of "(Blank)"; right, cards for [HR KPI Actual Text], target and status, the 24-month line of actual against
-target and watch, and the bar by branch. The Month slicer (synced with every page) does not reach the line or the
-bar: NoFilter interactions, so they show the last 24 closed months ('Date'[Month Offset] 1 to 24) and every branch
-whatever the selection. Period does not reach the line either (a monthly trend); the bar follows it. In each chart's
+KPI detail (`kpi_detail_page`, hidden): reached by drill-through on 'HR KPI'[KPI Name] only (keep_filters off); the
+page's own synced Branch, Dates, Last closed month and Period slicers apply. Left, [HR KPI Detail Title] (the KPI's
+name) and the definition panel: [HR KPI Definition Text], [HR KPI Formula Text], [HR KPI Source Text], [HR KPI Grain
+Text] and [HR KPI Caveats Text] (measures: a text column on a card showed an empty card, user request 2026-11-05);
+opened without a drill-through, the title and the definition say how to pick a KPI and the rest read "–". Right,
+cards for [HR KPI Detail Actual], [HR KPI Detail Target] and [HR KPI Detail Status] ("–" without a KPI, never
+"(Blank)"), the line of actual against target and watch by month, and the bar by branch. The Last closed month button
+does not reach the line (the closed months of the Dates, the last 24 at most: one KPI, three lines); the Branch slicer does not reach the
+bar (every branch). Period does not reach the line either (a monthly trend); the bar follows it. In each chart's
 title band (right-aligned, small; ruling R31), [HR KPI Pay Notice] says "Requires pay access" for a pay KPI to a reader without pay access (final review I2), and
 "" (an empty card, no filter) otherwise. Back returns to the page you came from.
 
@@ -32,10 +33,10 @@ of the HR KPI measures), not the Branch dimension's Group member, which would be
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit, button_props, no_container
-from hr_frame import (HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT, HR_TARGET_TEXT, HR_VARIANCE_TEXT,
-                      HR_WATCH_TEXT, SUB_TAB_X, SUB_TAB_Y, branches, bsc, card_look, filters, fixed_table,
-                      bar_look, line_look, measure_colour, page_frame, saved_selection, single_selection,
-                      title_notice)
+from hr_frame import (BAR_BUTTON_H, BAR_BUTTON_Y, BAR_X, HR_ACTUAL_TEXT, HR_STATUS_COLOUR, HR_STATUS_TEXT,
+                      HR_TARGET_TEXT, HR_VARIANCE_TEXT, HR_WATCH_TEXT, TREND_WINDOW, bar_look, branches, bsc,
+                      card_look, filters, fixed_table, line_look, measure_colour, page_frame, saved_selection,
+                      single_selection, title_notice, trend_interactions)
 from model import Filter, Interaction, Page, Visual, col, meas
 
 X0, Y0, W0, H0 = CONTENT  # 30, 186, 1860, ...
@@ -55,7 +56,7 @@ ACTIVE_KPIS = [Filter(KIND, "eq", ["kpi"]), Filter(STATUS, "eq", ["active"])]
 
 # ---- Scorecard ----------------------------------------------------------------------------------------------------
 
-AREA_SLICER = (SUB_TAB_X, 90, 270, 66)  # right of the Month slicer, as the others in the filter bar
+AREA_SLICER = (BAR_X, 90, 260, 66)  # right of Last closed month, as the others in the filter bar
 TABLE_Y, TABLE_H = Y0, 600  # 18 KPIs at 12 pt with a wrapped header
 DRILL_Y, DRILL_H, DRILL_W = TABLE_Y + TABLE_H + GAP, 54, 420
 MATRIX_Y = DRILL_Y + DRILL_H + GAP  # 888
@@ -89,7 +90,7 @@ TIME_CALC = col("Time Calculation", "Time Calculation")
 # left out: the HR targets are yearly from 2026, so a window reaching into 2025 pro-rates a flow KPI's target over
 # fewer months than its actual covers.
 PERIODS = ["Current", "QTD", "YTD"]
-PERIOD_W = 270
+PERIOD_W = 260
 SLICER_GAP = 15  # as between the Hospital and Month slicers
 
 
@@ -121,7 +122,7 @@ def scorecard_page() -> Page:
                     roles={"Rows": [KPI_NAME], "Columns": [BRANCH_NAME], "Values": [HR_STATUS_TEXT]},
                     filters=list(ACTIVE_KPIS), sort=KPI_NAME, sort_dir="asc", props=status_colours())
     return Page("scorecard", "Scorecard", page_frame("scorecard", bar) + [table, drill, matrix],
-                filters=[branches()], height=SCORECARD_H)
+                filters=[branches()], height=SCORECARD_H, interactions=trend_interactions(bar, []))
 
 
 # ---- KPI detail ---------------------------------------------------------------------------------------------------
@@ -138,35 +139,37 @@ BAR_Y = LINE_Y + LINE_H + GAP
 BAR_H = Y0 + H0 - BAR_Y
 BACK_W = 110
 
-# (HR KPI column, panel height)
-DEFINITION = [("Definition", 150), ("Formula", 120), ("Source System", 90), ("Grain", 90), ("Caveats", 150)]
+# (label, measure, panel height): the definition panel's cards, each a text measure ("–" when there is none)
+DEFINITION = [("Definition", "HR KPI Definition Text", 150), ("Formula", "HR KPI Formula Text", 120),
+              ("Source system", "HR KPI Source Text", 90), ("Grain", "HR KPI Grain Text", 90),
+              ("Caveats", "HR KPI Caveats Text", 150)]
 
 
 def kpi_detail_page() -> Page:
-    branch, month = filters()
-    back = bsc.back_button(SUB_TAB_X, SUB_TAB_Y, BACK_W, 54)
-    period = period_slicer(SUB_TAB_X + BACK_W + GAP)
-    visuals = page_frame(None, [branch, month, back, period])
+    bar = filters()
+    branch = bar[0]
+    back = bsc.back_button(BAR_X, BAR_BUTTON_Y, BACK_W, BAR_BUTTON_H)
+    period = period_slicer(BAR_X + BACK_W + GAP)
+    visuals = page_frame(None, bar + [back, period])
     wrap = {"wordWrap": [{"properties": {"show": _lit(True)}}]}
     # the heading and the definition are measures that say how to pick a KPI when no drill-through brought one
     visuals.append(Visual("card", X0, Y0, LEFT_W, TITLE_H, roles={"Values": [meas("HR KPI Detail Title")]},
                           props={**card_look(20, NAVY, box=True), **wrap}))
     y = Y0 + TITLE_H + GAP
-    for name, h in DEFINITION:
-        field = meas("HR KPI Definition Text") if name == "Definition" else col("HR KPI", name)
+    for label, name, h in DEFINITION:
+        field = meas(name)
         visuals.append(Visual("card", X0, y, LEFT_W, h, roles={"Values": [field]},
-                              props={**card_look(12, NAVY, category=True, box=True), **wrap},
-                              labels={field: name} if field.kind == "measure" else {}))
+                              props={**card_look(13, NAVY, category=True, box=True), **wrap}, labels={field: label}))
         y += h + GAP
-    figures = [(HR_ACTUAL_TEXT, "Actual", card_look(28, NAVY, category=True, box=True)),
-               (HR_TARGET_TEXT, "Target", card_look(28, NAVY, category=True, box=True)),
-               (HR_STATUS_TEXT, "Status", card_look(24, measure_colour(HR_STATUS_COLOUR.name), category=True,
-                                                    box=True))]
+    figures = [(meas("HR KPI Detail Actual"), "Actual", card_look(32, NAVY, category=True, box=True)),
+               (meas("HR KPI Detail Target"), "Target", card_look(32, NAVY, category=True, box=True)),
+               (meas("HR KPI Detail Status"), "Status", card_look(26, measure_colour(HR_STATUS_COLOUR.name),
+                                                                 category=True, box=True))]
     for i, (field, label, props) in enumerate(figures):
         visuals.append(Visual("card", RIGHT_X + i * (CARD_W + GAP), Y0, CARD_W, CARDS_H,
                               roles={"Values": [field]}, props=props, labels={field: label}))
     line = Visual("lineChart", RIGHT_X, LINE_Y, RIGHT_W, LINE_H,
-                  title="Actual, target and watch, last 24 closed months",
+                  title="Actual, target and watch by month",
                   roles={"Category": [YEAR_MONTH],
                          "Y": [meas("HR KPI Actual"), meas("HR KPI Target"), meas("HR KPI Watch")]},
                   filters=[Filter(MONTH_OFFSET, "in", list(range(1, 25)))], sort=YEAR_MONTH, sort_dir="asc",
@@ -178,7 +181,7 @@ def kpi_detail_page() -> Page:
     # title band (ruling R31: over the plot it took the hover and clicks). It is "" for pay readers and for a KPI that
     # needs no pay, so the card shows nothing; no filter, because a card filtered to no row prints "(Blank)"
     visuals += [title_notice(chart, "HR KPI Pay Notice") for chart in (line, bars)]
-    interactions = [Interaction(month, line, "NoFilter"), Interaction(month, bars, "NoFilter"),
-                    Interaction(branch, bars, "NoFilter"), Interaction(period, line, "NoFilter")]
+    interactions = trend_interactions(bar, [line]) + [Interaction(branch, bars, "NoFilter"),
+                                                      Interaction(period, line, "NoFilter")]
     return Page(KPI_DETAIL_NAME, "KPI detail", visuals, filters=[branches()], interactions=interactions,
                 drill_fields=[KPI_NAME], hidden=True, keep_filters=False)

@@ -2,55 +2,70 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "846056e79493754f3d4b",
   "position": {
-    "x": 1644,
-    "y": 991.0,
+    "x": 46,
+    "y": 978,
     "z": 77000,
-    "height": 48,
-    "width": 230,
+    "height": 74,
+    "width": 1582,
     "tabOrder": 77000
   },
   "visual": {
-    "visualType": "actionButton",
-    "objects": {
-      "text": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR DQ Headline"
                 }
-              }
+              },
+              "queryRef": "_Measures.HR DQ Headline",
+              "nativeQueryRef": "HR DQ Headline"
             }
-          }
-        },
+          ]
+        }
+      }
+    },
+    "objects": {
+      "labels": [
         {
           "properties": {
-            "text": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "'Open data quality ›'"
+                  "Value": "12D"
                 }
               }
             },
-            "fontColor": {
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            },
+            "color": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1478BE'"
+                      "Value": "'#0A1E32'"
                     }
                   }
                 }
               }
             }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ],
-      "fill": [
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -60,51 +75,6 @@
                 }
               }
             }
-          }
-        }
-      ],
-      "outline": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#1478BE'"
-                    }
-                  }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ]
@@ -116,34 +86,25 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualLink": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
                   "Value": "true"
                 }
               }
             },
-            "type": {
+            "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'PageNavigation'"
+                  "Value": "'Data quality'"
                 }
               }
             },
-            "navigationSection": {
-              "expr": {
-                "Literal": {
-                  "Value": "'data_quality'"
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
                 }
               }
             }

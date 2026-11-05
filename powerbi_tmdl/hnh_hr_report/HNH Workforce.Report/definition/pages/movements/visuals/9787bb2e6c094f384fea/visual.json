@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "9787bb2e6c094f384fea",
   "position": {
-    "x": 30.0,
-    "y": 410,
+    "x": 972.0,
+    "y": 420.0,
     "z": 31000,
-    "height": 110,
-    "width": 447.0,
+    "height": 128,
+    "width": 290.0,
     "tabOrder": 31000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Voluntary Turnover Rate %"
+                  "Property": "BSC Turnover"
                 }
               },
-              "queryRef": "_Measures.Voluntary Turnover Rate %",
-              "nativeQueryRef": "Voluntary Turnover Rate %",
-              "displayName": "Voluntary leaver rate in Fusion"
+              "queryRef": "_Measures.BSC Turnover",
+              "nativeQueryRef": "BSC Turnover",
+              "displayName": "Turnover"
             }
           ]
         }
@@ -41,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -72,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5adefd551864d7d0b01c",
   "position": {
-    "x": 30.0,
-    "y": 544,
+    "x": 972.0,
+    "y": 572.0,
     "z": 35000,
     "height": 300,
     "width": 918.0,
@@ -42,11 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Hires"
+                  "Property": "BSC Turnover"
                 }
               },
-              "queryRef": "_Measures.Hires",
-              "nativeQueryRef": "Hires"
+              "queryRef": "_Measures.BSC Turnover",
+              "nativeQueryRef": "BSC Turnover",
+              "displayName": "Turnover"
             },
             {
               "field": {
@@ -56,42 +57,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leavers"
+                  "Property": "Voluntary Turnover Rate %"
                 }
               },
-              "queryRef": "_Measures.Leavers",
-              "nativeQueryRef": "Leavers",
-              "displayName": "Leavers in Fusion"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Voluntary Leavers"
-                }
-              },
-              "queryRef": "_Measures.Voluntary Leavers",
-              "nativeQueryRef": "Voluntary Leavers",
-              "displayName": "Voluntary leavers in Fusion"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Involuntary Leavers"
-                }
-              },
-              "queryRef": "_Measures.Involuntary Leavers",
-              "nativeQueryRef": "Involuntary Leavers",
-              "displayName": "Involuntary leavers in Fusion"
+              "queryRef": "_Measures.Voluntary Turnover Rate %",
+              "nativeQueryRef": "Voluntary Turnover Rate %",
+              "displayName": "Voluntary leaver rate in Fusion"
             }
           ]
         }
@@ -171,6 +142,13 @@
                   "Value": "true"
                 }
               }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
             }
           }
         }
@@ -216,7 +194,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Hires and leavers in Fusion, last 12 closed months'"
+                  "Value": "'Turnover and voluntary leaver rate by month'"
                 }
               }
             }

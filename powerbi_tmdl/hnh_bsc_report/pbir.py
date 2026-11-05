@@ -43,13 +43,17 @@ class ReportSpec:
     """What differs between reports built by this generator: the project / report name (folder and file names, the
     `displayName`), the perspective of the live connection, the custom theme, the logo, and whether the report carries
     the HNH custom visual (False: no `CustomVisuals/` folder and no .pbiviz is looked for). `images`: more images
-    registered beside the logo (RegisteredResources, by file name), for image visuals such as card icons."""
+    registered beside the logo (RegisteredResources, by file name), for image visuals such as card icons.
+    `cross_filter`: a selection in a chart filters the other visuals instead of highlighting them (report setting
+    `defaultFilterActionIsDataFilter`, Desktop's "Change default visual interaction from cross highlighting to cross
+    filtering")."""
     name: str
     perspective: str
     theme: Path
     logo: Path
     custom_visual: bool
     images: tuple[Path, ...] = ()
+    cross_filter: bool = False
 
 
 BSC_REPORT = ReportSpec(REPORT_NAME, PERSPECTIVE, THEME, LOGO, True)
@@ -72,7 +76,9 @@ SCHEMAS = {  # every URL as the handover project has it, except modelReference (
 VISUAL_TYPES = {
     "card": "card", "multiRowCard": "multiRowCard", "table": "tableEx", "matrix": "pivotTable",
     "barChart": "clusteredBarChart", "lineChart": "lineChart", "slicerDropdown": "slicer",
-    "stackedColumnChart": "columnChart", "waterfallChart": "waterfallChart",
+    "stackedColumnChart": "columnChart", "waterfallChart": "waterfallChart", "columnChart": "clusteredColumnChart",
+    "donutChart": "donutChart", "comboChart": "lineClusteredColumnComboChart",
+    "slicerTile": "slicer",  # a slicer drawn as buttons (Desktop's Tile style)
     "slicerDateRange": "slicer", "textbox": "textbox", "buttonNavigate": "actionButton",
     "buttonDrill": "actionButton", "hnhVisual": None,
     "panel": "textbox",  # frame.panel: a text box without text, filled by its container background
@@ -212,6 +218,7 @@ def report_json(visual_package: dict | None, report_filters: list[Filter] = (),
             "useStylableVisualContainerHeader": True, "exportDataMode": "AllowSummarized",
             "defaultDrillFilterOtherVisuals": True, "allowChangeFilterTypes": True, "useEnhancedTooltips": True,
             "useDefaultAggregateDisplayName": True,
+            **({"defaultFilterActionIsDataFilter": True} if report.cross_filter else {}),
         },
     }
     if report_filters:
@@ -298,11 +305,16 @@ def _projection(f: Field, active: bool, label: str | None = None) -> dict:
     return p
 
 
-def _active(sample: str, role: str) -> bool:
+def _active(sample: str, role: str, position: int = 0, expand: bool = True) -> bool:
     """Desktop marks a chart's Category and a slicer's field `active`; every matrix row level is active so all
-    levels show expanded (legacy writer)."""
-    return (role == "Category" or (sample.startswith("slicer") and role == "Values")
-            or (sample == "matrix" and role == "Rows"))
+    levels show expanded (legacy writer). A chart with several Category fields is a drill-down: only the top level is
+    active (all active would show the levels' values joined on one axis); a matrix with `expand` off shows its top
+    row level, the others reached by expand or drill down."""
+    if role == "Category":
+        return position == 0
+    if sample == "matrix" and role == "Rows":
+        return expand or position == 0
+    return sample.startswith("slicer") and role == "Values"
 
 
 def _merge(target: dict, props: dict) -> None:
@@ -337,7 +349,8 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
     v: dict = {"visualType": vtype}
     if fields:
         query: dict = {"queryState": {
-            role: {"projections": [_projection(f, _active(visual.sample, role), visual.labels.get(f)) for f in fs]}
+            role: {"projections": [_projection(f, _active(visual.sample, role, i, visual.expand), visual.labels.get(f))
+                                   for i, f in enumerate(fs)]}
             for role, fs in visual.roles.items()}}
         if visual.sort:
             query["sortDefinition"] = {"sort": [{"field": field_expr(visual.sort),
@@ -350,9 +363,13 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
     if visual.sample == "slicerDropdown":
         objects["data"] = [{"properties": {"mode": _value("Dropdown")}}]
     elif visual.sample == "slicerDateRange":
-        if visual.date_range is None:
-            raise ValueError(f"page {page.display}: a slicerDateRange needs a date_range")
-        objects.update(date_range_slicer(fields[0], visual.date_range))
+        # without a date_range: a From - To slicer with no saved selection (every date until the user picks)
+        objects.update(date_range_slicer(fields[0], visual.date_range) if visual.date_range is not None
+                       else {"data": [{"properties": {"mode": _value("Between")}}]})
+    elif visual.sample == "slicerTile":
+        # Desktop's Tile style: Basic mode laid out horizontally (general.orientation 1), each item a button
+        objects["data"] = [{"properties": {"mode": _value("Basic")}}]
+        objects["general"] = [{"properties": {"orientation": {"expr": {"Literal": {"Value": "1D"}}}}}]
     title = ({"show": _value(True), "text": _value(visual.title)} if visual.title is not None
              else {"show": _value(False)})
     container["title"] = [{"properties": title}]

@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "a54da5fc7406ca91d8bd",
   "position": {
-    "x": 30.0,
-    "y": 966,
+    "x": 30,
+    "y": 572.0,
     "z": 31000,
     "height": 300,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 31000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "lineClusteredColumnComboChart",
     "query": {
       "queryState": {
         "Category": {
@@ -42,12 +42,46 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Time to Fill (days)"
+                  "Property": "Requisitions Approved"
                 }
               },
-              "queryRef": "_Measures.BSC Time to Fill (days)",
-              "nativeQueryRef": "BSC Time to Fill (days)",
-              "displayName": "Time to fill (days)"
+              "queryRef": "_Measures.Requisitions Approved",
+              "nativeQueryRef": "Requisitions Approved",
+              "displayName": "Approved"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Requisitions Filled"
+                }
+              },
+              "queryRef": "_Measures.Requisitions Filled",
+              "nativeQueryRef": "Requisitions Filled",
+              "displayName": "Filled"
+            }
+          ]
+        },
+        "Y2": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Requisition Fill Rate %"
+                }
+              },
+              "queryRef": "_Measures.Requisition Fill Rate %",
+              "nativeQueryRef": "Requisition Fill Rate %",
+              "displayName": "Fill rate"
             }
           ]
         }
@@ -94,6 +128,13 @@
                   "Value": "false"
                 }
               }
+            },
+            "secShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
             }
           }
         }
@@ -125,6 +166,13 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
                 }
               }
             }
@@ -172,7 +220,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Time to fill (days), last 12 closed months'"
+                  "Value": "'Approved and filled, with the fill rate, by month'"
                 }
               }
             }

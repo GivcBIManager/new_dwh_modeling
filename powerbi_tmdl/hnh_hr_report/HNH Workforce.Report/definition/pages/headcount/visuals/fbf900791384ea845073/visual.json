@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "fbf900791384ea845073",
   "position": {
-    "x": 406.8,
-    "y": 186,
+    "x": 30.0,
+    "y": 254,
     "z": 23000,
     "height": 66,
     "width": 352.8,
@@ -20,15 +20,15 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Job"
+                      "Entity": "HR Department"
                     }
                   },
-                  "Property": "Job Name"
+                  "Property": "Department Base Name"
                 }
               },
-              "queryRef": "Job.Job Name",
-              "nativeQueryRef": "Job Name",
-              "displayName": "Job",
+              "queryRef": "HR Department.Department Base Name",
+              "nativeQueryRef": "Department Base Name",
+              "displayName": "Department",
               "active": true
             }
           ]
@@ -168,7 +168,7 @@
       ]
     },
     "syncGroup": {
-      "groupName": "bsc Job.Job Name",
+      "groupName": "bsc HR Department.Department Base Name",
       "fieldChanges": true,
       "filterChanges": true
     },

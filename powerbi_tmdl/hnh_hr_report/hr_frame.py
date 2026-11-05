@@ -3,9 +3,10 @@ model, pbir; spec docs/superpowers/specs/2026-11-02-hr-dashboard-design.md, "Pag
 
     HR_FRAME, HR_REPORT      the frame (title, tabs, help buttons) and the report (name, perspective, theme, logo)
     page_frame(tab, bar)     the BSC frame with the HR title and tabs; `bar`: the visuals in the filter bar
-    filters()                Branch and Month dropdowns, synced across pages
+    filters()                Branch, the Dates range (date pickers) and the Last closed month button, synced
+    trend_interactions()     the Last closed month button does not reach the trend charts
     branches()               the report's branches: the eight hospitals and Head Office (a page filter)
-    sub_tabs(current)        the six detail pages as a second row of tabs in the filter bar
+    sub_tabs(current, x, y)  the six detail pages as a row of tabs at the top of the content box
     kpi_tile(code, x, y, w, h)  a KPI's actual, target and status on a white panel, with the KPI's icon
     icon(name, x, y, size)   one of icons/hr_icon_<name>.svg (registered with the report) as an image visual
     line_look(), bar_look(), column_look()  chart format: every data label (and line marker), no value axis
@@ -32,7 +33,7 @@ import frame  # noqa: E402
 from frame import (FILTER_BAR, LOGO, NAVY, WHITE, Rect, _colour, _lit, _num, button_props, no_container,  # noqa: E402
                    tab_width)
 from layout import aliases, lit, source_expr  # noqa: E402
-from model import MEASURE_TABLE, Field, Filter, Visual, col, meas  # noqa: E402
+from model import MEASURE_TABLE, Field, Filter, Interaction, Visual, col, meas  # noqa: E402
 from pbir import THEME, ReportSpec  # noqa: E402
 from pbir import _text as pbir_text  # noqa: E402
 
@@ -63,7 +64,9 @@ HELP: list[tuple[str, str, Rect]] = [("guide", "How to use", frame.HELP_BUTTONS[
 HR_FRAME = frame.FrameSpec("Workforce", "Hayat Healthcare", TABS, HELP, logo=LOGO.name)
 ICON_DIR = HERE / "icons"
 ICON_FILES = tuple(sorted(ICON_DIR.glob("hr_icon_*.svg")))
-HR_REPORT = ReportSpec("HNH Workforce", "HR Dashboard", THEME, LOGO, custom_visual=False, images=ICON_FILES)
+# cross_filter (user request 2026-11-05): a selection in a chart filters the other visuals, it does not highlight
+HR_REPORT = ReportSpec("HNH Workforce", "HR Dashboard", THEME, LOGO, custom_visual=False, images=ICON_FILES,
+                       cross_filter=True)
 
 # The detail pages under the Details tab: (page name, display name, sub-tab label).
 DETAIL_PAGES: list[tuple[str, str, str]] = [
@@ -98,9 +101,21 @@ BRANCH_KEYS = [1, 2, 3, 4, 5, 6, 7, 8, HEAD_OFFICE]
 MONTH_PICK = col("Date", "Month Pick")
 LAST_CLOSED_MONTH = "Last closed month"
 BRANCH_SLICER: Rect = (30, 90, 330, 66)  # the BSC's slicer rects: the bar (84..162) less 6 px top and bottom
-MONTH_SLICER: Rect = (375, 90, 270, 66)
-SUB_TAB_X, SUB_TAB_GAP = 669, 6  # right of the Month slicer (ends 645); the row ends before How to use (1590)
-SUB_TAB_Y, SUB_TAB_H = 96, 54  # as the help buttons
+DATES_SLICER: Rect = (375, 90, 400, 66)  # From - To with date pickers
+LAST_MONTH_BUTTON: Rect = (790, 96, 220, 54)  # as the help buttons
+BAR_X = 1034  # the next control in the filter bar (Back, Area, Period); the bar ends before How to use (1590)
+BAR_BUTTON_Y, BAR_BUTTON_H = 96, 54
+DATE = col("Date", "Date")
+MONTH_OFFSET = col("Date", "Month Offset")
+# The Dates slicer offers the last 36 months and the current one ('Date'[Month Offset] 0 to 36), not the date
+# table's 2008-2028
+DATES_OFFERED = Filter(MONTH_OFFSET, "in", list(range(0, 37)))
+# Trend charts: the closed months of the Dates picked, at most the last 12 ('Date'[Month Offset] 1 to 12: 22 months
+# with every label shown were unreadable, 2026-11-05 screenshots); the Last closed month button does not reach them
+# (trend_interactions). KPI detail's line keeps 24 months (pages_scorecard)
+TREND_WINDOW = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
+SUB_TAB_GAP = 6
+SUB_TAB_H = 44  # the detail pages' tabs, at the top of the content box
 
 
 def branches() -> Filter:
@@ -162,40 +177,63 @@ def single_selection() -> dict:
     return {"selection": [{"properties": {"singleSelect": _lit(True), "selectAllCheckboxEnabled": _lit(False)}}]}
 
 
+def last_month_button() -> Visual:
+    """The Last closed month button: a one-item tile slicer on 'Date'[Month Pick] (the model gives that label to the
+    previous month each day, ruling R21), saved selected, so the report opens on the month just ended without a
+    rebuild. Multi-select without Select all: a click turns it off (the Dates then apply alone) and on again."""
+    selection = {"selection": [{"properties": {"singleSelect": _lit(False), "selectAllCheckboxEnabled": _lit(False)}}]}
+    look = {"header": [{"properties": {"show": _lit(False)}}],
+            "items": [{"properties": {"textSize": _num(11), "fontColor": _colour(NAVY)}}],
+            **no_container()}
+    return Visual("slicerTile", *LAST_MONTH_BUTTON, roles={"Values": [MONTH_PICK]},
+                  filters=[Filter(MONTH_PICK, "eq", [LAST_CLOSED_MONTH])],
+                  props={**selection, **look, **saved_selection(MONTH_PICK, LAST_CLOSED_MONTH)})
+
+
 def filters() -> list[Visual]:
-    """Branch (the eight hospitals and Head Office, multi-select with Select all) and Month dropdowns. pbir.py gives
-    each slicer the sync group of its field, so a selection carries to every page. Month (ruling R21) is
-    single-select on 'Date'[Month Pick], saved on "Last closed month": the model gives that label to the previous
-    month each day, so the report opens on the last closed month without a rebuild, the month HR Story Home
-    describes. Head Office shows only to users whose access grants it (the HNH Readers role)."""
+    """Branch, Dates and Last closed month, each synced across pages (pbir.py gives a slicer the sync group of its
+    field). Branch: the eight hospitals and Head Office, multi-select with Select all; Head Office shows only to users
+    whose access grants it (the HNH Readers role). Dates (user request 2026-11-05): a From - To slicer with date
+    pickers on 'Date'[Date], no saved range. Last closed month: a button, on when the report opens (last_month_button).
+    With the button on, the cards and the charts by branch, department and so on show the month just ended, and the
+    Dates slicer shows its days; turned off, they follow the Dates picked: flows (hires, pay, absence days) add up over
+    the dates, month-end figures (headcount, leave balance) are those of the last closed month in them. Trend charts
+    follow the Dates only (trend_interactions)."""
     return [
         Visual("slicerDropdown", *BRANCH_SLICER, roles={"Values": [BRANCH_NAME]}, filters=[branches()],
                props={**bsc.select_all_selection(), **bsc.dropdown_look()}, labels={BRANCH_NAME: "Branch"}),
-        Visual("slicerDropdown", *MONTH_SLICER, roles={"Values": [MONTH_PICK]},
-               props={**single_selection(), **bsc.dropdown_look(), **saved_selection(MONTH_PICK, LAST_CLOSED_MONTH)},
-               labels={MONTH_PICK: "Month"}),
+        Visual("slicerDateRange", *DATES_SLICER, roles={"Values": [DATE]}, filters=[DATES_OFFERED],
+               props=bsc.dropdown_look(), labels={DATE: "Dates"}),
+        last_month_button(),
     ]
+
+
+def trend_interactions(bar: list[Visual], trends: list[Visual]) -> list[Interaction]:
+    """The filter bar's interactions (`bar` as filters() returns it): the Last closed month button does not reach
+    the trend charts, which show the months of the Dates picked; the Dates slicer does not filter the button, so its
+    one item stays whatever the dates."""
+    _branch, dates, last_month = bar[:3]
+    return [Interaction(last_month, t, "NoFilter") for t in trends] + [Interaction(dates, last_month, "NoFilter")]
 
 
 def _navigate(page_name: str) -> dict:
     return {"type": _lit("PageNavigation"), "navigationSection": _lit(page_name)}
 
 
-def sub_tabs(current: str) -> list[Visual]:
-    """The six detail pages as a row of buttons in the filter bar, right of the slicers: the current page's filled
-    in brand blue ("primary"), the others outlined ("outline"). `current` must be a detail page."""
+def sub_tabs(current: str, x: float, y: float) -> list[Visual]:
+    """The six detail pages as a row of buttons from (x, y) at the top of the content box (the filter bar holds the
+    Dates and Last closed month since 2026-11-05): the current page's filled in brand blue ("primary"), the others
+    outlined ("outline"). `current` must be a detail page."""
     names = [name for name, _display, _label in DETAIL_PAGES]
     if current not in names:
         raise ValueError(f"sub_tabs: {current!r} is not a detail page ({', '.join(names)})")
-    out, x = [], SUB_TAB_X
+    out = []
     for name, _display, label in DETAIL_PAGES:
-        w = tab_width(label)
+        w = tab_width(label) + 24
         kind = "primary" if name == current else "outline"
-        out.append(Visual("buttonNavigate", x, SUB_TAB_Y, w, SUB_TAB_H,
+        out.append(Visual("buttonNavigate", x, y, w, SUB_TAB_H,
                           props={**button_props(_navigate(name), label, kind), **no_container()}))
         x += w + SUB_TAB_GAP
-    if x - SUB_TAB_GAP > HELP[0][2][0] or SUB_TAB_Y + SUB_TAB_H > FILTER_BAR[1] + FILTER_BAR[3]:
-        raise ValueError("sub_tabs: the row does not fit the filter bar")
     return out
 
 
@@ -360,9 +398,10 @@ def _axes_off(units: str = "auto") -> dict:
             "labels": [{"properties": labels}]}
 
 
-def line_look() -> dict:
-    """A line chart: labels on every point, markers on, no value axis."""
-    return {**_axes_off(), "markers": [{"properties": {"show": _lit(True)}}],
+def line_look(units: str = "none") -> dict:
+    """A line chart: labels on every point (in `units`, see _axes_off: auto units wrote 12 days as "0.0K"), markers
+    on, no value axis."""
+    return {**_axes_off(units), "markers": [{"properties": {"show": _lit(True)}}],
             "lineStyles": [{"properties": {"showMarker": _lit(True)}}]}
 
 
@@ -382,6 +421,37 @@ def column_look(units: str = "auto") -> dict:
     return _axes_off(units)
 
 
+def combo_look() -> dict:
+    """A line and clustered column chart: labels on every column and point, markers on, no value axes (the
+    columns' and the line's: valueAxis.show and secShow)."""
+    out = {**_axes_off("none"), "markers": [{"properties": {"show": _lit(True)}}],
+           "lineStyles": [{"properties": {"showMarker": _lit(True)}}]}
+    out["valueAxis"][0]["properties"]["secShow"] = _lit(False)
+    return out
+
+
+def donut_look() -> dict:
+    """A donut of a few parts: each slice labelled with its category and share of the total, the legend off (the
+    labels name the slices)."""
+    return {"labels": [{"properties": {"show": _lit(True), "labelStyle": _lit("Category, percent of total"),
+                                       "fontSize": _num(11)}}],
+            "legend": [{"properties": {"show": _lit(False)}}]}
+
+
+def heat_colours(measures: list[Field], high: str = "#1478BE") -> dict:
+    """A matrix or table's cells shaded by value, white to `high` (conditional formatting: a background colour
+    scale per measure, `values.backColor` with a linearGradient2 fill rule, as Desktop writes it), blank as zero."""
+    def rule(m: Field) -> dict:
+        source = {"Measure": {"Expression": {"SourceRef": {"Entity": m.table}}, "Property": m.name}}
+        fill = {"linearGradient2": {"min": {"color": {"Literal": {"Value": "'#FFFFFF'"}}},
+                                    "max": {"color": {"Literal": {"Value": f"'{high}'"}}},
+                                    "nullColoringStrategy": {"strategy": {"Literal": {"Value": "'asZero'"}}}}}
+        return {"properties": {"backColor": {"solid": {"color": {"expr": {"FillRule": {"Input": source,
+                                                                                         "FillRule": fill}}}}}},
+                "selector": {"data": [{"dataViewWildcard": {"matchingOption": 1}}], "metadata": m.ref}}
+    return {"values": [rule(m) for m in measures]}
+
+
 # ---- KPI tile -----------------------------------------------------------------------------------------------------
 
 KPI_CODE = col("HR KPI", "KPI Code")
@@ -398,20 +468,23 @@ def measure_colour(measure: str) -> dict:
                                                      "Property": measure}}}}}
 
 
+CARD_LABEL_PT = 12  # a card's label under its figure (user request 2026-11-05: 9pt was too small)
+
+
 def card_look(size: float, colour: str | dict | None = None, category: bool = False, box: bool = False,
               decimals: int | None = None) -> dict:
     """Card format objects: the value in Segoe UI `size` pt, `colour` a hex colour or a measure_colour(); the
     category label (the field's name or its label in the visual) in small grey, or hidden. `box`: keep the theme's
     white panel; else no background, border or visual header (the card sits on a panel). `decimals`: the value's
     decimal places (`labelPrecision`) whatever the measure's format; None keeps the format's."""
-    labels = {"fontSize": _num(size)}
+    labels = {"fontSize": _num(size), "fontFamily": _lit("Segoe UI Semibold")}
     if decimals is not None:  # display units None (1): with Auto the card kept the format's decimal
         labels["labelDisplayUnits"] = _num(1)
         labels["labelPrecision"] = {"expr": {"Literal": {"Value": f"{decimals}L"}}}
     if colour is not None:
         labels["color"] = _colour(colour) if isinstance(colour, str) else colour
     out = {"labels": [{"properties": labels}],
-           "categoryLabels": [{"properties": {"show": _lit(category), **({"fontSize": _num(9),
+           "categoryLabels": [{"properties": {"show": _lit(category), **({"fontSize": _num(CARD_LABEL_PT),
                                                                           "color": _colour(MUTED)}
                                                                          if category else {})}}]}
     return out if box else {**out, **no_container()}
@@ -452,19 +525,19 @@ def kpi_tile(code: str, x: float, y: float, w: float, h: float) -> list[Visual]:
     ("6.0% (placeholder)", "Not set", "Requires pay access") labelled "Target", and [HR KPI Status Text] (shape and
     word, "◆ Watch") in the colour of [HR KPI Status Colour]: colour, shape and word."""
     label = kpi_label(code)
-    pad, status_h, target_h = TILE_PAD, 48, 56
+    pad, status_h, target_h = TILE_PAD, 50, 62
     ix, iw = x + pad, w - 2 * pad
     actual_h = h - 2 * pad - target_h - status_h
     if actual_h < 80:
         raise ValueError(f"kpi_tile {code}: {h} px is too low for a tile")
     only = [Filter(KPI_CODE, "eq", [code])]
     actual = Visual("card", ix, y + pad, iw, actual_h, roles={"Values": [HR_ACTUAL_TEXT]}, filters=list(only),
-                    title=label, props={**card_look(28, NAVY), **small_title()})
+                    title=label, props={**card_look(32, NAVY), **small_title(14)})
     target = Visual("card", ix, y + pad + actual_h, iw, target_h, roles={"Values": [HR_TARGET_TEXT]},
-                    filters=list(only), props=card_look(12, MUTED, category=True),
+                    filters=list(only), props=card_look(14, MUTED, category=True),
                     labels={HR_TARGET_TEXT: "Target"})
     status = Visual("card", ix, y + pad + actual_h + target_h, iw, status_h, roles={"Values": [HR_STATUS_TEXT]},
-                    filters=list(only), props=card_look(14, measure_colour(HR_STATUS_COLOUR.name)))
+                    filters=list(only), props=card_look(16, measure_colour(HR_STATUS_COLOUR.name)))
     out = [white_panel(x, y, w, h), actual, target, status]
     if code in KPI_ICONS:  # top right of the panel, beside the label
         out.append(icon(KPI_ICONS[code], x + w - pad - ICON_SIZE, y + pad))

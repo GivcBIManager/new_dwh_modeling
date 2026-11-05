@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "2abbdb3304e1248e081f",
   "position": {
-    "x": 501.0,
-    "y": 276,
+    "x": 30.0,
+    "y": 420.0,
     "z": 28000,
-    "height": 110,
-    "width": 447.0,
+    "height": 128,
+    "width": 290.0,
     "tabOrder": 28000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leavers"
+                  "Property": "Hires"
                 }
               },
-              "queryRef": "_Measures.Leavers",
-              "nativeQueryRef": "Leavers",
-              "displayName": "Leavers in Fusion"
+              "queryRef": "_Measures.Hires",
+              "nativeQueryRef": "Hires",
+              "displayName": "Hires"
             }
           ]
         }
@@ -41,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -72,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

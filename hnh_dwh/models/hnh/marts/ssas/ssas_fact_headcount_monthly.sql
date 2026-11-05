@@ -1,1 +1,1 @@
-{{ hnh_ssas_view('fact_headcount_monthly', drop=['headcount_key', 'month_end'], floats=['fte']) }}
+{{ hnh_ssas_view('fact_headcount_monthly', drop=['headcount_key', 'month_end'], floats=['fte'], extra=['toInt64(' ~ hnh_age_band_order('t.age_band') ~ ') as age_band_order', 'toInt64(' ~ hnh_tenure_band_order('t.tenure_band') ~ ') as tenure_band_order']) }}

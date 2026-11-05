@@ -91,15 +91,16 @@ def _from(al: dict[str, str]) -> list[dict]:
 
 def filter_json(name: str, flt: Filter) -> dict:
     """A user filter for a visual's or a page's `filters` list. A column `in` / `eq`: Categorical In (what the filter
-    pane writes for ticked values). A measure `eq`: Advanced, is the value. `notblank` (column or measure):
-    Advanced, Not (is blank), the filter pane's "is not blank"."""
+    pane writes for ticked values). A column `notin`: Categorical Not In (Select all, then untick the values). A
+    measure `eq`: Advanced, is the value. `notblank` (column or measure): Advanced, Not (is blank), the filter pane's
+    "is not blank"."""
     f = flt.field
     values = list(flt.values) if isinstance(flt.values, (list, tuple, set)) else [flt.values]
     if flt.op == "notblank":
         if values:
             raise ValueError(f"filter on {f}: notblank takes no values, got {values}")
-    elif flt.op not in ("in", "eq") or (flt.op == "eq" and len(values) != 1) or not values:
-        raise ValueError(f"filter on {f}: op must be 'in' (values), 'eq' (one value) or 'notblank', "
+    elif flt.op not in ("in", "eq", "notin") or (flt.op == "eq" and len(values) != 1) or not values:
+        raise ValueError(f"filter on {f}: op must be 'in' or 'notin' (values), 'eq' (one value) or 'notblank', "
                          f"got {flt.op} {values}")
     al = aliases([f.table])
     src = source_expr(f, al[f.table])
@@ -110,6 +111,9 @@ def filter_json(name: str, flt: Filter) -> dict:
         if flt.op != "eq":
             raise ValueError(f"filter on {f}: a measure filter takes 'eq' or 'notblank'")
         cond, ftype = {"Comparison": {"ComparisonKind": 0, "Left": src, "Right": lit(values[0])}}, "Advanced"
+    elif flt.op == "notin":
+        cond = {"Not": {"Expression": {"In": {"Expressions": [src], "Values": [[lit(v)] for v in values]}}}}
+        ftype = "Categorical"
     else:
         cond, ftype = {"In": {"Expressions": [src], "Values": [[lit(v)] for v in values]}}, "Categorical"
     return {"name": name, "expression": field_expr(f),

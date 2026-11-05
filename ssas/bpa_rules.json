@@ -13,7 +13,7 @@
     "Category": "HNH",
     "Severity": 3,
     "Scope": "DataColumn",
-    "Expression": "IsHidden and IsAvailableInMDX and Table.GetAnnotation(\"hnh_kind\") = \"fact\""
+    "Expression": "IsHidden and IsAvailableInMDX and Table.GetAnnotation(\"hnh_kind\") = \"fact\" and not UsedInSortBy.Any()"
   },
   {
     "ID": "HNH_NO_IMPLICIT_MEASURES",

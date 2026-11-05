@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "d35ca1256db45313be24",
   "position": {
-    "x": 972.0,
-    "y": 868,
+    "x": 30,
+    "y": 1448.0,
     "z": 38000,
-    "height": 488,
-    "width": 918.0,
+    "height": 528,
+    "width": 604.0,
     "tabOrder": 38000
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "Worker Action"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Action Reason Name"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "Worker Action.Action Reason Name",
+              "nativeQueryRef": "Action Reason Name",
               "active": true
             }
           ]
@@ -42,12 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Job Changes"
+                  "Property": "Leavers"
                 }
               },
-              "queryRef": "_Measures.Job Changes",
-              "nativeQueryRef": "Job Changes",
-              "displayName": "Job changes"
+              "queryRef": "_Measures.Leavers",
+              "nativeQueryRef": "Leavers",
+              "displayName": "Leavers in Fusion"
             },
             {
               "field": {
@@ -57,42 +57,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Grade Changes"
+                  "Property": "Voluntary Leavers"
                 }
               },
-              "queryRef": "_Measures.Grade Changes",
-              "nativeQueryRef": "Grade Changes",
-              "displayName": "Grade changes"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Position Changes"
-                }
-              },
-              "queryRef": "_Measures.Position Changes",
-              "nativeQueryRef": "Position Changes",
-              "displayName": "Position changes"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Location Changes"
-                }
-              },
-              "queryRef": "_Measures.Location Changes",
-              "nativeQueryRef": "Location Changes",
-              "displayName": "Location changes"
+              "queryRef": "_Measures.Voluntary Leavers",
+              "nativeQueryRef": "Voluntary Leavers",
+              "displayName": "Voluntary leavers in Fusion"
             }
           ]
         }
@@ -107,7 +77,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Job Changes"
+                "Property": "Leavers"
               }
             },
             "direction": "Descending"
@@ -205,7 +175,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Changes by kind and branch'"
+                  "Value": "'Leavers by action reason, top 10'"
                 }
               }
             }
@@ -214,5 +184,111 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "4b33be53449a6173d06f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Worker Action"
+              }
+            },
+            "Property": "Action Reason Name"
+          }
+        },
+        "type": "TopN",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "subquery",
+              "Expression": {
+                "Subquery": {
+                  "Query": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "w",
+                        "Entity": "Worker Action",
+                        "Type": 0
+                      },
+                      {
+                        "Name": "_",
+                        "Entity": "_Measures",
+                        "Type": 0
+                      }
+                    ],
+                    "Select": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "w"
+                            }
+                          },
+                          "Property": "Action Reason Name"
+                        },
+                        "Name": "field"
+                      }
+                    ],
+                    "OrderBy": [
+                      {
+                        "Direction": 2,
+                        "Expression": {
+                          "Measure": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "_"
+                              }
+                            },
+                            "Property": "Leavers"
+                          }
+                        }
+                      }
+                    ],
+                    "Top": 10
+                  }
+                }
+              },
+              "Type": 2
+            },
+            {
+              "Name": "w",
+              "Entity": "Worker Action",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "w"
+                          }
+                        },
+                        "Property": "Action Reason Name"
+                      }
+                    }
+                  ],
+                  "Table": {
+                    "SourceRef": {
+                      "Source": "subquery"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

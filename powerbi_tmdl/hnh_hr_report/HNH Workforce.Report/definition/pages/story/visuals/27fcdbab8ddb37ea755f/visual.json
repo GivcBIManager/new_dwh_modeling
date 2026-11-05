@@ -3,10 +3,10 @@
   "name": "27fcdbab8ddb37ea755f",
   "position": {
     "x": 30,
-    "y": 270,
+    "y": 186,
     "z": 17000,
-    "height": 280,
-    "width": 744,
+    "height": 60,
+    "width": 1860,
     "tabOrder": 17000
   },
   "visual": {
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR Story Size"
+                  "Property": "HR Story Month"
                 }
               },
-              "queryRef": "_Measures.HR Story Size",
-              "nativeQueryRef": "HR Story Size"
+              "queryRef": "_Measures.HR Story Month",
+              "nativeQueryRef": "HR Story Month"
             }
           ]
         }
@@ -40,7 +40,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "14D"
+                  "Value": "20D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },

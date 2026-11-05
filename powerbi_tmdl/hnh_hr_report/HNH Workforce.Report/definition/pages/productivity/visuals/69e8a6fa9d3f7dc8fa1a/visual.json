@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "69e8a6fa9d3f7dc8fa1a",
   "position": {
-    "x": 972.0,
-    "y": 494,
+    "x": 1286.0,
+    "y": 482.0,
     "z": 30000,
-    "height": 484,
-    "width": 918.0,
+    "height": 150,
+    "width": 604.0,
     "tabOrder": 30000
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "Staff Productivity"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Staff Category"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "Staff Productivity.Staff Category",
+              "nativeQueryRef": "Staff Category",
               "active": true
             }
           ]
@@ -42,27 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Staff to Bed"
+                  "Property": "Payroll Cost per Visit"
                 }
               },
-              "queryRef": "_Measures.BSC Staff to Bed",
-              "nativeQueryRef": "BSC Staff to Bed",
-              "displayName": "Staff to bed"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "BSC Clinical to Doctor"
-                }
-              },
-              "queryRef": "_Measures.BSC Clinical to Doctor",
-              "nativeQueryRef": "BSC Clinical to Doctor",
-              "displayName": "Clinical staff to doctor"
+              "queryRef": "_Measures.Payroll Cost per Visit",
+              "nativeQueryRef": "Payroll Cost per Visit"
             }
           ]
         }
@@ -77,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "BSC Staff to Bed"
+                "Property": "Payroll Cost per Visit"
               }
             },
             "direction": "Descending"
@@ -175,7 +159,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Staff to bed and clinical staff to doctor by branch'"
+                  "Value": "'Payroll cost per visit (SAR)'"
                 }
               }
             }

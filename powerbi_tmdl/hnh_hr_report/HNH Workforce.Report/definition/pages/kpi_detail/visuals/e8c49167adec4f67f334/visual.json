@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "e8c49167adec4f67f334",
   "position": {
-    "x": 1527.3333333333335,
+    "x": 1140.6666666666667,
     "y": 186,
     "z": 25000,
     "height": 150,
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR KPI Status Text"
+                  "Property": "HR KPI Detail Target"
                 }
               },
-              "queryRef": "_Measures.HR KPI Status Text",
-              "nativeQueryRef": "HR KPI Status Text",
-              "displayName": "Status"
+              "queryRef": "_Measures.HR KPI Detail Target",
+              "nativeQueryRef": "HR KPI Detail Target",
+              "displayName": "Target"
             }
           ]
         }
@@ -41,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "32D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -49,13 +56,8 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "HR KPI Status Colour"
+                    "Literal": {
+                      "Value": "'#0A1E32'"
                     }
                   }
                 }
@@ -77,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

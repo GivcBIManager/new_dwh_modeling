@@ -46,6 +46,7 @@ table Employee
 	column 'Age Band'
 		dataType: string
 		summarizeBy: none
+		sortByColumn: 'Age Band Order'
 		sourceColumn: age_band
 
 	column 'Hire Date'
@@ -74,6 +75,7 @@ table Employee
 	column 'Tenure Band'
 		dataType: string
 		summarizeBy: none
+		sortByColumn: 'Tenure Band Order'
 		sourceColumn: tenure_band
 
 	column 'Branch Key'
@@ -87,6 +89,18 @@ table Employee
 		dataType: string
 		summarizeBy: none
 		sourceColumn: assignment_status
+
+	column 'Age Band Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: age_band_order
+
+	column 'Tenure Band Order'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: tenure_band_order
 
 	partition Employee = m
 		source =

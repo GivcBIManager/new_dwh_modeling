@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "d149584cca3a2796697e",
   "position": {
-    "x": 501.0,
-    "y": 276,
+    "x": 30.0,
+    "y": 420.0,
     "z": 28000,
-    "height": 110,
-    "width": 447.0,
+    "height": 128,
+    "width": 290.0,
     "tabOrder": 28000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FTE"
+                  "Property": "Headcount"
                 }
               },
-              "queryRef": "_Measures.FTE",
-              "nativeQueryRef": "FTE",
-              "displayName": "FTE"
+              "queryRef": "_Measures.Headcount",
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -41,21 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "30D"
                 }
               }
             },
-            "labelDisplayUnits": {
+            "fontFamily": {
               "expr": {
                 "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "labelPrecision": {
-              "expr": {
-                "Literal": {
-                  "Value": "0L"
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -86,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

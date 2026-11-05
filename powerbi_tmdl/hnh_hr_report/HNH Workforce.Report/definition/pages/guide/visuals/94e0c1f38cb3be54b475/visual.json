@@ -21,21 +21,8 @@
                   {
                     "value": "Know the figures",
                     "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "14pt",
-                      "fontWeight": "bold",
-                      "color": "#1478BE"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5 and Fusion voluntary leavers for hospitals 6 to 8. The leaver figures marked in Fusion count Fusion leavers and do not reconcile with it; they are not scored.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -44,10 +31,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Promotions are the Fusion PROMOTION action. HR to confirm that this is the definition they want.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -56,10 +43,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Absence is not shown by department and payroll is not shown by job: the model has no department on the absence facts and no job on payroll.",
+                    "value": "• Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5, Fusion voluntary leavers for hospitals 6 to 8. Leaver figures marked in Fusion count Fusion leavers only.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -68,10 +55,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Data quality: the records are rebuilt with the nightly build, so a fix at the source disappears on the next day's refresh. Records at Head Office are visible to administrators only.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -80,10 +67,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Unknown, in any list or chart, means the record names no department, location, job, staff member or other item, or names one the source does not have; it is the same label in every report.",
+                    "value": "• Promotions are the Fusion PROMOTION action (HR to confirm).",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -92,10 +79,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Departments and positions are shown without the hospital prefix (Nursing Department, Staff Nurse), so the same name at every hospital is one bar; the Employee list shows each person's own department.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -104,10 +91,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced by 1 (Data quality lists those). FTE figures therefore show no decimals.",
+                    "value": "• FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced by 1.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -116,10 +103,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Vacancy rate is the open requisition openings divided by the budgeted FTE of the year; until the budgeted FTE is loaded the vacancy rate reads No budgeted FTE.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -128,10 +115,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Definitions lists every KPI and metric with its definition, formula, source and caveats; pick an Area to narrow it.",
+                    "value": "• Pay by grade uses each person's grade in the month's headcount; pay of people without one is left out.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -140,10 +127,154 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Questions, corrections, or a target to change: contact the BI manager.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Leave balances come from Fusion absence plans; Oasis records leave taken, not balances.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Vacancy rate: open requisitions divided by the budgeted FTE of the year. It reads No budgeted FTE until the budget is loaded.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Story rates show 2 decimals; the largest change names the branch that moved most.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Unknown means the record names no department, job, grade or other item.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Data quality is rebuilt nightly, so a fix at the source shows the next day.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Questions or a target to change: contact the BI manager.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }

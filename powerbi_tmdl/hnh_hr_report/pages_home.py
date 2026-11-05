@@ -18,7 +18,7 @@ from model import Page, Visual, meas
 
 GAP = 24
 X0, Y0, W0, H0 = CONTENT  # 30, 186, 1860, 870: ends at y 1056
-STORY_H, TILE_H, AREA_H, DQ_H = 120, 236, 100, 82  # with four gaps: 870
+STORY_H, TILE_H, AREA_H, DQ_H = 100, 236, 120, 82  # with four gaps: 870 (area cards fit their 12pt labels)
 STORY = (X0, Y0, W0, STORY_H)
 TILES_Y = Y0 + STORY_H + GAP  # 330; the second row at 590
 TILE_W = (W0 - 3 * GAP) / 4  # 447

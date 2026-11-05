@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "3a3de8a8a865d0eaa1b1",
   "position": {
-    "x": 1160.4,
-    "y": 186,
+    "x": 783.6,
+    "y": 254,
     "z": 25000,
     "height": 66,
     "width": 352.8,
@@ -20,15 +20,15 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "Grade"
                     }
                   },
-                  "Property": "Nationality"
+                  "Property": "Grade Name"
                 }
               },
-              "queryRef": "Employee.Nationality",
-              "nativeQueryRef": "Nationality",
-              "displayName": "Nationality",
+              "queryRef": "Grade.Grade Name",
+              "nativeQueryRef": "Grade Name",
+              "displayName": "Grade",
               "active": true
             }
           ]
@@ -168,7 +168,7 @@
       ]
     },
     "syncGroup": {
-      "groupName": "bsc Employee.Nationality",
+      "groupName": "bsc Grade.Grade Name",
       "fieldChanges": true,
       "filterChanges": true
     },

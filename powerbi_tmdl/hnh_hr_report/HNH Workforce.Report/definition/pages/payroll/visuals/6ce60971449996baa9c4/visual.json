@@ -2,64 +2,38 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "6ce60971449996baa9c4",
   "position": {
-    "x": 30.0,
-    "y": 1126.0,
+    "x": 30,
+    "y": 946.0,
     "z": 30000,
-    "height": 330,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 30000
   },
   "visual": {
-    "visualType": "tableEx",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
-        "Values": {
+        "Category": {
           "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Year Month Name"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
-              "displayName": "Branch"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Payroll"
-                    }
-                  },
-                  "Property": "Source"
-                }
-              },
-              "queryRef": "Payroll.Source",
-              "nativeQueryRef": "Source",
-              "displayName": "Source"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Payroll"
-                    }
-                  },
-                  "Property": "Payroll Status"
-                }
-              },
-              "queryRef": "Payroll.Payroll Status",
-              "nativeQueryRef": "Payroll Status",
-              "displayName": "Payroll status"
-            },
+              "queryRef": "Date.Year Month Name",
+              "nativeQueryRef": "Year Month Name",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
             {
               "field": {
                 "Measure": {
@@ -68,27 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Gross Pay"
+                  "Property": "Overtime Share %"
                 }
               },
-              "queryRef": "_Measures.Gross Pay",
-              "nativeQueryRef": "Gross Pay",
-              "displayName": "Gross pay (SAR)"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Gross Pay (Open Payroll)"
-                }
-              },
-              "queryRef": "_Measures.Gross Pay (Open Payroll)",
-              "nativeQueryRef": "Gross Pay (Open Payroll)",
-              "displayName": "Gross pay in open payroll (SAR)"
+              "queryRef": "_Measures.Overtime Share %",
+              "nativeQueryRef": "Overtime Share %",
+              "displayName": "Overtime share"
             }
           ]
         }
@@ -100,16 +59,111 @@
               "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "Branch"
+                    "Entity": "Date"
                   }
                 },
-                "Property": "Branch Name"
+                "Property": "Year Month Name"
               }
             },
             "direction": "Ascending"
           }
         ]
       }
+    },
+    "objects": {
+      "valueAxis": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "gridlineShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "gridlineShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "markers": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "lineStyles": [
+        {
+          "properties": {
+            "showMarker": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
     },
     "visualContainerObjects": {
       "title": [
@@ -125,7 +179,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Payroll source and status by branch: an open month is not final'"
+                  "Value": "'Overtime share by month'"
                 }
               }
             }
@@ -134,5 +188,140 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "ea230b61e606a9e0aeee",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Date"
+              }
+            },
+            "Property": "Month Offset"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "d",
+              "Entity": "Date",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "d"
+                          }
+                        },
+                        "Property": "Month Offset"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "1L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "2L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "3L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "4L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "5L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "6L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "7L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "8L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "9L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "10L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "11L"
+                        }
+                      }
+                    ],
+                    [
+                      {
+                        "Literal": {
+                          "Value": "12L"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

@@ -2,69 +2,43 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "561d17b7dfa3e57c5288",
   "position": {
-    "x": 491.44,
-    "y": 1631,
+    "x": 424.8,
+    "y": 1930.0,
     "z": 52000,
-    "height": 26,
-    "width": 134.56,
+    "height": 44,
+    "width": 44,
     "tabOrder": 52000
   },
   "visual": {
-    "visualType": "card",
-    "query": {
-      "queryState": {
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "HR Pay Notice"
-                }
-              },
-              "queryRef": "_Measures.HR Pay Notice",
-              "nativeQueryRef": "HR Pay Notice"
-            }
-          ]
-        }
-      }
-    },
+    "visualType": "image",
     "objects": {
-      "labels": [
+      "image": [
         {
           "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
+            "sourceFile": {
+              "image": {
+                "name": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#0A1E32'"
+                      "Value": "'hr_icon_wallet.svg'"
                     }
                   }
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryLabels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hr_icon_wallet.svg"
+                    }
+                  }
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
+                    }
+                  }
                 }
               }
             }

@@ -55,6 +55,16 @@ if({{ start_date }} is null, 'Unknown',
            {{ hnh_years_between(start_date, ref_date) }} < 10, '5-10', '10+'))
 {%- endmacro %}
 
+{# The order of an age or tenure band in reports (youngest / shortest first, Unknown last): the sort-by column of the
+   band in the SSAS model (HR report, user request 2026-11-05). #}
+{% macro hnh_age_band_order(band) -%}
+multiIf({{ band }} = '<25', 1, {{ band }} = '25-34', 2, {{ band }} = '35-44', 3, {{ band }} = '45-54', 4, {{ band }} = '55+', 5, 9)
+{%- endmacro %}
+
+{% macro hnh_tenure_band_order(band) -%}
+multiIf({{ band }} = '<1', 1, {{ band }} = '1-3', 2, {{ band }} = '3-5', 3, {{ band }} = '5-10', 4, {{ band }} = '10+', 5, 9)
+{%- endmacro %}
+
 {# Fusion FTE work measures are sparse and often 0: use a value only when it lies in (0, 1.5]. #}
 {% macro hnh_fte(value) -%}
 toFloat64(if(ifNull({{ value }}, 0) > 0 and ifNull({{ value }}, 0) <= 1.5, ifNull({{ value }}, 0), 1))

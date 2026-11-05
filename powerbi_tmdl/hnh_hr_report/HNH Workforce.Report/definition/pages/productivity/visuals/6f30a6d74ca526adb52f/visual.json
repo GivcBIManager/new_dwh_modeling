@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "6f30a6d74ca526adb52f",
   "position": {
-    "x": 1286.0,
-    "y": 1002,
+    "x": 30,
+    "y": 1164.0,
     "z": 33000,
     "height": 298,
-    "width": 604.0,
+    "width": 918.0,
     "tabOrder": 33000
   },
   "visual": {
@@ -42,12 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Revenue per Doctor"
+                  "Property": "BSC Revenue per FTE"
                 }
               },
-              "queryRef": "_Measures.BSC Revenue per Doctor",
-              "nativeQueryRef": "BSC Revenue per Doctor",
-              "displayName": "Revenue per doctor (SAR)"
+              "queryRef": "_Measures.BSC Revenue per FTE",
+              "nativeQueryRef": "BSC Revenue per FTE",
+              "displayName": "Revenue per FTE (SAR)"
             }
           ]
         }
@@ -62,7 +62,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "BSC Revenue per Doctor"
+                "Property": "BSC Revenue per FTE"
               }
             },
             "direction": "Descending"
@@ -160,7 +160,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Revenue per doctor by branch (SAR)'"
+                  "Value": "'Revenue per FTE by branch'"
                 }
               }
             }

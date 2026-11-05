@@ -1,1 +1,1 @@
-{{ hnh_ssas_view('hnh_dim_employee', drop=['person_id', 'birth_date', 'hr_department_key', 'job_key', 'grade_key', 'position_key', 'location_key', 'staff_key']) }}
+{{ hnh_ssas_view('hnh_dim_employee', drop=['person_id', 'birth_date', 'hr_department_key', 'job_key', 'grade_key', 'position_key', 'location_key', 'staff_key'], extra=['toInt64(' ~ hnh_age_band_order('t.age_band') ~ ') as age_band_order', 'toInt64(' ~ hnh_tenure_band_order('t.tenure_band') ~ ') as tenure_band_order']) }}

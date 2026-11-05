@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0f683fc78a2526827923",
   "position": {
-    "x": 30.0,
-    "y": 868,
+    "x": 972.0,
+    "y": 996.0,
     "z": 37000,
     "height": 454,
     "width": 918.0,
     "tabOrder": 37000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Job"
+                      "Entity": "Grade"
                     }
                   },
-                  "Property": "Job Name"
+                  "Property": "Grade Name"
                 }
               },
-              "queryRef": "Job.Job Name",
-              "nativeQueryRef": "Job Name",
+              "queryRef": "Grade.Grade Name",
+              "nativeQueryRef": "Grade Name",
               "active": true
             }
           ]
@@ -46,7 +46,8 @@
                 }
               },
               "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -55,16 +56,16 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Grade"
                   }
                 },
-                "Property": "Headcount"
+                "Property": "Grade Name"
               }
             },
-            "direction": "Descending"
+            "direction": "Ascending"
           }
         ]
       }
@@ -113,13 +114,6 @@
                   "Value": "false"
                 }
               }
-            },
-            "maxMarginFactor": {
-              "expr": {
-                "Literal": {
-                  "Value": "40L"
-                }
-              }
             }
           }
         }
@@ -159,7 +153,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by job, top 15'"
+                  "Value": "'Headcount by grade'"
                 }
               }
             }
@@ -168,111 +162,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "7aa2670f624103ea20b4",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Job"
-              }
-            },
-            "Property": "Job Name"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "j",
-                        "Entity": "Job",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "j"
-                            }
-                          },
-                          "Property": "Job Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Headcount"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "j",
-              "Entity": "Job",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "j"
-                          }
-                        },
-                        "Property": "Job Name"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

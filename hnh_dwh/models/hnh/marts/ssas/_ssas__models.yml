@@ -176,6 +176,14 @@ models:
         data_type: "Nullable(String)"
       - name: is_hospital
         data_type: "String"
+  - name: ssas_dim_branch_role
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: branch_name
+        data_type: "Nullable(String)"
   - name: ssas_dim_bsc_kpi
     config:
       contract: {enforced: true}
@@ -482,6 +490,10 @@ models:
         data_type: "Int64"
       - name: assignment_status
         data_type: "Nullable(String)"
+      - name: age_band_order
+        data_type: "Int64"
+      - name: tenure_band_order
+        data_type: "Int64"
   - name: ssas_dim_employee_pii
     config:
       contract: {enforced: true}
@@ -2116,6 +2128,10 @@ models:
         data_type: "Float64"
       - name: is_new_hire_in_month
         data_type: "String"
+      - name: age_band_order
+        data_type: "Int64"
+      - name: tenure_band_order
+        data_type: "Int64"
   - name: ssas_fact_hr_dq_record
     config:
       contract: {enforced: true}
@@ -2432,6 +2448,8 @@ models:
         data_type: "Nullable(Decimal(18, 4))"
       - name: oasis_deduction_amount
         data_type: "Nullable(Decimal(18, 4))"
+      - name: grade_key
+        data_type: "Int64"
   - name: ssas_fact_preauth_line
     config:
       contract: {enforced: true}
@@ -2612,6 +2630,10 @@ models:
         data_type: "Int64"
       - name: days_to_fill
         data_type: "Nullable(Int64)"
+      - name: requisition_phase
+        data_type: "String"
+      - name: requisition_state
+        data_type: "String"
   - name: ssas_fact_revenue_adjustment
     config:
       contract: {enforced: true}
@@ -2945,6 +2967,8 @@ models:
       contract: {enforced: true}
     columns:
       - name: branch_key
+        data_type: "Int64"
+      - name: previous_branch_key
         data_type: "Int64"
       - name: employee_key
         data_type: "Int64"

@@ -9,6 +9,14 @@ table 'Worker Movements'
 		summarizeBy: none
 		sourceColumn: branch_key
 
+	column 'Previous Branch Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: previous_branch_key
+
 	column 'Employee Key'
 		dataType: int64
 		isHidden

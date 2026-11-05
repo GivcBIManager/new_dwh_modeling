@@ -3,9 +3,9 @@
   "name": "5c3f6d2ce84eb7d380d2",
   "position": {
     "x": 30,
-    "y": 816,
+    "y": 702,
     "z": 22000,
-    "height": 150,
+    "height": 90,
     "width": 700,
     "tabOrder": 22000
   },
@@ -17,17 +17,18 @@
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR KPI"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Caveats"
+                  "Property": "HR KPI Grain Text"
                 }
               },
-              "queryRef": "HR KPI.Caveats",
-              "nativeQueryRef": "Caveats"
+              "queryRef": "_Measures.HR KPI Grain Text",
+              "nativeQueryRef": "HR KPI Grain Text",
+              "displayName": "Grain"
             }
           ]
         }
@@ -40,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "13D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -71,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

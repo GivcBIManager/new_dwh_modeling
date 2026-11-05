@@ -138,7 +138,9 @@ def column_lines(table: Table, col: Column, overrides: dict, sort_by: dict) -> l
     lines = [f"\tcolumn {q(display_name(table, col.name, overrides))}", f"\t\tdataType: {dtype}"]
     if hidden:
         lines.append("\t\tisHidden")
-        if table.kind in ("fact", "security"):
+        # a sort-by column stays available in MDX (SSAS sorts the attribute by it): the band orders of Headcount
+        sorts = {s for (view, _c), s in sort_by.items() if view == table.view}
+        if table.kind in ("fact", "security") and col.name not in sorts:
             lines.append("\t\tisAvailableInMdx: false")
     if is_key and dtype == "int64":
         lines.append("\t\tencodingHint: " + ("value" if col.name.endswith(("date_key", "time_key")) else "hash"))

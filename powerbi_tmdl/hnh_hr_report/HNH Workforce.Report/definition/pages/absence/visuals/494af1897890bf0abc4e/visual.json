@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "494af1897890bf0abc4e",
   "position": {
-    "x": 30.0,
-    "y": 778,
+    "x": 30,
+    "y": 1220.0,
     "z": 33000,
-    "height": 298,
+    "height": 454,
     "width": 918.0,
     "tabOrder": 33000
   },
@@ -42,11 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Sick Leave Rate %"
+                  "Property": "Absence Days"
                 }
               },
-              "queryRef": "_Measures.Sick Leave Rate %",
-              "nativeQueryRef": "Sick Leave Rate %"
+              "queryRef": "_Measures.Absence Days",
+              "nativeQueryRef": "Absence Days",
+              "displayName": "Absence days"
             }
           ]
         }
@@ -61,7 +62,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Sick Leave Rate %"
+                "Property": "Absence Days"
               }
             },
             "direction": "Descending"
@@ -159,7 +160,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Sick leave rate by branch'"
+                  "Value": "'Absence days by branch'"
                 }
               }
             }

@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "b1b83d27f11a970d2773",
   "position": {
-    "x": 30.0,
-    "y": 868,
+    "x": 972.0,
+    "y": 896.0,
     "z": 37000,
-    "height": 272,
+    "height": 528,
     "width": 918.0,
     "tabOrder": 37000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Worker Action"
+                      "Entity": "HR Department"
                     }
                   },
-                  "Property": "Movement Group"
+                  "Property": "Department Base Name"
                 }
               },
-              "queryRef": "Worker Action.Movement Group",
-              "nativeQueryRef": "Movement Group",
+              "queryRef": "HR Department.Department Base Name",
+              "nativeQueryRef": "Department Base Name",
               "active": true
             }
           ]
@@ -42,11 +42,26 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Movements"
+                  "Property": "Hires"
                 }
               },
-              "queryRef": "_Measures.Movements",
-              "nativeQueryRef": "Movements"
+              "queryRef": "_Measures.Hires",
+              "nativeQueryRef": "Hires"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Leavers"
+                }
+              },
+              "queryRef": "_Measures.Leavers",
+              "nativeQueryRef": "Leavers",
+              "displayName": "Leavers in Fusion"
             }
           ]
         }
@@ -61,7 +76,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Movements"
+                "Property": "Hires"
               }
             },
             "direction": "Descending"
@@ -159,7 +174,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Movements by movement group'"
+                  "Value": "'Hires and leavers by department, top 10'"
                 }
               }
             }
@@ -168,5 +183,111 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "591b1ee0d5eda47cf59c",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "HR Department"
+              }
+            },
+            "Property": "Department Base Name"
+          }
+        },
+        "type": "TopN",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "subquery",
+              "Expression": {
+                "Subquery": {
+                  "Query": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "h",
+                        "Entity": "HR Department",
+                        "Type": 0
+                      },
+                      {
+                        "Name": "_",
+                        "Entity": "_Measures",
+                        "Type": 0
+                      }
+                    ],
+                    "Select": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "h"
+                            }
+                          },
+                          "Property": "Department Base Name"
+                        },
+                        "Name": "field"
+                      }
+                    ],
+                    "OrderBy": [
+                      {
+                        "Direction": 2,
+                        "Expression": {
+                          "Measure": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "_"
+                              }
+                            },
+                            "Property": "Hires"
+                          }
+                        }
+                      }
+                    ],
+                    "Top": 10
+                  }
+                }
+              },
+              "Type": 2
+            },
+            {
+              "Name": "h",
+              "Entity": "HR Department",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "h"
+                          }
+                        },
+                        "Property": "Department Base Name"
+                      }
+                    }
+                  ],
+                  "Table": {
+                    "SourceRef": {
+                      "Source": "subquery"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

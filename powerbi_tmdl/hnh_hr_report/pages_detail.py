@@ -1,66 +1,68 @@
 """The six detail pages under the Details tab (spec "Pages" 4) and the hidden Employee list (spec "Pages" 7).
 
-Each detail page has the frame with the Details tab current, Branch, Month and the six sub-tabs in the filter bar,
-then in the content box: the page's own slicers when every visual on it accepts them, then one or more sections,
-each an optional heading, one or two rows of 3 to 5 cards for the selected month (each with an icon), and charts in
-two columns, then three. A bar chart is as high as its bars and labels need, other charts LINE_H, and charts fill
-their columns top-down (user request 2026-11-04). Every chart shows its data labels (line charts their markers) and
-no value axis. Pages taller than 1080 px fit their width and scroll (pbir.page_json, ruling R24).
+Each detail page has the frame with the Details tab current and Branch, Dates and Last closed month in the filter
+bar; in the content box the six sub-tabs, the page's own slicers, then sections. A section has a heading (title, a
+short subtitle), its own slicers when it has some, a row of 3 to 6 cards (each with an icon), and rows of charts. The
+charts of a row share one height, the tallest chart's (user request 2026-11-05: aligned tops and bottoms); a bar
+chart is as high as its bars need (chart_height), a row's widths follow the charts' spans. Every chart shows its data
+labels (line charts their markers) and no value axis. Pages taller than 1080 px fit their width and scroll (R24).
 
-    headcount     Headcount, FTE, average headcount and FTE, Saudization, female and contingent share; trend, by
-                  branch, department, job, grade, position, location, Saudi, gender, worker type, age band, tenure
-                  band, full / part time
-    movements     Hires, leavers, involuntary leavers, turnover (BSC Turnover), voluntary and new-hire leaver rates,
-                  branch transfers, promotions; trends, movements by movement group, changes by kind (job, grade,
-                  position, location), leavers by action reason and current tenure band, hires by action, by branch
-                  and department
-    payroll       Two sections (user request 2026-11-04). Gross pay, what employees are paid: gross pay, overtime
-                  share, gross pay in open payroll; trends, by pay category, branch and department, source and
-                  payroll status by branch. Payroll cost, what the employer pays: payroll cost, employer charges and
-                  their share, cost per FTE; the step from gross pay to cost (waterfall by pay group, monthly
-                  stack), cost by pay category, department and branch. Not by job (ruling R26): Payroll has no job.
-    absence       Sick days and rate, absence days of all kinds, leave balance and liability (month end, average,
-                  now); trends, absence days by category and type, sick days by type, by branch. Not by department
-                  (ruling R26): the absence and leave facts have no HR department.
-    recruitment   Vacancy rate, time to fill, requisitions approved and filled, open openings; trends and by branch
-                  (no department: Requisitions has none)
+Chart types (user request 2026-11-05, "best practice"): lines for months, bars for rankings and branches, columns for
+ordered bands (age, tenure, grade), donuts for a split into two or three parts, a line and column combo for counts
+with their rate, matrices for two-way breakdowns (shaded as a heat map), drill-down bars for a hierarchy (branch then
+location; department, job, position, grade; absence category then type).
+
+    headcount     Size: headcount, FTE, averages, Saudization, female and contingent share; trend; by branch then
+                  location. Organisation: department > job > position > grade (drill-down), by grade, and the matrix
+                  of department, job and position by grade. Workforce mix: Saudi, gender, worker type, full / part
+                  time (donuts), age and tenure bands (columns, in band order)
+    movements     Hires and leavers: trends, by branch, department, action reason, tenure band, action. Changes and
+                  transfers: changes by kind and branch (heat map), transfers from branch to branch (matrix),
+                  movement groups, transfers and promotions by branch
+    payroll       Gross pay (what employees are paid) and payroll cost (what the employer pays), each with its cards,
+                  trend, pay categories, departments and grades (ranked, grades known only); the step from gross
+                  pay to cost (waterfall by pay group, monthly stack). Not by job (ruling R26)
+    absence       Absence days (Absence category and type slicers): trend, category then type (drill-down), sick
+                  leave. Leave balance and liability (Leave plan slicer): trends, by branch and plan. Not by
+                  department (ruling R26)
+    recruitment   Status and Phase slicers; vacancy rate, open requisitions, approved, filled, average time to fill,
+                  fill rate; approved and filled with the fill rate (combo) by month and branch; time to fill, open
+                  requisitions and vacancy rate by month and branch. No department: Requisitions has none
     productivity  Visits per FTE, revenue per payroll SAR, payroll cost per visit (doctors and nurses), revenue per
                   FTE and per doctor, staff to bed, clinical to doctor
 
 Rules the pages keep:
-- Cards, bar and waterfall charts follow the selected month. Line and stacked column charts are 12-month trends:
-  'Date'[Month Offset] 1 to 12 (the last 12 closed months) and a NoFilter interaction from the Month slicer, as on
-  Story.
-- The branches page filter: the eight hospitals and Head Office (user decision 2026-11-03: Head Office everywhere),
-  as Home, so the figures agree with Home; it keeps out only the Branch dimension's Group member (no HR data).
-- Long slicer lists (Department, about 270 names; Job, Grade, Nationality) have the dropdown's search box.
+- Dates and Last closed month (hr_frame.filters): with the button on, cards and breakdowns show the month just ended;
+  trend charts (lines, stacks, the combo by month) show the closed months of the Dates picked, the last 12 at most
+  ('Date'[Month Offset] 1 to 12), and the button does not reach them.
+- The branches page filter: the eight hospitals and Head Office (user decision 2026-11-03), locked in view mode.
+- Long slicer lists (Department, Job, Grade, Nationality) have the dropdown's search box.
 - Guards: every measure returns "... can't be analysed by <table>" when a table its guard rejects is filtered
-  (`blocked_tables`, read from the model). The build stops when a visual's own columns, a page slicer, the page
-  filter or a drill field is such a table; a selection in a chart or table is kept from reaching a visual whose
-  measures reject one of its tables (NoFilter interactions, written here).
-- Pay (ruling R22): a visual with a pay figure has an [HR Pay Notice] card: "Requires pay access" to readers
-  without pay access, "" (an empty card) to the others. On a chart or table it sits in the title band, right-aligned
-  in a small font (ruling R31: over the plot area it took the hover and clicks); over a run of pay cards, centred. The card has no filter: a card filtered to no row prints
-  "(Blank)" (the 2026-11-03 screenshots). Pay cards are still filtered to non-blank.
-- Departments and positions (ruling R30): charts and the Department slicer use the prefix-free 'HR Department'
-  [Department Base Name] and 'Position'[Position Base Name] ("Nursing Department", "Staff Nurse"), one bar for the
-  same name at every hospital and Head Office; the per-hospital Department Name is only on the Employee list.
-- Recruitment: while no budgeted FTE is loaded the vacancy rate is blank; its card is [HR Vacancy Rate Text] ("No
-  budgeted FTE") and each vacancy chart has the [HR Vacancy Note] card in its title band ("" once loaded).
-- Fusion leaver measures are labelled "in Fusion"; the headline turnover is [BSC Turnover]. Labels are this repo's
-  (not title-cased).
+  (`blocked_tables`, read from the model). The build stops when a visual's own columns, the page filter or a drill
+  field is such a table. A slicer, or a selection in a chart, does not reach a visual whose measures reject its table
+  (NoFilter interactions, written here); a section's slicers reach only that section's visuals.
+- Pay (ruling R22): a visual with a pay figure has an [HR Pay Notice] card: "Requires pay access" to readers without
+  pay access, "" (an empty card) to the others; on a chart, table or matrix in its title band (R31), over a run of
+  pay cards centred. The notice has no filter (a card filtered to no row prints "(Blank)"); pay cards are filtered
+  to non-blank.
+- Departments and positions (ruling R30): the prefix-free 'HR Department'[Department Base Name] and
+  'Position'[Position Base Name]; the per-hospital Department Name is only on the Employee list.
+- Recruitment: while no budgeted FTE is loaded the vacancy rate is blank; its card is [HR Vacancy Rate Text] and each
+  vacancy chart has the [HR Vacancy Note] card in its title band. "Openings" read "requisitions" (user request
+  2026-11-05); the model's measure is still Open Openings.
+- Fusion leaver measures are labelled "in Fusion"; the headline turnover is [BSC Turnover]. Labels are this repo's.
 
 Employee list (hidden): drill-through on 'Branch'[Branch Name] and 'HR Department'[Department Base Name] (the
-detail charts' axes) with "keep all filters" off, as the BSC's family pages: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker Action')
-would make [Headcount] return its guard message. The month and the other selections arrive through the page's
-slicers, synced with the detail pages'. One table (worker number, person number, name, Oasis staff ID, branch, department, job,
-grade, hire date, status, headcount), filtered to [Headcount] not blank (ruling R4): Employee has no branch
-relationship or row filter, so branch security applies through the fact. The table groups by Employee columns only;
-the Oasis staff ID, branch, department (the per-hospital name), job and grade are measures ([HR Employee ...]) read
-through the month's headcount row. Grouped by the columns of six dimensions the query ran for minutes (over 160 s of
-CPU on the test slot, an empty table in Desktop); this way it takes about 2 s. The name is the measure
-[HR Employee Name], blank without pay access; the table has no 'Employee Details' column, because a table grouped by
-a column with no visible rows (the role hides Employee Details without pay access) has no rows at all.
+detail charts' axes) with "keep all filters" off: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker
+Action') would make [Headcount] return its guard message. The dates and the other selections arrive through the
+page's slicers, synced with the detail pages'. One table (worker number, person number, name, Oasis staff ID,
+branch, department, job, grade, hire date, status, headcount), filtered to [Headcount] not blank (ruling R4):
+Employee has no branch relationship or row filter, so branch security applies through the fact. The table groups by
+Employee columns only; the Oasis staff ID, branch, department (the per-hospital name), job and grade are measures
+([HR Employee ...]) read through the month's headcount row (grouped by six dimensions' columns the query ran for
+minutes). The name is [HR Employee Name], blank without pay access; the table has no 'Employee Details' column,
+because a table grouped by a column with no visible rows (the role hides Employee Details without pay access) has no
+rows at all.
 """
 from __future__ import annotations
 
@@ -70,39 +72,51 @@ from functools import lru_cache
 
 from fields import MODEL_DIR
 from frame import CONTENT, NAVY, _lit, no_container
-from hr_frame import (ICON_SIZE, MUTED, SUB_TAB_X, SUB_TAB_Y, bar_look, branches, bsc, card_look, column_look, filters,
-                      icon, line_look, page_frame, search_box, sub_tabs, title_notice)
+from hr_frame import (BAR_BUTTON_H, BAR_BUTTON_Y, BAR_X, ICON_SIZE, MUTED, SUB_TAB_H, TREND_WINDOW, bar_look,
+                      branches, bsc, card_look, column_look, combo_look, donut_look, filters, heat_colours, icon,
+                      line_look, page_frame, search_box, sub_tabs, title_notice, trend_interactions)
 from model import Field, Filter, Interaction, Page, Visual, col, meas
 
 GAP = 24
 X0, Y0, W0, H0 = CONTENT  # 30, 186, 1860, 870
 CONTENT_END = Y0 + H0  # 1056
+BODY_Y = Y0 + SUB_TAB_H + GAP  # under the sub-tabs
 SLICER_H = 66  # as the filter bar's slicers
-CARD_H = 110
+CARD_H = 128
+CARD_VALUE_PT = 30
+CARD_TEXT_PT = 22  # a text figure ("No budgeted FTE", "None open") in a sixth of the width
+CARDS_PER_ROW = (3, 6)
 NOTICE_H = 60
 BOTTOM_MARGIN = 30
 TOP = 15  # bars on a long axis: the top 15 by the chart's first measure
+TOP_PAIRED = 10  # the top 10 when each bar has two measures (a top 15 of pairs was 750 px high)
 BACK_W = 110
 
 BRANCH_NAME = col("Branch", "Branch Name")
+FROM_BRANCH = col("From Branch", "Branch Name")
 YEAR_MONTH = col("Date", "Year Month Name")
-MONTH_OFFSET = col("Date", "Month Offset")
-LAST_12_CLOSED = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
 # prefix-free ("Icu-Nurse" for "ABH Icu-Nurse"; ruling R30): the charts' axis, the slicer and the drill field
 DEPARTMENT = col("HR Department", "Department Base Name")
 POSITION = col("Position", "Position Base Name")  # prefix-free ("Staff Nurse" for "RBW Staff Nurse")
+JOB = col("Job", "Job Name")
+GRADE = col("Grade", "Grade Name")
+LOCATION = col("Location", "Location Name")
 HEADCOUNT = meas("Headcount")
 PAY_NOTICE = meas("HR Pay Notice")
 EMPLOYEE_NAME = meas("HR Employee Name")  # one employee's Fusion name; blank without pay access
 ABSENCE_TYPE = col("Absence Type", "Absence Type Name")
+ABSENCE_CATEGORY = col("Absence Type", "Absence Category")
+LEAVE_PLAN = col("Leave Balances", "Absence Plan Name")
 EMPLOYEE_LIST = "employee_list"
+# a grade ranking leaves out the employees without a grade in the month's headcount (Unknown: before 2026, Oasis
+# staff with no Fusion employee)
+GRADE_KNOWN = Filter(GRADE, "notin", ["Unknown"])
 
-# The page slicers (field, label): only on pages where every measure accepts their tables
-WORKFORCE_SLICERS = [(DEPARTMENT, "Department"), (col("Job", "Job Name"), "Job"),
-                     (col("Grade", "Grade Name"), "Grade"), (col("Employee", "Nationality"), "Nationality"),
-                     (col("Employee", "Worker Type"), "Worker type")]
+# The page slicers (field, label)
+WORKFORCE_SLICERS = [(DEPARTMENT, "Department"), (JOB, "Job"), (GRADE, "Grade"),
+                     (col("Employee", "Nationality"), "Nationality"), (col("Employee", "Worker Type"), "Worker type")]
 # Slicers with a search box in their dropdown: long lists (Department has about 270 prefix-free names)
-SEARCH_FIELDS = {DEPARTMENT, col("Job", "Job Name"), col("Grade", "Grade Name"), col("Employee", "Nationality")}
+SEARCH_FIELDS = {DEPARTMENT, JOB, GRADE, col("Employee", "Nationality")}
 
 
 # ---- guards -------------------------------------------------------------------------------------------------------
@@ -138,10 +152,14 @@ def _role_columns(v: Visual) -> set[str]:
     return {f.table for fs in v.roles.values() for f in fs if f.kind == "column"}
 
 
+def _rejects(v: Visual, tables: set[str]) -> bool:
+    return any(blocked_tables(m.name) & tables for m in _measures(v))
+
+
 def _guarded(page_name: str, data: list[Visual], page_tables: set[str]) -> list[tuple[Visual, Visual]]:
     """Checks every data visual against the tables it is analysed by (its own columns and filters, `page_tables`:
-    the page's slicers, page filter and drill fields); returns the (source, target) pairs whose cross-filter would
-    reach a measure that rejects one of the source's tables."""
+    the page filter and drill fields); returns the (source, target) pairs whose cross-filter would reach a measure
+    that rejects one of the source's tables."""
     for v in data:
         own = _role_columns(v) | {f.field.table for f in v.filters if f.field.kind == "column"}
         for m in _measures(v):
@@ -149,72 +167,108 @@ def _guarded(page_name: str, data: list[Visual], page_tables: set[str]) -> list[
             if clash:
                 raise ValueError(f"page {page_name}: [{m.name}] in {v.title or v.sample} can't be analysed by "
                                  f"{', '.join(sorted(clash))}")
-    return [(s, t) for s in data for t in data
-            if t is not s and any(blocked_tables(m.name) & _role_columns(s) for m in _measures(t))]
+    return [(s, t) for s in data for t in data if t is not s and _rejects(t, _role_columns(s))]
 
 
-# ---- building blocks ----------------------------------------------------------------------------------------------
+# ---- chart specs --------------------------------------------------------------------------------------------------
 
 def card(measure: str, label: str, pay: bool = False, decimals: int | None = None) -> dict:
-    """A card for the selected month: the figure over its label, with the measure's icon (CARD_ICONS). `pay`: needs
-    pay access. `decimals`: the value's decimal places, whatever the measure's format."""
+    """A card: the figure over its label, with the measure's icon (CARD_ICONS). `pay`: needs pay access.
+    `decimals`: the value's decimal places, whatever the measure's format."""
     return {"kind": "card", "measures": [measure], "labels": {measure: label}, "pay": pay, "decimals": decimals}
 
 
-def trend(title: str, measures: list[str], labels: dict | None = None, pay: bool = False,
-          note: str | None = None, stacked: bool = False) -> dict:
-    """A line chart of the last 12 closed months; `stacked`: a stacked column chart instead (parts of a total).
-    `note`: as bars()."""
-    return {"kind": "stackedColumnChart" if stacked else "lineChart", "title": f"{title}, last 12 closed months",
-            "measures": measures, "labels": labels or {}, "pay": pay, "note": note}
+def _spec(kind: str, title: str, measures: list[str], labels: dict | None, pay: bool, note: str | None,
+          span: int, **more) -> dict:
+    return {"kind": kind, "title": title, "measures": measures, "labels": labels or {}, "pay": pay, "note": note,
+            "span": span, "filters": [], **more}
 
 
-def bars(title: str, by: Field, measures: list[str], labels: dict | None = None, top: bool = False,
-         pay: bool = False, note: str | None = None, filters: list[Filter] = (), n: int | None = None) -> dict:
-    """A bar chart for the selected month, sorted by its first measure; `top`: only the top 15. `note`: a text measure
-    shown on a card over the chart ("" when there is nothing to say). `filters`: the visual's own filters. `n`: the
-    number of bars when the axis is not in AXIS_COUNTS (the chart's height fits its bars)."""
-    return {"kind": "barChart", "title": title, "by": by, "measures": measures, "labels": labels or {}, "top": top,
-            "pay": pay, "note": note, "filters": list(filters), "n": n}
+def trend(title: str, measures: list[str], labels: dict | None = None, pay: bool = False, note: str | None = None,
+          stacked: bool = False, span: int = 1) -> dict:
+    """A line chart by month (the Dates' closed months, TREND_WINDOW); `stacked`: a stacked column chart (parts of a
+    total). `note`: a text measure in the title band ("" when there is nothing to say)."""
+    return _spec("stackedColumnChart" if stacked else "lineChart", title, measures, labels, pay, note, span,
+                 by=[YEAR_MONTH])
+
+
+def combo(title: str, by: Field, columns: list[str], line: list[str], labels: dict | None = None,
+          span: int = 1) -> dict:
+    """Columns (`columns`, counts) and a line (`line`, their rate) over `by`: by month (YEAR_MONTH, a trend) or by
+    another axis, sorted by the first column measure."""
+    return _spec("comboChart", title, columns + line, labels, False, None, span, by=[by], line=list(line))
+
+
+def bars(title: str, by: Field | list[Field], measures: list[str], labels: dict | None = None, top: bool = False,
+         pay: bool = False, note: str | None = None, filters: list[Filter] = (), n: int | None = None,
+         span: int = 1) -> dict:
+    """A bar chart sorted by its first measure; `by` a list: a drill-down from the first field (its bars) to the
+    next. `top`: only the top 15 of the first field. `filters`: the visual's own filters. `n`: the number of bars
+    when the first field is not in AXIS_COUNTS (the chart's height fits its bars)."""
+    return {**_spec("barChart", title, measures, labels, pay, note, span, by=_fields(by), top=top, n=n),
+            "filters": list(filters)}
+
+
+def columns(title: str, by: Field, measures: list[str], labels: dict | None = None, pay: bool = False,
+            filters: list[Filter] = (), span: int = 1) -> dict:
+    """A column chart over an ordered axis (age band, tenure band, grade), in the axis's order."""
+    return {**_spec("columnChart", title, measures, labels, pay, None, span, by=[by]), "filters": list(filters)}
+
+
+def donut(title: str, by: Field, measure: str, labels: dict | None = None, span: int = 1) -> dict:
+    """A donut of a split into a few parts, each slice labelled with its share."""
+    return _spec("donutChart", title, [measure], labels, False, None, span, by=[by])
 
 
 def waterfall(title: str, by: Field, measure: str, labels: dict | None = None, pay: bool = False,
-              filters: list[Filter] = ()) -> dict:
-    """A waterfall for the selected month: `measure` by `by` (in `by`'s order), then the total."""
-    return {"kind": "waterfallChart", "title": title, "by": by, "measures": [measure], "labels": labels or {},
-            "pay": pay, "note": None, "filters": list(filters)}
+              filters: list[Filter] = (), span: int = 1) -> dict:
+    """A waterfall: `measure` by `by` (in `by`'s order), then the total."""
+    return {**_spec("waterfallChart", title, [measure], labels, pay, None, span, by=[by]), "filters": list(filters)}
 
 
-def table(title: str, columns: list[tuple[Field, str]], measures: list[str], labels: dict | None = None,
-          pay: bool = False, h: float | None = None) -> dict:
-    return {"kind": "table", "title": title, "columns": columns, "measures": measures, "labels": labels or {},
-            "pay": pay, "h": h}
+def matrix(title: str, rows: list[Field], cols: list[Field], measures: list[str], labels: dict | None = None,
+           h: float = 360, heat: bool = True, expand: bool = True, pay: bool = False, span: int = 1) -> dict:
+    """A matrix: `rows` (a hierarchy when several; `expand` off shows the first level, the others by expand or drill
+    down) by `cols`, the cells shaded white to blue by value (`heat`)."""
+    return _spec("matrix", title, measures, labels, pay, None, span, rows=list(rows), cols=list(cols), h=h,
+                 heat=heat, expand=expand)
 
 
-def section(cards: list[dict], blocks: list[tuple[int, list[dict]]], title: str | None = None,
-            subtitle: str | None = None) -> dict:
-    """A part of a detail page: an optional heading (`title` over `subtitle`), a row or two of cards, then blocks of
-    charts, each (columns, charts)."""
-    return {"title": title, "subtitle": subtitle, "cards": cards, "blocks": blocks}
+def table(title: str, cols: list[tuple[Field, str]], measures: list[str], labels: dict | None = None,
+          pay: bool = False, h: float | None = None, span: int = 1) -> dict:
+    return _spec("table", title, measures, labels, pay, None, span, columns=cols, h=h)
+
+
+def section(title: str, cards: list[dict], rows: list[list[dict]], subtitle: str | None = None,
+            slicers: list[tuple[Field, str]] = ()) -> dict:
+    """A part of a detail page: its heading (`title` over `subtitle`), its own slicers (they reach only this
+    section's visuals), a row of 3 to 6 cards, then rows of charts."""
+    return {"title": title, "subtitle": subtitle, "cards": cards, "rows": rows, "slicers": list(slicers)}
+
+
+def _fields(by: Field | list[Field]) -> list[Field]:
+    return list(by) if isinstance(by, (list, tuple)) else [by]
 
 
 # A measure's name in charts and tables (legend, tooltip, header) unless the chart gives one: Fusion leaver measures
-# say "in Fusion"; the BSC measures lose their prefix
+# say "in Fusion"; the BSC measures lose their prefix; openings read requisitions (user request 2026-11-05)
 LABELS = {"Leavers": "Leavers in Fusion", "Voluntary Leavers": "Voluntary leavers in Fusion",
           "Voluntary Turnover Rate %": "Voluntary leaver rate in Fusion",
           "New Hire Turnover %": "New-hire leaver rate in Fusion", "BSC Turnover": "Turnover",
           "BSC Saudization": "Saudization", "BSC Vacancy Rate": "Vacancy rate",
-          "BSC Time to Fill (days)": "Time to fill (days)", "BSC Revenue per FTE": "Revenue per FTE (SAR)",
+          "BSC Time to Fill (days)": "Average time to fill (days)", "BSC Revenue per FTE": "Revenue per FTE (SAR)",
           "BSC Revenue per Doctor": "Revenue per doctor (SAR)", "BSC Staff to Bed": "Staff to bed",
           "BSC Clinical to Doctor": "Clinical staff to doctor", "Payroll Cost": "Payroll cost (SAR)",
           "Gross Pay": "Gross pay (SAR)", "Gross Pay (Open Payroll)": "Gross pay in open payroll (SAR)",
           "Involuntary Leavers": "Involuntary leavers in Fusion", "Branch Transfers": "Branch transfers",
-          "Promotions": "Promotions (Fusion action)", "Job Changes": "Job changes", "Grade Changes": "Grade changes",
-          "Position Changes": "Position changes", "Location Changes": "Location changes",
-          "Requisitions Approved": "Requisitions approved", "Requisitions Filled": "Requisitions filled",
-          "Open Openings": "Open openings", "Absence Days": "Absence days",
-          "Employer Charges": "Employer charges (SAR)",
-          "Employer Charges Share %": "Employer charges' share of payroll cost"}
+          "Promotions": "Promotions (Fusion action)", "Job Changes": "Job", "Grade Changes": "Grade",
+          "Position Changes": "Position", "Location Changes": "Location",
+          "Requisitions Approved": "Approved", "Requisitions Filled": "Filled",
+          "Requisition Fill Rate %": "Fill rate", "Open Openings": "Open requisitions", "Absence Days": "Absence days",
+          "Sick Days": "Sick days", "Sick Leave Rate %": "Sick leave rate", "Headcount": "Headcount",
+          "Employer Charges": "Employer charges (SAR)", "Payroll Cost per FTE": "Payroll cost per FTE (SAR)",
+          "Employer Charges Share %": "Employer charges' share", "Overtime Share %": "Overtime share",
+          "Leave Balance (days)": "Leave balance (days)", "Leave Liability": "Leave liability (SAR)"}
 
 # A card's icon (hr_frame.icon), by its measure
 CARD_ICONS = {
@@ -222,7 +276,7 @@ CARD_ICONS = {
     "BSC Saudization": "flag", "Female Share %": "female", "Contingent Share %": "badge",
     "Hires": "user_plus", "Leavers": "user_minus", "Involuntary Leavers": "user_minus", "BSC Turnover": "swap",
     "Voluntary Turnover Rate %": "percent", "New Hire Turnover %": "percent", "Branch Transfers": "swap",
-    "Promotions": "trend_up",
+    "Promotions": "trend_up", "Movements": "chart",
     "Gross Pay": "banknote", "Overtime Share %": "clock", "HR Open Payroll Text": "receipt",
     "Payroll Cost": "coins", "Employer Charges": "building", "Employer Charges Share %": "percent",
     "Payroll Cost per FTE": "coins",
@@ -230,7 +284,7 @@ CARD_ICONS = {
     "Leave Liability": "wallet", "Average Leave Balance (days)": "sun", "Current Leave Balance (days)": "sun",
     "Current Leave Liability": "wallet",
     "HR Vacancy Rate Text": "target", "BSC Time to Fill (days)": "hourglass", "Requisitions Approved": "briefcase",
-    "Requisitions Filled": "check", "Open Openings": "briefcase",
+    "Requisitions Filled": "check", "Open Openings": "briefcase", "Requisition Fill Rate %": "percent",
     "Visits per FTE": "chart", "Revenue per Payroll SAR": "trend_up", "Payroll Cost per Visit": "coins",
     "BSC Revenue per FTE": "banknote", "BSC Revenue per Doctor": "stethoscope",
 }
@@ -242,33 +296,44 @@ def _labels(spec: dict) -> dict[Field, str]:
 
 
 # ---- chart sizes --------------------------------------------------------------------------------------------------
-# User request 2026-11-04: a bar chart is as high as its bars and labels need: the title band and padding, a legend
-# when it has more than one measure, and per category 8 px plus BAR_SERIES_PX for each measure. Line, column and
-# waterfall charts are LINE_H; tables TABLE_H unless the spec gives a height.
+# A bar chart is as high as its bars and labels need (user request 2026-11-04): the title band and padding, a legend
+# when it has more than one measure, and per bar 8 px plus BAR_SERIES_PX for each measure. Other charts are LINE_H;
+# tables and matrices their own height. A row of charts takes its tallest chart's height (user request 2026-11-05).
 LINE_H = 300
 TABLE_H = 330
-SECTION_HEAD_H = 56  # a section heading: title over subtitle
-TRENDS = ("lineChart", "stackedColumnChart")  # 12-month charts: the Month slicer does not filter them
+SECTION_HEAD_H = 64  # a section heading: title over subtitle
+TRENDS = ("lineChart", "stackedColumnChart")  # by month: the Last closed month button does not reach them
 BAR_MIN_H, BAR_CHROME, BAR_LEGEND_H, BAR_SERIES_PX = 150, 64, 24, 18
 # The number of bars on an axis for the report's branches and a month (HNH_Analytics_Test, 2026-11-04); a top N axis
 # has TOP. An axis not listed needs the spec's `n`.
 AXIS_COUNTS = {
-    BRANCH_NAME: 9, col("Worker Action", "Movement Group"): 8, col("Headcount", "Is Saudi"): 2,
-    col("Headcount", "Gender"): 2, col("Employee", "Worker Type"): 2, col("Headcount", "Age Band"): 6,
-    col("Headcount", "Tenure Band"): 5, col("Job", "Full Part Time"): 2, col("Employee", "Tenure Band"): 5,
-    col("Absence Type", "Absence Category"): 5, col("Staff Productivity", "Staff Category"): 2,
+    BRANCH_NAME: 9, col("Worker Action", "Movement Group"): 8, col("Employee", "Tenure Band"): 5,
+    ABSENCE_CATEGORY: 5, col("Staff Productivity", "Staff Category"): 2, LEAVE_PLAN: 6,
 }
 
 
+def is_trend(spec_or_visual) -> bool:
+    """A chart by month: lines, stacks and a combo on the month axis."""
+    if isinstance(spec_or_visual, dict):
+        return spec_or_visual["kind"] in TRENDS or (spec_or_visual["kind"] == "comboChart"
+                                                   and spec_or_visual["by"] == [YEAR_MONTH])
+    v = spec_or_visual
+    return v.sample in TRENDS or (v.sample == "comboChart" and v.roles.get("Category") == [YEAR_MONTH])
+
+
+def _top(spec: dict) -> int:
+    return TOP if len(spec["measures"]) == 1 else TOP_PAIRED
+
+
 def chart_height(spec: dict) -> float:
-    """The height a chart spec is drawn at (see "chart sizes")."""
+    """The height a chart spec needs (see "chart sizes")."""
     if spec["kind"] == "barChart":
-        n = spec.get("n") or (TOP if spec["top"] else AXIS_COUNTS.get(spec["by"]))
+        n = spec.get("n") or (_top(spec) if spec["top"] else AXIS_COUNTS.get(spec["by"][0]))
         if n is None:
-            raise ValueError(f"bar chart '{spec['title']}': give n, the number of bars on {spec['by']}")
+            raise ValueError(f"bar chart '{spec['title']}': give n, the number of bars on {spec['by'][0]}")
         k = len(spec["measures"])
         return max(BAR_MIN_H, BAR_CHROME + (BAR_LEGEND_H if k > 1 else 0) + n * (8 + BAR_SERIES_PX * k))
-    if spec["kind"] == "table":
+    if spec["kind"] in ("table", "matrix"):
         return spec.get("h") or TABLE_H
     return LINE_H
 
@@ -288,25 +353,45 @@ def _visual(spec: dict, x: float, y: float, w: float, h: float) -> Visual:
     if kind == "card":
         return Visual("card", x, y, w, h, roles={"Values": ms}, labels=_labels(spec),
                       filters=[Filter(ms[0], "notblank")] if spec["pay"] else [],
-                      props=card_look(24, NAVY, category=True, box=True, decimals=spec.get("decimals")))
+                      props=card_look(CARD_TEXT_PT if ms[0].name.endswith(" Text") else CARD_VALUE_PT, NAVY,
+                                      category=True, box=True, decimals=spec.get("decimals")))
+    common = {"title": spec["title"], "labels": _labels(spec), "filters": list(spec["filters"])}
     if kind in TRENDS:
-        look = line_look() if kind == "lineChart" else column_look(_units(spec))
-        return Visual(kind, x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": ms}, title=spec["title"],
-                      labels=_labels(spec), filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc", props=look)
+        look = line_look(_units(spec)) if kind == "lineChart" else column_look(_units(spec))
+        return Visual(kind, x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": ms}, sort=YEAR_MONTH, sort_dir="asc",
+                      props=look, **{**common, "filters": common["filters"] + [TREND_WINDOW]})
+    if kind == "comboChart":
+        line = [meas(m) for m in spec["line"]]
+        cols = [m for m in ms if m not in line]
+        by = spec["by"][0]
+        month = by == YEAR_MONTH
+        return Visual("comboChart", x, y, w, h, roles={"Category": [by], "Y": cols, "Y2": line},
+                      sort=by if month else cols[0], sort_dir="asc" if month else "desc", props=combo_look(),
+                      **{**common, "filters": common["filters"] + ([TREND_WINDOW] if month else [])})
     if kind == "barChart":
-        by = spec["by"]
-        return Visual("barChart", x, y, w, h, roles={"Category": [by], "Y": ms}, title=spec["title"],
-                      labels=_labels(spec), sort=ms[0], top_n=(ms[0], TOP) if spec["top"] else None,
-                      filters=list(spec.get("filters", [])), props=bar_look(_units(spec)))
+        return Visual("barChart", x, y, w, h, roles={"Category": spec["by"], "Y": ms}, sort=ms[0],
+                      top_n=(ms[0], _top(spec)) if spec["top"] else None, props=bar_look(_units(spec)), **common)
+    if kind == "columnChart":
+        by = spec["by"][0]
+        return Visual("columnChart", x, y, w, h, roles={"Category": [by], "Y": ms}, sort=by, sort_dir="asc",
+                      props=column_look("none" if _units(spec) == "none" else "millions"), **common)
+    if kind == "donutChart":
+        return Visual("donutChart", x, y, w, h, roles={"Category": spec["by"], "Y": ms}, sort=ms[0],
+                      props=donut_look(), **common)
     if kind == "waterfallChart":
-        by = spec["by"]
-        return Visual("waterfallChart", x, y, w, h, roles={"Category": [by], "Y": ms}, title=spec["title"],
-                      labels=_labels(spec), sort=by, sort_dir="asc", filters=list(spec.get("filters", [])),
-                      props=column_look(_units(spec)))
-    columns = [c for c, _label in spec["columns"]]
-    return Visual("table", x, y, w, h, roles={"Values": columns + ms}, title=spec["title"],
-                  labels={**{c: label for c, label in spec["columns"]}, **_labels(spec)}, sort=columns[0],
-                  sort_dir="asc")
+        by = spec["by"][0]
+        return Visual("waterfallChart", x, y, w, h, roles={"Category": [by], "Y": ms}, sort=by, sort_dir="asc",
+                      props=column_look(_units(spec)), **common)
+    if kind == "matrix":
+        labels = {**common["labels"], **{f: lbl for f, lbl in spec["labels"].items() if isinstance(f, Field)}}
+        roles = {"Rows": spec["rows"], **({"Columns": spec["cols"]} if spec["cols"] else {}), "Values": ms}
+        return Visual("matrix", x, y, w, h, roles=roles,
+                      sort=spec["rows"][0], sort_dir="asc", expand=spec["expand"],
+                      props=heat_colours(ms) if spec["heat"] else {},
+                      **{**common, "labels": labels})
+    cols = [c for c, _label in spec["columns"]]
+    return Visual("table", x, y, w, h, roles={"Values": cols + ms}, sort=cols[0], sort_dir="asc",
+                  **{**common, "labels": {**{c: label for c, label in spec["columns"]}, **common["labels"]}})
 
 
 def _notice(x: float, y: float, w: float, h: float, measure: Field = PAY_NOTICE) -> Visual:
@@ -329,49 +414,50 @@ def _row(n: int) -> float:
     return (W0 - GAP * (n - 1)) / n
 
 
-def _slicer_row(fields: list[tuple[Field, str]], y: float) -> list[Visual]:
-    w = _row(len(fields))
+SLICER_W = 360
+
+
+def _slicer_row(fields: list[tuple[Field, str]], y: float, w: float | None = None) -> list[Visual]:
+    w = w or _row(len(fields))
     return [slicer(f, label, X0 + i * (w + GAP), y, w) for i, (f, label) in enumerate(fields)]
 
 
-def _interactions(page_name: str, month: Visual, slicers: list[Visual], data: list[Visual],
-                  page_tables: set[str]) -> list[Interaction]:
-    tables = page_tables | {f.table for s in slicers for f in s.roles["Values"]}
-    out = [Interaction(month, v, "NoFilter") for v in data if v.sample in TRENDS]
-    out += [Interaction(s, t, "NoFilter") for s, t in _guarded(page_name, data, tables)]
-    return out
-
-
-def _place(specs: list[dict], cols: int, y0: float) -> tuple[list[tuple], float]:
-    """Charts in `cols` columns, each at its chart_height(), each into the column whose bottom is highest so far
-    (then the leftmost): (spec, x, y, w, h) per chart, and the lowest bottom."""
-    w = _row(cols)
-    tops = [y0] * cols
-    placed = []
-    for spec in specs:
-        h = chart_height(spec)
-        c = min(range(cols), key=lambda i: (tops[i], i))
-        placed.append((spec, X0 + c * (w + GAP), tops[c], w, h))
-        tops[c] += h + GAP
-    return placed, max(tops) - GAP
+def _place_rows(rows: list[list[dict]], y0: float) -> tuple[list[tuple], float]:
+    """Each row of charts across the content width, the widths by the charts' spans, all at the row's tallest
+    chart_height: (spec, x, y, w, h) per chart, and the y under the last row."""
+    placed, y = [], y0
+    for row in rows:
+        if not row:
+            continue
+        spans = [s["span"] for s in row]
+        free = W0 - GAP * (len(row) - 1)
+        h = max(chart_height(s) for s in row)
+        x = X0
+        for spec, span in zip(row, spans):
+            w = free * span / sum(spans)
+            placed.append((spec, x, y, w, h))
+            x += w + GAP
+        y += h + GAP
+    return placed, y
 
 
 def _heading(title: str, subtitle: str | None, y: float) -> Visual:
-    """A section heading: `title` (Segoe UI Semibold 14pt, navy) over `subtitle` (10pt, grey)."""
-    runs = [(title, {"fontFamily": "Segoe UI Semibold", "fontSize": "14pt", "color": NAVY})]
+    """A section heading: `title` (Segoe UI Semibold 16pt, navy) over `subtitle` (11pt, grey), a short line."""
+    runs = [(title, {"fontFamily": "Segoe UI Semibold", "fontSize": "16pt", "color": NAVY})]
     if subtitle:
-        runs.append((subtitle, {"fontFamily": "Segoe UI", "fontSize": "10pt", "color": MUTED}))
+        runs.append((subtitle, {"fontFamily": "Segoe UI", "fontSize": "11pt", "color": MUTED}))
     paragraphs = [{"textRuns": [{"value": v, "textStyle": st}]} for v, st in runs]
     return Visual("textbox", X0, y, W0, SECTION_HEAD_H,
                   props={"general": [{"properties": {"paragraphs": paragraphs}}], **no_container()})
 
 
 def _cards(name: str, specs: list[dict], y: float) -> tuple[list[Visual], list[Visual], float]:
-    """A row or two of 3 to 5 cards from y: (the cards, their icons and pay notices, the y below them). A run of pay
-    cards next to each other in a row gets one notice over it."""
-    per_row = len(specs) if len(specs) <= 5 else math.ceil(len(specs) / 2)
-    if not 3 <= per_row <= 5 or len(specs) > 10:
-        raise ValueError(f"page {name}: one or two rows of 3 to 5 cards")
+    """A row of 3 to 6 cards from y (two rows when more): (the cards, their icons and pay notices, the y below
+    them). A run of pay cards next to each other gets one notice over it."""
+    lo, hi = CARDS_PER_ROW
+    per_row = len(specs) if len(specs) <= hi else math.ceil(len(specs) / 2)
+    if not lo <= per_row <= hi or len(specs) > 2 * hi:
+        raise ValueError(f"page {name}: one or two rows of {lo} to {hi} cards")
     w = _row(per_row)
     cards, decor, runs = [], [], []
     for i, spec in enumerate(specs):
@@ -392,79 +478,101 @@ def _cards(name: str, specs: list[dict], y: float) -> tuple[list[Visual], list[V
     return cards, decor, y + math.ceil(len(specs) / per_row) * (CARD_H + GAP)
 
 
-def detail_page(name: str, display: str, cards: list[dict] = (), grid: list[dict] = (), extras: list[dict] = (),
-                page_slicers: list[tuple[Field, str]] = (), sections: list[dict] | None = None) -> Page:
-    """A detail page: the frame (Details tab current, Branch, Month and the sub-tabs in the filter bar), the page's
-    slicers, then its sections, each an optional heading, a row or two of 3 to 5 cards (with icons) and blocks of
-    charts. Without `sections`: one section of `cards`, `grid` in two columns and `extras` in three. Charts are as high
-    as they need (chart_height) and fill their columns top-down (_place); the page grows and scrolls when they go
-    below the screen. Pay visuals get an HR Pay Notice: in each pay chart's title band, over each run of pay cards."""
-    if sections is None:
-        sections = [section(list(cards), [(2, list(grid))] + ([(3, list(extras))] if extras else []))]
-    branch, month = filters()
-    visuals = page_frame("headcount", [branch, month] + sub_tabs(name))
-    y = Y0
-    own_slicers = _slicer_row(list(page_slicers), y) if page_slicers else []
-    visuals += own_slicers
-    if own_slicers:
+def detail_page(name: str, display: str, sections: list[dict], page_slicers: list[tuple[Field, str]] = ()) -> Page:
+    """A detail page: the frame (Details tab current; Branch, Dates and Last closed month in the filter bar), the
+    sub-tabs, the page's slicers, then its sections (heading, slicers, cards, rows of charts; see `section`). Pay
+    visuals get an HR Pay Notice: in each pay chart's title band, over each run of pay cards."""
+    bar = filters()
+    visuals = page_frame("headcount", bar) + sub_tabs(name, X0, Y0)
+    y = BODY_Y
+    page_slicer_visuals = _slicer_row(list(page_slicers), y) if page_slicers else []
+    visuals += page_slicer_visuals
+    if page_slicer_visuals:
         y += SLICER_H + GAP
     data: list[Visual] = []
     decor: list[Visual] = []  # headings, icons and notices: drawn over the data visuals
+    scoped: list[tuple[Visual, list[Visual]]] = []  # (section slicer, its section's data visuals)
     for i, sec in enumerate(sections):
         if i:
             y += GAP  # more room between sections
-        if sec["title"]:
-            decor.append(_heading(sec["title"], sec["subtitle"], y))
-            y += SECTION_HEAD_H + GAP / 2
+        decor.append(_heading(sec["title"], sec["subtitle"], y))
+        y += SECTION_HEAD_H + GAP / 2
+        own = _slicer_row(sec["slicers"], y, SLICER_W) if sec["slicers"] else []
+        visuals += own
+        if own:
+            y += SLICER_H + GAP
+        first = len(data)
         if sec["cards"]:
             cards_, more, y = _cards(name, sec["cards"], y)
             data += cards_
             decor += more
-        for cols, specs in sec["blocks"]:
-            if not specs:
-                continue
-            placed, bottom = _place(specs, cols, y)
-            for spec, x, cy, cw, ch in placed:
-                v = _visual(spec, x, cy, cw, ch)
-                data.append(v)
-                if spec["pay"]:  # in the chart's title band (ruling R31)
-                    decor.append(title_notice(v, PAY_NOTICE.name))
-                if spec.get("note"):
-                    decor.append(title_notice(v, spec["note"]))
-            y = bottom + GAP
+        placed, y = _place_rows(sec["rows"], y)
+        for spec, x, cy, cw, ch in placed:
+            v = _visual(spec, x, cy, cw, ch)
+            data.append(v)
+            if spec["pay"]:  # in the chart's title band (ruling R31)
+                decor.append(title_notice(v, PAY_NOTICE.name))
+            if spec.get("note"):
+                decor.append(title_notice(v, spec["note"]))
+        scoped += [(s, data[first:]) for s in own]
     visuals += data + decor
     height = max(1080, math.ceil(y - GAP + BOTTOM_MARGIN))
     page_filters = [branches()]
-    interactions = _interactions(name, month, own_slicers + [branch], data,
-                                 {f.field.table for f in page_filters})
+    trends = [v for v in data if is_trend(v)]
+    interactions = trend_interactions(bar, trends)
+    interactions += _slicer_interactions(bar[:1] + page_slicer_visuals, scoped, data)
+    interactions += [Interaction(s, t, "NoFilter")
+                     for s, t in _guarded(name, data, {f.field.table for f in page_filters})]
     return Page(name, display, visuals, filters=page_filters, interactions=interactions, height=height)
+
+
+def _slicer_interactions(page_wide: list[Visual], scoped: list[tuple[Visual, list[Visual]]],
+                         data: list[Visual]) -> list[Interaction]:
+    """A slicer does not reach a visual whose measures reject its table (the visual would show the guard message);
+    a section's slicer reaches only its section's visuals."""
+    out = []
+    for s in page_wide:
+        tables = {f.table for f in s.roles["Values"]}
+        out += [Interaction(s, v, "NoFilter") for v in data if _rejects(v, tables)]
+    for s, mine in scoped:
+        tables = {f.table for f in s.roles["Values"]}
+        out += [Interaction(s, v, "NoFilter") for v in data
+                if not any(v is m for m in mine) or _rejects(v, tables)]
+    return out
 
 
 # ---- the pages ----------------------------------------------------------------------------------------------------
 
 def headcount_page() -> Page:
     hc = ["Headcount"]
-    return detail_page(
-        "headcount", "Headcount & mix",
-        # FTE equals headcount today (Fusion FTE values are 1; a zero FTE is replaced by 1): no decimals
-        cards=[card("Headcount", "Headcount"), card("FTE", "FTE", decimals=0),
-               card("Average Headcount", "Average headcount", decimals=0),
-               card("Average FTE", "Average FTE", decimals=0), card("BSC Saudization", "Saudization"),
-               card("Female Share %", "Female share"), card("Contingent Share %", "Contingent workers' share")],
-        grid=[trend("Headcount and FTE", ["Headcount", "FTE"]),
-              bars("Headcount by branch", BRANCH_NAME, hc),
-              bars("Headcount by department, top 15", DEPARTMENT, hc, top=True),
-              bars("Headcount by job, top 15", col("Job", "Job Name"), hc, top=True)],
-        extras=[bars("Headcount by grade, top 15", col("Grade", "Grade Name"), hc, top=True),
-                bars("Headcount by position, top 15", POSITION, hc, top=True),
-                bars("Headcount by location, top 15", col("Location", "Location Name"), hc, top=True),
-                bars("Headcount, Saudi and non-Saudi", col("Headcount", "Is Saudi"), hc),
-                bars("Headcount by gender", col("Headcount", "Gender"), hc),
-                bars("Headcount by worker type", col("Employee", "Worker Type"), hc),
-                bars("Headcount by age band", col("Headcount", "Age Band"), hc),
-                bars("Headcount by tenure band (years)", col("Headcount", "Tenure Band"), hc),
-                bars("Headcount, full and part time", col("Job", "Full Part Time"), hc)],
-        page_slicers=WORKFORCE_SLICERS)
+    size = section(
+        "Size", [card("Headcount", "Headcount"),
+                 # FTE equals headcount today (Fusion FTE values are 1; a zero FTE is replaced by 1): no decimals
+                 card("FTE", "FTE", decimals=0), card("Average Headcount", "Average headcount", decimals=0),
+                 card("BSC Saudization", "Saudization"), card("Female Share %", "Female share"),
+                 card("Contingent Share %", "Contingent workers")],
+        # FTE equals headcount today: one line, or every label shows twice
+        [[trend("Headcount by month", hc, span=2),
+          bars("Headcount by branch, then location", [BRANCH_NAME, LOCATION], hc)]],
+        subtitle="Month-end headcount; contingent workers are counted apart.")
+    organisation = section(
+        "Organisation", [],
+        [[bars("Headcount by department, then job, position and grade", [DEPARTMENT, JOB, POSITION, GRADE], hc,
+               top=True),
+          columns("Headcount by grade", GRADE, hc)],
+         [matrix("Headcount by department, job and position (rows) and grade (columns)", [DEPARTMENT, JOB, POSITION],
+                 [GRADE], hc, h=480, expand=False,
+                 labels={DEPARTMENT: "Department", JOB: "Job", POSITION: "Position", GRADE: "Grade"})]],
+        subtitle="Use the arrows on a chart or matrix to drill down a level.")
+    mix = section(
+        "Workforce mix", [],
+        [[donut("Saudi nationals", col("Headcount", "Is Saudi"), "Headcount"),
+          donut("Gender", col("Headcount", "Gender"), "Headcount"),
+          donut("Worker type", col("Employee", "Worker Type"), "Headcount"),
+          donut("Full and part time", col("Job", "Full Part Time"), "Headcount")],
+         [columns("Headcount by age band (years)", col("Headcount", "Age Band"), hc),
+          columns("Headcount by tenure band (years)", col("Headcount", "Tenure Band"), hc)]])
+    return detail_page("headcount", "Headcount & mix", [size, organisation, mix], page_slicers=WORKFORCE_SLICERS)
 
 
 CHANGES = ["Job Changes", "Grade Changes", "Position Changes", "Location Changes"]
@@ -472,27 +580,32 @@ CHANGES = ["Job Changes", "Grade Changes", "Position Changes", "Location Changes
 
 def movements_page() -> Page:
     leavers = ["Leavers", "Voluntary Leavers"]
-    return detail_page(
-        "movements", "Movements & turnover",
-        cards=[card("Hires", "Hires"), card("Leavers", "Leavers in Fusion"),
-               card("Involuntary Leavers", "Involuntary leavers in Fusion"), card("BSC Turnover", "Turnover"),
-               card("Voluntary Turnover Rate %", "Voluntary leaver rate in Fusion"),
-               card("New Hire Turnover %", "New-hire leaver rate in Fusion"),
-               card("Branch Transfers", "Branch transfers"), card("Promotions", "Promotions (Fusion action)")],
-        grid=[trend("Hires and leavers in Fusion", ["Hires"] + leavers + ["Involuntary Leavers"]),
-              trend("Turnover and voluntary leaver rate in Fusion", ["BSC Turnover", "Voluntary Turnover Rate %"]),
-              bars("Movements by movement group", col("Worker Action", "Movement Group"), ["Movements"]),
-              bars("Changes by kind and branch", BRANCH_NAME, CHANGES, n=5)],  # a month's changes are at a few branches
-        extras=[bars("Leavers in Fusion by action reason, top 15", col("Worker Action", "Action Reason Name"), leavers,
-                     top=True),
-                bars("Leavers in Fusion by current tenure band (years)", col("Employee", "Tenure Band"), leavers),
-                bars("Hires by action (rehires included), top 15", col("Worker Action", "Action Name"), ["Hires"],
-                     top=True),
-                bars("Hires and leavers in Fusion by branch", BRANCH_NAME, ["Hires", "Leavers"]),
-                bars("Hires and leavers in Fusion by department, top 15", DEPARTMENT, ["Hires", "Leavers"],
-                     top=True),
-                bars("Branch transfers and promotions by branch", BRANCH_NAME, ["Branch Transfers", "Promotions"])],
-        page_slicers=WORKFORCE_SLICERS)
+    flow = section(
+        "Hires and leavers",
+        [card("Hires", "Hires"), card("Leavers", "Leavers in Fusion"),
+         card("Involuntary Leavers", "Involuntary leavers in Fusion"), card("BSC Turnover", "Turnover"),
+         card("Voluntary Turnover Rate %", "Voluntary leaver rate in Fusion"),
+         card("New Hire Turnover %", "New-hire leaver rate in Fusion")],
+        [[trend("Hires and leavers by month", ["Hires"] + leavers + ["Involuntary Leavers"]),
+          trend("Turnover and voluntary leaver rate by month", ["BSC Turnover", "Voluntary Turnover Rate %"])],
+         [bars("Hires and leavers by branch", BRANCH_NAME, ["Hires", "Leavers"]),
+          bars("Hires and leavers by department, top 10", DEPARTMENT, ["Hires", "Leavers"], top=True)],
+         [bars("Leavers by action reason, top 10", col("Worker Action", "Action Reason Name"), leavers, top=True),
+          bars("Leavers by current tenure band (years)", col("Employee", "Tenure Band"), leavers),
+          bars("Hires by action, top 15", col("Worker Action", "Action Name"), ["Hires"], top=True)]],
+        subtitle="Turnover is the scorecard's; leaver figures marked in Fusion count Fusion leavers only.")
+    changes = section(
+        "Changes and transfers",
+        [card("Branch Transfers", "Branch transfers"), card("Promotions", "Promotions (Fusion action)"),
+         card("Movements", "All movements")],
+        [[matrix("Changes by branch and kind", [BRANCH_NAME], [], CHANGES, h=360,
+                 labels={BRANCH_NAME: "Branch"}),
+          matrix("Branch transfers: from (rows) and to (columns)", [FROM_BRANCH], [BRANCH_NAME],
+                 ["Branch Transfers"], h=360, labels={FROM_BRANCH: "From", BRANCH_NAME: "To"})],
+         [bars("Movements by movement group", col("Worker Action", "Movement Group"), ["Movements"]),
+          bars("Branch transfers and promotions by branch", BRANCH_NAME, ["Branch Transfers", "Promotions"])]],
+        subtitle="A darker cell is a larger number.")
+    return detail_page("movements", "Movements & turnover", [flow, changes], page_slicers=WORKFORCE_SLICERS)
 
 
 PAY_CATEGORY = col("Pay Category", "Pay Category")
@@ -504,109 +617,132 @@ COST_CATEGORIES = Filter(col("Pay Category", "Is Cost"), "eq", ["Yes"])
 def payroll_page() -> Page:
     """Payroll & overtime, in two sections (user request 2026-11-04): gross pay, what employees are paid (earnings and
     earnings adjustments), and payroll cost, what the employer pays (gross pay plus the employer charges: GOSI employer
-    charge and other employer charges). The cost section shows the step from one to the other: a waterfall by pay
-    group and the 12-month split of payroll cost into gross pay and employer charges ([Employer Charges] = [Payroll
-    Cost] - [Gross Pay]). Not by job (ruling R26): Payroll has no job, and only the Department slicer suits every
-    visual ([Payroll Cost per FTE] rejects Pay Category and Payroll)."""
+    charge and other employer charges), each with its breakdowns; by grade ranked high to low, grades known only (user
+    request 2026-11-05; Payroll's grade is the month's headcount grade). The cost section shows the step from one to
+    the other: a waterfall by pay group and the monthly split of payroll cost into gross pay and employer charges.
+    Not by job (ruling R26): Payroll has no job."""
     gross = section(
-        cards=[card("Gross Pay", "Gross pay (SAR)", pay=True),
-               card("Overtime Share %", "Overtime share of gross pay", pay=True),
-               card("HR Open Payroll Text", "Gross pay in open payroll", pay=True)],
-        blocks=[(2, [trend("Gross pay", ["Gross Pay"], pay=True),
-                     bars("Gross pay by pay category (overtime included)", PAY_CATEGORY, ["Gross Pay"], pay=True,
-                          filters=[GROSS_PAY_CATEGORIES], n=11),
-                     trend("Overtime share", ["Overtime Share %"], pay=True),
-                     bars("Overtime share of gross pay by branch", BRANCH_NAME, ["Overtime Share %"], pay=True),
-                     table("Payroll source and status by branch: an open month is not final",
-                           [(BRANCH_NAME, "Branch"), (col("Payroll", "Source"), "Source"),
-                            (col("Payroll", "Payroll Status"), "Payroll status")],
-                           ["Gross Pay", "Gross Pay (Open Payroll)"], pay=True),
-                     bars("Gross pay by department, top 15", DEPARTMENT, ["Gross Pay"], top=True, pay=True)])],
-        title="Gross pay: what employees are paid",
-        subtitle="Earnings (basic, allowances, overtime, leave pay, end of service, awards) and earnings adjustments "
-                 "(absence and lateness deductions), before employee deductions.")
+        "Gross pay: what employees are paid",
+        [card("Gross Pay", "Gross pay (SAR)", pay=True),
+         card("Overtime Share %", "Overtime share of gross pay", pay=True),
+         card("HR Open Payroll Text", "Gross pay in open payroll", pay=True)],
+        [[trend("Gross pay by month", ["Gross Pay"], pay=True),
+          bars("Gross pay by pay category", PAY_CATEGORY, ["Gross Pay"], pay=True, filters=[GROSS_PAY_CATEGORIES],
+               n=11)],
+         [trend("Overtime share by month", ["Overtime Share %"], pay=True),
+          bars("Overtime share by branch", BRANCH_NAME, ["Overtime Share %"], pay=True)],
+         [bars("Gross pay by grade, top 15", GRADE, ["Gross Pay"], top=True, pay=True, filters=[GRADE_KNOWN]),
+          bars("Gross pay by department, top 15", DEPARTMENT, ["Gross Pay"], top=True, pay=True)],
+         [table("Payroll source and status by branch (an open month is not final)",
+                [(BRANCH_NAME, "Branch"), (col("Payroll", "Source"), "Source"),
+                 (col("Payroll", "Payroll Status"), "Payroll status")],
+                ["Gross Pay", "Gross Pay (Open Payroll)"], pay=True)]],
+        subtitle="Earnings and their adjustments, before employee deductions.")
     cost = section(
-        cards=[card("Payroll Cost", "Payroll cost (SAR)", pay=True),
-               card("Employer Charges", "Employer charges (SAR)", pay=True),
-               card("Employer Charges Share %", "Employer charges' share of payroll cost", pay=True),
-               card("Payroll Cost per FTE", "Payroll cost per FTE (SAR)", pay=True)],
-        blocks=[(2, [waterfall("From gross pay to payroll cost, by pay group", PAY_GROUP, "Payroll Cost", pay=True,
-                               filters=[COST_CATEGORIES]),
-                     trend("Payroll cost: gross pay and employer charges", ["Gross Pay", "Employer Charges"],
-                           pay=True, stacked=True),
-                     bars("Payroll cost by pay category (employer charges included)", PAY_CATEGORY, ["Payroll Cost"],
-                          pay=True, filters=[COST_CATEGORIES], n=13),
-                     bars("Payroll cost by department, top 15", DEPARTMENT, ["Payroll Cost"], top=True, pay=True),
-                     bars("Payroll cost per FTE by branch (SAR)", BRANCH_NAME, ["Payroll Cost per FTE"], pay=True),
-                     bars("Employer charges by branch (SAR)", BRANCH_NAME, ["Employer Charges"], pay=True)])],
-        title="Payroll cost: what the employer pays",
-        subtitle="Gross pay plus employer charges (GOSI employer charge and other employer charges). Payroll cost per "
-                 "FTE and the BSC's staff cost per FTE use it.")
-    return detail_page("payroll", "Payroll & overtime", sections=[gross, cost], page_slicers=[(DEPARTMENT, "Department")])
+        "Payroll cost: what the employer pays",
+        [card("Payroll Cost", "Payroll cost (SAR)", pay=True),
+         card("Employer Charges", "Employer charges (SAR)", pay=True),
+         card("Employer Charges Share %", "Employer charges' share", pay=True),
+         card("Payroll Cost per FTE", "Payroll cost per FTE (SAR)", pay=True)],
+        [[waterfall("From gross pay to payroll cost, by pay group", PAY_GROUP, "Payroll Cost", pay=True,
+                    filters=[COST_CATEGORIES]),
+          trend("Payroll cost by month: gross pay and employer charges", ["Gross Pay", "Employer Charges"], pay=True,
+                stacked=True)],
+         [bars("Payroll cost by pay category", PAY_CATEGORY, ["Payroll Cost"], pay=True, filters=[COST_CATEGORIES],
+               n=13),
+          bars("Payroll cost by department, top 15", DEPARTMENT, ["Payroll Cost"], top=True, pay=True)],
+         [bars("Payroll cost by grade, top 15", GRADE, ["Payroll Cost"], top=True, pay=True, filters=[GRADE_KNOWN]),
+          bars("Payroll cost per FTE by branch", BRANCH_NAME, ["Payroll Cost per FTE"], pay=True),
+          bars("Employer charges by branch", BRANCH_NAME, ["Employer Charges"], pay=True)]],
+        subtitle="Gross pay plus employer charges (GOSI and others).")
+    return detail_page("payroll", "Payroll & overtime", [gross, cost],
+                       page_slicers=[(DEPARTMENT, "Department"), (GRADE, "Grade")])
 
 
 def absence_page() -> Page:
-    """Absence & leave. Not by department (ruling R26): the absence and leave facts have no HR department."""
-    return detail_page(
-        "absence", "Absence & leave",
-        cards=[card("Sick Days", "Sick days"), card("Sick Leave Rate %", "Sick leave rate"),
-               card("Absence Days", "Absence days, all kinds"),
-               card("Leave Balance (days)", "Leave balance at month end (days)", pay=True),
-               card("Leave Liability", "Leave liability at month end (SAR)", pay=True),
-               card("Average Leave Balance (days)", "Average leave balance (days)", pay=True),
-               card("Current Leave Balance (days)", "Leave balance now (days)", pay=True),
-               card("Current Leave Liability", "Leave liability now (SAR)", pay=True)],
-        grid=[trend("Sick leave rate", ["Sick Leave Rate %"]),
-              bars("Absence days by category", col("Absence Type", "Absence Category"), ["Absence Days"]),
-              bars("Absence days by absence type, top 15", ABSENCE_TYPE, ["Absence Days"], top=True),
-              bars("Sick leave rate by branch", BRANCH_NAME, ["Sick Leave Rate %"])],
-        extras=[bars("Sick days by absence type, top 15", ABSENCE_TYPE, ["Sick Days"], top=True),
-                trend("Sick days", ["Sick Days"]),
-                trend("Absence days, all kinds", ["Absence Days"]),
-                bars("Leave liability by branch (SAR)", BRANCH_NAME, ["Leave Liability"], pay=True),
-                bars("Leave balance by branch (days)", BRANCH_NAME, ["Leave Balance (days)"], pay=True),
-                trend("Leave liability (SAR)", ["Leave Liability"], pay=True)])
+    """Absence & leave in two sections (user request 2026-11-05): absence days, with Absence category and Absence type
+    slicers, and leave balance and liability, with a Leave plan slicer; each section's slicers reach its own visuals
+    only. Leave balances come from Fusion's absence plans: Oasis records leave taken, not balances. Not by department
+    (ruling R26): the absence and leave facts have no HR department."""
+    days = section(
+        "Absence days",
+        [card("Absence Days", "Absence days, all kinds"), card("Sick Days", "Sick days"),
+         card("Sick Leave Rate %", "Sick leave rate")],
+        [[trend("Absence days by month", ["Absence Days"]),
+          bars("Absence days by category, then type", [ABSENCE_CATEGORY, ABSENCE_TYPE], ["Absence Days"])],
+         [trend("Sick leave rate by month", ["Sick Leave Rate %"]),
+          bars("Sick leave rate by branch", BRANCH_NAME, ["Sick Leave Rate %"])],
+         [bars("Absence days by branch", BRANCH_NAME, ["Absence Days"]),
+          bars("Sick days by absence type, top 15", ABSENCE_TYPE, ["Sick Days"], top=True)]],
+        slicers=[(ABSENCE_CATEGORY, "Absence category"), (ABSENCE_TYPE, "Absence type")])
+    leave = section(
+        "Leave balance and liability",
+        [card("Leave Balance (days)", "Leave balance at month end (days)", pay=True),
+         card("Leave Liability", "Leave liability at month end (SAR)", pay=True),
+         card("Average Leave Balance (days)", "Average leave balance (days)", pay=True),
+         card("Current Leave Balance (days)", "Leave balance now (days)", pay=True),
+         card("Current Leave Liability", "Leave liability now (SAR)", pay=True)],
+        [[trend("Leave liability by month", ["Leave Liability"], pay=True),
+          trend("Leave balance by month (days)", ["Leave Balance (days)"], pay=True)],
+         [bars("Leave liability by branch", BRANCH_NAME, ["Leave Liability"], pay=True),
+          bars("Leave balance by branch (days)", BRANCH_NAME, ["Leave Balance (days)"], pay=True)],
+         [bars("Leave balance by leave plan (days)", LEAVE_PLAN, ["Leave Balance (days)"], pay=True),
+          bars("Leave liability by leave plan", LEAVE_PLAN, ["Leave Liability"], pay=True)]],
+        subtitle="From Fusion absence plans; Oasis records leave taken, not balances.",
+        slicers=[(LEAVE_PLAN, "Leave plan")])
+    return detail_page("absence", "Absence & leave", [days, leave])
+
+
+REQUISITION_STATE = col("Requisitions", "Requisition State")
+REQUISITION_PHASE = col("Requisitions", "Requisition Phase")
 
 
 def recruitment_page() -> Page:
-    """Recruitment, by branch only: Requisitions has no department (spec "Pages" 4). No budgeted FTE is loaded
-    yet: the vacancy card and charts say so ([HR Vacancy Rate Text], [HR Vacancy Note])."""
-    return detail_page(
-        "recruitment", "Recruitment",
-        cards=[card("HR Vacancy Rate Text", "Vacancy rate (openings / budgeted FTE)"),
-               card("BSC Time to Fill (days)", "Time to fill (days)"),
-               card("Requisitions Approved", "Requisitions approved"),
-               card("Requisitions Filled", "Requisitions filled"), card("Open Openings", "Open openings")],
-        grid=[trend("Vacancy rate", ["BSC Vacancy Rate"], note="HR Vacancy Note"),
-              bars("Vacancy rate by branch", BRANCH_NAME, ["BSC Vacancy Rate"], note="HR Vacancy Note"),
-              trend("Requisitions approved and filled", ["Requisitions Approved", "Requisitions Filled"]),
-              bars("Open openings by branch", BRANCH_NAME, ["Open Openings"])],
-        extras=[trend("Time to fill (days)", ["BSC Time to Fill (days)"]),
-                bars("Time to fill by branch (days)", BRANCH_NAME, ["BSC Time to Fill (days)"]),
-                trend("Open openings at month end", ["Open Openings"])])
+    """Recruitment, by branch only: Requisitions has no department (spec "Pages" 4). Status (the Fusion state:
+    Posted, Filled, In Progress, ...) and Phase slicers (user request 2026-11-05). No budgeted FTE is loaded yet: the
+    vacancy card and charts say so ([HR Vacancy Rate Text], [HR Vacancy Note])."""
+    counts = ["Requisitions Approved", "Requisitions Filled"]
+    rate = ["Requisition Fill Rate %"]
+    hiring = section(
+        "Requisitions",
+        [card("HR Vacancy Rate Text", "Vacancy rate"), card("Open Openings", "Open requisitions"),
+         card("Requisitions Approved", "Requisitions approved"), card("Requisitions Filled", "Requisitions filled"),
+         card("BSC Time to Fill (days)", "Average time to fill (days)"),
+         card("Requisition Fill Rate %", "Fill rate")],
+        [[combo("Approved and filled, with the fill rate, by month", YEAR_MONTH, counts, rate),
+          combo("Approved and filled, with the fill rate, by branch", BRANCH_NAME, counts, rate)],
+         [trend("Average time to fill by month (days)", ["BSC Time to Fill (days)"]),
+          bars("Average time to fill by branch (days)", BRANCH_NAME, ["BSC Time to Fill (days)"])],
+         [trend("Open requisitions at month end", ["Open Openings"]),
+          bars("Open requisitions by branch", BRANCH_NAME, ["Open Openings"])],
+         [trend("Vacancy rate by month", ["BSC Vacancy Rate"], note="HR Vacancy Note"),
+          bars("Vacancy rate by branch", BRANCH_NAME, ["BSC Vacancy Rate"], note="HR Vacancy Note")]],
+        subtitle="Approved Oracle Recruiting requisitions. Fill rate: the approved that are filled.")
+    return detail_page("recruitment", "Recruitment", [hiring],
+                       page_slicers=[(REQUISITION_STATE, "Status"), (REQUISITION_PHASE, "Phase")])
 
 
 STAFF_CATEGORY = col("Staff Productivity", "Staff Category")
 
 
 def productivity_page() -> Page:
-    return detail_page(
-        "productivity", "Productivity",
-        cards=[card("Visits per FTE", "Visits per FTE, doctors and nurses", pay=True),
-               card("Revenue per Payroll SAR", "Revenue per payroll SAR", pay=True),
-               card("Payroll Cost per Visit", "Payroll cost per visit (SAR)", pay=True),
-               card("BSC Revenue per FTE", "Revenue per FTE (SAR)"),
-               card("BSC Revenue per Doctor", "Revenue per doctor (SAR)")],
-        grid=[bars("Visits per FTE, doctors and nurses", STAFF_CATEGORY, ["Visits per FTE"], pay=True),
-              bars("Revenue per payroll SAR, doctors and nurses", STAFF_CATEGORY, ["Revenue per Payroll SAR"],
-                   pay=True),
-              trend("Visits per FTE", ["Visits per FTE"], pay=True),
-              bars("Staff to bed and clinical staff to doctor by branch", BRANCH_NAME,
-                   ["BSC Staff to Bed", "BSC Clinical to Doctor"])],
-        extras=[bars("Payroll cost per visit (SAR)", STAFF_CATEGORY, ["Payroll Cost per Visit"],  # by doctor, nurse
-                     pay=True),
-                bars("Revenue per FTE by branch (SAR)", BRANCH_NAME, ["BSC Revenue per FTE"]),
-                bars("Revenue per doctor by branch (SAR)", BRANCH_NAME, ["BSC Revenue per Doctor"])])
+    clinical = section(
+        "Doctors and nurses",
+        [card("Visits per FTE", "Visits per FTE", pay=True),
+         card("Revenue per Payroll SAR", "Revenue per payroll SAR", pay=True),
+         card("Payroll Cost per Visit", "Payroll cost per visit (SAR)", pay=True),
+         card("BSC Revenue per FTE", "Revenue per FTE (SAR)"),
+         card("BSC Revenue per Doctor", "Revenue per doctor (SAR)")],
+        [[bars("Visits per FTE", STAFF_CATEGORY, ["Visits per FTE"], pay=True),
+          bars("Revenue per payroll SAR", STAFF_CATEGORY, ["Revenue per Payroll SAR"], pay=True),
+          bars("Payroll cost per visit (SAR)", STAFF_CATEGORY, ["Payroll Cost per Visit"], pay=True)],
+         [trend("Visits per FTE by month", ["Visits per FTE"], pay=True),
+          bars("Staff to bed and clinical staff to doctor by branch", BRANCH_NAME,
+               ["BSC Staff to Bed", "BSC Clinical to Doctor"])],
+         [bars("Revenue per FTE by branch", BRANCH_NAME, ["BSC Revenue per FTE"]),
+          bars("Revenue per doctor by branch", BRANCH_NAME, ["BSC Revenue per Doctor"])]],
+        subtitle="Visits and revenue of doctors and nurses linked to Oasis.")
+    return detail_page("productivity", "Productivity", [clinical])
 
 
 def detail_pages() -> list[Page]:
@@ -620,9 +756,9 @@ def detail_pages() -> list[Page]:
 def employee_list_page() -> Page:
     """Hidden drill-through on branch and the prefix-free department (keep all filters off; see the module
     docstring)."""
-    branch, month = filters()
-    back = bsc.back_button(SUB_TAB_X, SUB_TAB_Y, BACK_W, 54)
-    visuals = page_frame(None, [branch, month, back])
+    bar = filters()
+    back = bsc.back_button(BAR_X, BAR_BUTTON_Y, BACK_W, BAR_BUTTON_H)
+    visuals = page_frame(None, bar + [back])
     own_slicers = _slicer_row(WORKFORCE_SLICERS, Y0)
     y = Y0 + SLICER_H + GAP
     worker = col("Employee", "Worker Number")
@@ -638,13 +774,15 @@ def employee_list_page() -> Page:
               (meas("HR Employee Grade"), "Grade"), (col("Employee", "Hire Date"), "Hire date"),
               (col("Employee", "Assignment Status"), "Status"), (HEADCOUNT, "Headcount")]
     people = Visual("table", X0, y, W0, CONTENT_END - y, roles={"Values": [f for f, _ in fields]},
-                    title="People in the headcount of the month", labels=dict(fields),
+                    title="People in the headcount", labels=dict(fields),
                     filters=[Filter(HEADCOUNT, "notblank")], sort=worker, sort_dir="asc",
                     props={"total": [{"properties": {"totals": _lit(False)}}]})  # a list of people has no total
     visuals += own_slicers + [people]
     page_filters = [branches()]
     drill = [BRANCH_NAME, DEPARTMENT]
-    interactions = _interactions(EMPLOYEE_LIST, month, own_slicers + [branch], [people],
-                                 {f.field.table for f in page_filters} | {f.table for f in drill})
+    interactions = trend_interactions(bar, [])
+    interactions += _slicer_interactions(bar[:1] + own_slicers, [], [people])
+    interactions += [Interaction(s, t, "NoFilter") for s, t in
+                     _guarded(EMPLOYEE_LIST, [people], {f.field.table for f in page_filters} | {f.table for f in drill})]
     return Page(EMPLOYEE_LIST, "Employee list", visuals, filters=page_filters, drill_fields=drill, hidden=True,
                 keep_filters=False, interactions=interactions)

@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "54ab3dccc9ca2b3c86a6",
   "position": {
-    "x": 972.0,
-    "y": 2202.0,
+    "x": 30,
+    "y": 2354.0,
     "z": 39000,
-    "height": 454,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 39000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "waterfallChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR Department"
+                      "Entity": "Pay Category"
                     }
                   },
-                  "Property": "Department Base Name"
+                  "Property": "Pay Group"
                 }
               },
-              "queryRef": "HR Department.Department Base Name",
-              "nativeQueryRef": "Department Base Name",
+              "queryRef": "Pay Category.Pay Group",
+              "nativeQueryRef": "Pay Group",
               "active": true
             }
           ]
@@ -56,16 +56,16 @@
         "sort": [
           {
             "field": {
-              "Measure": {
+              "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "_Measures"
+                    "Entity": "Pay Category"
                   }
                 },
-                "Property": "Payroll Cost"
+                "Property": "Pay Group"
               }
             },
-            "direction": "Descending"
+            "direction": "Ascending"
           }
         ]
       }
@@ -114,13 +114,6 @@
                   "Value": "false"
                 }
               }
-            },
-            "maxMarginFactor": {
-              "expr": {
-                "Literal": {
-                  "Value": "40L"
-                }
-              }
             }
           }
         }
@@ -167,7 +160,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Payroll cost by department, top 15'"
+                  "Value": "'From gross pay to payroll cost, by pay group'"
                 }
               }
             }
@@ -180,76 +173,24 @@
   "filterConfig": {
     "filters": [
       {
-        "name": "2ec6cd13162e21f8e254",
+        "name": "c58429b56c078b67ce27",
         "field": {
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "HR Department"
+                "Entity": "Pay Category"
               }
             },
-            "Property": "Department Base Name"
+            "Property": "Is Cost"
           }
         },
-        "type": "TopN",
+        "type": "Categorical",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "h",
-                        "Entity": "HR Department",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "h"
-                            }
-                          },
-                          "Property": "Department Base Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Payroll Cost"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "h",
-              "Entity": "HR Department",
+              "Name": "p",
+              "Entity": "Pay Category",
               "Type": 0
             }
           ],
@@ -262,18 +203,22 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "h"
+                            "Source": "p"
                           }
                         },
-                        "Property": "Department Base Name"
+                        "Property": "Is Cost"
                       }
                     }
                   ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
                 }
               }
             }

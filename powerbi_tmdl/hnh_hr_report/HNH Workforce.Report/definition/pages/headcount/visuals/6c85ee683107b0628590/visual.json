@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "6c85ee683107b0628590",
   "position": {
-    "x": 1443.0,
-    "y": 276,
+    "x": 658.0,
+    "y": 420.0,
     "z": 30000,
-    "height": 110,
-    "width": 447.0,
+    "height": 128,
+    "width": 290.0,
     "tabOrder": 30000
   },
   "visual": {
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Average FTE"
+                  "Property": "Average Headcount"
                 }
               },
-              "queryRef": "_Measures.Average FTE",
-              "nativeQueryRef": "Average FTE",
-              "displayName": "Average FTE"
+              "queryRef": "_Measures.Average Headcount",
+              "nativeQueryRef": "Average Headcount",
+              "displayName": "Average headcount"
             }
           ]
         }
@@ -41,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -86,7 +93,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

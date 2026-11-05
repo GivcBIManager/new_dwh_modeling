@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "d015310aaac1e363a6b5",
   "position": {
-    "x": 972.0,
-    "y": 544,
+    "x": 1278.0,
+    "y": 572.0,
     "z": 35000,
-    "height": 298,
-    "width": 918.0,
+    "height": 300,
+    "width": 612.0,
     "tabOrder": 35000
   },
   "visual": {
@@ -29,6 +29,20 @@
               "queryRef": "Branch.Branch Name",
               "nativeQueryRef": "Branch Name",
               "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Location"
+                    }
+                  },
+                  "Property": "Location Name"
+                }
+              },
+              "queryRef": "Location.Location Name",
+              "nativeQueryRef": "Location Name"
             }
           ]
         },
@@ -46,7 +60,8 @@
                 }
               },
               "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -159,7 +174,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by branch'"
+                  "Value": "'Headcount by branch, then location'"
                 }
               }
             }

@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "78f0b765dc504e851a11",
   "position": {
-    "x": 972.0,
-    "y": 2680.0,
+    "x": 30,
+    "y": 2678.0,
     "z": 41000,
-    "height": 298,
+    "height": 454,
     "width": 918.0,
     "tabOrder": 41000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "Pay Category"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Pay Category"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "Pay Category.Pay Category",
+              "nativeQueryRef": "Pay Category",
               "active": true
             }
           ]
@@ -42,12 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Employer Charges"
+                  "Property": "Payroll Cost"
                 }
               },
-              "queryRef": "_Measures.Employer Charges",
-              "nativeQueryRef": "Employer Charges",
-              "displayName": "Employer charges (SAR)"
+              "queryRef": "_Measures.Payroll Cost",
+              "nativeQueryRef": "Payroll Cost",
+              "displayName": "Payroll cost (SAR)"
             }
           ]
         }
@@ -62,7 +62,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Employer Charges"
+                "Property": "Payroll Cost"
               }
             },
             "direction": "Descending"
@@ -167,7 +167,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Employer charges by branch (SAR)'"
+                  "Value": "'Payroll cost by pay category'"
                 }
               }
             }
@@ -176,5 +176,63 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "42ceacd6dd25dc09738c",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Pay Category"
+              }
+            },
+            "Property": "Is Cost"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "p",
+              "Entity": "Pay Category",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "p"
+                          }
+                        },
+                        "Property": "Is Cost"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

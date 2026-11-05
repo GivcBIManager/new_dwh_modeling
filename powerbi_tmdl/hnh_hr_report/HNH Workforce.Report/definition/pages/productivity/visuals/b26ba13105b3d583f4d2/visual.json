@@ -2,46 +2,45 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "b26ba13105b3d583f4d2",
   "position": {
-    "x": 424.8,
-    "y": 219.0,
+    "x": 30,
+    "y": 254,
     "z": 35000,
-    "height": 44,
-    "width": 44,
+    "height": 64,
+    "width": 1860,
     "tabOrder": 35000
   },
   "visual": {
-    "visualType": "image",
+    "visualType": "textbox",
     "objects": {
-      "image": [
+      "general": [
         {
           "properties": {
-            "sourceFile": {
-              "image": {
-                "name": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'hr_icon_trend_up.svg'"
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Doctors and nurses",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
+                      "color": "#0A1E32"
                     }
                   }
-                },
-                "url": {
-                  "expr": {
-                    "ResourcePackageItem": {
-                      "PackageName": "RegisteredResources",
-                      "PackageType": 1,
-                      "ItemName": "hr_icon_trend_up.svg"
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Visits and revenue of doctors and nurses linked to Oasis.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "11pt",
+                      "color": "#5B6B7D"
                     }
                   }
-                },
-                "scaling": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'Normal'"
-                    }
-                  }
-                }
+                ]
               }
-            }
+            ]
           }
         }
       ]

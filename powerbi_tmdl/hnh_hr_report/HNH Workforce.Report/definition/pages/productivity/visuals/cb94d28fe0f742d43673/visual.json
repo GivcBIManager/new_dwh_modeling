@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "cb94d28fe0f742d43673",
   "position": {
-    "x": 1160.4,
-    "y": 186,
+    "x": 783.6,
+    "y": 330.0,
     "z": 25000,
-    "height": 110,
+    "height": 128,
     "width": 352.8,
     "tabOrder": 25000
   },
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Revenue per FTE"
+                  "Property": "Payroll Cost per Visit"
                 }
               },
-              "queryRef": "_Measures.BSC Revenue per FTE",
-              "nativeQueryRef": "BSC Revenue per FTE",
-              "displayName": "Revenue per FTE (SAR)"
+              "queryRef": "_Measures.Payroll Cost per Visit",
+              "nativeQueryRef": "Payroll Cost per Visit",
+              "displayName": "Payroll cost per visit (SAR)"
             }
           ]
         }
@@ -41,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -72,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },
@@ -107,5 +114,62 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "5123e0af7c62eb72ac62",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Payroll Cost per Visit"
+          }
+        },
+        "type": "Advanced",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "_",
+              "Entity": "_Measures",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Not": {
+                  "Expression": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "_"
+                            }
+                          },
+                          "Property": "Payroll Cost per Visit"
+                        }
+                      },
+                      "Right": {
+                        "Literal": {
+                          "Value": "null"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

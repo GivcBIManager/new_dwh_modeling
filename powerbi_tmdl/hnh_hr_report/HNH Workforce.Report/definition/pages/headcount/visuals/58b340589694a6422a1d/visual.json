@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "58b340589694a6422a1d",
   "position": {
-    "x": 658.0,
-    "y": 1824,
+    "x": 1443.0,
+    "y": 2078.0,
     "z": 42000,
-    "height": 150,
-    "width": 604.0,
+    "height": 300,
+    "width": 447.0,
     "tabOrder": 42000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "donutChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Headcount"
+                      "Entity": "Job"
                     }
                   },
-                  "Property": "Gender"
+                  "Property": "Full Part Time"
                 }
               },
-              "queryRef": "Headcount.Gender",
-              "nativeQueryRef": "Gender",
+              "queryRef": "Job.Full Part Time",
+              "nativeQueryRef": "Full Part Time",
               "active": true
             }
           ]
@@ -46,7 +46,8 @@
                 }
               },
               "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -70,60 +71,6 @@
       }
     },
     "objects": {
-      "valueAxis": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryAxis": [
-        {
-          "properties": {
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "maxMarginFactor": {
-              "expr": {
-                "Literal": {
-                  "Value": "40L"
-                }
-              }
-            }
-          }
-        }
-      ],
       "labels": [
         {
           "properties": {
@@ -134,10 +81,30 @@
                 }
               }
             },
-            "labelDisplayUnits": {
+            "labelStyle": {
               "expr": {
                 "Literal": {
-                  "Value": "1D"
+                  "Value": "'Category, percent of total'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
@@ -159,7 +126,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by gender'"
+                  "Value": "'Full and part time'"
                 }
               }
             }

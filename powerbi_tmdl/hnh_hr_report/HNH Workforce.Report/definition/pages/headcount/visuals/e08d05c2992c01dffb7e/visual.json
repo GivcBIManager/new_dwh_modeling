@@ -2,46 +2,33 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "e08d05c2992c01dffb7e",
   "position": {
-    "x": 990.0,
-    "y": 443.0,
+    "x": 30,
+    "y": 2002.0,
     "z": 53000,
-    "height": 44,
-    "width": 44,
+    "height": 64,
+    "width": 1860,
     "tabOrder": 53000
   },
   "visual": {
-    "visualType": "image",
+    "visualType": "textbox",
     "objects": {
-      "image": [
+      "general": [
         {
           "properties": {
-            "sourceFile": {
-              "image": {
-                "name": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'hr_icon_badge.svg'"
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Workforce mix",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
+                      "color": "#0A1E32"
                     }
                   }
-                },
-                "url": {
-                  "expr": {
-                    "ResourcePackageItem": {
-                      "PackageName": "RegisteredResources",
-                      "PackageType": 1,
-                      "ItemName": "hr_icon_badge.svg"
-                    }
-                  }
-                },
-                "scaling": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'Normal'"
-                    }
-                  }
-                }
+                ]
               }
-            }
+            ]
           }
         }
       ]

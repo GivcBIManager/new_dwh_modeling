@@ -21,21 +21,8 @@
                   {
                     "value": "Find your way",
                     "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "14pt",
-                      "fontWeight": "bold",
-                      "color": "#1478BE"
-                    }
-                  }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "• The tabs in the dark bar: Home (the headline figures), Story (one sentence and one chart for each area), Scorecard (every KPI and its status), Details (six pages, opened with the buttons beside the Month slicer), Data quality and Guide.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -44,10 +31,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• How to use and Definitions, top right, open this Guide.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -56,10 +43,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• On the Scorecard, select a row and use Drill through to KPI detail for its trend, branches and definition. Right-click a branch or department bar and choose Drill through > Employee list for the people behind a number. Back, beside the Month slicer, returns to the page you came from.",
+                    "value": "• Home: the headline figures. Story: one sentence and one chart per area. Scorecard: every KPI and its status. Details: six pages of breakdowns. Data quality and Guide.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -68,10 +55,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Branch lists the eight hospitals and Head Office; every page, KPI and target includes Head Office, so a figure for all branches is the hospitals plus Head Office. Head Office shows only to users whose access includes it.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -80,10 +67,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Branch and Month carry over to every page. Month opens on Last closed month, the month just ended; pick another month in the list to see it.",
+                    "value": "• On the Scorecard, select a KPI row, then Drill through to KPI detail.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -92,10 +79,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• The sentences on Story and the figures on the cards describe the one month you picked. The trend charts always show the last 12 closed months, whatever Month says.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -104,10 +91,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Period, on Scorecard and KPI detail, reads each KPI for the month (Current), the quarter to date (QTD) or the year to date (YTD) up to the month you picked. Annual targets of rates such as turnover are pro-rated to the months; month-end figures such as headcount stay at the month end.",
+                    "value": "• Right-click a branch or department bar, then Drill through > Employee list, to see the people. Back returns to the page you came from.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -116,10 +103,214 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Story rates show 2 decimals because monthly rates are small. The largest change names the branch (a hospital or Head Office) whose rate or number moved most.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Charts with arrows drill down a level: branch, then location; department, then job, position and grade; absence category, then type.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Click a bar or a cell to filter the rest of the page; click it again to clear.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Pick the dates",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Last closed month is on when the report opens: the cards and breakdowns show the month just ended.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Click it off to use Dates. Hires, pay and absence days add up over the dates; headcount and leave balance are those at the end of the last closed month in them.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Trend charts show the closed months of the Dates, the last 12 at most, with Last closed month on or off.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Period, on Scorecard and KPI detail: the month (Current), quarter to date (QTD) or year to date (YTD). Annual targets of rates such as turnover are pro-rated to the months.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Branch lists the eight hospitals and Head Office. Every page, KPI and target includes Head Office; it shows only to users whose access includes it.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }

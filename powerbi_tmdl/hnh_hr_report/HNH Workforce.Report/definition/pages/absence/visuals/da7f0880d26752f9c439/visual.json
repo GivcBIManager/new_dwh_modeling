@@ -3,9 +3,9 @@
   "name": "da7f0880d26752f9c439",
   "position": {
     "x": 972.0,
-    "y": 672,
+    "y": 896.0,
     "z": 32000,
-    "height": 454,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 32000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Absence Type"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "Absence Type Name"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "Absence Type.Absence Type Name",
-              "nativeQueryRef": "Absence Type Name",
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
               "active": true
             }
           ]
@@ -42,12 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Absence Days"
+                  "Property": "Sick Leave Rate %"
                 }
               },
-              "queryRef": "_Measures.Absence Days",
-              "nativeQueryRef": "Absence Days",
-              "displayName": "Absence days"
+              "queryRef": "_Measures.Sick Leave Rate %",
+              "nativeQueryRef": "Sick Leave Rate %",
+              "displayName": "Sick leave rate"
             }
           ]
         }
@@ -62,7 +62,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Absence Days"
+                "Property": "Sick Leave Rate %"
               }
             },
             "direction": "Descending"
@@ -160,7 +160,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Absence days by absence type, top 15'"
+                  "Value": "'Sick leave rate by branch'"
                 }
               }
             }
@@ -169,111 +169,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "c73cf4514e356cc718b2",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Absence Type"
-              }
-            },
-            "Property": "Absence Type Name"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "a",
-                        "Entity": "Absence Type",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "a"
-                            }
-                          },
-                          "Property": "Absence Type Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Absence Days"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "a",
-              "Entity": "Absence Type",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "a"
-                          }
-                        },
-                        "Property": "Absence Type Name"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

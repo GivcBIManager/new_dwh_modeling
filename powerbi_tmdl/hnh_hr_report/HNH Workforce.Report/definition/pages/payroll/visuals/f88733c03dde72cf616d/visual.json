@@ -2,19 +2,64 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "f88733c03dde72cf616d",
   "position": {
-    "x": 972.0,
-    "y": 1744.0,
+    "x": 30,
+    "y": 1748.0,
     "z": 34000,
-    "height": 110,
-    "width": 447.0,
+    "height": 330,
+    "width": 1860.0,
     "tabOrder": 34000
   },
   "visual": {
-    "visualType": "card",
+    "visualType": "tableEx",
     "query": {
       "queryState": {
         "Values": {
           "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Branch"
+                    }
+                  },
+                  "Property": "Branch Name"
+                }
+              },
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
+              "displayName": "Branch"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Payroll"
+                    }
+                  },
+                  "Property": "Source"
+                }
+              },
+              "queryRef": "Payroll.Source",
+              "nativeQueryRef": "Source",
+              "displayName": "Source"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Payroll"
+                    }
+                  },
+                  "Property": "Payroll Status"
+                }
+              },
+              "queryRef": "Payroll.Payroll Status",
+              "nativeQueryRef": "Payroll Status",
+              "displayName": "Payroll status"
+            },
             {
               "field": {
                 "Measure": {
@@ -23,43 +68,51 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Employer Charges Share %"
+                  "Property": "Gross Pay"
                 }
               },
-              "queryRef": "_Measures.Employer Charges Share %",
-              "nativeQueryRef": "Employer Charges Share %",
-              "displayName": "Employer charges' share of payroll cost"
+              "queryRef": "_Measures.Gross Pay",
+              "nativeQueryRef": "Gross Pay",
+              "displayName": "Gross pay (SAR)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Gross Pay (Open Payroll)"
+                }
+              },
+              "queryRef": "_Measures.Gross Pay (Open Payroll)",
+              "nativeQueryRef": "Gross Pay (Open Payroll)",
+              "displayName": "Gross pay in open payroll (SAR)"
             }
           ]
         }
-      }
-    },
-    "objects": {
-      "labels": [
-        {
-          "properties": {
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "24D"
-                }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Branch"
+                  }
+                },
+                "Property": "Branch Name"
               }
             },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#0A1E32'"
-                    }
-                  }
-                }
-              }
-            }
+            "direction": "Ascending"
           }
-        }
-      ],
-      "categoryLabels": [
+        ]
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
         {
           "properties": {
             "show": {
@@ -69,36 +122,10 @@
                 }
               }
             },
-            "fontSize": {
+            "text": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6B7D'"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      ]
-    },
-    "visualContainerObjects": {
-      "title": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "'Payroll source and status by branch (an open month is not final)'"
                 }
               }
             }
@@ -107,62 +134,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "b976f03bc2bae5a8c96b",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Employer Charges Share %"
-          }
-        },
-        "type": "Advanced",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "_",
-              "Entity": "_Measures",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "Not": {
-                  "Expression": {
-                    "Comparison": {
-                      "ComparisonKind": 0,
-                      "Left": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "_"
-                            }
-                          },
-                          "Property": "Employer Charges Share %"
-                        }
-                      },
-                      "Right": {
-                        "Literal": {
-                          "Value": "null"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

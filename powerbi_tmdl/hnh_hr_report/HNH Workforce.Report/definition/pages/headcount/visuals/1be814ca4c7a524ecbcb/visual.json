@@ -2,8 +2,8 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "1be814ca4c7a524ecbcb",
   "position": {
-    "x": 972.0,
-    "y": 866,
+    "x": 30,
+    "y": 996.0,
     "z": 36000,
     "height": 454,
     "width": 918.0,
@@ -29,6 +29,48 @@
               "queryRef": "HR Department.Department Base Name",
               "nativeQueryRef": "Department Base Name",
               "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Job"
+                    }
+                  },
+                  "Property": "Job Name"
+                }
+              },
+              "queryRef": "Job.Job Name",
+              "nativeQueryRef": "Job Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Position"
+                    }
+                  },
+                  "Property": "Position Base Name"
+                }
+              },
+              "queryRef": "Position.Position Base Name",
+              "nativeQueryRef": "Position Base Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Grade"
+                    }
+                  },
+                  "Property": "Grade Name"
+                }
+              },
+              "queryRef": "Grade.Grade Name",
+              "nativeQueryRef": "Grade Name"
             }
           ]
         },
@@ -46,7 +88,8 @@
                 }
               },
               "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -159,7 +202,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by department, top 15'"
+                  "Value": "'Headcount by department, then job, position and grade'"
                 }
               }
             }

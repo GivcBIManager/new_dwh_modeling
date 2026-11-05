@@ -8,18 +8,18 @@ sentence (left, 40 %), a 12-month line chart and a KPI tile:
     Saudization    BSC Saudization                     HR_SAUDIZATION
     Hiring         BSC Vacancy Rate                    HR_VACANCY_RATE
 
-The page is taller than 1080 px and scrolls (STORY_H). The Month slicer is single-select (ruling R18), so the tiles
-and the sentences describe the one month. The charts show twelve months regardless: each carries a visual filter on
-'Date'[Month Offset] 1 to 12 (the last 12 closed months; offset 0 is the open month) and ignores the Month slicer
-(a NoFilter interaction). The Branch slicer still applies, and the page filter keeps the report's branches: the
-eight hospitals and Head Office, in every chart, sentence and tile (user decision 2026-11-03). Trade-off: the window
-ends at the last closed month, not at an arbitrary selected month.
+The page is taller than 1080 px and scrolls (STORY_H). With Last closed month on (ruling R18, the filter bar since
+2026-11-05) the tiles and the sentences describe the month just ended. The charts show the closed months of the
+Dates picked, the last 12 at most (hr_frame.TREND_WINDOW), and the Last closed month button does not reach them (a
+NoFilter interaction). The Branch slicer still applies, and the page filter keeps the report's branches: the eight
+hospitals and Head Office, in every chart, sentence and tile (user decision 2026-11-03).
 """
 from __future__ import annotations
 
 from frame import CONTENT, NAVY, _lit
-from hr_frame import branches, card_look, filters, kpi_tile, line_look, page_frame, title_notice
-from model import Filter, Interaction, Page, Visual, col, meas
+from hr_frame import (TREND_WINDOW, branches, card_look, filters, kpi_tile, line_look, page_frame, title_notice,
+                      trend_interactions)
+from model import Page, Visual, col, meas
 
 GAP = 24
 X0, Y0, W0, _H0 = CONTENT  # 30, 186, 1860
@@ -35,8 +35,6 @@ CHART_W = X0 + W0 - TILE_W - GAP - CHART_X  # 728
 TILE_X = X0 + W0 - TILE_W
 
 YEAR_MONTH = col("Date", "Year Month Name")
-MONTH_OFFSET = col("Date", "Month Offset")
-LAST_12_CLOSED = Filter(MONTH_OFFSET, "in", list(range(1, 13)))
 
 # (story measure, chart measures, chart title, KPI tile code, the chart's note or None): [HR Pay Notice] on the pay
 # chart, [HR Vacancy Note] on the vacancy chart (empty while no budgeted FTE is loaded), in the title band (R31)
@@ -57,15 +55,15 @@ def _heading() -> Visual:
 
 
 def _sentence(y: float, measure: str) -> Visual:
-    props = {**card_look(14, NAVY, box=True), "wordWrap": [{"properties": {"show": _lit(True)}}]}
+    props = {**card_look(15, NAVY, box=True), "wordWrap": [{"properties": {"show": _lit(True)}}]}
     return Visual("card", X0, y, SENTENCE_W, BLOCK_H, roles={"Values": [meas(measure)]}, props=props)
 
 
 def _chart(y: float, measures: list[str], title: str) -> Visual:
     return Visual("lineChart", CHART_X, y, CHART_W, BLOCK_H,
                   roles={"Category": [YEAR_MONTH], "Y": [meas(m) for m in measures]},
-                  title=f"{title}, last 12 closed months", filters=[LAST_12_CLOSED], sort=YEAR_MONTH, sort_dir="asc",
-                  props=line_look())
+                  title=f"{title} by month", filters=[TREND_WINDOW], sort=YEAR_MONTH, sort_dir="asc",
+                  props=line_look("millions" if measures == ["Payroll Cost"] else "none"))
 
 
 def _note(chart: Visual, measure: str) -> Visual:
@@ -76,7 +74,6 @@ def _note(chart: Visual, measure: str) -> Visual:
 
 def story_page() -> Page:
     bar = filters()
-    month_slicer = bar[1]
     visuals = page_frame("story", bar) + [_heading()]
     charts: list[Visual] = []
     for i, (story, measures, title, code, note) in enumerate(BLOCKS):
@@ -87,6 +84,6 @@ def story_page() -> Page:
         if note:
             visuals.append(_note(chart, note))
         visuals += kpi_tile(code, TILE_X, y, TILE_W, BLOCK_H)
-    interactions = [Interaction(month_slicer, c, "NoFilter") for c in charts]
+    interactions = trend_interactions(bar, charts)
     # the hospitals and Head Office, as the sentences and tiles (user decision 2026-11-03)
     return Page("story", "Story", visuals, filters=[branches()], interactions=interactions, height=STORY_H)

@@ -46,6 +46,16 @@ table Requisitions
 		summarizeBy: none
 		sourceColumn: days_to_fill
 
+	column 'Requisition Phase'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: requisition_phase
+
+	column 'Requisition State'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: requisition_state
+
 	partition Requisitions = m
 		source =
 				let

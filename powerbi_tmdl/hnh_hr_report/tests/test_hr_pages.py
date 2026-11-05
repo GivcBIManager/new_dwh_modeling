@@ -31,6 +31,9 @@ KPI_CODE = col("HR KPI", "KPI Code")
 BRANCH_NAME = col("Branch", "Branch Name")
 IS_HOSPITAL = col("Branch", "Is Hospital")
 MONTH_PICK = col("Date", "Month Pick")
+DATE = col("Date", "Date")
+MONTH_OFFSET = col("Date", "Month Offset")
+TREND_WINDOW = (MONTH_OFFSET, "in", list(range(1, 13)))  # the trend charts: the last 12 closed months at most
 STATUS_COLOUR = meas("HR KPI Status Colour")
 TAB_NAMES = ["home", "story", "scorecard", "headcount", "data_quality", "guide"]
 DETAIL_NAMES = ["headcount", "movements", "payroll", "absence", "recruitment", "productivity"]
@@ -40,7 +43,7 @@ AREA = col("HR KPI", "Area")
 TIME_CALC = col("Time Calculation", "Time Calculation")
 # R13: an Area slicer on the KPI list is allowed; so is the Period slicer (final review I3): it picks a calculation
 # item, which every measure guard allows
-ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, MONTH_PICK, AREA, TIME_CALC}
+ALLOWED_KPI_PAGE_SLICERS = {BRANCH_NAME, DATE, MONTH_PICK, AREA, TIME_CALC}
 # User decision 2026-11-03: Head Office everywhere. The report's branches are the eight hospitals and Head Office
 # (100); the dimension's synthetic Group member (0) has no HR data and is kept out of the slicer and the pages.
 BRANCH_KEY = col("Branch", "Branch Key")
@@ -167,34 +170,45 @@ def test_kpi_pages_carry_only_hospital_and_month_slicers():
 
 # ---- building blocks ---------------------------------------------------------------------------------------------
 
-def test_filters_branch_and_month_dropdowns():
-    """The Branch slicer lists the eight hospitals and Head Office (user decision 2026-11-03), not the Group member."""
-    branch, month = filters()
-    assert branch.sample == month.sample == "slicerDropdown"
-    assert branch.roles == {"Values": [BRANCH_NAME]} and month.roles == {"Values": [MONTH_PICK]}
+def test_filters_branch_dates_and_last_closed_month():
+    """The filter bar (user request 2026-11-05): Branch (the eight hospitals and Head Office, not the Group member;
+    user decision 2026-11-03), Dates (From - To with date pickers on 'Date'[Date], no saved range, offering the last
+    36 months and the current one) and the Last closed month button (a one-item tile slicer on 'Date'[Month Pick])."""
+    branch, dates, last = filters()
+    assert (branch.sample, dates.sample, last.sample) == ("slicerDropdown", "slicerDateRange", "slicerTile")
+    assert branch.roles == {"Values": [BRANCH_NAME]} and dates.roles == {"Values": [DATE]}
+    assert last.roles == {"Values": [MONTH_PICK]}
     assert [(f.field, f.op, f.values) for f in branch.filters] == [BRANCHES]
-    assert branch.labels == {BRANCH_NAME: "Branch"} and month.labels == {MONTH_PICK: "Month"}
-    for v in (branch, month):  # inside the filter bar, left of the help buttons
+    assert _flt(dates) == [(MONTH_OFFSET, "in", list(range(0, 37)))] and dates.date_range is None
+    assert _flt(last) == [(MONTH_PICK, "eq", ["Last closed month"])]
+    assert branch.labels == {BRANCH_NAME: "Branch"} and dates.labels == {DATE: "Dates"}
+    for v in (branch, dates, last):  # inside the filter bar, left of the help buttons, left to right
         assert frame.FILTER_BAR[1] <= v.y and v.y + v.h <= frame.FILTER_BAR[1] + frame.FILTER_BAR[3]
         assert v.x + v.w < HELP[0][2][0]
+    assert branch.x + branch.w < dates.x and dates.x + dates.w < last.x
 
 
-def test_month_slicer_single_select_on_last_closed_month():
-    """R21: Month is a single-select dropdown on 'Date'[Month Pick] saved on "Last closed month" (the model relabels
-    the previous month every day), so Home opens on one month, the one HR Story Home describes."""
-    _hospital, month = filters()
-    selection = month.props["selection"][0]["properties"]
-    assert selection["singleSelect"]["expr"]["Literal"]["Value"] == "true"
-    assert selection["selectAllCheckboxEnabled"]["expr"]["Literal"]["Value"] == "false"
+def test_last_closed_month_is_on_when_the_report_opens():
+    """R21 kept: the button is a tile slicer (Basic mode, horizontal) on 'Date'[Month Pick], saved on "Last closed
+    month" (the model relabels the previous month every day), multi-select without Select all, so a click turns it
+    off and on again. Dates is a Between slicer with no saved range."""
     page = PAGES[0]
-    i = next(i for i, v in enumerate(page.visuals) if v.sample == "slicerDropdown" and MONTH_PICK in v.roles["Values"])
+    i = next(i for i, v in enumerate(page.visuals) if v.sample == "slicerTile")
+    selection = page.visuals[i].props["selection"][0]["properties"]
+    assert lit(selection["singleSelect"]) == "false" and lit(selection["selectAllCheckboxEnabled"]) == "false"
     objects = pbir.visual_json(page, page.visuals[i], i, "")["visual"]["objects"]
-    flt = objects["general"][0]["properties"]["filter"]["filter"]
+    general = objects["general"][0]["properties"]
+    assert lit(general["orientation"]) == "1D"
+    flt = general["filter"]["filter"]
     assert flt["From"] == [{"Name": "d", "Entity": "Date", "Type": 0}]
     cond = flt["Where"][0]["Condition"]["In"]
     assert cond["Expressions"] == [{"Column": {"Expression": {"SourceRef": {"Source": "d"}}, "Property": "Month Pick"}}]
     assert cond["Values"] == [[{"Literal": {"Value": "'Last closed month'"}}]]
-    assert objects["data"] == [{"properties": {"mode": {"expr": {"Literal": {"Value": "'Dropdown'"}}}}}]
+    assert objects["data"] == [{"properties": {"mode": {"expr": {"Literal": {"Value": "'Basic'"}}}}}]
+    j = next(j for j, v in enumerate(page.visuals) if v.sample == "slicerDateRange")
+    dates = pbir.visual_json(page, page.visuals[j], j, "")["visual"]["objects"]
+    assert dates["data"] == [{"properties": {"mode": {"expr": {"Literal": {"Value": "'Between'"}}}}}]
+    assert "filter" not in json.dumps(dates.get("general", []))
 
 
 def test_home_figures_are_pay_aware_text():
@@ -216,10 +230,18 @@ def test_slicers_sync_across_pages():
     page = PAGES[0]
     groups = []
     for i, v in enumerate(page.visuals):
-        if v.sample == "slicerDropdown":
+        if v.sample.startswith("slicer"):
             groups.append(pbir.visual_json(page, v, i, "")["visual"]["syncGroup"])
-    assert [g["groupName"] for g in groups] == ["bsc Branch.Branch Name", "bsc Date.Month Pick"]
+    assert [g["groupName"] for g in groups] == ["bsc Branch.Branch Name", "bsc Date.Date", "bsc Date.Month Pick"]
     assert all(g["fieldChanges"] and g["filterChanges"] for g in groups)
+
+
+def test_report_cross_filters():
+    """User request 2026-11-05: a selection in a chart filters the other visuals (Desktop's "Change default visual
+    interaction from cross highlighting to cross filtering"); the BSC report keeps highlighting."""
+    settings = pbir.report_json(None, report=HR_REPORT)["settings"]
+    assert settings["defaultFilterActionIsDataFilter"] is True
+    assert "defaultFilterActionIsDataFilter" not in pbir.report_json(None)["settings"]
 
 
 def test_kpi_tile():
@@ -253,7 +275,8 @@ def test_kpi_tile_unknown_code():
 
 
 def test_sub_tabs():
-    vs = sub_tabs("movements")
+    x0, y0 = frame.CONTENT[0], frame.CONTENT[1]
+    vs = sub_tabs("movements", x0, y0)
     buttons = [v for v in vs if v.sample == "buttonNavigate"]
     assert [nav_target(b) for b in buttons] == DETAIL_NAMES
     assert [n for n, _d, _l in DETAIL_PAGES] == DETAIL_NAMES
@@ -261,16 +284,14 @@ def test_sub_tabs():
     others = [b for b in buttons if nav_target(b) != "movements"]
     assert current[0].props["fill"] != others[0].props["fill"]
     assert len({json.dumps(b.props["fill"]) for b in others}) == 1
-    # right of the slicers, left of the help buttons, inside the filter bar, in one row
-    right_of_slicers = max(v.x + v.w for v in filters())
-    assert min(b.x for b in buttons) > right_of_slicers
-    assert max(b.x + b.w for b in buttons) < HELP[0][2][0]
-    assert len({b.y for b in buttons}) == 1
-    assert frame.FILTER_BAR[1] <= buttons[0].y and buttons[0].y + buttons[0].h <= 162
+    # one row at the top of the content box (the filter bar holds the Dates since 2026-11-05), left to right
+    assert {b.y for b in buttons} == {y0} and buttons[0].x == x0
+    assert all(a.x + a.w < b.x for a, b in zip(buttons, buttons[1:]))
+    assert buttons[-1].x + buttons[-1].w <= x0 + frame.CONTENT[2]
     for b in buttons:  # Report Server: a label in the default state's entry
         assert any(e.get("selector") == {"id": "default"} and "text" in e["properties"] for e in b.props["text"])
     with pytest.raises(ValueError):
-        sub_tabs("home")
+        sub_tabs("home", x0, y0)
 
 
 def test_seed_parser_reads_quotes_escapes_and_calls(tmp_path):
@@ -418,19 +439,25 @@ def test_story_vacancy_chart_carries_the_vacancy_note():
     assert page.visuals.index(notes[0]) > page.visuals.index(chart)
 
 
-def test_story_charts_show_twelve_closed_months_whatever_the_month_slicer_says():
+def test_story_charts_show_the_closed_months_of_the_dates():
+    """The charts show the closed months of the Dates picked, the last 12 at most, whatever the Last closed month
+    button says (a NoFilter interaction)."""
     page = story()
     charts = [v for v in page.visuals if v.sample == "lineChart"]
-    offset = col("Date", "Month Offset")
     for c in charts:
-        assert [(f.field, f.op, f.values) for f in c.filters] == [(offset, "in", list(range(1, 13)))]
-    month = next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
+        assert _flt(c) == [TREND_WINDOW]
+    _assert_button_skips(page, charts)
+
+
+def _assert_button_skips(page, trends, others=()):
+    """The Last closed month button does not reach `trends` and reaches `others`."""
     from model import interaction_indexes
-    idx = {(s, t): k for s, t, k in interaction_indexes(page)}
-    month_i = next(i for i, v in enumerate(page.visuals) if v is month)
-    for c in charts:
-        ci = next(i for i, v in enumerate(page.visuals) if v is c)
-        assert idx[(month_i, ci)] == "NoFilter"
+    button = _index(page, next(v for v in page.visuals if v.sample == "slicerTile"))
+    no_filter = {t for s, t, k in interaction_indexes(page) if s == button and k == "NoFilter"}
+    for v in trends:
+        assert _index(page, v) in no_filter, (page.name, v.title)
+    for v in others:
+        assert _index(page, v) not in no_filter, (page.name, v.title)
 
 
 def test_story_cost_pay_notice_and_slicers():
@@ -443,9 +470,7 @@ def test_story_cost_pay_notice_and_slicers():
     # (the 2026-11-03 screenshots), so the notice card has no filter
     assert notice[0].filters == []
     slicers = {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")}
-    assert slicers == {BRANCH_NAME, MONTH_PICK}  # R13 / R18
-    month = next(v for v in page.visuals if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
-    assert month.props["selection"][0]["properties"]["singleSelect"]
+    assert slicers == {BRANCH_NAME, DATE, MONTH_PICK}  # R13 / R18
 
 
 # ---- Scorecard and KPI detail ------------------------------------------------------------------------------------
@@ -530,29 +555,29 @@ def test_kpi_detail_is_drillthrough_on_name():
     assert any(v.sample == "buttonNavigate" and "Back" in json.dumps(v.props) for v in vs)
     assert not any(v.sample == "buttonNavigate" and nav_target(v) in TAB_NAMES and
                    "primary" in json.dumps(v.props) for v in vs)
-    # definition panel: the definition is [HR KPI Definition Text], which says how to pick a KPI when the page is
-    # opened without a drill-through; the heading is [HR KPI Detail Title] (the KPI name, or the same prompt)
-    defs = {v.roles["Values"][0].name for v in vs if v.sample == "card" and v.roles["Values"][0].table == "HR KPI"}
-    assert {"Formula", "Source System", "Grain", "Caveats"} <= defs
-    for m in ("HR KPI Definition Text", "HR KPI Detail Title"):
+    # the definition panel and the figures are text measures that read "–" (the definition: how to pick a KPI)
+    # without a drill-through, never an empty card or "(Blank)" (user request 2026-11-05: a text column on a card
+    # drew an empty card); the heading is [HR KPI Detail Title] (the KPI name, or the same prompt)
+    cards = [v for v in vs if v.sample == "card" and v.y >= frame.CONTENT[1]]
+    assert all(f.kind == "measure" for v in cards for f in v.roles["Values"])
+    for m in ("HR KPI Definition Text", "HR KPI Formula Text", "HR KPI Source Text", "HR KPI Grain Text",
+              "HR KPI Caveats Text", "HR KPI Detail Title", "HR KPI Detail Actual", "HR KPI Detail Target",
+              "HR KPI Detail Status"):
         assert len(_on(page, m)) == 1, m
+    for m in ("HR KPI Formula Text", "HR KPI Detail Actual", "HR KPI Detail Status"):
+        assert _on(page, m)[0].labels  # the card says what it is
     title = _on(page, "HR KPI Detail Title")[0]
     assert (title.x, title.y) == (frame.CONTENT[0], frame.CONTENT[1])
-    # cards for actual (text), target, status
-    for m in ("HR KPI Actual Text", "HR KPI Target Text", "HR KPI Status Text"):
-        assert len(_on(page, m)) == 1, m
-    # the 24-month line: actual against target and watch, last 24 closed months whatever the Month slicer says
+    # the line: actual against target and watch by month, the closed months of the Dates, whatever the button says
     line = next(v for v in vs if v.sample == "lineChart")
     assert line.roles["Y"] == [meas("HR KPI Actual"), meas("HR KPI Target"), meas("HR KPI Watch")]
-    assert _flt(line) == [(col("Date", "Month Offset"), "in", list(range(1, 25)))]
-    from model import interaction_indexes
-    idx = {(s, t): k for s, t, k in interaction_indexes(page)}
-    month = next(i for i, v in enumerate(vs) if v.sample == "slicerDropdown" and v.roles["Values"] == [MONTH_PICK])
-    assert idx[(month, next(i for i, v in enumerate(vs) if v is line))] == "NoFilter"
-    # the bar by hospital
+    assert _flt(line) == [(MONTH_OFFSET, "in", list(range(1, 25)))]  # one KPI: 24 months
     bar = next(v for v in vs if v.sample == "barChart")
+    _assert_button_skips(page, [line], [bar])
+    # the bar by branch
     assert bar.roles["Category"] == [BRANCH_NAME] and bar.roles["Y"] == [meas("HR KPI Actual")]
-    assert {v.roles["Values"][0] for v in vs if v.sample.startswith("slicer")} == {BRANCH_NAME, MONTH_PICK, TIME_CALC}
+    assert {v.roles["Values"][0] for v in vs if v.sample.startswith("slicer")} == {BRANCH_NAME, DATE, MONTH_PICK,
+                                                                                    TIME_CALC}
 
 
 def test_scorecard_and_kpi_detail_are_registered():
@@ -744,7 +769,7 @@ def _measures(v):
 
 
 NOTES = {PAY_NOTICE, meas("HR Vacancy Note")}  # text cards over a visual ("" when there is nothing to say)
-CHARTS = ("lineChart", "barChart", "stackedColumnChart", "waterfallChart")
+CHARTS = ("lineChart", "barChart", "stackedColumnChart", "waterfallChart", "columnChart", "donutChart", "comboChart")
 MONEY = {"Gross Pay", "Payroll Cost", "Employer Charges", "Gross Pay (Open Payroll)", "Leave Liability",
          "Current Leave Liability"}
 
@@ -807,47 +832,53 @@ def _overlaps(a, b):
 
 
 def test_detail_pages_have_sub_tabs():
-    """The six detail pages, registered after KPI detail, each in the frame with the Details tab current, the six
-    sub-tabs (its own filled) and the shared Hospital and Month slicers in the filter bar."""
+    """The six detail pages, registered after KPI detail, each in the frame with the Details tab current and the
+    filter bar's Branch, Dates and Last closed month, the six sub-tabs (its own filled) at the top of the content."""
     from hr_frame import page_frame
     names = [p.name for p in PAGES]
     assert names[4:10] == DETAIL_NAMES
     for (name, display, _label), page in zip(DETAIL_PAGES, _detail_pages()):
         assert page.display == display and not page.hidden
-        for v in page_frame("headcount", filters() + sub_tabs(name)):
+        for v in page_frame("headcount", filters()) + sub_tabs(name, frame.CONTENT[0], frame.CONTENT[1]):
             assert v in page.visuals, name
 
 
 SIZED_BY_N = {"Changes by kind and branch"}  # a spec's n: fewer bars than the axis has (a month's changes)
 
 
-def test_detail_pages_cards_then_charts_that_fit():
-    """Each section: one or two rows of 3 to 5 cards, then its charts below them. User request 2026-11-04: a bar chart
-    is as high as its bars and labels need (chart_height: the axis's count of bars, or the top 15), line, column and
-    waterfall charts LINE_H; no two data visuals overlap and every one is on the page."""
-    from pages_detail import AXIS_COUNTS, BAR_CHROME, BAR_LEGEND_H, BAR_MIN_H, BAR_SERIES_PX, LINE_H, TOP
+def test_detail_pages_rows_align_and_bars_fit():
+    """User request 2026-11-05: the charts of a row share their top and height (the tallest chart's) and fill the
+    content width; a bar chart is at least as high as its bars and labels need (chart_height), other charts LINE_H;
+    cards come in rows of 3 to 6; no two data visuals overlap and every one is on the page."""
+    from pages_detail import (AXIS_COUNTS, BAR_CHROME, BAR_LEGEND_H, BAR_MIN_H, BAR_SERIES_PX, CARDS_PER_ROW, LINE_H,
+                              TOP)
+    x0, w0 = frame.CONTENT[0], frame.CONTENT[2]
     for page in _detail_pages():
         data = _data_visuals(page)
         cards = [v for v in data if v.sample == "card"]
-        rows = sorted({c.y for c in cards})
-        assert all(3 <= len([c for c in cards if c.y == y]) <= 5 or y != rows[0] for y in rows), page.name
+        for y in {c.y for c in cards}:
+            assert CARDS_PER_ROW[0] <= len([c for c in cards if c.y == y]) <= CARDS_PER_ROW[1], page.name
+        charts = [v for v in data if v.sample != "card"]
+        for y in {c.y for c in charts}:
+            row = [c for c in charts if c.y == y]
+            assert len({c.h for c in row}) == 1, (page.name, [c.title for c in row])
+            assert abs(min(c.x for c in row) - x0) < 0.01 and abs(max(c.x + c.w for c in row) - (x0 + w0)) < 0.01
         for i, a in enumerate(data):
             assert a.y + a.h <= page.height, (page.name, a.title)
             for b in data[i + 1:]:
                 assert not _overlaps(a, b), (page.name, a.title, b.title)
-        for v in data:
+        for v in charts:
             if v.sample == "barChart":
                 k = len(v.roles["Y"])
-                by = v.roles["Category"][0]
-                n = TOP if v.top_n else AXIS_COUNTS.get(by)
-                if n is not None and v.title not in SIZED_BY_N:
+                n = v.top_n[1] if v.top_n else AXIS_COUNTS.get(v.roles["Category"][0])
+                if n is not None:
                     want = max(BAR_MIN_H, BAR_CHROME + (BAR_LEGEND_H if k > 1 else 0) + n * (8 + BAR_SERIES_PX * k))
-                    assert v.h == want, (page.name, v.title, v.h, want)
-            elif v.sample in ("lineChart", "stackedColumnChart", "waterfallChart"):
-                assert v.h == LINE_H, (page.name, v.title)
+                    assert v.h >= want, (page.name, v.title, v.h, want)
+            elif v.sample not in ("table", "matrix"):
+                assert v.h >= LINE_H, (page.name, v.title)
 
 
-def test_chart_format_labels_markers_no_value_axis():
+def test_chart_format_labels_markers_no_value_axis():  # noqa: C901
     """User request 2026-11-04: every chart shows its data labels (and a line chart its markers) and no value axis or
     gridlines (the Y axis of line and column charts, the X axis of bar charts); a bar chart's category labels may take
     40 % of its width."""
@@ -858,19 +889,24 @@ def test_chart_format_labels_markers_no_value_axis():
                 continue
             seen.add(v.sample)
             assert lit(v.props["labels"][0]["properties"]["show"]) == "true", (page.name, v.title)
+            if v.sample == "donutChart":  # no axes: each slice labelled with its category and share
+                assert "percent of total" in lit(v.props["labels"][0]["properties"]["labelStyle"])
+                continue
             axis = v.props["valueAxis"][0]["properties"]
             assert lit(axis["show"]) == "false" and lit(axis["gridlineShow"]) == "false", (page.name, v.title)
-            if v.sample == "lineChart":
+            if v.sample in ("lineChart", "comboChart"):
                 assert lit(v.props["markers"][0]["properties"]["show"]) == "true", (page.name, v.title)
+            if v.sample == "comboChart":  # the line's own value axis too
+                assert lit(axis["secShow"]) == "false", (page.name, v.title)
             if v.sample == "barChart":
                 margin = v.props["categoryAxis"][0]["properties"]["maxMarginFactor"]
                 assert margin == {"expr": {"Literal": {"Value": "40L"}}}, (page.name, v.title)
             # SAR amounts in millions ("0.4M", not "0M"); other bars as their format has them (13, not "0.0K")
             units = v.props["labels"][0]["properties"].get("labelDisplayUnits")
             names = {m.name for m in _measures(v)}
-            if page.name in DETAIL_NAMES and v.sample != "lineChart" and names <= MONEY:
+            if v.sample != "comboChart" and names <= MONEY:
                 assert lit(units) == "1000000D", (page.name, v.title)
-            elif v.sample == "barChart":
+            elif v.sample in ("barChart", "lineChart"):  # 12 days read 12, not "0.0K"
                 assert lit(units) == "1D", (page.name, v.title)
     assert seen == set(CHARTS)
 
@@ -938,9 +974,9 @@ def test_detail_movements_recruitment_absence_detail():
     def bound(name, sample=None):
         return {m.name for v in _page(name).visuals if sample in (None, v.sample) for m in _measures(v)}
 
-    def bars_by(name, column):
+    def bars_by(name, column):  # the bar charts whose (first) axis is `column`
         return [{m.name for m in _measures(v)} for v in _page(name).visuals
-                if v.sample == "barChart" and v.roles["Category"] == [column]]
+                if v.sample == "barChart" and v.roles["Category"][0] == column]
 
     movements = _page("movements").visuals
     assert {"Movements"} in bars_by("movements", col("Worker Action", "Movement Group"))
@@ -955,62 +991,59 @@ def test_detail_movements_recruitment_absence_detail():
     recruitment_cards = bound("recruitment", "card")
     assert {"Requisitions Approved", "Requisitions Filled", "Open Openings"} <= recruitment_cards
     assert not {"Hires", "FTE"} & recruitment_cards
-    assert any(v.sample == "lineChart" and {m.name for m in _measures(v)} == {"Requisitions Approved",
-                                                                              "Requisitions Filled"}
-               for v in _page("recruitment").visuals)
+    combos = [v for v in _page("recruitment").visuals if v.sample == "comboChart"]
+    assert [v.roles["Category"] for v in combos] == [[col("Date", "Year Month Name")], [BRANCH_NAME]]
+    for v in combos:  # user request 2026-11-05: approved and filled as columns, the fill rate as the line
+        assert v.roles["Y"] == [meas("Requisitions Approved"), meas("Requisitions Filled")]
+        assert v.roles["Y2"] == [meas("Requisition Fill Rate %")]
     assert {"Open Openings"} in bars_by("recruitment", BRANCH_NAME)
     assert {"Absence Days"} in bars_by("absence", col("Absence Type", "Absence Category"))
-    assert {"Absence Days"} in bars_by("absence", col("Absence Type", "Absence Type Name"))
     assert {"Sick Days"} in bars_by("absence", col("Absence Type", "Absence Type Name"))
     assert {"Current Leave Balance (days)", "Current Leave Liability", "Average Leave Balance (days)"} <= bound(
         "absence", "card")
-    assert {"Average Headcount", "Average FTE"} <= bound("headcount", "card")
+    assert {"Average Headcount"} <= bound("headcount", "card")
     for name in DETAIL_NAMES:  # the headline measures are BSC Saudization and BSC Turnover
         assert not {"Saudisation Rate %", "Turnover Rate %"} & bound(name), name
 
 
-def test_detail_cards_follow_month_and_trends_show_twelve_closed_months():
-    """Cards follow the selected month; each line chart (and stacked column chart) is a 12-month trend that ignores
-    the Month slicer (Story's mechanism); every other data visual follows it."""
-    from model import interaction_indexes
+def test_detail_trends_follow_the_dates_and_the_rest_the_last_closed_month():
+    """Charts by month (lines, stacks, the combo by month) show the closed months of the Dates, the last 24 at most,
+    and the Last closed month button does not reach them; cards and every other data visual follow the button."""
+    from pages_detail import is_trend
     for page in _detail_pages():
-        month = _index(page, _month_slicer(page))
-        no_filter = {t for s, t, k in interaction_indexes(page) if s == month and k == "NoFilter"}
-        lines = [v for v in page.visuals if v.sample in ("lineChart", "stackedColumnChart")]
-        assert lines, page.name
-        for v in lines:
+        trends = [v for v in _data_visuals(page) if is_trend(v)]
+        assert trends, page.name
+        for v in trends:
             assert v.roles["Category"] == [col("Date", "Year Month Name")] and v.sort_dir == "asc"
-            assert (col("Date", "Month Offset"), "in", list(range(1, 13))) in _flt(v), page.name
-            assert _index(page, v) in no_filter, page.name
-        for v in _data_visuals(page):
-            if v.sample not in ("lineChart", "stackedColumnChart"):
-                assert _index(page, v) not in no_filter, (page.name, v.title)
+            assert TREND_WINDOW in _flt(v), (page.name, v.title)
+        _assert_button_skips(page, trends, [v for v in _data_visuals(page) if not is_trend(v)])
 
 
 def test_detail_visuals_never_hit_a_measure_guard():
     """A measure returns "... can't be analysed by <table>" when a table its guard rejects is filtered. On every
-    detail page and the Employee list: a visual's own columns (axis, rows, visual filters), every slicer, page filter
-    and drill field are tables all its measures accept; a selection in a chart or table does not reach a visual
-    whose measures reject one of its tables (a NoFilter interaction)."""
+    detail page and the Employee list: a visual's own columns (axis, rows, visual filters), the page filter and the
+    drill fields are tables all its measures accept; a slicer, or a selection in a chart or table, does not reach a
+    visual whose measures reject its tables (a NoFilter interaction)."""
     from model import interaction_indexes
     from pages_detail import blocked_tables
     assert "Pay Category" in blocked_tables("Payroll Cost per FTE")
     assert "Pay Category" not in blocked_tables("Payroll Cost") and blocked_tables("HR Pay Notice") == frozenset()
+    assert "Grade" not in blocked_tables("Gross Pay")  # Payroll's grade (user request 2026-11-05)
     for page in _detail_pages() + [_page("employee_list")]:
-        slicer_tables = {f.table for v in page.visuals if v.sample.startswith("slicer") for f in v.roles["Values"]}
-        slicer_tables |= {f.field.table for f in page.filters} | {f.table for f in page.drill_fields or []}
+        fixed = {f.field.table for f in page.filters} | {f.table for f in page.drill_fields or []}
         no_filter = {(s, t) for s, t, k in interaction_indexes(page) if k == "NoFilter"}
         data = _data_visuals(page)
         for v in data:
             for m in _measures(v):
-                assert not blocked_tables(m.name) & ({c.table for c in _columns(v)} | slicer_tables), (
+                assert not blocked_tables(m.name) & ({c.table for c in _columns(v)} | fixed), (
                     page.name, v.title, m.name)
-        for source in data:
+        sources = data + [v for v in page.visuals if v.sample.startswith("slicer")]
+        for source in sources:
             tables = {c.table for fs in source.roles.values() for c in fs if c.kind == "column"}
             for target in data:
                 if target is not source and any(blocked_tables(m.name) & tables for m in _measures(target)):
                     assert (_index(page, source), _index(page, target)) in no_filter, (
-                        page.name, source.title, target.title)
+                        page.name, source.title or source.roles, target.title)
 
 
 def test_detail_pay_visuals_carry_a_pay_notice():
@@ -1050,7 +1083,7 @@ def test_detail_pages_use_underlying_measures_and_spec_breakdowns():
         assert not {m.name for v in page.visuals for m in _measures(v)} & KPI_MEASURES, page.name
 
     def axes(name):
-        return {c for v in _page(name).visuals if v.sample in ("barChart", "table", "matrix")
+        return {c for v in _page(name).visuals if v.sample in CHARTS + ("table", "matrix")
                 for fs in v.roles.values() for c in fs if c.kind == "column"}
 
     assert {BRANCH_NAME, DEPARTMENT_BASE, col("Job", "Job Name"), col("Grade", "Grade Name"),
@@ -1079,7 +1112,7 @@ def test_charts_and_slicers_use_prefix_free_names():
 def test_headcount_cards_show_whole_numbers():
     """FTE equals headcount today (Fusion FTE values are 1): FTE and the monthly averages show no decimal."""
     page = _page("headcount")
-    for m in ("FTE", "Average Headcount", "Average FTE"):
+    for m in ("FTE", "Average Headcount"):
         (card,) = [v for v in page.visuals if v.sample == "card" and v.roles["Values"] == [meas(m)]]
         assert card.props["labels"][0]["properties"]["labelPrecision"]["expr"]["Literal"]["Value"] == "0L", m
 
@@ -1236,3 +1269,124 @@ def test_guide_text_covers_the_rules():
                    "Branch lists the eight hospitals and Head Office", "covers the hospitals only",
                    "no Head Office data", "include Head Office's requisitions"):  # ruling R32
         assert needle in text, needle
+
+
+# ---- user requests of 2026-11-05 ---------------------------------------------------------------------------------
+
+def _active_refs(page, v, role):
+    out = pbir.visual_json(page, v, _index(page, v), "")["visual"]["query"]["queryState"][role]["projections"]
+    return [(p["queryRef"], p.get("active", False)) for p in out]
+
+
+def test_drill_down_charts():
+    """Branch then location; department, then job, position and grade; absence category then type: one chart each,
+    whose top level only is active (all active would join the levels on one axis)."""
+    hierarchies = {("headcount", (BRANCH_NAME, col("Location", "Location Name"))),
+                   ("headcount", (DEPARTMENT_BASE, col("Job", "Job Name"), POSITION_BASE, col("Grade", "Grade Name"))),
+                   ("absence", (col("Absence Type", "Absence Category"), col("Absence Type", "Absence Type Name")))}
+    found = set()
+    for name in DETAIL_NAMES:
+        page = _page(name)
+        for v in page.visuals:
+            if v.sample == "barChart" and len(v.roles["Category"]) > 1:
+                found.add((name, tuple(v.roles["Category"])))
+                actives = [a for _r, a in _active_refs(page, v, "Category")]
+                assert actives == [True] + [False] * (len(actives) - 1), (name, v.title)
+    assert found == hierarchies
+
+
+def test_headcount_matrix_by_grade_and_bands_in_order():
+    """Department, job and position by grade as a matrix (grade the columns, rows collapsed to the department level)
+    beside the drill-down; the age and tenure bands as columns in band order (the model sorts each band by its order
+    column)."""
+    page = _page("headcount")
+    (m,) = [v for v in page.visuals if v.sample == "matrix"]
+    assert m.roles["Rows"] == [DEPARTMENT_BASE, col("Job", "Job Name"), POSITION_BASE]
+    assert m.roles["Columns"] == [col("Grade", "Grade Name")] and m.roles["Values"] == [HEADCOUNT]
+    assert [a for _r, a in _active_refs(page, m, "Rows")] == [True, False, False]
+    for band in ("Age Band", "Tenure Band"):
+        (c,) = [v for v in page.visuals if v.sample == "columnChart" and v.roles["Category"] == [col("Headcount", band)]]
+        assert c.sort == col("Headcount", band) and c.sort_dir == "asc"
+        assert f"sortByColumn: '{band} Order'" in (Path(MODEL_DIR) / "tables" / "Headcount.tmdl").read_text(
+            encoding="utf-8-sig")
+    donuts = {v.roles["Category"][0] for v in page.visuals if v.sample == "donutChart"}
+    assert donuts == {col("Headcount", "Is Saudi"), col("Headcount", "Gender"), col("Employee", "Worker Type"),
+                      col("Job", "Full Part Time")}
+
+
+def _heat(v):
+    return {e["selector"]["metadata"] for e in v.props.get("values", []) if "backColor" in e["properties"]}
+
+
+def test_movement_matrices_are_heat_maps():
+    """Changes by kind and branch as a heat-map matrix; branch transfers from branch (rows, the From Branch copy of
+    Branch) to branch (columns)."""
+    page = _page("movements")
+    matrices = {v.title: v for v in page.visuals if v.sample == "matrix"}
+    changes = next(v for t, v in matrices.items() if t.startswith("Changes"))
+    assert changes.roles["Rows"] == [BRANCH_NAME] and "Columns" not in changes.roles
+    assert _heat(changes) == {meas(m).ref for m in ("Job Changes", "Grade Changes", "Position Changes",
+                                                    "Location Changes")}
+    transfers = next(v for t, v in matrices.items() if t.startswith("Branch transfers"))
+    assert transfers.roles["Rows"] == [col("From Branch", "Branch Name")]
+    assert transfers.roles["Columns"] == [BRANCH_NAME] and transfers.roles["Values"] == [meas("Branch Transfers")]
+    assert _heat(transfers) == {meas("Branch Transfers").ref}
+    assert not [v for v in page.visuals if v.sample == "barChart" and set(_measures(v)) >= {meas("Job Changes")}]
+
+
+def test_pay_and_cost_by_grade_ranked():
+    """User request 2026-11-05: gross pay and payroll cost by grade, high to low, the grades known only."""
+    page = _page("payroll")
+    grade = col("Grade", "Grade Name")
+    by_grade = [v for v in page.visuals if v.sample == "barChart" and v.roles["Category"] == [grade]]
+    assert sorted(v.roles["Y"][0].name for v in by_grade) == ["Gross Pay", "Payroll Cost"]
+    for v in by_grade:
+        assert v.sort == v.roles["Y"][0] and v.sort_dir == "desc" and v.top_n == (v.roles["Y"][0], 15)
+        assert (grade, "notin", ["Unknown"]) in _flt(v)
+    assert grade in {v.roles["Values"][0] for v in page.visuals if v.sample.startswith("slicer")}
+
+
+def test_absence_sections_have_their_own_slicers():
+    """User request 2026-11-05: Absence days (Absence category and type slicers) and Leave balance and liability
+    (Leave plan slicer); a section's slicers reach its own visuals only."""
+    from model import interaction_indexes
+    page = _page("absence")
+    headings = [v for v in page.visuals if v.sample == "textbox" and v.y > 162]
+    texts = [v.props["general"][0]["properties"]["paragraphs"][0]["textRuns"][0]["value"] for v in headings]
+    assert texts == ["Absence days", "Leave balance and liability"]
+    split = headings[1].y
+    slicers = {v.roles["Values"][0]: v for v in page.visuals if v.sample == "slicerDropdown" and v.y > 162}
+    assert set(slicers) == {col("Absence Type", "Absence Category"), col("Absence Type", "Absence Type Name"),
+                            col("Leave Balances", "Absence Plan Name")}
+    no_filter = {(s, t) for s, t, k in interaction_indexes(page) if k == "NoFilter"}
+    for field, s in slicers.items():
+        mine = (lambda v: v.y < split) if field.table == "Absence Type" else (lambda v: v.y > split)
+        assert mine(s)
+        for v in _data_visuals(page):
+            if not mine(v):
+                assert (_index(page, s), _index(page, v)) in no_filter, (field, v.title)
+
+
+def test_recruitment_cards_and_wording():
+    """User request 2026-11-05: the cards in order vacancy rate, open requisitions, approved, filled, average time to
+    fill (and the fill rate); "openings" read "requisitions"; Status and Phase slicers."""
+    page = _page("recruitment")
+    cards = sorted((v for v in _data_visuals(page) if v.sample == "card"), key=lambda v: (v.y, v.x))
+    assert [v.roles["Values"][0].name for v in cards] == [
+        "HR Vacancy Rate Text", "Open Openings", "Requisitions Approved", "Requisitions Filled",
+        "BSC Time to Fill (days)", "Requisition Fill Rate %"]
+    words = [v.title or "" for v in page.visuals] + [lbl for v in page.visuals for lbl in v.labels.values()]
+    assert not [w for w in words if "opening" in w.lower()]
+    assert {v.roles["Values"][0] for v in page.visuals if v.sample == "slicerDropdown" and v.y > 162} == {
+        col("Requisitions", "Requisition State"), col("Requisitions", "Requisition Phase")}
+
+
+def test_card_text_is_large_enough():
+    """User request 2026-11-05: the cards' figures at 30pt (a text figure such as "No budgeted FTE" 22pt, to fit)
+    and their labels at 12pt (9pt was too small)."""
+    for page in _detail_pages():
+        for v in _data_visuals(page):
+            if v.sample == "card":
+                want = "22D" if v.roles["Values"][0].name.endswith(" Text") else "30D"
+                assert lit(v.props["labels"][0]["properties"]["fontSize"]) == want, (page.name, v.roles)
+                assert lit(v.props["categoryLabels"][0]["properties"]["fontSize"]) == "12D", (page.name, v.roles)

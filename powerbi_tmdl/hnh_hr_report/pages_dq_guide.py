@@ -97,76 +97,82 @@ def _section(heading: str, bullets: list[str]) -> list[tuple[str, str]]:
 
 
 GUIDE_SECTIONS = [
-    _section("Find your way", [
-        "The tabs in the dark bar: Home (the headline figures), Story (one sentence and one chart for each area), "
-        "Scorecard (every KPI and its status), Details (six pages, opened with the buttons beside the Month "
-        "slicer), Data quality and Guide.",
-        "How to use and Definitions, top right, open this Guide.",
-        "On the Scorecard, select a row and use Drill through to KPI detail for its trend, branches and definition. "
-        "Right-click a branch or department bar and choose Drill through > Employee list for the people behind "
-        "a number. Back, beside the Month slicer, returns to the page you came from.",
-        "Branch lists the eight hospitals and Head Office; every page, KPI and target includes Head Office, so a "
-        "figure for all branches is the hospitals plus Head Office. Head Office shows only to users whose access "
-        "includes it.",
-        "Branch and Month carry over to every page. Month opens on Last closed month, the month just ended; pick "
-        "another month in the list to see it.",
-        "The sentences on Story and the figures on the cards describe the one month you picked. The trend charts "
-        "always show the last 12 closed months, whatever Month says.",
-        "Period, on Scorecard and KPI detail, reads each KPI for the month (Current), the quarter to date (QTD) or the "
-        "year to date (YTD) up to the month you picked. Annual targets of rates such as turnover are "
-        "pro-rated to the months; month-end figures such as headcount stay at the month end.",
-        "Story rates show 2 decimals because monthly rates are small. The largest change names the branch (a "
-        "hospital or Head Office) whose rate or number moved most."]),
-    _section("Read the status", [
+    [_section("Find your way", [
+        "Home: the headline figures. Story: one sentence and one chart per area. Scorecard: every KPI and its "
+        "status. Details: six pages of breakdowns. Data quality and Guide.",
+        "On the Scorecard, select a KPI row, then Drill through to KPI detail.",
+        "Right-click a branch or department bar, then Drill through > Employee list, to see the people. Back "
+        "returns to the page you came from.",
+        "Charts with arrows drill down a level: branch, then location; department, then job, position and grade; "
+        "absence category, then type.",
+        "Click a bar or a cell to filter the rest of the page; click it again to clear."]),
+     _section("Pick the dates", [
+        "Last closed month is on when the report opens: the cards and breakdowns show the month just ended.",
+        "Click it off to use Dates. Hires, pay and absence days add up over the dates; headcount and leave "
+        "balance are those at the end of the last closed month in them.",
+        "Trend charts show the closed months of the Dates, the last 12 at most, with Last closed month on or off.",
+        "Period, on Scorecard and KPI detail: the month (Current), quarter to date (QTD) or year to date (YTD). "
+        "Annual targets of rates such as turnover are pro-rated to the months.",
+        "Branch lists the eight hospitals and Head Office. Every page, KPI and target includes Head Office; it "
+        "shows only to users whose access includes it."])],
+    [_section("Read the status", [
         "● On track (green): the actual meets the target.",
-        "◆ Watch (amber): short of the target but still within the watch threshold. For on-target KPIs, the "
-        "distance from the target is compared with the distance from the watch value to the target.",
-        "■ At risk (red): it is worse than the watch value.",
-        "○ No target yet (grey): no target is set, so the KPI is not scored.",
-        "– No data (grey): there is no figure for the month.",
-        "Parked: the KPI is listed but not scored for now.",
-        "🔒 Requires pay access: pay figures (payroll, overtime, leave, productivity) show only to users with pay "
-        "access; others see this note instead of a number.",
-        "Every target marked (placeholder) is a starting value, the current level, until HR sets the real one. HR "
-        "decides the targets; the BI manager enters them (docs/hr_config.md). The mark goes when a real target is "
-        "in.",
+        "◆ Watch (amber): short of the target, but within the watch threshold.",
+        "■ At risk (red): worse than the watch value.",
+        "○ No target yet (grey): no target is set.",
+        "– No data (grey): no figure for the period.",
+        "Parked: listed, but not scored for now.",
+        "🔒 Requires pay access: pay figures show only to users with pay access.",
+        "(placeholder): a starting target, the current level, until HR sets the real one. The BI manager enters "
+        "targets (docs/hr_config.md)."]),
+     _section("Scorecard formulas", [
         "Turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor and revenue per FTE "
-        "and per doctor use the balanced scorecard's formulas; the scorecard report covers the hospitals only. "
-        "Vacancy rate and time to fill include Head Office's requisitions, so their all-branch figures differ from "
-        "the scorecard's; the vacancy rate needs Head Office's budgeted FTE loaded with the budget. The others' sources hold no Head Office data today, so Head Office reads No data and the "
-        "totals equal the scorecard's. Visits per FTE and revenue per payroll SAR count "
-        "doctors and nurses linked to Oasis: none at Head Office."]),
-    _section("Know the figures", [
-        "Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5 and Fusion voluntary leavers for "
-        "hospitals 6 to 8. The leaver figures marked in Fusion count Fusion leavers and do not reconcile with "
-        "it; they are not scored.",
-        "Promotions are the Fusion PROMOTION action. HR to confirm that this is the definition they want.",
-        "Absence is not shown by department and payroll is not shown by job: the model has no department on the "
-        "absence facts and no job on payroll.",
-        "Data quality: the records are rebuilt with the nightly build, so a fix at the source disappears on the "
-        "next day's refresh. Records at Head Office are visible to administrators only.",
-        "Unknown, in any list or chart, means the record names no department, location, job, staff member or "
-        "other item, or names one the source does not have; it is the same label in every report.",
-        "Departments and positions are shown without the hospital prefix (Nursing Department, Staff Nurse), so "
-        "the same name at every hospital is one bar; the Employee list shows each person's own department.",
-        "FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced "
-        "by 1 (Data quality lists those). FTE figures therefore show no decimals.",
-        "Vacancy rate is the open requisition openings divided by the budgeted FTE of the year; until the "
-        "budgeted FTE is loaded the vacancy rate reads No budgeted FTE.",
-        "Definitions lists every KPI and metric with its definition, formula, source and caveats; pick an Area to "
-        "narrow it.",
-        "Questions, corrections, or a target to change: contact the BI manager."]),
+        "and per doctor use the balanced scorecard's formulas. That report covers the hospitals only.",
+        "Vacancy rate and time to fill include Head Office's requisitions; the other sources have no Head Office "
+        "data today, so Head Office reads No data there."])],
+    [_section("Know the figures", [
+        "Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5, Fusion voluntary leavers for "
+        "hospitals 6 to 8. Leaver figures marked in Fusion count Fusion leavers only.",
+        "Promotions are the Fusion PROMOTION action (HR to confirm).",
+        "FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced by 1.",
+        "Pay by grade uses each person's grade in the month's headcount; pay of people without one is left out.",
+        "Leave balances come from Fusion absence plans; Oasis records leave taken, not balances.",
+        "Vacancy rate: open requisitions divided by the budgeted FTE of the year. It reads No budgeted FTE until "
+        "the budget is loaded.",
+        "Story rates show 2 decimals; the largest change names the branch that moved most.",
+        "Unknown means the record names no department, job, grade or other item.",
+        "Data quality is rebuilt nightly, so a fix at the source shows the next day.",
+        "Questions or a target to change: contact the BI manager."])],
 ]
 
 TITLE_H = 54
 BODY_Y = Y0 + TITLE_H + 18  # 258
 COL_W = (W0 - 2 * GAP) / 3
 COLS = [X0 + (COL_W + GAP) * i for i in range(3)]
+GUIDE_HEADING_PT, GUIDE_BODY_PT = 16, 13
+
+
+def guide_text(sections: list[list[tuple[str, str]]]) -> dict:
+    """A guide column's text box (user request 2026-11-05: the 12pt text was too compact): headings in 16pt
+    Semibold navy, bullets in 13pt, an empty line between bullets and before each heading."""
+    heading = {"fontFamily": "Segoe UI Semibold", "fontSize": f"{GUIDE_HEADING_PT}pt", "color": NAVY}
+    body = {"fontFamily": "Segoe UI", "fontSize": f"{GUIDE_BODY_PT}pt", "color": NAVY}
+    space = {"fontFamily": "Segoe UI", "fontSize": "6pt", "color": NAVY}
+    out = []
+    for i, sec in enumerate(sections):
+        for style, text in sec:
+            if style == "heading" and (i or out):
+                out.append({"textRuns": [{"value": " ", "textStyle": dict(space)}]})
+            value = "• " + text if style == "bullet" else text
+            out.append({"textRuns": [{"value": value, "textStyle": dict(heading if style == "heading" else body)}]})
+            out.append({"textRuns": [{"value": " ", "textStyle": dict(space)}]})
+    return {"general": [{"properties": {"paragraphs": out}}]}
 
 
 def guide_page() -> Page:
     visuals = page_frame("guide", []) + [bsc._page_title("How to use the HR report")]
-    visuals += [bsc._text(x, BODY_Y, COL_W, END - BODY_Y, sec) for x, sec in zip(COLS, GUIDE_SECTIONS)]
+    visuals += [Visual("textbox", x, BODY_Y, COL_W, END - BODY_Y, props={**guide_text(col), **bsc.white_panel()})
+                for x, col in zip(COLS, GUIDE_SECTIONS)]
     return Page("guide", "How to use", visuals)
 
 
@@ -193,8 +199,7 @@ def definitions_page() -> Page:
     table = Visual("table", X0, TABLE_Y, W0, END - TABLE_Y, title="Every KPI and metric", roles={"Values": fields},
                    labels={name: "KPI or metric", HR_TARGET_TEXT: "Target", HR_WATCH_TEXT: "Watch at",
                            order: "Order"}, sort=order, sort_dir="asc", props=fixed_table(widths, 10, left=(HR_TARGET_TEXT, HR_WATCH_TEXT)))
-    branch, month = filters()
-    return Page("guide_definitions", "Definitions", page_frame("guide", [branch, month]) + [area, table])
+    return Page("guide_definitions", "Definitions", page_frame("guide", filters()) + [area, table])
 
 
 def guide_pages() -> list[Page]:

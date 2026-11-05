@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "c2cd2778514dd2787892",
   "position": {
-    "x": 30.0,
-    "y": 544,
+    "x": 30,
+    "y": 572.0,
     "z": 34000,
     "height": 300,
-    "width": 918.0,
+    "width": 1224.0,
     "tabOrder": 34000
   },
   "visual": {
@@ -46,21 +46,8 @@
                 }
               },
               "queryRef": "_Measures.Headcount",
-              "nativeQueryRef": "Headcount"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "FTE"
-                }
-              },
-              "queryRef": "_Measures.FTE",
-              "nativeQueryRef": "FTE"
+              "nativeQueryRef": "Headcount",
+              "displayName": "Headcount"
             }
           ]
         }
@@ -140,6 +127,13 @@
                   "Value": "true"
                 }
               }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
             }
           }
         }
@@ -185,7 +179,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount and FTE, last 12 closed months'"
+                  "Value": "'Headcount by month'"
                 }
               }
             }

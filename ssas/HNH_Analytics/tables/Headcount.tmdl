@@ -106,11 +106,13 @@ table Headcount
 	column 'Age Band'
 		dataType: string
 		summarizeBy: none
+		sortByColumn: 'Age Band Order'
 		sourceColumn: age_band
 
 	column 'Tenure Band'
 		dataType: string
 		summarizeBy: none
+		sortByColumn: 'Tenure Band Order'
 		sourceColumn: tenure_band
 
 	column 'Headcount Units'
@@ -132,6 +134,18 @@ table Headcount
 		dataType: string
 		summarizeBy: none
 		sourceColumn: is_new_hire_in_month
+
+	column 'Age Band Order'
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: age_band_order
+
+	column 'Tenure Band Order'
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: tenure_band_order
 
 	partition Headcount = m
 		source =

@@ -2,37 +2,18 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0f70bcd96479c21ec89c",
   "position": {
-    "x": 30.0,
+    "x": 1443.0,
     "y": 2202.0,
     "z": 38000,
-    "height": 402,
-    "width": 918.0,
+    "height": 128,
+    "width": 447.0,
     "tabOrder": 38000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "card",
     "query": {
       "queryState": {
-        "Category": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Pay Category"
-                    }
-                  },
-                  "Property": "Pay Category"
-                }
-              },
-              "queryRef": "Pay Category.Pay Category",
-              "nativeQueryRef": "Pay Category",
-              "active": true
-            }
-          ]
-        },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -42,90 +23,50 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Payroll Cost"
+                  "Property": "Payroll Cost per FTE"
                 }
               },
-              "queryRef": "_Measures.Payroll Cost",
-              "nativeQueryRef": "Payroll Cost",
-              "displayName": "Payroll cost (SAR)"
+              "queryRef": "_Measures.Payroll Cost per FTE",
+              "nativeQueryRef": "Payroll Cost per FTE",
+              "displayName": "Payroll cost per FTE (SAR)"
             }
           ]
         }
-      },
-      "sortDefinition": {
-        "sort": [
-          {
-            "field": {
-              "Measure": {
-                "Expression": {
-                  "SourceRef": {
-                    "Entity": "_Measures"
-                  }
-                },
-                "Property": "Payroll Cost"
-              }
-            },
-            "direction": "Descending"
-          }
-        ]
       }
     },
     "objects": {
-      "valueAxis": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "categoryAxis": [
-        {
-          "properties": {
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "maxMarginFactor": {
-              "expr": {
-                "Literal": {
-                  "Value": "40L"
-                }
-              }
-            }
-          }
-        }
-      ],
       "labels": [
+        {
+          "properties": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -135,17 +76,21 @@
                 }
               }
             },
-            "labelDisplayUnits": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "1000000D"
+                  "Value": "12D"
                 }
               }
             },
-            "labelPrecision": {
-              "expr": {
-                "Literal": {
-                  "Value": "1L"
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
                 }
               }
             }
@@ -160,14 +105,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "text": {
-              "expr": {
-                "Literal": {
-                  "Value": "'Payroll cost by pay category (employer charges included)'"
+                  "Value": "false"
                 }
               }
             }
@@ -182,50 +120,49 @@
       {
         "name": "d8edafb5ca4638ded2ec",
         "field": {
-          "Column": {
+          "Measure": {
             "Expression": {
               "SourceRef": {
-                "Entity": "Pay Category"
+                "Entity": "_Measures"
               }
             },
-            "Property": "Is Cost"
+            "Property": "Payroll Cost per FTE"
           }
         },
-        "type": "Categorical",
+        "type": "Advanced",
         "filter": {
           "Version": 2,
           "From": [
             {
-              "Name": "p",
-              "Entity": "Pay Category",
+              "Name": "_",
+              "Entity": "_Measures",
               "Type": 0
             }
           ],
           "Where": [
             {
               "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "p"
-                          }
-                        },
-                        "Property": "Is Cost"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
+                "Not": {
+                  "Expression": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "_"
+                            }
+                          },
+                          "Property": "Payroll Cost per FTE"
+                        }
+                      },
+                      "Right": {
                         "Literal": {
-                          "Value": "'Yes'"
+                          "Value": "null"
                         }
                       }
-                    ]
-                  ]
+                    }
+                  }
                 }
               }
             }

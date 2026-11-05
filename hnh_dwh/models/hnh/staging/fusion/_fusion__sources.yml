@@ -23,6 +23,8 @@ sources:
       - name: fact_period_of_service
       - name: fact_worker_movement
       - name: fact_recruiting_requisition   # Oracle Recruiting requisitions (bsc vw_work_force, 2026-10-13)
+      - name: dim_recruiting_phase          # requisition phase names (HR report status filter, 2026-11-05)
+      - name: dim_recruiting_state          # requisition state names (HR report status filter, 2026-11-05)
       - name: fact_assignment_work_measure
       - name: dim_department
       - name: dim_organization

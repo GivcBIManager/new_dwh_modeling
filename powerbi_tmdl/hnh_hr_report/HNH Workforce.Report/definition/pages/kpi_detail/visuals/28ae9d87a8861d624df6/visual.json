@@ -3,9 +3,9 @@
   "name": "28ae9d87a8861d624df6",
   "position": {
     "x": 30,
-    "y": 588,
+    "y": 444,
     "z": 20000,
-    "height": 90,
+    "height": 120,
     "width": 700,
     "tabOrder": 20000
   },
@@ -17,17 +17,18 @@
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR KPI"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Source System"
+                  "Property": "HR KPI Formula Text"
                 }
               },
-              "queryRef": "HR KPI.Source System",
-              "nativeQueryRef": "Source System"
+              "queryRef": "_Measures.HR KPI Formula Text",
+              "nativeQueryRef": "HR KPI Formula Text",
+              "displayName": "Formula"
             }
           ]
         }
@@ -40,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "13D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -71,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },

@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "e4e5a1d8071f138bea53",
   "position": {
-    "x": 30.0,
-    "y": 802.0,
+    "x": 30,
+    "y": 572.0,
     "z": 28000,
-    "height": 300,
+    "height": 350,
     "width": 918.0,
     "tabOrder": 28000
   },
@@ -42,11 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Overtime Share %"
+                  "Property": "Gross Pay"
                 }
               },
-              "queryRef": "_Measures.Overtime Share %",
-              "nativeQueryRef": "Overtime Share %"
+              "queryRef": "_Measures.Gross Pay",
+              "nativeQueryRef": "Gross Pay",
+              "displayName": "Gross pay (SAR)"
             }
           ]
         }
@@ -126,6 +127,20 @@
                   "Value": "true"
                 }
               }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1000000D"
+                }
+              }
+            },
+            "labelPrecision": {
+              "expr": {
+                "Literal": {
+                  "Value": "1L"
+                }
+              }
             }
           }
         }
@@ -171,7 +186,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Overtime share, last 12 closed months'"
+                  "Value": "'Gross pay by month'"
                 }
               }
             }

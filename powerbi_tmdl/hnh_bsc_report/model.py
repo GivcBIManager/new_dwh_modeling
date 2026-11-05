@@ -34,10 +34,10 @@ def meas(name: str, table: str = MEASURE_TABLE) -> Field:
 
 @dataclass
 class Filter:
-    """`in`: any of `values`; `eq`: the one value; `notblank`: is not blank (no values). A measure takes `eq` or
-    `notblank` (Advanced filters)."""
+    """`in`: any of `values`; `notin`: none of them; `eq`: the one value; `notblank`: is not blank (no values). A
+    measure takes `eq` or `notblank` (Advanced filters)."""
     field: Field
-    op: Literal["in", "eq", "notblank"]
+    op: Literal["in", "eq", "notblank", "notin"]
     values: list = field(default_factory=list)
 
 
@@ -69,6 +69,7 @@ class Visual:
     sort_dir: Literal["desc", "asc"] = "desc"
     date_range: tuple[str, str] | None = None  # slicerDateRange: the saved (from, to) as ISO dates, both inclusive
     labels: dict[Field, str] = field(default_factory=dict)  # a field's name in this visual (a slicer's header)
+    expand: bool = True  # a matrix shows every row level expanded; False: the top level, the others by expand / drill
 
 
 # How a selection in one visual reaches another on the page (PBIR page schema `VisualInteractionFilterType`).

@@ -3,9 +3,9 @@
   "name": "4e49e2b3f62b04773778",
   "position": {
     "x": 1566,
-    "y": 1398,
+    "y": 1334,
     "z": 44000,
-    "height": 48,
+    "height": 62,
     "width": 308,
     "tabOrder": 44000
   },
@@ -23,11 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR KPI Status Text"
+                  "Property": "HR KPI Target Text"
                 }
               },
-              "queryRef": "_Measures.HR KPI Status Text",
-              "nativeQueryRef": "HR KPI Status Text"
+              "queryRef": "_Measures.HR KPI Target Text",
+              "nativeQueryRef": "HR KPI Target Text",
+              "displayName": "Target"
             }
           ]
         }
@@ -44,17 +45,19 @@
                 }
               }
             },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            },
             "color": {
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "HR KPI Status Colour"
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
                     }
                   }
                 }
@@ -69,7 +72,25 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
                 }
               }
             }

@@ -2,41 +2,93 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "f82a3543365ca763d98f",
   "position": {
-    "x": 908.0,
-    "y": 858,
+    "x": 658.0,
+    "y": 830,
     "z": 64000,
-    "height": 30,
-    "width": 30,
+    "height": 120,
+    "width": 290.0,
     "tabOrder": 64000
   },
   "visual": {
-    "visualType": "image",
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Payroll Cost Text"
+                }
+              },
+              "queryRef": "_Measures.HR Payroll Cost Text",
+              "nativeQueryRef": "HR Payroll Cost Text",
+              "displayName": "Payroll cost"
+            }
+          ]
+        }
+      }
+    },
     "objects": {
-      "image": [
+      "labels": [
         {
           "properties": {
-            "sourceFile": {
-              "image": {
-                "name": {
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "20D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'hr_icon_coins.svg'"
+                      "Value": "'#0A1E32'"
                     }
                   }
-                },
-                "url": {
-                  "expr": {
-                    "ResourcePackageItem": {
-                      "PackageName": "RegisteredResources",
-                      "PackageType": 1,
-                      "ItemName": "hr_icon_coins.svg"
-                    }
-                  }
-                },
-                "scaling": {
+                }
+              }
+            }
+          }
+        }
+      ],
+      "categoryLabels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "12D"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'Normal'"
+                      "Value": "'#5B6B7D'"
                     }
                   }
                 }
@@ -53,46 +105,14 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
-            }
-          }
-        }
-      ],
-      "background": [
-        {
-          "properties": {
-            "show": {
+            },
+            "text": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "border": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualHeader": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "'Payroll & overtime ›'"
                 }
               }
             }

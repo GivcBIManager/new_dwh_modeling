@@ -8,6 +8,7 @@
     'dim_er_priority.colour', 'dim_staff.staff_grade', 'hnh_dim_location.town_or_city',
     'fact_surgery.operation_type', 'fact_surgery.anaesthesia_type', 'fact_surgery.operation_status', 'fact_surgery.cancel_reason',
     'agg_staff_productivity_monthly.staff_category',
+    'hnh_fact_recruiting_requisition.requisition_phase', 'hnh_fact_recruiting_requisition.requisition_state',
 ] -%}
 {#- Name-like columns that are not source text, or whose all-caps values are acronyms and codes. #}
 {%- set excluded = [

@@ -21,10 +21,21 @@
                   {
                     "value": "Read the status",
                     "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "14pt",
-                      "fontWeight": "bold",
-                      "color": "#1478BE"
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
                     }
                   }
                 ]
@@ -35,7 +46,7 @@
                     "value": "• ● On track (green): the actual meets the target.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -44,10 +55,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• ◆ Watch (amber): short of the target but still within the watch threshold. For on-target KPIs, the distance from the target is compared with the distance from the watch value to the target.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -56,10 +67,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• ■ At risk (red): it is worse than the watch value.",
+                    "value": "• ◆ Watch (amber): short of the target, but within the watch threshold.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -68,10 +79,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• ○ No target yet (grey): no target is set, so the KPI is not scored.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -80,10 +91,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• – No data (grey): there is no figure for the month.",
+                    "value": "• ■ At risk (red): worse than the watch value.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -92,10 +103,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Parked: the KPI is listed but not scored for now.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -104,10 +115,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• 🔒 Requires pay access: pay figures (payroll, overtime, leave, productivity) show only to users with pay access; others see this note instead of a number.",
+                    "value": "• ○ No target yet (grey): no target is set.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -116,10 +127,10 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Every target marked (placeholder) is a starting value, the current level, until HR sets the real one. HR decides the targets; the BI manager enters them (docs/hr_config.md). The mark goes when a real target is in.",
+                    "value": " ",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }
@@ -128,10 +139,178 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor and revenue per FTE and per doctor use the balanced scorecard's formulas; the scorecard report covers the hospitals only. Vacancy rate and time to fill include Head Office's requisitions, so their all-branch figures differ from the scorecard's; the vacancy rate needs Head Office's budgeted FTE loaded with the budget. The others' sources hold no Head Office data today, so Head Office reads No data and the totals equal the scorecard's. Visits per FTE and revenue per payroll SAR count doctors and nurses linked to Oasis: none at Head Office.",
+                    "value": "• – No data (grey): no figure for the period.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "12pt",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Parked: listed, but not scored for now.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• 🔒 Requires pay access: pay figures show only to users with pay access.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• (placeholder): a starting target, the current level, until HR sets the real one. The BI manager enters targets (docs/hr_config.md).",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Scorecard formulas",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Turnover, Saudization, vacancy rate, time to fill, staff to bed, clinical to doctor and revenue per FTE and per doctor use the balanced scorecard's formulas. That report covers the hospitals only.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "• Vacancy rate and time to fill include Head Office's requisitions; the other sources have no Head Office data today, so Head Office reads No data there.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": " ",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "6pt",
                       "color": "#0A1E32"
                     }
                   }

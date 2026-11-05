@@ -3,9 +3,9 @@
   "name": "7de44af62d50e9897ed7",
   "position": {
     "x": 972.0,
-    "y": 852.0,
+    "y": 572.0,
     "z": 29000,
-    "height": 298,
+    "height": 350,
     "width": 918.0,
     "tabOrder": 29000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "Pay Category"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Pay Category"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "Pay Category.Pay Category",
+              "nativeQueryRef": "Pay Category",
               "active": true
             }
           ]
@@ -42,11 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Overtime Share %"
+                  "Property": "Gross Pay"
                 }
               },
-              "queryRef": "_Measures.Overtime Share %",
-              "nativeQueryRef": "Overtime Share %"
+              "queryRef": "_Measures.Gross Pay",
+              "nativeQueryRef": "Gross Pay",
+              "displayName": "Gross pay (SAR)"
             }
           ]
         }
@@ -61,7 +62,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Overtime Share %"
+                "Property": "Gross Pay"
               }
             },
             "direction": "Descending"
@@ -137,7 +138,14 @@
             "labelDisplayUnits": {
               "expr": {
                 "Literal": {
-                  "Value": "1D"
+                  "Value": "1000000D"
+                }
+              }
+            },
+            "labelPrecision": {
+              "expr": {
+                "Literal": {
+                  "Value": "1L"
                 }
               }
             }
@@ -159,7 +167,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Overtime share of gross pay by branch'"
+                  "Value": "'Gross pay by pay category'"
                 }
               }
             }
@@ -168,5 +176,63 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "28ad2823b9ee9e08af15",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Pay Category"
+              }
+            },
+            "Property": "Is Gross Pay"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "p",
+              "Entity": "Pay Category",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "p"
+                          }
+                        },
+                        "Property": "Is Gross Pay"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'Yes'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

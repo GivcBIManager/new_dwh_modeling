@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0c60aa3d6c74f3b73ad1",
   "position": {
-    "x": 1745,
-    "y": 96,
+    "x": 654.0,
+    "y": 186,
     "z": 21000,
-    "height": 54,
-    "width": 145,
+    "height": 44,
+    "width": 181.5,
     "tabOrder": 21000
   },
   "visual": {
@@ -29,10 +29,28 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Definitions'"
+                  "Value": "'Recruitment'"
                 }
               }
             },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#FFFFFF'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "default"
+          }
+        },
+        {
+          "properties": {
             "fontColor": {
               "solid": {
                 "color": {
@@ -46,24 +64,11 @@
             }
           },
           "selector": {
-            "id": "default"
+            "id": "disabled"
           }
         }
       ],
       "fill": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "outline": [
         {
           "properties": {
             "show": {
@@ -77,21 +82,14 @@
         },
         {
           "properties": {
-            "lineColor": {
+            "fillColor": {
               "solid": {
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#1478BE'"
+                      "Value": "'#13ACE3'"
                     }
                   }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
                 }
               }
             },
@@ -105,6 +103,44 @@
           },
           "selector": {
             "id": "default"
+          }
+        },
+        {
+          "properties": {
+            "fillColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#DCE9F2'"
+                    }
+                  }
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "id": "disabled"
+          }
+        }
+      ],
+      "outline": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
           }
         }
       ]
@@ -143,7 +179,7 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'guide_definitions'"
+                  "Value": "'recruitment'"
                 }
               }
             }

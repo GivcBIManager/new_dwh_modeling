@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5f358f9dd64facb67582",
   "position": {
-    "x": 972.0,
-    "y": 320,
+    "x": 30,
+    "y": 482.0,
     "z": 28000,
     "height": 150,
-    "width": 918.0,
+    "width": 604.0,
     "tabOrder": 28000
   },
   "visual": {
@@ -42,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Revenue per Payroll SAR"
+                  "Property": "Visits per FTE"
                 }
               },
-              "queryRef": "_Measures.Revenue per Payroll SAR",
-              "nativeQueryRef": "Revenue per Payroll SAR"
+              "queryRef": "_Measures.Visits per FTE",
+              "nativeQueryRef": "Visits per FTE"
             }
           ]
         }
@@ -61,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Revenue per Payroll SAR"
+                "Property": "Visits per FTE"
               }
             },
             "direction": "Descending"
@@ -159,7 +159,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Revenue per payroll SAR, doctors and nurses'"
+                  "Value": "'Visits per FTE'"
                 }
               }
             }

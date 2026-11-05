@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5d993bb94515e0cdbaf1",
   "position": {
-    "x": 658.0,
-    "y": 1002,
+    "x": 972.0,
+    "y": 656.0,
     "z": 32000,
-    "height": 298,
-    "width": 604.0,
+    "height": 484,
+    "width": 918.0,
     "tabOrder": 32000
   },
   "visual": {
@@ -42,12 +42,27 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "BSC Revenue per FTE"
+                  "Property": "BSC Staff to Bed"
                 }
               },
-              "queryRef": "_Measures.BSC Revenue per FTE",
-              "nativeQueryRef": "BSC Revenue per FTE",
-              "displayName": "Revenue per FTE (SAR)"
+              "queryRef": "_Measures.BSC Staff to Bed",
+              "nativeQueryRef": "BSC Staff to Bed",
+              "displayName": "Staff to bed"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "BSC Clinical to Doctor"
+                }
+              },
+              "queryRef": "_Measures.BSC Clinical to Doctor",
+              "nativeQueryRef": "BSC Clinical to Doctor",
+              "displayName": "Clinical staff to doctor"
             }
           ]
         }
@@ -62,7 +77,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "BSC Revenue per FTE"
+                "Property": "BSC Staff to Bed"
               }
             },
             "direction": "Descending"
@@ -160,7 +175,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Revenue per FTE by branch (SAR)'"
+                  "Value": "'Staff to bed and clinical staff to doctor by branch'"
                 }
               }
             }

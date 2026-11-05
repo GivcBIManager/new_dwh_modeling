@@ -3,9 +3,9 @@
   "name": "46ef00e76ce5f08a3e4c",
   "position": {
     "x": 988.0,
-    "y": 446,
+    "y": 326,
     "z": 29000,
-    "height": 56,
+    "height": 92,
     "width": 415.0,
     "tabOrder": 29000
   },
@@ -23,12 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "HR KPI Target Text"
+                  "Property": "HR KPI Actual Text"
                 }
               },
-              "queryRef": "_Measures.HR KPI Target Text",
-              "nativeQueryRef": "HR KPI Target Text",
-              "displayName": "Target"
+              "queryRef": "_Measures.HR KPI Actual Text",
+              "nativeQueryRef": "HR KPI Actual Text"
             }
           ]
         }
@@ -41,7 +40,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "32D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -50,7 +56,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#5B6B7D'"
+                      "Value": "'#0A1E32'"
                     }
                   }
                 }
@@ -65,25 +71,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "fontSize": {
-              "expr": {
-                "Literal": {
-                  "Value": "9D"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#5B6B7D'"
-                    }
-                  }
+                  "Value": "false"
                 }
               }
             }
@@ -98,7 +86,32 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Turnover'"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#5B6B7D'"
+                    }
+                  }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
                 }
               }
             }

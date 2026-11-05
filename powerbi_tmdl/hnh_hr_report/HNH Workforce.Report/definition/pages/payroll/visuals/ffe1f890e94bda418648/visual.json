@@ -3,9 +3,9 @@
   "name": "ffe1f890e94bda418648",
   "position": {
     "x": 972.0,
-    "y": 1174.0,
+    "y": 946.0,
     "z": 31000,
-    "height": 454,
+    "height": 300,
     "width": 918.0,
     "tabOrder": 31000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR Department"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "Department Base Name"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "HR Department.Department Base Name",
-              "nativeQueryRef": "Department Base Name",
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
               "active": true
             }
           ]
@@ -42,12 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Gross Pay"
+                  "Property": "Overtime Share %"
                 }
               },
-              "queryRef": "_Measures.Gross Pay",
-              "nativeQueryRef": "Gross Pay",
-              "displayName": "Gross pay (SAR)"
+              "queryRef": "_Measures.Overtime Share %",
+              "nativeQueryRef": "Overtime Share %",
+              "displayName": "Overtime share"
             }
           ]
         }
@@ -62,7 +62,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Gross Pay"
+                "Property": "Overtime Share %"
               }
             },
             "direction": "Descending"
@@ -138,14 +138,7 @@
             "labelDisplayUnits": {
               "expr": {
                 "Literal": {
-                  "Value": "1000000D"
-                }
-              }
-            },
-            "labelPrecision": {
-              "expr": {
-                "Literal": {
-                  "Value": "1L"
+                  "Value": "1D"
                 }
               }
             }
@@ -167,7 +160,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Gross pay by department, top 15'"
+                  "Value": "'Overtime share by branch'"
                 }
               }
             }
@@ -176,111 +169,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "ae9f2e03ba33db296567",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "HR Department"
-              }
-            },
-            "Property": "Department Base Name"
-          }
-        },
-        "type": "TopN",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "subquery",
-              "Expression": {
-                "Subquery": {
-                  "Query": {
-                    "Version": 2,
-                    "From": [
-                      {
-                        "Name": "h",
-                        "Entity": "HR Department",
-                        "Type": 0
-                      },
-                      {
-                        "Name": "_",
-                        "Entity": "_Measures",
-                        "Type": 0
-                      }
-                    ],
-                    "Select": [
-                      {
-                        "Column": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Source": "h"
-                            }
-                          },
-                          "Property": "Department Base Name"
-                        },
-                        "Name": "field"
-                      }
-                    ],
-                    "OrderBy": [
-                      {
-                        "Direction": 2,
-                        "Expression": {
-                          "Measure": {
-                            "Expression": {
-                              "SourceRef": {
-                                "Source": "_"
-                              }
-                            },
-                            "Property": "Gross Pay"
-                          }
-                        }
-                      }
-                    ],
-                    "Top": 15
-                  }
-                }
-              },
-              "Type": 2
-            },
-            {
-              "Name": "h",
-              "Entity": "HR Department",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "h"
-                          }
-                        },
-                        "Property": "Department Base Name"
-                      }
-                    }
-                  ],
-                  "Table": {
-                    "SourceRef": {
-                      "Source": "subquery"
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "018e70be74a86a341b8c",
   "position": {
-    "x": 783.6,
-    "y": 186,
+    "x": 406.8,
+    "y": 330.0,
     "z": 24000,
-    "height": 110,
+    "height": 128,
     "width": 352.8,
     "tabOrder": 24000
   },
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Payroll Cost per Visit"
+                  "Property": "Revenue per Payroll SAR"
                 }
               },
-              "queryRef": "_Measures.Payroll Cost per Visit",
-              "nativeQueryRef": "Payroll Cost per Visit",
-              "displayName": "Payroll cost per visit (SAR)"
+              "queryRef": "_Measures.Revenue per Payroll SAR",
+              "nativeQueryRef": "Revenue per Payroll SAR",
+              "displayName": "Revenue per payroll SAR"
             }
           ]
         }
@@ -41,7 +41,14 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "24D"
+                  "Value": "30D"
+                }
+              }
+            },
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Segoe UI Semibold'"
                 }
               }
             },
@@ -72,7 +79,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },
@@ -119,7 +126,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Payroll Cost per Visit"
+            "Property": "Revenue per Payroll SAR"
           }
         },
         "type": "Advanced",
@@ -146,7 +153,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Payroll Cost per Visit"
+                          "Property": "Revenue per Payroll SAR"
                         }
                       },
                       "Right": {

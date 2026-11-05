@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "abd614b3a2e714c7bc92",
   "position": {
-    "x": 658.0,
-    "y": 1380,
+    "x": 1286.0,
+    "y": 1448.0,
     "z": 40000,
-    "height": 308,
+    "height": 528,
     "width": 604.0,
     "tabOrder": 40000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "Worker Action"
                     }
                   },
-                  "Property": "Tenure Band"
+                  "Property": "Action Name"
                 }
               },
-              "queryRef": "Employee.Tenure Band",
-              "nativeQueryRef": "Tenure Band",
+              "queryRef": "Worker Action.Action Name",
+              "nativeQueryRef": "Action Name",
               "active": true
             }
           ]
@@ -42,27 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leavers"
+                  "Property": "Hires"
                 }
               },
-              "queryRef": "_Measures.Leavers",
-              "nativeQueryRef": "Leavers",
-              "displayName": "Leavers in Fusion"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Voluntary Leavers"
-                }
-              },
-              "queryRef": "_Measures.Voluntary Leavers",
-              "nativeQueryRef": "Voluntary Leavers",
-              "displayName": "Voluntary leavers in Fusion"
+              "queryRef": "_Measures.Hires",
+              "nativeQueryRef": "Hires"
             }
           ]
         }
@@ -77,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Leavers"
+                "Property": "Hires"
               }
             },
             "direction": "Descending"
@@ -175,7 +159,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Leavers in Fusion by current tenure band (years)'"
+                  "Value": "'Hires by action, top 15'"
                 }
               }
             }
@@ -184,5 +168,111 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "5e6d44630d43ddac86ce",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Worker Action"
+              }
+            },
+            "Property": "Action Name"
+          }
+        },
+        "type": "TopN",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "subquery",
+              "Expression": {
+                "Subquery": {
+                  "Query": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "w",
+                        "Entity": "Worker Action",
+                        "Type": 0
+                      },
+                      {
+                        "Name": "_",
+                        "Entity": "_Measures",
+                        "Type": 0
+                      }
+                    ],
+                    "Select": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "w"
+                            }
+                          },
+                          "Property": "Action Name"
+                        },
+                        "Name": "field"
+                      }
+                    ],
+                    "OrderBy": [
+                      {
+                        "Direction": 2,
+                        "Expression": {
+                          "Measure": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "_"
+                              }
+                            },
+                            "Property": "Hires"
+                          }
+                        }
+                      }
+                    ],
+                    "Top": 15
+                  }
+                }
+              },
+              "Type": 2
+            },
+            {
+              "Name": "w",
+              "Entity": "Worker Action",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "w"
+                          }
+                        },
+                        "Property": "Action Name"
+                      }
+                    }
+                  ],
+                  "Table": {
+                    "SourceRef": {
+                      "Source": "subquery"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

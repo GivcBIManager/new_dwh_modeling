@@ -21,6 +21,9 @@ perspective Workforce
 	perspectiveTable 'Employee Details'
 		includeAll
 
+	perspectiveTable 'From Branch'
+		includeAll
+
 	perspectiveTable Grade
 		includeAll
 
@@ -93,6 +96,7 @@ perspective Workforce
 		perspectiveMeasure 'Payroll Cost per Visit'
 		perspectiveMeasure 'Position Changes'
 		perspectiveMeasure Promotions
+		perspectiveMeasure 'Requisition Fill Rate %'
 		perspectiveMeasure 'Requisitions Approved'
 		perspectiveMeasure 'Requisitions Filled'
 		perspectiveMeasure 'Revenue per Payroll SAR'
@@ -104,6 +108,7 @@ perspective Workforce
 		perspectiveMeasure 'Voluntary Leavers'
 		perspectiveMeasure 'Voluntary Turnover Rate %'
 		perspectiveMeasure '_Guard 12 facts #3285a6da'
+		perspectiveMeasure '_Guard 12 facts #f5f9289f'
 		perspectiveMeasure '_Guard 13 facts #30ec94e2'
 		perspectiveMeasure '_Guard 13 facts #317b6ff7'
 		perspectiveMeasure '_Guard 15 facts #f1ff93bc'
@@ -157,6 +162,7 @@ perspective Workforce
 		perspectiveMeasure '_Guard HR Data Issue Records'
 		perspectiveMeasure '_Guard HR Data Issue Records | Date, Time Calculation'
 		perspectiveMeasure '_Guard HR Targets'
+		perspectiveMeasure '_Guard HR Targets + Income Statement + Workforce Monthly'
 		perspectiveMeasure '_Guard HR Targets + Income Statement + Workforce Monthly | HR KPI, HR Targets'
 		perspectiveMeasure '_Guard HR Targets | HR KPI, HR Targets'
 		perspectiveMeasure '_Guard Headcount'

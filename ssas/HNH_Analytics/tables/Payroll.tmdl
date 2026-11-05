@@ -115,6 +115,14 @@ table Payroll
 		summarizeBy: none
 		sourceColumn: oasis_deduction_amount
 
+	column 'Grade Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: grade_key
+
 	partition 'Payroll template' = m
 		source =
 				let

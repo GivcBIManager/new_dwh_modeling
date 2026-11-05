@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "4898c38811efe815d5e9",
   "position": {
-    "x": 669,
-    "y": 90,
+    "x": 790,
+    "y": 96,
     "z": 14000,
-    "height": 66,
-    "width": 270,
+    "height": 54,
+    "width": 220,
     "tabOrder": 14000
   },
   "visual": {
@@ -20,15 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR KPI"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Area"
+                  "Property": "Month Pick"
                 }
               },
-              "queryRef": "HR KPI.Area",
-              "nativeQueryRef": "Area",
-              "displayName": "Area",
+              "queryRef": "Date.Month Pick",
+              "nativeQueryRef": "Month Pick",
               "active": true
             }
           ]
@@ -42,8 +41,62 @@
             "mode": {
               "expr": {
                 "Literal": {
-                  "Value": "'Dropdown'"
+                  "Value": "'Basic'"
                 }
+              }
+            }
+          }
+        }
+      ],
+      "general": [
+        {
+          "properties": {
+            "orientation": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            },
+            "filter": {
+              "filter": {
+                "Version": 2,
+                "From": [
+                  {
+                    "Name": "d",
+                    "Entity": "Date",
+                    "Type": 0
+                  }
+                ],
+                "Where": [
+                  {
+                    "Condition": {
+                      "In": {
+                        "Expressions": [
+                          {
+                            "Column": {
+                              "Expression": {
+                                "SourceRef": {
+                                  "Source": "d"
+                                }
+                              },
+                              "Property": "Month Pick"
+                            }
+                          }
+                        ],
+                        "Values": [
+                          [
+                            {
+                              "Literal": {
+                                "Value": "'Last closed month'"
+                              }
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -62,7 +115,7 @@
             "selectAllCheckboxEnabled": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
@@ -75,14 +128,20 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
-            },
+            }
+          }
+        }
+      ],
+      "items": [
+        {
+          "properties": {
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "11D"
                 }
               }
             },
@@ -91,7 +150,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#5B6B7D'"
+                      "Value": "'#0A1E32'"
                     }
                   }
                 }
@@ -115,38 +174,39 @@
           }
         }
       ],
+      "background": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
       "border": [
         {
           "properties": {
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#CBD3DC'"
-                    }
-                  }
-                }
-              }
-            },
-            "radius": {
+            }
+          }
+        }
+      ],
+      "visualHeader": [
+        {
+          "properties": {
+            "show": {
               "expr": {
                 "Literal": {
-                  "Value": "6D"
-                }
-              }
-            },
-            "width": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
+                  "Value": "false"
                 }
               }
             }
@@ -155,7 +215,7 @@
       ]
     },
     "syncGroup": {
-      "groupName": "bsc HR KPI.Area",
+      "groupName": "bsc Date.Month Pick",
       "fieldChanges": true,
       "filterChanges": true
     },
@@ -169,10 +229,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "HR KPI"
+                "Entity": "Date"
               }
             },
-            "Property": "Kind"
+            "Property": "Month Pick"
           }
         },
         "type": "Categorical",
@@ -180,8 +240,8 @@
           "Version": 2,
           "From": [
             {
-              "Name": "h",
-              "Entity": "HR KPI",
+              "Name": "d",
+              "Entity": "Date",
               "Type": 0
             }
           ],
@@ -194,10 +254,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "h"
+                            "Source": "d"
                           }
                         },
-                        "Property": "Kind"
+                        "Property": "Month Pick"
                       }
                     }
                   ],
@@ -205,7 +265,7 @@
                     [
                       {
                         "Literal": {
-                          "Value": "'kpi'"
+                          "Value": "'Last closed month'"
                         }
                       }
                     ]

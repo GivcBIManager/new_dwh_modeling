@@ -12,6 +12,7 @@ TABLES = [
     Table("ssas_dim_staff_role", "Booked Doctor", "role_copy", "Doctor the encounter was booked with (copy of Staff for this role)."),
     Table("ssas_dim_staff_role", "Admission Treating Doctor", "role_copy", "Treating doctor of the admission (copy of Staff for this role)."),
     Table("ssas_dim_staff_role", "Anaesthetist", "role_copy", "Anaesthetist of the surgery (copy of Staff for this role)."),
+    Table("ssas_dim_branch_role", "From Branch", "role_copy", "Branch a worker movement left, for transfers from one branch to another (copy of Branch for this role)."),
     Table("ssas_dim_patient", "Patient", "dim", "Patients per branch without personal identifiers; filtered to the user's branches."),
     Table("ssas_dim_patient_pii", "Patient Details", "dim", "Patient names and identifiers; visible only to users with PII access."),
     Table("ssas_dim_payer", "Payer", "dim", "Purchasers (insurers, companies, cash) with category and MOH flag."),
@@ -174,6 +175,7 @@ ROLE_KEYS = {
     ("Worker Movements", "previous_grade_key"): ("Grade", "grade_key", False),
     ("Worker Movements", "previous_position_key"): ("Position", "position_key", False),
     ("Worker Movements", "previous_location_key"): ("Location", "location_key", False),
+    ("Worker Movements", "previous_branch_key"): ("From Branch", "branch_key", True),  # HR report transfers matrix
     ("GL Account", "fs_line_key"): ("FS Line", "fs_line_key", True),
 }
 
@@ -245,6 +247,11 @@ SORT_BY = {
     ("ssas_dim_bsc_kpi", "kpi_name"): "display_order",
     ("ssas_dim_bsc_kpi", "pillar"): "pillar_order",
     ("ssas_dim_bsc_kpi", "objective_title"): "objective_order",
+    # HR report (user request 2026-11-05): bands youngest / shortest first, Unknown last
+    ("ssas_fact_headcount_monthly", "age_band"): "age_band_order",
+    ("ssas_fact_headcount_monthly", "tenure_band"): "tenure_band_order",
+    ("ssas_dim_employee", "age_band"): "age_band_order",
+    ("ssas_dim_employee", "tenure_band"): "tenure_band_order",
 }
 
 # Spec 7. Each perspective gets its facts, every dimension they reach, and Time Calculation.

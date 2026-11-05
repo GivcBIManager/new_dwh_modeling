@@ -830,6 +830,10 @@ relationship payroll_employee_key
 	fromColumn: Payroll.'Employee Key'
 	toColumn: Employee.'Employee Key'
 
+relationship payroll_grade_key
+	fromColumn: Payroll.'Grade Key'
+	toColumn: Grade.'Grade Key'
+
 relationship payroll_hr_department_key
 	fromColumn: Payroll.'HR Department Key'
 	toColumn: 'HR Department'.'HR Department Key'
@@ -1183,6 +1187,10 @@ relationship worker_movements_location_key
 relationship worker_movements_position_key
 	fromColumn: 'Worker Movements'.'Position Key'
 	toColumn: Position.'Position Key'
+
+relationship worker_movements_previous_branch_key
+	fromColumn: 'Worker Movements'.'Previous Branch Key'
+	toColumn: 'From Branch'.'Branch Key'
 
 relationship worker_movements_previous_grade_key
 	isActive: false

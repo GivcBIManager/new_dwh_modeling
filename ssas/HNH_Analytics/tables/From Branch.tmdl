@@ -1,0 +1,24 @@
+/// Branch a worker movement left, for transfers from one branch to another (copy of Branch for this role).
+table 'From Branch'
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Branch Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: branch_name
+
+	partition 'From Branch' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_branch_role")
+				in
+				    Source
+
+	annotation hnh_kind = role_copy
+	annotation hnh_view = ssas_dim_branch_role
