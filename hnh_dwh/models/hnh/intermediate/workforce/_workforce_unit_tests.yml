@@ -149,3 +149,50 @@ unit_tests:
       rows:
         - {employee_key: 1, month_end: 2026-03-31, staff_contract_no: 501, begin_balance: 34.8493, accrued: 2.5479, used: 7, end_balance: 30.3973}
         - {employee_key: 1, month_end: 2026-04-30, staff_contract_no: 502, begin_balance: 0, accrued: 1.726, used: 5, end_balance: -3.274}
+
+  - name: int_oasis_absence_entry_dates_and_overlap
+    description: >
+      Staff A (staff 71, the Fusion employee of person 5) and staff B (72, no Fusion employee), branch 2. Entry 1:
+      1 to 3 March 2026 → 3 days. Entry 2: no to_date, 2.5 days from 10 April → 10 to 12 April, 3 days. Entry 3:
+      5 to 6 May overlaps person 5's approved Fusion absence of 6 to 8 May → left out. Entry 4: staff B, 5 May →
+      employee -1. Entry 5: status O → left out. Entry 6: before the history start (2022-01-01) → left out.
+      Entry 7: 300 days on a one-day record (to_date = from_date) → 1 day.
+    model: int_oasis_absence_entry
+    given:
+      - input: ref('stg_oasis__staff_vacations')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(v) as staff_vacation_id, toNullable(s) as staff_id,
+                 cast(null as Nullable(Int64)) as staff_contract_no, toNullable(toInt64(36)) as vacation_type_id,
+                 toNullable(toDate32(f)) as from_date, if(t = '', cast(null as Nullable(Date32)), toNullable(toDate32(t))) as to_date,
+                 toFloat64(d) as days, toNullable(st) as status
+          from values('v UInt32, s String, f String, t String, d Float64, st String',
+              (1, 'A', '2026-03-01', '2026-03-03', 3, 'P'), (2, 'A', '2026-04-10', '', 2.5, 'P'),
+              (3, 'A', '2026-05-05', '2026-05-06', 2, 'P'), (4, 'B', '2026-05-05', '2026-05-05', 1, 'P'),
+              (5, 'B', '2026-06-01', '2026-06-02', 2, 'O'), (6, 'B', '2021-12-30', '2021-12-31', 2, 'P'),
+              (7, 'A', '2026-07-01', '2026-07-01', 300, 'P'))
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(k) as staff_key, toUInt8(2) as branch_key, toNullable(s) as staff_id
+          from values('k UInt32, s String', (71, 'A'), (72, 'B'))
+      - input: ref('bridge_employee_staff')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(5)),'|')),1)) as employee_key, toInt64(71) as staff_key
+      - input: ref('stg_fusion__absence_entries')
+        format: sql
+        rows: |
+          select toInt64(900) as absence_entry_id, toNullable(toInt64(5)) as person_id, toNullable('SUBMITTED') as absence_status_code,
+                 toNullable('APPROVED') as approval_status_code, toNullable(toDate32('2026-05-06')) as start_date,
+                 toNullable(toDate32('2026-05-08')) as end_date, toNullable('C') as duration_uom
+      - input: ref('hnh_dim_employee')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(5)),'|')),1)) as employee_key, toNullable(toInt64(5)) as person_id
+    expect:
+      rows:
+        - {staff_vacation_id: 1, branch_key: 2, staff_key: 71, employee_key: 7392577182980356255, start_date: 2026-03-01, end_date: 2026-03-03, absence_days: 3}
+        - {staff_vacation_id: 2, branch_key: 2, staff_key: 71, employee_key: 7392577182980356255, start_date: 2026-04-10, end_date: 2026-04-12, absence_days: 3}
+        - {staff_vacation_id: 4, branch_key: 2, staff_key: 72, employee_key: -1, start_date: 2026-05-05, end_date: 2026-05-05, absence_days: 1}
+        - {staff_vacation_id: 7, branch_key: 2, staff_key: 71, employee_key: 7392577182980356255, start_date: 2026-07-01, end_date: 2026-07-01, absence_days: 1}

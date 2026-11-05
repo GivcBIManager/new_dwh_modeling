@@ -108,6 +108,7 @@ ABSENCE_TYPE = col("Absence Type", "Absence Type Name")
 ABSENCE_CATEGORY = col("Absence Type", "Absence Category")
 LEAVE_PLAN = col("Leave Balances", "Absence Plan Name")
 LEAVE_SOURCE = col("Leave Balances", "Source")
+ABSENCE_SOURCE = col("Absence Days", "Source")
 EMPLOYEE_LIST = "employee_list"
 # a grade ranking leaves out the employees without a grade in the month's headcount (Unknown: before 2026, Oasis
 # staff with no Fusion employee)
@@ -661,8 +662,9 @@ def payroll_page() -> Page:
 
 
 def absence_page() -> Page:
-    """Absence & leave in two sections (user request 2026-11-05): absence days, with Absence category and Absence type
-    slicers, and leave balance and liability, with Leave plan and Source slicers; each section's slicers reach its own
+    """Absence & leave in two sections (user request 2026-11-05): absence days, with Absence category, Absence type
+    and Source slicers (Fusion absences and Oasis absences, the branches' system before they moved to Fusion during
+    2026), and leave balance and liability, with Leave plan and Source slicers; each section's slicers reach its own
     visuals only. Leave balances are Fusion's absence plans and, for an employee and month without a Fusion annual-leave
     balance, the Oasis annual-leave balance (earned in the current contract minus taken; plan Oasis Annual Leave,
     source Oasis; user request 2026-11-05). Not by department
@@ -677,7 +679,8 @@ def absence_page() -> Page:
           bars("Sick leave rate by branch", BRANCH_NAME, ["Sick Leave Rate %"])],
          [bars("Absence days by branch", BRANCH_NAME, ["Absence Days"]),
           bars("Sick days by absence type, top 15", ABSENCE_TYPE, ["Sick Days"], top=True)]],
-        slicers=[(ABSENCE_CATEGORY, "Absence category"), (ABSENCE_TYPE, "Absence type")])
+        subtitle="Fusion absences, and Oasis absences from before each branch moved to Fusion.",
+        slicers=[(ABSENCE_CATEGORY, "Absence category"), (ABSENCE_TYPE, "Absence type"), (ABSENCE_SOURCE, "Source")])
     leave = section(
         "Leave balance and liability",
         [card("Leave Balance (days)", "Leave balance at month end (days)", pay=True),

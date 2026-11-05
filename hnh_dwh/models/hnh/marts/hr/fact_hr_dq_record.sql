@@ -109,12 +109,14 @@ leave_dup_period as (
     having count() > 1
 ),
 
--- DQ_ABSENCE_OVERLAP (assert_absence_daily_no_overlap): more than one counted absence day row for an employee and day.
+-- DQ_ABSENCE_OVERLAP (assert_absence_daily_no_overlap): more than one counted absence day row for an employee and day,
+-- among the Fusion rows (Oasis days count once per staff and day, and an Oasis entry that overlaps Fusion is left out).
 absence_overlap as (
     select 'DQ_ABSENCE_OVERLAP' as issue_code, any(a.branch_key) as branch_key, a.employee_key as employee_key, any(a.staff_key) as staff_key,
            null as worker_number, null as staff_id, 'absence_entries' as field_name, toString(count()) as value_found,
            makeDate(intDiv(a.date_key, 10000), intDiv(a.date_key, 100) % 100, a.date_key % 100) as record_date
     from {{ ref('fact_absence_daily') }} as a
+    where a.source = 'Fusion'
     group by a.employee_key, a.date_key
     having count() > 1
 ),

@@ -1280,6 +1280,8 @@ models:
     config:
       contract: {enforced: true}
     columns:
+      - name: source
+        data_type: "String"
       - name: branch_key
         data_type: "Int64"
       - name: employee_key
@@ -1306,6 +1308,8 @@ models:
     config:
       contract: {enforced: true}
     columns:
+      - name: source
+        data_type: "String"
       - name: branch_key
         data_type: "Int64"
       - name: employee_key

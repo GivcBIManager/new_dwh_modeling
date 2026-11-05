@@ -192,7 +192,8 @@ unit_tests:
   - name: fact_absence_daily_splits_across_months
     description: >
       Entry 1: approved sick leave 30 June – 2 July 2026 (3 days, two months). Entry 2: withdrawn annual leave
-      (not counted, no daily rows). Entry 3: approved permission leave in hours (no daily rows).
+      (not counted, no daily rows). Entry 3: approved permission leave in hours (no daily rows). Oasis: staff 81 has
+      entries 11 (1–2 June) and 12 (2–3 June); 2 June counts once → 3 Oasis day rows.
     model: fact_absence_daily
     given:
       - input: ref('stg_fusion__absence_entries')
@@ -217,11 +218,21 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(1) as legal_employer_id, toUInt8(6) as branch_key
+      - input: ref('int_oasis_absence_entry')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(v) as staff_vacation_id, toUInt8(2) as branch_key, toInt64(-1) as employee_key,
+                 toInt64(81) as staff_key, toInt64(500) as absence_type_key, toDate32(sd) as start_date, toDate32(ed) as end_date,
+                 toFloat64(2) as absence_days
+          from values('v UInt32, sd String, ed String', (11, '2026-06-01', '2026-06-02'), (12, '2026-06-02', '2026-06-03'))
     expect:
       rows:
-        - {date_key: 20260630, absence_days: 1}
-        - {date_key: 20260701, absence_days: 1}
-        - {date_key: 20260702, absence_days: 1}
+        - {source: Fusion, date_key: 20260630, absence_days: 1}
+        - {source: Fusion, date_key: 20260701, absence_days: 1}
+        - {source: Fusion, date_key: 20260702, absence_days: 1}
+        - {source: Oasis, date_key: 20260601, absence_days: 1}
+        - {source: Oasis, date_key: 20260602, absence_days: 1}
+        - {source: Oasis, date_key: 20260603, absence_days: 1}
 
   - name: fact_leave_balance_monthly_values_liability
     description: >

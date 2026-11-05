@@ -33,3 +33,11 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [employee_key, month_end]
+  - name: int_oasis_absence_entry
+    description: >
+      Oasis absences (staff_vacations) from hnh_history_start_date for fact_absence and fact_absence_daily: from_date to
+      to_date (without one, from_date plus the days rounded up), status O left out, the branch's vacation type, the
+      staff's Fusion employee or -1. Entries overlapping a counted day-unit Fusion absence of the same employee are left out.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, staff_vacation_id]

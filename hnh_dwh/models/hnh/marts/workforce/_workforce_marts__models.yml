@@ -148,6 +148,9 @@ models:
           payment method C or R), on any pay code. oasis_payment_amount + oasis_deduction_amount is the net salary of the
           payroll team's report. 0 for Fusion rows and parallel-run rows.
   - name: fact_absence
+    description: >
+      Fusion absence entries and, from 2026-11-05, Oasis absences (staff_vacations through int_oasis_absence_entry,
+      source Oasis): an Oasis entry that overlaps a counted Fusion absence of the same employee is left out.
     columns:
       - name: absence_key
         tests: [unique, not_null]
@@ -170,6 +173,9 @@ models:
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
   - name: fact_absence_daily
+    description: >
+      Fusion absence entries and, from 2026-11-05, Oasis absences (staff_vacations through int_oasis_absence_entry,
+      source Oasis): an Oasis entry that overlaps a counted Fusion absence of the same employee is left out. Oasis days count once per staff and day.
     columns:
       - name: absence_day_key
         tests: [unique, not_null]
