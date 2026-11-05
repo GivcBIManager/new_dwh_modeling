@@ -28,7 +28,7 @@ with months as (
 contract as (
     select m.employee_key as employee_key, m.branch_key as branch_key, m.month_end as month_end, m.asof as asof,
            m.prev_end as prev_end, c.branch_id as branch_id, c.staff_contract_no as staff_contract_no,
-           c.started_at as started_at, coalesce(c.terminated_at, toDate32('2149-06-06')) as stop_at,
+           assumeNotNull(c.started_at) as started_at, coalesce(c.terminated_at, toDate32('2149-06-06')) as stop_at,
            c.leave_days / 365 as daily_accrual
     from months as m
     inner join (select branch_id, staff_id, staff_contract_no, started_at, terminated_at, leave_days
