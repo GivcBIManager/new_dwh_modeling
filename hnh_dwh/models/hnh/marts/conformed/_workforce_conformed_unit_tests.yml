@@ -39,8 +39,9 @@ unit_tests:
           from values('i Int64, c String, n String', (1, 'P1', 'RBW Staff Nurse'), (2, 'P2', 'JAZ Staff Nurse'),
                       (3, 'P3', 'Medical Director'), (4, 'P4', 'HQ Recruitment Officer'))
     expect:
-      format: sql
-      rows: |
-        select toNullable(c) as position_code, toNullable(b) as position_base_name
-        from values('c Nullable(String), b String', ('P1', 'Staff Nurse'), ('P2', 'Staff Nurse'), ('P3', 'Medical Director'),
-                    ('P4', 'Recruitment Officer'), (null, 'Unknown'))
+      rows:
+        - {position_code: P1, position_base_name: Staff Nurse}
+        - {position_code: P2, position_base_name: Staff Nurse}
+        - {position_code: P3, position_base_name: Medical Director}
+        - {position_code: P4, position_base_name: Recruitment Officer}
+        - {position_code: null, position_base_name: Unknown}
