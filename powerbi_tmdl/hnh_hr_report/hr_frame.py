@@ -422,11 +422,16 @@ def column_look(units: str = "auto") -> dict:
 
 
 def combo_look() -> dict:
-    """A line and clustered column chart: labels on every column and point, markers on, no value axes (the
-    columns' and the line's: valueAxis.show and secShow)."""
+    """A line and clustered column chart: labels on every column and point, markers on, no axis for the columns
+    (valueAxis.show). The line keeps its own axis in small grey labels (secShow): with the secondary axis off, Desktop
+    draws the line on the columns' axis, where a 5 % rate beside counts of 20 lies flat at zero (screenshot 2026-11-05)."""
     out = {**_axes_off("none"), "markers": [{"properties": {"show": _lit(True)}}],
            "lineStyles": [{"properties": {"showMarker": _lit(True)}}]}
-    out["valueAxis"][0]["properties"]["secShow"] = _lit(False)
+    axis = out["valueAxis"][0]["properties"]
+    axis["secShow"] = _lit(True)
+    axis["secShowAxisTitle"] = _lit(False)
+    axis["secFontSize"] = _num(9)
+    axis["secLabelColor"] = _colour("#A0A0A0")
     return out
 
 

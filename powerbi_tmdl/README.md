@@ -77,7 +77,7 @@ type (201) and the `visualInteractions` type values (Default 0, DataFilter 1, Hi
 Same route as above, with the HR report's paths. It is built against `HNH_Analytics_Test` (perspective `HR Dashboard`). These steps are step 5 of the HR dashboard's ordered deployment checklist in `hnh_hr_report/README.md` ("Deployment checklist": dbt build, contracts, test slot, placeholder targets, report, Dagster); do the steps before it first.
 
 1. `python powerbi_tmdl/hnh_hr_report/build.py` (prints `report schemas: passed` and `Desktop project reader: opened`).
-2. `python powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py "powerbi_tmdl/hnh_hr_report/HNH Workforce.pbip" --out "C:\HNH\report\HNH Workforce.pbix"` (14 pages, 621 visuals).
+2. `python powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py "powerbi_tmdl/hnh_hr_report/HNH Workforce.pbip" --out "C:\HNH\report\HNH Workforce.pbix"` (14 pages, 622 visuals).
 3. `pbix.check_upload_rules` on the file must return `[]` (run from `powerbi_tmdl/hnh_bsc_report`: `python -c "from pbix import check_upload_rules; print(check_upload_rules(r'C:\HNH\report\HNH Workforce.pbix'))"`).
 4. Open the `.pbix` in Desktop for Report Server without saving; upload it into the report's folder at `http://hnhanalyticssrv/reports` only on the user's go-ahead.
 
@@ -87,7 +87,7 @@ Same route as above, with the HR report's paths. It is built against `HNH_Analyt
 
 **To check on first open** (not yet done; Desktop for Report Server, then the portal):
 
-- Last closed month is on (selected) on every page and the Dates slicer shows that month's days; turned off, the pages follow the dates picked. Scorecard and KPI detail also show Period on "Current" (Current, QTD, YTD), and a Period picked on one shows on the other.
+- Last closed month is on (selected) on every page and the cards show that month (the Dates slicer keeps its full range); turned off, the pages follow the dates picked. Scorecard and KPI detail also show Period on "Current" (Current, QTD, YTD), and a Period picked on one shows on the other.
 - The tall pages scroll at full width instead of shrinking: Story (2100 px), Headcount & mix (2170), Movements & turnover (1846), Absence & leave (1756), Payroll & overtime (1410), Productivity (1410), Recruitment (1410) and Scorecard (1518). Home, Data quality, the guide pages and the hidden KPI detail and Employee list are 1080 px (fit to page).
 - Status text is coloured: teal `#0E9F8E` On track, amber `#EF8B00` Watch, red `#DB280A` At risk, grey `#9AA7B5` for No target yet, No data, Parked and Requires pay access.
 - Pay notices: as `HRM_CORP` they show nothing (no "(Blank)": the notice is `""`); as `EXE_ABH` they show "Requires pay access" (pay tiles, the Cost story block, Payroll and Productivity). The Branch page filter shows as locked in the filter pane (no clear or edit). The chart notices sit at the right of each chart's title strip (ruling R31): check the text fits there and that hovering a chart shows its tooltip. As `EXE_ABH`, check also whether a pay card under its notice (Payroll, Absence & leave, Productivity cards) prints "(Blank)" next to the notice: those cards show the model's pay measures, blank without pay access.

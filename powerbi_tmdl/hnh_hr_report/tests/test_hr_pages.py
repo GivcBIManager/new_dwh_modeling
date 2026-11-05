@@ -896,8 +896,8 @@ def test_chart_format_labels_markers_no_value_axis():  # noqa: C901
             assert lit(axis["show"]) == "false" and lit(axis["gridlineShow"]) == "false", (page.name, v.title)
             if v.sample in ("lineChart", "comboChart"):
                 assert lit(v.props["markers"][0]["properties"]["show"]) == "true", (page.name, v.title)
-            if v.sample == "comboChart":  # the line's own value axis too
-                assert lit(axis["secShow"]) == "false", (page.name, v.title)
+            if v.sample == "comboChart":  # the line keeps its own axis, or Desktop draws it on the columns' scale
+                assert lit(axis["secShow"]) == "true", (page.name, v.title)
             if v.sample == "barChart":
                 margin = v.props["categoryAxis"][0]["properties"]["maxMarginFactor"]
                 assert margin == {"expr": {"Literal": {"Value": "40L"}}}, (page.name, v.title)
@@ -1382,11 +1382,11 @@ def test_recruitment_cards_and_wording():
 
 
 def test_card_text_is_large_enough():
-    """User request 2026-11-05: the cards' figures at 30pt (a text figure such as "No budgeted FTE" 22pt, to fit)
+    """User request 2026-11-05: the cards' figures at 30pt (a text figure such as "No budgeted FTE" 16pt, to fit)
     and their labels at 12pt (9pt was too small)."""
     for page in _detail_pages():
         for v in _data_visuals(page):
             if v.sample == "card":
-                want = "22D" if v.roles["Values"][0].name.endswith(" Text") else "30D"
+                want = "16D" if v.roles["Values"][0].name.endswith(" Text") else "30D"
                 assert lit(v.props["labels"][0]["properties"]["fontSize"]) == want, (page.name, v.roles)
                 assert lit(v.props["categoryLabels"][0]["properties"]["fontSize"]) == "12D", (page.name, v.roles)
