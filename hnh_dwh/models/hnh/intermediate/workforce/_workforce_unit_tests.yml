@@ -102,3 +102,50 @@ unit_tests:
         - {branch_id: 1, account_transaction_no: 8, is_closed_payroll: 0, open_run_date: '2026-09-24', is_payroll_payment: 1}
         - {branch_id: 2, account_transaction_no: 13, is_closed_payroll: 1, open_run_date: null, is_payroll_payment: 1}
         - {branch_id: 2, account_transaction_no: 14, is_closed_payroll: 1, open_run_date: null, is_payroll_payment: 1}
+
+  - name: int_oasis_leave_balance_monthly_contract_balance
+    description: >
+      Employee 1 (staff A at branch 2): contract 501 from 2025-01-01 with 30 leave days a year, contract 502 from
+      2026-04-01 with 21. March 2026 uses contract 501: 455 days earned x 30 / 365 = 37.3973, minus the 7 days up to
+      31 March of a 10-day annual leave from 25 March → 30.3973 (begin 34.8493 = 424 days earned, accrued 2.5479).
+      April uses contract 502, which starts at zero: 30 days x 21 / 365 = 1.726 earned, a 5-day annual leave taken
+      → -3.274; its sick leave and a status O annual leave do not count. Employee 2's contract has no leave days and
+      employee 3 has no Oasis staff: no rows.
+    model: int_oasis_leave_balance_monthly
+    given:
+      - input: ref('fact_headcount_monthly')
+        format: sql
+        rows: |
+          select toInt64(e) as employee_key, toUInt8(2) as branch_key, toInt64(s) as staff_key, toDate(m) as month_end
+          from values('e UInt32, s Int32, m String',
+              (1, 71, '2026-03-31'), (1, 71, '2026-04-30'), (2, 72, '2026-04-30'), (3, -1, '2026-04-30'))
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(s) as staff_key, toUInt8(2) as branch_key, toNullable(i) as staff_id
+          from values('s UInt32, i String', (71, 'A'), (72, 'B'))
+      - input: ref('stg_oasis__staff_contracts')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(c) as staff_contract_no, toNullable(i) as staff_id, toNullable(toDate32(st)) as started_at,
+                 cast(null as Nullable(Date32)) as terminated_at, toFloat64(d) as leave_days
+          from values('c UInt32, i String, st String, d Float64', (501, 'A', '2025-01-01', 30), (502, 'A', '2026-04-01', 21),
+              (503, 'B', '2025-01-01', 0))
+      - input: ref('stg_oasis__staff_vacations')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(v) as staff_vacation_id, toNullable(toInt64(c)) as staff_contract_no,
+                 toNullable(toInt64(t)) as vacation_type_id, toNullable(toDate32(f)) as from_date, toFloat64(d) as days,
+                 toNullable(st) as status
+          from values('v UInt32, c UInt32, t UInt32, f String, d Float64, st String',
+              (1, 501, 36, '2026-03-25', 10, 'P'), (2, 502, 36, '2026-04-20', 5, 'P'), (3, 502, 40, '2026-04-10', 3, 'P'),
+              (4, 502, 36, '2026-04-06', 4, 'O'))
+      - input: ref('stg_oasis__vacation_types')
+        format: sql
+        rows: |
+          select toUInt8(2) as branch_id, toInt64(t) as vacation_type_id, toUInt8(a) as is_annual_leave
+          from values('t UInt32, a UInt8', (36, 1), (40, 0))
+    expect:
+      rows:
+        - {employee_key: 1, month_end: 2026-03-31, staff_contract_no: 501, begin_balance: 34.8493, accrued: 2.5479, used: 7, end_balance: 30.3973}
+        - {employee_key: 1, month_end: 2026-04-30, staff_contract_no: 502, begin_balance: 0, accrued: 1.726, used: 5, end_balance: -3.274}

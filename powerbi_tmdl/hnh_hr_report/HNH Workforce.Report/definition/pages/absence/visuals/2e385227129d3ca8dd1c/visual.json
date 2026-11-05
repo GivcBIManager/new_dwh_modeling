@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "2e385227129d3ca8dd1c",
   "position": {
-    "x": 972.0,
+    "x": 30,
     "y": 2040.0,
     "z": 41000,
     "height": 300,
@@ -42,12 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leave Balance (days)"
+                  "Property": "Leave Liability"
                 }
               },
-              "queryRef": "_Measures.Leave Balance (days)",
-              "nativeQueryRef": "Leave Balance (days)",
-              "displayName": "Leave balance (days)"
+              "queryRef": "_Measures.Leave Liability",
+              "nativeQueryRef": "Leave Liability",
+              "displayName": "Leave liability (SAR)"
             }
           ]
         }
@@ -131,7 +131,14 @@
             "labelDisplayUnits": {
               "expr": {
                 "Literal": {
-                  "Value": "1D"
+                  "Value": "1000000D"
+                }
+              }
+            },
+            "labelPrecision": {
+              "expr": {
+                "Literal": {
+                  "Value": "1L"
                 }
               }
             }
@@ -179,7 +186,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Leave balance by month (days)'"
+                  "Value": "'Leave liability by month'"
                 }
               }
             }

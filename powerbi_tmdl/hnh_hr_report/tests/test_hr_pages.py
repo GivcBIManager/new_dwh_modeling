@@ -1348,7 +1348,7 @@ def test_pay_and_cost_by_grade_ranked():
 
 def test_absence_sections_have_their_own_slicers():
     """User request 2026-11-05: Absence days (Absence category and type slicers) and Leave balance and liability
-    (Leave plan slicer); a section's slicers reach its own visuals only."""
+    (Leave plan and Source slicers: Fusion or Oasis); a section's slicers reach its own visuals only."""
     from model import interaction_indexes
     page = _page("absence")
     headings = [v for v in page.visuals if v.sample == "textbox" and v.y > 162]
@@ -1357,7 +1357,7 @@ def test_absence_sections_have_their_own_slicers():
     split = headings[1].y
     slicers = {v.roles["Values"][0]: v for v in page.visuals if v.sample == "slicerDropdown" and v.y > 162}
     assert set(slicers) == {col("Absence Type", "Absence Category"), col("Absence Type", "Absence Type Name"),
-                            col("Leave Balances", "Absence Plan Name")}
+                            col("Leave Balances", "Absence Plan Name"), col("Leave Balances", "Source")}
     no_filter = {(s, t) for s, t, k in interaction_indexes(page) if k == "NoFilter"}
     for field, s in slicers.items():
         mine = (lambda v: v.y < split) if field.table == "Absence Type" else (lambda v: v.y > split)

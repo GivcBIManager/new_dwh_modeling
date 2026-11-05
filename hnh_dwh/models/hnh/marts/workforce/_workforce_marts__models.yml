@@ -194,6 +194,8 @@ models:
       future). Monthly KPIs must filter is_latest_in_month = 1, current or latest-balance KPIs is_current_balance = 1
       (latest closed period, i.e. before today), and closed-period reporting is_closed_period = 1; summing all rows
       overstates the liability. Liability only exists for annual-leave plans with a salary.
+      Oasis (2026-11-05): an employee-month without a Fusion annual-leave balance has one month-end row from
+      int_oasis_leave_balance_monthly (source Oasis, plan Oasis Annual Leave); source says which system a row is from.
     columns:
       - name: leave_balance_key
         tests: [unique, not_null]

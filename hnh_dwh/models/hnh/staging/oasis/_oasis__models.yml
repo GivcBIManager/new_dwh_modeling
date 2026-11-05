@@ -68,6 +68,14 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, staff_contract_no]
+  - name: stg_oasis__staff_vacations
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, staff_vacation_id]
+  - name: stg_oasis__vacation_types
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, vacation_type_id]
   - name: stg_oasis__personnel_documents
     tests:
       - hnh_unique_combination:

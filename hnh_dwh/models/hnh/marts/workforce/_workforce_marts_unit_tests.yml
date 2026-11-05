@@ -230,6 +230,9 @@ unit_tests:
       annual leave but never paid → salary and liability null. Person 4: balance at 2026-08-29 takes the salary of 202605
       (Basic 3,000), skipping the adjustment-only month 202608 (Basic -500), the later month 202609, a parallel-run row
       and an unlinked row. Person 5: two accrual periods in July 2026 → only the later one is latest in month and current.
+      Oasis: person 6 has no Fusion balance, so the Oasis balance of July 2026 (12 days) is added as one month-end row
+      (plan Oasis Annual Leave, latest in month, not current: July is not the last closed month); person 1's Oasis
+      balance of July 2026 is left out because Fusion has an annual-leave balance that month.
     model: fact_leave_balance_monthly
     given:
       - input: ref('stg_fusion__absence_balances')
@@ -266,14 +269,22 @@ unit_tests:
           select c as pay_category, toUInt8(rec) as is_recurring
           from values('c String, rec UInt8', ('Basic', 1), ('Housing', 1), ('Transport', 1), ('Food', 1), ('Clinical allowances', 1),
               ('Other allowances', 1), ('Overtime', 0))
+      - input: ref('int_oasis_leave_balance_monthly')
+        format: sql
+        rows: |
+          select toInt64(bitShiftRight(cityHash64(concat(toString(toInt64(p)),'|')),1)) as employee_key, toUInt8(2) as branch_key,
+                 toDate('2026-07-31') as month_end, toNullable(toInt64(500 + p)) as staff_contract_no, toFloat64(b) as begin_balance,
+                 toFloat64(1.75) as accrued, toFloat64(0) as used, toFloat64(b + 1.75) as end_balance
+          from values('p UInt32, b Float64', (1, 30), (6, 10.25))
     expect:
       rows:
-        - {end_balance: 15, is_annual_plan: 1, monthly_salary: 7500, daily_rate: 250, leave_liability_amount: 3750, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
-        - {end_balance: 4, is_annual_plan: 0, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
-        - {end_balance: 10, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
-        - {end_balance: 20, is_annual_plan: 1, monthly_salary: 3000, daily_rate: 100, leave_liability_amount: 2000, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
-        - {end_balance: 7, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 0, is_current_balance: 0}
-        - {end_balance: 8, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {source: Fusion, end_balance: 15, is_annual_plan: 1, monthly_salary: 7500, daily_rate: 250, leave_liability_amount: 3750, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {source: Fusion, end_balance: 4, is_annual_plan: 0, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {source: Fusion, end_balance: 10, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {source: Fusion, end_balance: 20, is_annual_plan: 1, monthly_salary: 3000, daily_rate: 100, leave_liability_amount: 2000, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {source: Fusion, end_balance: 7, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 0, is_current_balance: 0}
+        - {source: Fusion, end_balance: 8, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 1}
+        - {source: Oasis, end_balance: 12, is_annual_plan: 1, monthly_salary: null, daily_rate: null, leave_liability_amount: null, is_closed_period: 1, is_latest_in_month: 1, is_current_balance: 0}
 
   - name: hnh_fact_recruiting_requisition_keeps_hospitals_and_head_office
     description: >

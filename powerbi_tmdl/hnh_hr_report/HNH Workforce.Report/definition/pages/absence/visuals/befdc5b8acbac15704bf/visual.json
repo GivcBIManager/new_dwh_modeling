@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "befdc5b8acbac15704bf",
   "position": {
-    "x": 30,
-    "y": 896.0,
+    "x": 972.0,
+    "y": 572.0,
     "z": 31000,
     "height": 300,
     "width": 918.0,
     "tabOrder": 31000
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,15 +20,29 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "Absence Type"
                     }
                   },
-                  "Property": "Year Month Name"
+                  "Property": "Absence Category"
                 }
               },
-              "queryRef": "Date.Year Month Name",
-              "nativeQueryRef": "Year Month Name",
+              "queryRef": "Absence Type.Absence Category",
+              "nativeQueryRef": "Absence Category",
               "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Absence Type"
+                    }
+                  },
+                  "Property": "Absence Type Name"
+                }
+              },
+              "queryRef": "Absence Type.Absence Type Name",
+              "nativeQueryRef": "Absence Type Name"
             }
           ]
         },
@@ -42,12 +56,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Sick Leave Rate %"
+                  "Property": "Absence Days"
                 }
               },
-              "queryRef": "_Measures.Sick Leave Rate %",
-              "nativeQueryRef": "Sick Leave Rate %",
-              "displayName": "Sick leave rate"
+              "queryRef": "_Measures.Absence Days",
+              "nativeQueryRef": "Absence Days",
+              "displayName": "Absence days"
             }
           ]
         }
@@ -56,16 +70,16 @@
         "sort": [
           {
             "field": {
-              "Column": {
+              "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "Date"
+                    "Entity": "_Measures"
                   }
                 },
-                "Property": "Year Month Name"
+                "Property": "Absence Days"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -114,6 +128,13 @@
                   "Value": "false"
                 }
               }
+            },
+            "maxMarginFactor": {
+              "expr": {
+                "Literal": {
+                  "Value": "40L"
+                }
+              }
             }
           }
         }
@@ -137,32 +158,6 @@
             }
           }
         }
-      ],
-      "markers": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "lineStyles": [
-        {
-          "properties": {
-            "showMarker": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            }
-          }
-        }
       ]
     },
     "visualContainerObjects": {
@@ -179,7 +174,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Sick leave rate by month'"
+                  "Value": "'Absence days by category, then type'"
                 }
               }
             }
@@ -188,140 +183,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "75781739ff6474aff837",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Date"
-              }
-            },
-            "Property": "Month Offset"
-          }
-        },
-        "type": "Categorical",
-        "filter": {
-          "Version": 2,
-          "From": [
-            {
-              "Name": "d",
-              "Entity": "Date",
-              "Type": 0
-            }
-          ],
-          "Where": [
-            {
-              "Condition": {
-                "In": {
-                  "Expressions": [
-                    {
-                      "Column": {
-                        "Expression": {
-                          "SourceRef": {
-                            "Source": "d"
-                          }
-                        },
-                        "Property": "Month Offset"
-                      }
-                    }
-                  ],
-                  "Values": [
-                    [
-                      {
-                        "Literal": {
-                          "Value": "1L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "2L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "3L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "4L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "5L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "6L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "7L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "8L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "9L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "10L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "11L"
-                        }
-                      }
-                    ],
-                    [
-                      {
-                        "Literal": {
-                          "Value": "12L"
-                        }
-                      }
-                    ]
-                  ]
-                }
-              }
-            }
-          ]
-        },
-        "howCreated": "User"
-      }
-    ]
   }
 }

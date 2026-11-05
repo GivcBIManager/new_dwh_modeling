@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "84bb0eab89f9bfb515ef",
   "position": {
-    "x": 1160.4,
+    "x": 783.6,
     "y": 1888.0,
     "z": 38000,
     "height": 128,
@@ -23,12 +23,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Current Leave Balance (days)"
+                  "Property": "Average Leave Balance (days)"
                 }
               },
-              "queryRef": "_Measures.Current Leave Balance (days)",
-              "nativeQueryRef": "Current Leave Balance (days)",
-              "displayName": "Leave balance now (days)"
+              "queryRef": "_Measures.Average Leave Balance (days)",
+              "nativeQueryRef": "Average Leave Balance (days)",
+              "displayName": "Average leave balance (days)"
             }
           ]
         }
@@ -126,7 +126,7 @@
                 "Entity": "_Measures"
               }
             },
-            "Property": "Current Leave Balance (days)"
+            "Property": "Average Leave Balance (days)"
           }
         },
         "type": "Advanced",
@@ -153,7 +153,7 @@
                               "Source": "_"
                             }
                           },
-                          "Property": "Current Leave Balance (days)"
+                          "Property": "Average Leave Balance (days)"
                         }
                       },
                       "Right": {

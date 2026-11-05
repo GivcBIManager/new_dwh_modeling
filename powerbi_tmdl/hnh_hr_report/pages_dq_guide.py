@@ -136,7 +136,8 @@ GUIDE_SECTIONS = [
         "Promotions are the Fusion PROMOTION action (HR to confirm).",
         "FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced by 1.",
         "Pay by grade uses each person's grade in the month's headcount; pay of people without one is left out.",
-        "Leave balances come from Fusion absence plans; Oasis records leave taken, not balances.",
+        "Leave balances come from Fusion absence plans. Where Fusion has none for a person and month, Oasis gives "
+        "it: the annual leave earned in the current contract minus the leave taken against it.",
         "Vacancy rate: open requisitions divided by the budgeted FTE of the year. It reads No budgeted FTE until "
         "the budget is loaded.",
         "Story rates show 2 decimals; the largest change names the branch that moved most.",

@@ -2,45 +2,46 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "f2417ca130acfb33e38e",
   "position": {
-    "x": 30,
-    "y": 1722.0,
+    "x": 1304.0,
+    "y": 462.0,
     "z": 50000,
-    "height": 64,
-    "width": 1860,
+    "height": 44,
+    "width": 44,
     "tabOrder": 50000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "image",
     "objects": {
-      "general": [
+      "image": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Leave balance and liability",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI Semibold",
-                      "fontSize": "16pt",
-                      "color": "#0A1E32"
+            "sourceFile": {
+              "image": {
+                "name": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'hr_icon_pulse.svg'"
                     }
                   }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "From Fusion absence plans; Oasis records leave taken, not balances.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "11pt",
-                      "color": "#5B6B7D"
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hr_icon_pulse.svg"
                     }
                   }
-                ]
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
+                    }
+                  }
+                }
               }
-            ]
+            }
           }
         }
       ]

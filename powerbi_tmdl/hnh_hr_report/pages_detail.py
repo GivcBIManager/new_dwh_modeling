@@ -107,6 +107,7 @@ EMPLOYEE_NAME = meas("HR Employee Name")  # one employee's Fusion name; blank wi
 ABSENCE_TYPE = col("Absence Type", "Absence Type Name")
 ABSENCE_CATEGORY = col("Absence Type", "Absence Category")
 LEAVE_PLAN = col("Leave Balances", "Absence Plan Name")
+LEAVE_SOURCE = col("Leave Balances", "Source")
 EMPLOYEE_LIST = "employee_list"
 # a grade ranking leaves out the employees without a grade in the month's headcount (Unknown: before 2026, Oasis
 # staff with no Fusion employee)
@@ -661,8 +662,10 @@ def payroll_page() -> Page:
 
 def absence_page() -> Page:
     """Absence & leave in two sections (user request 2026-11-05): absence days, with Absence category and Absence type
-    slicers, and leave balance and liability, with a Leave plan slicer; each section's slicers reach its own visuals
-    only. Leave balances come from Fusion's absence plans: Oasis records leave taken, not balances. Not by department
+    slicers, and leave balance and liability, with Leave plan and Source slicers; each section's slicers reach its own
+    visuals only. Leave balances are Fusion's absence plans and, for an employee and month without a Fusion annual-leave
+    balance, the Oasis annual-leave balance (earned in the current contract minus taken; plan Oasis Annual Leave,
+    source Oasis; user request 2026-11-05). Not by department
     (ruling R26): the absence and leave facts have no HR department."""
     days = section(
         "Absence days",
@@ -688,8 +691,8 @@ def absence_page() -> Page:
           bars("Leave balance by branch (days)", BRANCH_NAME, ["Leave Balance (days)"], pay=True)],
          [bars("Leave balance by leave plan (days)", LEAVE_PLAN, ["Leave Balance (days)"], pay=True),
           bars("Leave liability by leave plan", LEAVE_PLAN, ["Leave Liability"], pay=True)]],
-        subtitle="From Fusion absence plans; Oasis records leave taken, not balances.",
-        slicers=[(LEAVE_PLAN, "Leave plan")])
+        subtitle="Fusion absence plans; Oasis annual leave where Fusion has no balance.",
+        slicers=[(LEAVE_PLAN, "Leave plan"), (LEAVE_SOURCE, "Source")])
     return detail_page("absence", "Absence & leave", [days, leave])
 
 

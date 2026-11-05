@@ -1,6 +1,11 @@
 /// Leave accrual periods with balance and liability; pay access only.
 table 'Leave Balances'
 
+	column Source
+		dataType: string
+		summarizeBy: none
+		sourceColumn: source
+
 	column 'Branch Key'
 		dataType: int64
 		isHidden

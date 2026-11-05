@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "b45cfad199cb29f20b49",
   "position": {
-    "x": 30,
-    "y": 2686.0,
+    "x": 972.0,
+    "y": 2364.0,
     "z": 44000,
-    "height": 220,
+    "height": 298,
     "width": 918.0,
     "tabOrder": 44000
   },
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Leave Balances"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "Absence Plan Name"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "Leave Balances.Absence Plan Name",
-              "nativeQueryRef": "Absence Plan Name",
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
               "active": true
             }
           ]
@@ -160,7 +160,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Leave balance by leave plan (days)'"
+                  "Value": "'Leave balance by branch (days)'"
                 }
               }
             }

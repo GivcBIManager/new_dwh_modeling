@@ -5,5 +5,6 @@ select
     toDate32(start_date)               as started_at,
     toDate32(end_date)                 as ended_at,
     toDate32(termination_date)         as terminated_at,
-    {{ hnh_id('termination_reason_code') }} as termination_reason_code
+    {{ hnh_id('termination_reason_code') }} as termination_reason_code,
+    toFloat64(ifNull(no_of_days_leave, 0))  as leave_days           -- annual leave earned per year of the contract
 from {{ hnh_oasis_source('staff_contracts') }} final
