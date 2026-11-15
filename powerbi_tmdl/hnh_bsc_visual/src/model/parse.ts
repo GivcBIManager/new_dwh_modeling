@@ -51,6 +51,14 @@ function tally(rows: KpiRow[]): Record<StateKey, number> {
     return counts;
 }
 
+/** A pillar's share of the scorecard: the sum of its KPI weights, which is the hospital's category split for one
+ * hospital and the corporate split for several; the catalogue's pillar weight when no KPI carries a weight. */
+export function pillarShare(rows: KpiRow[], configured: number | null): number | null {
+    let sum = 0;
+    for (const r of rows) if (typeof r.weight === "number" && Number.isFinite(r.weight) && r.weight > 0) sum += r.weight;
+    return sum > 0 ? sum : configured;
+}
+
 function emptyModel(guard: string | null): ViewModel {
     return { pillars: [], overallScore: null, overallByBranch: [], label: "", thresholds: { base: 85, slope: 0.6, good: 85, watch: 70 }, branches: [], guardMessage: guard };
 }
@@ -165,11 +173,11 @@ export function parseDataView(dv: DataView): ViewModel {
         const firstRows = hasBranch ? list.filter(k => k.seriesIndex === 0) : list;
         const counts = tally(firstRows);
         pillars.push({
-            name, order: list[0].pillarOrder, weight: list[0].pillarWeight, question: list[0].pillarQuestion,
+            name, order: list[0].pillarOrder, weight: pillarShare(firstRows, list[0].pillarWeight), question: list[0].pillarQuestion,
             score: pillarScore(firstRows), trend: pillarTrend(firstRows), kpis: list, counts,
             byBranch: branches.map((b, bi) => {
                 const br = list.filter(k => k.seriesIndex === bi);
-                return { branch: b, score: pillarScore(br), counts: tally(br) };
+                return { branch: b, score: pillarScore(br), weight: pillarShare(br, list[0].pillarWeight), counts: tally(br) };
             }),
         });
     }
@@ -191,7 +199,7 @@ export function parseDataView(dv: DataView): ViewModel {
         overallScore: overallScore(pillars),
         overallByBranch: branches.map((b, bi) => ({
             branch: b,
-            score: overallScore(pillars.map(p => ({ ...p, score: p.byBranch[bi].score }))),
+            score: overallScore(pillars.map(p => ({ ...p, score: p.byBranch[bi].score, weight: p.byBranch[bi].weight }))),
         })),
         label,
         thresholds: { base: first("scoreBase", 85), slope: first("scoreSlope", 0.6), good: first("goodFrom", 85), watch: first("watchFrom", 70) },

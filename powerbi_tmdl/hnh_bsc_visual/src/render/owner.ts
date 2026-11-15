@@ -17,8 +17,9 @@ export interface OwnerUi {
     pick: string | null;
 }
 
-/** KPI list defaults to Owned + co-owned, so a co-owner's card never opens an empty list. */
-export const DEFAULT_OWNER_UI: OwnerUi = { score: "weighted", tier: "csuite", scope: "co", pick: null };
+/** Every owner by default (the finance, audit and governance owners are not C-suite); KPI list Owned + co-owned, so a
+ * co-owner's card never opens an empty list. */
+export const DEFAULT_OWNER_UI: OwnerUi = { score: "weighted", tier: "all", scope: "co", pick: null };
 
 /** The cards the strip shows for this state. */
 export function stripCards(vm: ViewModel, ou: OwnerUi): OwnerCard[] {
@@ -53,19 +54,28 @@ export function achievementState(value: number | null): Group {
     return shown >= 100 ? "good" : shown >= 85 ? "warn" : "bad";
 }
 
+/** How the card's value is made: own KPIs 70% and Net Revenue 30%, or the own KPIs alone when Net Revenue has no result. */
+export function mixText(c: OwnerCard): string | null {
+    if (c.value === null || c.own === null) return null;
+    return c.shared === null ? `Own KPIs ${Math.round(c.own)}% (Net Revenue not scored)`
+        : `Own KPIs ${Math.round(c.own)}% × 70% + Net Revenue ${Math.round(c.shared)}% × 30%`;
+}
+
 function card(c: OwnerCard, ou: OwnerUi): HTMLElement {
     const shown = c.value === null ? "no data" : `${Math.round(c.value)}%`;
     const st = achievementState(c.value);
     const sub = ou.score === "hitrate" ? `${c.counted} of ${c.total} KPIs on target` : `${c.counted} of ${c.total} KPIs scored`;
+    const mix = mixText(c);
     return el("button", {
         type: "button", class: "own-card", "data-owner-card": c.owner, "aria-pressed": String(ou.pick === c.owner),
-        "aria-label": `${c.owner}: achievement ${shown}, ${SCORE_WORD[st]}, ${sub}`,
+        "aria-label": `${c.owner}: achievement ${shown}, ${SCORE_WORD[st]}, ${sub}${mix ? `, ${mix}` : ""}`,
     }, [
         el("span", { class: "own-name" }, [c.owner]),
         achievementGauge(c.value, 180, c.owner),
         // The gauge's colour as a shape and a word too.
         stateChip(st, SCORE_WORD[st]),
         el("span", { class: "own-sub" }, [sub]),
+        mix ? el("span", { class: "own-mix" }, [mix]) : null,
     ]);
 }
 

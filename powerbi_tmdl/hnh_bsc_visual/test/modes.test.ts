@@ -17,16 +17,17 @@ function row(code: string, pillar: string, order: number, w: number, extra: Fixt
     return { ...base, kpi: code, kpiName: code + " name", shortLabel: code, pillar, pillarOrder: order, pillarWeight: w, pillarQuestion: pillar + " question?",
         objectiveCode: "O1", objectiveTitle: "Obj", objectiveOrder: 1, displayOrder: 1, owner: "Someone", ...extra };
 }
-const ok = (score: number, st = "On track") =>
-    payload({ actual: 0.5, target: 0.5, variance: 0, score, state: st, weight: 1, trend: [score - 1, score], targetTrend: [0.5, 0.5], scoreTrend: [score - 1, score] });
+/** weight: the KPI's share of the scorecard; a pillar's weights add up to its share (Financial 3 x 0.1 = 30%). */
+const ok = (score: number, st = "On track", weight = 0.1) =>
+    payload({ actual: 0.5, target: 0.5, variance: 0, score, state: st, weight, trend: [score - 1, score], targetTrend: [0.5, 0.5], scoreTrend: [score - 1, score] });
 
 const rows: FixtureRow[] = [
     row("F2", "Financial", 1, 0.3, { kpiType: "Supporting", displayOrder: 1, payload: ok(90), owner: "CFO" }),
     row("F1", "Financial", 1, 0.3, { displayOrder: 2, payload: ok(60, "At risk"), owner: "CFO" }),
     row("F3", "Financial", 1, 0.3, { displayOrder: 3, objectiveCode: "O2", objectiveTitle: "Second", payload: ok(80, "Watch"), owner: "Controller" }),
-    row("C1", "Customer", 2, 0.2, { payload: ok(88) }),
-    row("I1", "Internal Process", 3, 0.35, { payload: ok(75, "Watch") }),
-    row("L1", "Learning & Growth", 4, 0.15, { payload: ok(95) }),
+    row("C1", "Customer", 2, 0.2, { payload: ok(88, "On track", 0.2) }),
+    row("I1", "Internal Process", 3, 0.35, { payload: ok(75, "Watch", 0.35) }),
+    row("L1", "Learning & Growth", 4, 0.15, { payload: ok(95, "On track", 0.15) }),
 ];
 const mount = () => document.createElement("div");
 const emptyVm = (guard: string | null): ViewModel => ({
@@ -480,19 +481,20 @@ describe("owner overview strip", () => {
     const pressed = (root: HTMLElement, group: string) =>
         root.querySelector(`button[data-owner-toggle="${group}"][aria-pressed="true"]`)!.getAttribute("data-value");
 
-    it("defaults to Weighted, C-Suite and KPI list Owned + co-owned", () => {
-        expect(DEFAULT_OWNER_UI).toEqual({ score: "weighted", tier: "csuite", scope: "co", pick: null });
+    it("defaults to Weighted, All owners and KPI list Owned + co-owned", () => {
+        expect(DEFAULT_OWNER_UI).toEqual({ score: "weighted", tier: "all", scope: "co", pick: null });
         const root = draw();
         expect(pressed(root, "score")).toBe("weighted");
-        expect(pressed(root, "tier")).toBe("csuite");
+        expect(pressed(root, "tier")).toBe("all");
         expect(pressed(root, "scope")).toBe("co");
         expect([...root.querySelectorAll("button[data-owner-toggle]")].map(b => b.textContent))
             .toEqual(["Weighted", "On-target", "C-Suite", "All owners", "Owned", "Owned + co-owned"]);
         expect([...root.querySelectorAll(".own-lbl")].map(l => l.textContent)).toEqual(["Score", "Owners", "KPI list"]);
     });
-    it("draws one card per C-suite owner in C-suite order, each with an Achievement gauge in %", () => {
+    it("draws one card per owner, the C-suite first in its order, each with an Achievement gauge in %", () => {
         const root = draw();
-        expect(cards(root).map(c => c.dataset.ownerCard)).toEqual(["CEO", "COO", "CFO"]);
+        expect(cards(root).map(c => c.dataset.ownerCard)).toEqual(["CEO", "COO", "CFO", "Quality Manager"]);
+        expect(cards(draw({ tier: "csuite" })).map(c => c.dataset.ownerCard)).toEqual(["CEO", "COO", "CFO"]);
         const cfo = cards(root)[2];
         expect(cfo.tagName).toBe("BUTTON");
         expect(cfo.getAttribute("aria-pressed")).toBe("false");
@@ -510,7 +512,8 @@ describe("owner overview strip", () => {
         expect(chip(cards(root)[2]).querySelector(".mark.good")).not.toBeNull();
         expect(chip(cards(root)[0]).textContent).toBe("Watch");
         expect(chip(cards(draw({ score: "hitrate" }))[2]).textContent).toBe("At risk");
-        expect(cards(root)[2].getAttribute("aria-label")).toBe("CFO: achievement 105%, On track, 2 of 2 KPIs scored");
+        expect(cards(root)[2].getAttribute("aria-label"))
+            .toBe("CFO: achievement 105%, On track, 2 of 2 KPIs scored, Own KPIs 105% (Net Revenue not scored)");
     });
     it("On-target shows the hit rate", () => {
         const root = draw({ score: "hitrate" });
@@ -560,9 +563,21 @@ describe("owner overview strip", () => {
         expect(co.querySelectorAll(".owners .owner").length).toBe(1);
         expect(co.querySelectorAll(".owners .owner .co-tag").length).toBe(1);
     });
+    it("blends every card 70% own KPIs and 30% Net Revenue Achievement, and says so under the gauge", () => {
+        const rows = [...ovRows, row("FIN_NET_REVENUE", "Financial", 1, 0.5, { owner: "CMOO", displayOrder: 9, payload: pay(0.85, 1, -0.15) })];
+        const root = mount();
+        renderView(root, parseDataView(makeDataView(rows)), "owner", ui());
+        const cfo = root.querySelector<HTMLElement>('.own-card[data-owner-card="CFO"]')!;
+        // CFO own: (1.2 x 3 + 0.6 x 1) / 4 = 105%; Net Revenue 85%: 0.7 x 105 + 0.3 x 85 = 99
+        expect(cfo.querySelector(".gauge text")!.textContent).toBe("99%");
+        expect(cfo.querySelector(".own-mix")!.textContent).toBe("Own KPIs 105% × 70% + Net Revenue 85% × 30%");
+        // The Net Revenue owner gets the same rule: own 85%, so 85%.
+        expect(root.querySelector('.own-card[data-owner-card="CMOO"] .gauge text')!.textContent).toBe("85%");
+    });
     it("says so when the selection has no C-suite owner", () => {
         const root = mount();
-        renderView(root, parseDataView(makeDataView([row("X1", "Financial", 1, 1, { owner: "Quality Manager", payload: pay(1, 1, 0) })])), "owner", ui());
+        renderView(root, parseDataView(makeDataView([row("X1", "Financial", 1, 1, { owner: "Quality Manager", payload: pay(1, 1, 0) })])), "owner",
+            ui({ owner: { ...DEFAULT_OWNER_UI, tier: "csuite" } }));
         expect(root.querySelectorAll(".own-card").length).toBe(0);
         expect(root.querySelector(".own-strip")!.textContent).toContain("No C-suite owner");
     });

@@ -2,15 +2,21 @@ import type { KpiRow } from "./types";
 
 /**
  * Owner achievement, as the old report's ownership overview (handover Hayat_BSC_Full_RS: _v9KpiUnitScore,
- * _varianceUnit, _ceilingUnit, _kpiCanJudge, _kpiOnTarget, _computeOwnerStats, _CSUITE_OWNERS).
+ * _varianceUnit, _ceilingUnit, _kpiCanJudge, _kpiOnTarget, _computeOwnerStats).
  * Weighted = weight-weighted mean of KPI unit scores (no cap); On-target = share of judgeable KPIs on or past target.
+ * An owner's card blends 70% their own KPIs with 30% KPI 1, Net Revenue Achievement (the user's rule, 2026-11-12).
  */
 export type ScoreMode = "weighted" | "hitrate";
 export type OwnerTier = "csuite" | "all";
 /** "owned": the owner's KPIs; "co": the owner's KPIs plus those they co-own. */
 export type OwnerScope = "owned" | "co";
 
-export const CSUITE = ["CEO", "COO", "CMO", "CFO", "CHRO", "CIO", "CSO"] as const;
+/** The C-suite roles, in strip order (the KPI owners of 2026-11-12, then roles of earlier ownership maps). */
+export const CSUITE = ["CEO", "CMOO", "CMO", "COO", "CFO", "CCO", "CPEO", "CHRO", "CIO", "CSO"] as const;
+
+/** KPI 1, Net Revenue Achievement: SHARED_SHARE of every owner's score. */
+export const SHARED_KPI = "FIN_NET_REVENUE";
+export const SHARED_SHARE = 0.3;
 
 const norm = (name: string) => String(name ?? "").replace(/\s+/g, " ").trim().toUpperCase();
 const csuiteIndex = (name: string) => (CSUITE as readonly string[]).indexOf(norm(name));
@@ -114,10 +120,31 @@ export function ownersOf(rows: KpiRow[], scope: OwnerScope): string[] {
     return [...names].sort((a, b) => (rank(a) - rank(b)) || a.localeCompare(b));
 }
 
+/** An owner's score: (1 - SHARED_SHARE) their own KPIs + SHARED_SHARE Net Revenue Achievement. Without a Net Revenue
+ * result the owner's own result alone; without an own result, null (Net Revenue alone says nothing about the owner). */
+export function blend(own: number | null, shared: number | null): number | null {
+    if (own === null) return null;
+    return shared === null ? own : (1 - SHARED_SHARE) * own + SHARED_SHARE * shared;
+}
+
+/** Net Revenue Achievement's part of every card, in percent: its unit score (Weighted) or 100 / 0 for on or off target
+ * (On-target); null when it cannot be scored or judged, or is not in the rows. */
+export function sharedPart(rows: KpiRow[], mode: ScoreMode): number | null {
+    const r = rows.find(x => x.code === SHARED_KPI);
+    if (!r) return null;
+    if (mode === "hitrate") return canJudge(r) ? (onTarget(r) ? 100 : 0) : null;
+    const u = unitScore(r);
+    return u === null ? null : u * 100;
+}
+
 export interface OwnerCard {
     owner: string;
-    /** Achievement in percent, or null when nothing can be scored or judged. */
+    /** The owner's score in percent (70% own KPIs + 30% Net Revenue), or null when none of their KPIs can be scored or judged. */
     value: number | null;
+    /** The owner's own KPIs alone, in percent. */
+    own: number | null;
+    /** Net Revenue Achievement's part, in percent; null when it has no result. */
+    shared: number | null;
     /** KPIs scored (weighted) or on target (hit rate). */
     counted: number;
     /** KPIs in scope (weighted) or judged (hit rate). */
@@ -125,17 +152,21 @@ export interface OwnerCard {
 }
 
 /** One card per owner or co-owner in the tier, in strip order. A card always counts the owned and co-owned KPIs
- * (as the old report's _computeOwnerStats); the Owned / Owned + co-owned toggle changes only the KPI list. */
+ * (as the old report's _computeOwnerStats); the Owned / Owned + co-owned toggle changes only the KPI list. The value
+ * blends the owner's own result with Net Revenue Achievement (blend). */
 export function ownerCards(rows: KpiRow[], o: { score: ScoreMode; tier: OwnerTier }): OwnerCard[] {
+    const shared = sharedPart(rows, o.score);
     return ownersOf(rows, "co")
         .filter(n => o.tier === "all" || isCsuite(n))
         .map(owner => {
             const list = kpisOf(rows, owner, "co");
             if (o.score === "hitrate") {
                 const judged = list.filter(canJudge);
-                return { owner, value: hitRate(list), counted: judged.filter(onTarget).length, total: judged.length };
+                const own = hitRate(list);
+                return { owner, value: blend(own, shared), own, shared, counted: judged.filter(onTarget).length, total: judged.length };
             }
             const scored = list.filter(r => unitScore(r) !== null && num(r.weight) && r.weight > 0);
-            return { owner, value: weightedAchievement(list), counted: scored.length, total: list.length };
+            const own = weightedAchievement(list);
+            return { owner, value: blend(own, shared), own, shared, counted: scored.length, total: list.length };
         });
 }

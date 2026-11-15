@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
     CSUITE, isCsuite, varianceUnit, ceilingUnit, isBudgetVariance, unitScore, canJudge, onTarget,
-    weightedAchievement, hitRate, achievement, kpisOf, ownersOf, ownerCards,
+    weightedAchievement, hitRate, achievement, kpisOf, ownersOf, ownerCards, blend, sharedPart, SHARED_KPI,
 } from "../src/model/achievement";
 import type { KpiRow } from "../src/model/types";
 
@@ -141,8 +141,10 @@ describe("hit rate (handover _kpiCanJudge / _kpiOnTarget)", () => {
 });
 
 describe("owners", () => {
-    it("C-suite is CEO, COO, CMO, CFO, CHRO, CIO, CSO, matched without regard to case or spacing", () => {
-        expect([...CSUITE]).toEqual(["CEO", "COO", "CMO", "CFO", "CHRO", "CIO", "CSO"]);
+    it("C-suite is the KPI owners' C-roles of 2026-11-12 and the earlier ones, matched without regard to case or spacing", () => {
+        expect([...CSUITE]).toEqual(["CEO", "CMOO", "CMO", "COO", "CFO", "CCO", "CPEO", "CHRO", "CIO", "CSO"]);
+        expect(isCsuite("cpeo")).toBe(true);
+        expect(isCsuite("VPF")).toBe(false);
         expect(isCsuite(" cfo ")).toBe(true);
         expect(isCsuite("Quality Manager")).toBe(false);
     });
@@ -177,6 +179,28 @@ describe("owners", () => {
     });
     it("ownerCards: an owner with nothing scoreable has a null value", () => {
         const c = ownerCards([k({ owner: "CIO", actual: null })], { score: "weighted", tier: "csuite" });
-        expect(c).toEqual([{ owner: "CIO", value: null, counted: 0, total: 1 }]);
+        expect(c).toEqual([{ owner: "CIO", value: null, own: null, shared: null, counted: 0, total: 1 }]);
+    });
+    it("blend: 70% own + 30% Net Revenue; the own result alone without Net Revenue; null without an own result", () => {
+        expect(blend(90, 120)).toBeCloseTo(99);
+        expect(blend(90, null)).toBe(90);
+        expect(blend(null, 120)).toBeNull();
+    });
+    it("sharedPart: Net Revenue's unit score in % (Weighted) or 100 / 0 (On-target); null when absent or unscored", () => {
+        const nr = (o: Partial<KpiRow>) => k({ code: SHARED_KPI, owner: "CMOO", ...o });
+        expect(sharedPart([nr({ actual: 1.2, target: 1, variance: 0.2 })], "weighted")).toBeCloseTo(120);
+        expect(sharedPart([nr({ actual: 1.2, target: 1, variance: 0.2 })], "hitrate")).toBe(100);
+        expect(sharedPart([nr({ actual: 0.8, target: 1, variance: -0.2 })], "hitrate")).toBe(0);
+        expect(sharedPart([nr({ actual: null })], "weighted")).toBeNull();
+        expect(sharedPart([k({})], "weighted")).toBeNull();
+    });
+    it("ownerCards blend each owner with Net Revenue, the Net Revenue owner included", () => {
+        const rows = [k({ owner: "CCO", actual: 0.9, target: 1, variance: -0.1 }), k({ owner: "CCO", actual: 0.5, target: 1, variance: -0.5 }),
+            k({ code: SHARED_KPI, owner: "CMOO", actual: 1.2, target: 1, variance: 0.2 })];
+        const w = ownerCards(rows, { score: "weighted", tier: "all" });
+        expect(w.find(c => c.owner === "CCO")).toMatchObject({ own: expect.closeTo(70), shared: expect.closeTo(120), value: expect.closeTo(85) });
+        expect(w.find(c => c.owner === "CMOO")!.value).toBeCloseTo(120);
+        const h = ownerCards(rows, { score: "hitrate", tier: "all" });
+        expect(h.find(c => c.owner === "CCO")).toMatchObject({ own: 0, shared: 100, value: 30 });
     });
 });

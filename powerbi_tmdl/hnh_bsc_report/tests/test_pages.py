@@ -967,8 +967,8 @@ def test_guide_page_copy():
     assert read[0] == "Read the scores and colours" and len(read) == 8
     assert "• On track: 85 or more." in read and "• Watch: 70 to 84." in read
     assert "• Needs attention lists the KPIs at risk, lowest score first." in read
-    assert read[-1] == ("• Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, "
-                        "below 85% at risk.")
+    assert read[-1] == ("• Owner view: each owner's score in % is 70% their own KPIs and 30% Net Revenue "
+                        "Achievement; 100% or more is on track, 85% to 99% watch, below 85% at risk.")
     deeper = texts_at(page, 1286, 336)
     assert deeper[0] == "Go deeper" and len(deeper) == 9
     assert deeper[1] == "• The tabs in the dark bar at the top move between the scorecard pages."
@@ -1006,10 +1006,14 @@ def test_definitions_page_copy():
     assert pillar[-1] == "• Hospital comparison ranks hospitals by these scores; equal rounded scores share a rank."
     owner = texts_at(page, 1286, 258)
     assert owner[0] == "Owner achievement (%)" and len(owner) == 5
+    assert owner[3] == ("• Owner score = 70% own KPIs + 30% KPI 1, Net Revenue Achievement (On-target: 100% if it "
+                        "is on target, else 0%). Without a Net Revenue result, the own KPIs alone.")
+    assert any("Primary KPI weighs twice a Supporting one" in t for t in pillar)
+    assert any("Anchor 18/33/33/16%, Ramp-Up 21/27/36/16%, Scale 20/33/32/15%" in t for t in pillar)
     assert owner[1] == ("• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual "
                         "where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target "
                         "KPIs, 100% less the distance from the target.")
-    assert owner[-1] == "• C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO."
+    assert owner[-1] == "• Owners are roles: CMOO, CMO, COO, CCO, CPEO, CHRO (C-suite), then IAD, S&G, VPF."
     for x in COLS:
         v = box(page, x, 258)
         assert (v.w, v.h) == (604, 300)
@@ -1019,7 +1023,7 @@ def test_definitions_page_copy():
     assert (box(page, 30, 582).w, box(page, 30, 582).h) == (1860, 54)
     (legend,) = texts_at(page, 1002, 660)
     assert legend.startswith("Better when: higher = higher is better · lower = lower is better")
-    assert legend.endswith("Weight: the KPI's corporate weight within its pillar.")
+    assert legend.endswith("Weight: the KPI's share of the scorecard (the hospital's, or corporate for several).")
     assert (box(page, 1002, 660).w, box(page, 1002, 660).h) == (888, 60)
 
 
@@ -1037,7 +1041,7 @@ def test_definitions_slicers_and_table():
     assert t.title == "Every active KPI"
     assert t.roles["Values"] == [
         col("BSC KPI", "KPI Num"), col("BSC KPI", "Pillar"), col("BSC KPI", "Objective Title"),
-        col("BSC KPI", "KPI Name"), col("BSC KPI", "Definition"), col("BSC KPI", "Direction"),
+        col("BSC KPI", "KPI Name"), col("BSC KPI", "KPI Type"), col("BSC KPI", "Definition"), col("BSC KPI", "Direction"),
         meas("BSC Target Basis"), meas("BSC KPI Weight"), col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners")]
     assert (t.sort, t.sort_dir) == (col("BSC KPI", "KPI Num"), "asc")
     (f,) = t.filters

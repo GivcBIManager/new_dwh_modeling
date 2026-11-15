@@ -1,29 +1,37 @@
 {{ config(order_by='(bsc_kpi_key, branch_key)') }}
 
--- Weight of each active KPI inside its pillar, per hospital (bsc ssas spec 6.2). A hospital with a 'branch:<id>'
--- profile uses only that profile: a KPI the profile leaves out weighs 0 (the handover profiles omit KPIs on purpose
--- and sum to 1). A hospital without any profile uses the 'corporate' profile. Branches 1-8.
+-- Weight of each active KPI as a share of the hospital's whole scorecard (a pillar's weights add up to the pillar's
+-- share), per hospital (bsc ssas spec 6.2). Each hospital uses one whole profile: its own 'branch:<id>' profile if
+-- there is one, else its scorecard category's 'category:<category>' profile (map_bsc_hospital_category), else the
+-- 'corporate' profile. A KPI the chosen profile leaves out weighs 0. Branches 1-8.
 with weights as (
     select profile, kpi_code, weight from {{ ref('stg_ref__bsc_weight') }}
 ),
 
-branches as (
-    select toUInt8(number + 1) as branch_key, concat('branch:', toString(number + 1)) as profile
-    from numbers(8)
+profiles as (
+    select distinct profile from weights
 ),
 
-profiled as (
-    select distinct profile from weights where startsWith(profile, 'branch:')
+branches as (
+    select toUInt8(number + 1) as branch_key from numbers(8)
+),
+
+chosen as (
+    select
+        b.branch_key as branch_key,
+        multiIf(bp.profile is not null, bp.profile, cp.profile is not null, cp.profile, 'corporate') as profile
+    from branches as b
+    left join {{ ref('stg_ref__bsc_hospital_category') }} as c on c.branch_id = b.branch_key
+    left join profiles as bp on bp.profile = concat('branch:', toString(b.branch_key))
+    left join profiles as cp on cp.profile = concat('category:', c.category)
 )
 
 select
     toInt64(bitShiftRight(cityHash64(concat(k.kpi_code, '|')), 1))  as bsc_kpi_key,
-    b.branch_key                                                    as branch_key,
-    toFloat64(if(p.profile is not null, ifNull(bw.weight, 0), ifNull(cw.weight, 0))) as weight
+    ch.branch_key                                                   as branch_key,
+    toFloat64(ifNull(w.weight, 0))                                  as weight
 from {{ ref('stg_ref__bsc_kpi') }} as k
-cross join branches as b
-left join profiled as p on p.profile = b.profile
-left join weights as bw on bw.profile = b.profile and bw.kpi_code = k.kpi_code
-left join (select kpi_code, weight from weights where profile = 'corporate') as cw on cw.kpi_code = k.kpi_code
+cross join chosen as ch
+left join weights as w on w.profile = ch.profile and w.kpi_code = k.kpi_code
 where k.status = 'active'
 {{ hnh_settings() }}

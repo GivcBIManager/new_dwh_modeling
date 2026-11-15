@@ -79,6 +79,20 @@
                       "Entity": "BSC KPI"
                     }
                   },
+                  "Property": "KPI Type"
+                }
+              },
+              "queryRef": "BSC KPI.KPI Type",
+              "nativeQueryRef": "KPI Type"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "BSC KPI"
+                    }
+                  },
                   "Property": "Definition"
                 }
               },

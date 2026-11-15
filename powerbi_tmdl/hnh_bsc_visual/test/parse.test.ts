@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseDataView, parsePayload, directionNote } from "../src/model/parse";
+import { parseDataView, parsePayload, directionNote, pillarShare } from "../src/model/parse";
 import { makeDataView, payload, FixtureRow } from "./fixtures";
 
 const base = { kpiType: "Primary", direction: "higher", valueFormat: "pct", kpiStatus: "active", valueSource: "measure",
@@ -33,12 +33,12 @@ describe("parsePayload", () => {
 
 describe("parseDataView", () => {
     const rows: FixtureRow[] = [
-        row("B2", "Customer", 2, 0.2, { kpiType: "Supporting", displayOrder: 1, payload: ok(60, 1, "At risk"), selectionLabel: "Hospital 6 | 2026-08" }),
-        row("A2", "Financial", 1, 0.3, { displayOrder: 2, payload: ok(90, 1) }),
-        row("A1", "Financial", 1, 0.3, { displayOrder: 1, payload: ok(80, 1, "Watch") }),
+        row("B2", "Customer", 2, 0.2, { kpiType: "Supporting", displayOrder: 1, payload: ok(60, 0.2, "At risk"), selectionLabel: "Hospital 6 | 2026-08" }),
+        row("A2", "Financial", 1, 0.3, { displayOrder: 2, payload: ok(90, 0.15) }),
+        row("A1", "Financial", 1, 0.3, { displayOrder: 1, payload: ok(80, 0.15, "Watch") }),
         row("A3", "Financial", 1, 0.3, { displayOrder: 3, kpiStatus: "parked", payload: ok(100, 0, "Parked") }),
         row("C1", "Learning & Growth", 4, 0.15, { payload: payload({ state: "No target" }) }),
-        row("D1", "Internal Process", 3, 0.35, { payload: ok(75, 1) }),
+        row("D1", "Internal Process", 3, 0.35, { payload: ok(75, 0.35) }),
     ];
 
     it("orders pillars and KPIs, computes pillar and overall scores", () => {
@@ -56,6 +56,23 @@ describe("parseDataView", () => {
         expect(vm.branches).toEqual([]);
     });
 
+    it("weights each pillar by its share of the hospital's scorecard: the sum of its KPI weights, per hospital", () => {
+        // Hospital A splits Financial 60 / Customer 40, hospital B 20 / 80 (category profiles); the catalogue says 30 / 20.
+        const vm = parseDataView(makeDataView([
+            row("F1", "Financial", 1, 0.3, { payload: [ok(90, 0.6), ok(90, 0.2)] }),
+            row("C1", "Customer", 2, 0.2, { payload: [ok(60, 0.3), ok(60, 0.5)] }),
+            row("C2", "Customer", 2, 0.2, { payload: [ok(60, 0.1), ok(60, 0.3)] }),
+        ], { branches: ["A", "B"] }));
+        expect(vm.pillars.map(p => p.weight)).toEqual([0.6, expect.closeTo(0.4)]);
+        expect(vm.pillars[1].byBranch.map(b => b.weight)).toEqual([expect.closeTo(0.4), expect.closeTo(0.8)]);
+        expect(vm.overallScore).toBeCloseTo(90 * 0.6 + 60 * 0.4);
+        expect(vm.overallByBranch.map(b => b.score)).toEqual([expect.closeTo(78), expect.closeTo(90 * 0.2 + 60 * 0.8)]);
+    });
+    it("pillarShare falls back to the catalogue's pillar weight when no KPI carries a weight", () => {
+        expect(pillarShare([], 0.3)).toBe(0.3);
+        const vm = parseDataView(makeDataView([row("F1", "Financial", 1, 0.3, { payload: payload({ state: "No data yet" }) })]));
+        expect(vm.pillars[0].weight).toBe(0.3);
+    });
     it("puts primary KPIs before supporting ones, then by display order", () => {
         const vm = parseDataView(makeDataView([
             row("S1", "Financial", 1, 0.3, { kpiType: "Supporting", displayOrder: 1, payload: ok(1, 1) }),

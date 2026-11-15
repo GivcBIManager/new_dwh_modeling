@@ -428,7 +428,8 @@ def _guide_page() -> Page:
             "At risk: below 70.",
             "No data yet, No target and Parked KPIs are listed but not scored.",
             "Needs attention lists the KPIs at risk, lowest score first.",
-            "Owner view shows Achievement in %: 100% or more is on track, 85% to 99% watch, below 85% at risk."]),
+            "Owner view: each owner's score in % is 70% their own KPIs and 30% Net Revenue Achievement; 100% "
+            "or more is on track, 85% to 99% watch, below 85% at risk."]),
         _section("Go deeper", [
             "The tabs in the dark bar at the top move between the scorecard pages.",
             "Right-click a KPI and choose Drill through › KPI detail for its trend, hospitals and definition.",
@@ -476,18 +477,21 @@ def _definitions_page() -> Page:
             "Status: On track from 85, Watch from 70, At risk below 70."]),
         _section("Pillar and overall scores", [
             "Objective and pillar score: the average of their KPI scores, weighted by KPI weight.",
-            "With one hospital selected, that hospital's KPI weights apply; otherwise the corporate weights.",
-            "Overall score: the average of the pillar scores, weighted by pillar weight.",
+            "KPI weights follow the hospital's category; a Primary KPI weighs twice a Supporting one. Several "
+            "hospitals: each KPI's average weight over the 8 (corporate).",
+            "Overall score: the pillar scores weighted by each pillar's share, the sum of its KPI weights (Customer"
+            "/Financial/Internal/Learning: Anchor 18/33/33/16%, Ramp-Up 21/27/36/16%, Scale 20/33/32/15%).",
             "KPIs without a score (no data, no target, parked) are left out; the others' weights count in full.",
             "Hospital comparison ranks hospitals by these scores; equal rounded scores share a rank."]),
         _section("Owner achievement (%)", [
             "Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is "
             "better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance "
             "from the target.",
-            "Weighted: the owner's achievements averaged by KPI weight, over the KPIs they own and co-own. Not "
-            "capped at 100%.",
-            "On-target: the share of those KPIs at or better than target (on-target KPIs count when On track).",
-            "C-suite cards come first: CEO, COO, CMO, CFO, CHRO, CIO, CSO."]),
+            "Own KPIs, Weighted: the owner's achievements averaged by KPI weight. On-target: the share of their "
+            "KPIs at or better than target. Not capped at 100%.",
+            "Owner score = 70% own KPIs + 30% KPI 1, Net Revenue Achievement (On-target: 100% if it is on target, "
+            "else 0%). Without a Net Revenue result, the own KPIs alone.",
+            "Owners are roles: CMOO, CMO, COO, CCO, CPEO, CHRO (C-suite), then IAD, S&G, VPF."]),
     ]
     section_h, example_h, slicer_h, slicer_w = 300, 54, 60, 300
     example_y = BODY_TOP + section_h + GAP  # 582
@@ -505,11 +509,11 @@ def _definitions_page() -> Page:
     legend_x = xs[-1] + slicer_w + GAP  # 1002
     visuals.append(_text(legend_x, slicers_y, COLS[0] + FULL_W - legend_x, slicer_h, [("body", (
         "Better when: higher = higher is better · lower = lower is better · ceiling = must stay at or below "
-        "the target · on_target = the closer to the target the better. Weight: the KPI's corporate weight within "
-        "its pillar."))]))
+        "the target · on_target = the closer to the target the better. Weight: the KPI's share of the scorecard "
+        "(the hospital's, or corporate for several)."))]))
     kpi_num = col("BSC KPI", "KPI Num")
-    fields = [kpi_num] + [col("BSC KPI", c) for c in ("Pillar", "Objective Title", "KPI Name", "Definition",
-                                                       "Direction")]
+    fields = [kpi_num] + [col("BSC KPI", c) for c in ("Pillar", "Objective Title", "KPI Name", "KPI Type",
+                                                       "Definition", "Direction")]
     fields += [meas("BSC Target Basis"), meas("BSC KPI Weight"), col("BSC KPI", "Owner"), col("BSC KPI", "Co Owners")]
     visuals.append(Visual("table", COLS[0], table_y, FULL_W, CONTENT_END - table_y, title="Every active KPI",
                           roles={"Values": fields}, filters=[Filter(col("BSC KPI", "Is Active"), "in", ["Yes"])],

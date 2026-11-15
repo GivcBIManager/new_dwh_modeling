@@ -12,6 +12,8 @@ const ui = (pillar: string | null = null, objective: string | null = null): UiSt
 const s = (score: number, weight = 1, actual = 0.42, target = 0.4) =>
     payload({ actual, target, variance: actual / target - 1, score, state: score >= 85 ? "On track" : score >= 70 ? "Watch" : "At risk", weight });
 const none = payload({ state: "No data yet" });
+/** No data for the period, but the KPI keeps its weight (as BSC Visual Payload sends it). */
+const noneW = (weight: number) => payload({ state: "No data yet", weight });
 
 function kpi(code: string, pillar: string, pOrder: number, obj: string, objTitle: string, oOrder: number, display: number, pay: string[], extra: FixtureRow = {}): FixtureRow {
     return { ...base, kpi: code, kpiName: code + " name", shortLabel: code, pillar, pillarOrder: pOrder, pillarWeight: 0.5, pillarQuestion: "q?",
@@ -19,16 +21,16 @@ function kpi(code: string, pillar: string, pOrder: number, obj: string, objTitle
 }
 
 // Hospitals: Abha, Jazan, Khamis, and Head Office (no scores at all, left out).
-//   Financial F1 Revenue: FA (weight 2) 90/60/75, FB (weight 1) 60/90/75     -> F1 80 / 70 / 75
-//   Financial F2 Cost:    FC (weight 1) 40/100/none                          -> F2 40 / 100 / none
-//   Financial pillar: 70 / 77.5 / 75; Customer C1 Care: CA 70/95/80 -> 70 / 95 / 80
-//   Overall (0.5 each): 70 / 86.25 / 77.5
+//   Financial F1 Revenue: FA (weight 0.25) 90/60/75, FB (weight 0.125) 60/90/75 -> F1 80 / 70 / 75
+//   Financial F2 Cost:    FC (weight 0.125) 40/100/none                          -> F2 40 / 100 / none
+//   Financial pillar: 70 / 77.5 / 75; Customer C1 Care: CA (weight 0.5) 70/95/80 -> 70 / 95 / 80
+//   Overall (pillar shares: the KPI weights add up to 0.5 each): 70 / 86.25 / 77.5
 const BR = ["Abha", "Jazan", "Khamis", "Head Office"];
 const rows: FixtureRow[] = [
-    kpi("FA", "Financial", 1, "F1", "Revenue", 1, 1, [s(90, 2), s(60, 2, 0.3, 0.4), s(75, 2), none], { valueFormat: "pct" }),
-    kpi("FB", "Financial", 1, "F1", "Revenue", 1, 2, [s(60), s(90), s(75), none], { valueFormat: "sar" }),
-    kpi("FC", "Financial", 1, "F2", "Cost", 2, 3, [s(40), s(100), none, none]),
-    kpi("CA", "Customer", 2, "C1", "Care", 1, 1, [s(70), s(95), s(80), none]),
+    kpi("FA", "Financial", 1, "F1", "Revenue", 1, 1, [s(90, 0.25), s(60, 0.25, 0.3, 0.4), s(75, 0.25), none], { valueFormat: "pct" }),
+    kpi("FB", "Financial", 1, "F1", "Revenue", 1, 2, [s(60, 0.125), s(90, 0.125), s(75, 0.125), none], { valueFormat: "sar" }),
+    kpi("FC", "Financial", 1, "F2", "Cost", 2, 3, [s(40, 0.125), s(100, 0.125), noneW(0.125), none]),
+    kpi("CA", "Customer", 2, "C1", "Care", 1, 1, [s(70, 0.5), s(95, 0.5), s(80, 0.5), none]),
 ];
 const vm = () => parseDataView(makeDataView(rows, { branches: BR }));
 const draw = (u: UiState) => { const root = document.createElement("div"); renderView(root, vm(), "comparison", u); return root; };

@@ -6470,10 +6470,10 @@ table _Measures
 		displayFolder: Balanced Scorecard\Scoring
 
 		annotation hnh_guard_allow = BSC KPI
-	/// Pillar scores weighted by the pillar weights (pillars with a score).
+	/// Pillar scores weighted by the pillar's share of the scorecard (pillars with a score): the sum of its KPI weights, so one hospital's category split, or the corporate split for several.
 	measure 'BSC Overall Score' =
 			VAR __Value = ( -- measure body
-				VAR Pillars = ADDCOLUMNS ( VALUES ( 'BSC KPI'[Pillar] ), "@score", [BSC Pillar Score], "@weight", CALCULATE ( MAX ( 'BSC KPI'[Pillar Weight] ) ) )
+				VAR Pillars = ADDCOLUMNS ( VALUES ( 'BSC KPI'[Pillar] ), "@score", [BSC Pillar Score], "@weight", [BSC KPI Weight] )
 				VAR Scored = FILTER ( Pillars, NOT ISBLANK ( [@score] ) )
 				RETURN DIVIDE ( SUMX ( Scored, [@score] * [@weight] ), SUMX ( Scored, [@weight] ) )
 			) -- end of measure body

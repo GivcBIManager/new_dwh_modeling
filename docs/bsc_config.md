@@ -45,7 +45,7 @@ Key: `kpi_code`.
 | `kpi_num`, `display_order` | numbers |
 | `kpi_name`, `short_label`, `definition` | text (the definition shows on the KPI detail page) |
 | `objective_code` | a code in `map_bsc_objective` (F1–F5, C1–C3, P1–P6, L1–L3) |
-| `kpi_type` | `Primary`, `Supporting` |
+| `kpi_type` | `Primary` (headline), `Supporting` (secondary): listed first, and the weights give a Primary KPI twice a Supporting one |
 | `direction` | `higher`, `lower`, `ceiling` (at or under target scores full), `on_target` (closer is better) |
 | `value_format` | `sar`, `pct`, `days`, `mins`, `num` |
 | `chart_hint` | `line`, `bullet`, `bulletN`, `gauge`, `hbar`, `stat`, `signed` |
@@ -86,15 +86,17 @@ An annual target stays in force in the following years until you enter a newer o
 ### `map_bsc_weight`: KPI weights
 
 Key: `profile`, `kpi_code`.
-- `profile` is `corporate` or `branch:<id>`.
-- A hospital with any `branch:<id>` rows uses only them; a KPI missing from its profile weighs 0 there.
-- The weights of a profile should add up to 1.
+- `profile` is `category:<category>` (one per hospital category, as in `map_bsc_hospital_category`: `category:Anchor & Protect`), `branch:<id>` or `corporate`.
+- Each hospital uses one whole profile: its own `branch:<id>` profile if it has one, else its category's profile, else `corporate`. A KPI missing from that profile weighs 0 there.
+- A weight is the KPI's share of the hospital's whole scorecard; a profile adds up to 1, and a pillar's weights add up to that pillar's share (its category split).
+- The corporate weight (all hospitals together) is not entered: it is each KPI's weight averaged over the 8 hospitals.
+- Since 2026-11-12: one profile per category; each pillar's share is the category's split (Customer / Financial / Internal Process / Learning & Growth: Anchor & Protect 18 / 33 / 33 / 16 %, Ramp-Up & Prove 21 / 27 / 36 / 16 %, Scale & Optimize 20 / 33 / 32 / 15 %), shared inside the pillar with a `Primary` KPI weighing twice a `Supporting` one and parked KPIs at 0. `dbt test` warns (`warn_bsc_weight_total`) when a hospital's weights do not add up to 1.
 
 ### `map_bsc_objective`: objectives and pillars
 
 Key: `objective_code`.
 - `pillar` is `Financial`, `Customer`, `Internal Process` or `Learning & Growth`.
-- `pillar_weight` is the pillar's share of the overall score (0.30, 0.20, 0.35, 0.15).
+- `pillar_weight` is the fallback share of a pillar with no KPI weights; the overall score weights each pillar by the sum of its KPI weights (the hospital's category split).
 - `pillar_question` and `objective_question` are the questions shown on the cards.
 
 ### `map_bsc_threshold`: score thresholds
@@ -105,8 +107,10 @@ Key: `kpi_code`, where `*` is the default for every KPI.
 
 ### `map_bsc_owner`: owners
 
-Key: `kpi_code`, `branch_id` (0 = Corporate).
-- `co_owners` are separated by `|` (`COO|CMO`).
+Key: `kpi_code`, `branch_id` (0 = Corporate; the report shows the Corporate owner only).
+- `owner` is the role (`CMOO`, `CMO`, `COO`, `CCO`, `CPEO`, `CHRO`, `VPF`, `IAD`, `S&G` since 2026-11-12).
+- `co_owners` are separated by `|` (`COO|CMO`); empty since 2026-11-12, kept for later use.
+- Owner view: each owner's score is 70% their own KPIs and 30% KPI 1, Net Revenue Achievement (in the report visual).
 - Owners are information only: access to the report is managed on the report server.
 
 ### `map_bsc_hospital_category`: hospital category

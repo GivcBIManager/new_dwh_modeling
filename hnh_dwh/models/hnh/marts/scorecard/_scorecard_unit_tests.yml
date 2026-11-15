@@ -31,10 +31,12 @@ unit_tests:
         from numbers(8)
         -- only March has a row: the other months of 2026 get no target (no annual row to carry)
 
-  - name: fact_bsc_weight_branch_profile_else_corporate
+  - name: fact_bsc_weight_branch_profile_else_category_else_corporate
     description: >
-      Abha (6) has a profile that weights FIN_NET_REVENUE 0.05 and leaves INT_ALOS out (0); the other hospitals have
-      no profile and take the corporate weights 0.042 and 0.02. The parked KPI gets no rows.
+      Abha (6) has its own profile: FIN_NET_REVENUE 0.05 and INT_ALOS left out (0). Hospitals 1-5 are in category
+      "Scale & Optimize", whose profile weights FIN_NET_REVENUE 0.03 and INT_ALOS 0.01; 7 is in "Ramp-Up & Prove",
+      which has no profile, and 8 has no category: both take the corporate weights 0.042 and 0.02. The parked KPI
+      gets no rows.
     model: fact_bsc_weight
     given:
       - input: ref('stg_ref__bsc_kpi')
@@ -50,12 +52,21 @@ unit_tests:
         rows: |
           select p as profile, k as kpi_code, toFloat64(w) as weight, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
           from values('p String, k String, w Float64', ('corporate', 'FIN_NET_REVENUE', 0.042), ('corporate', 'INT_ALOS', 0.02),
-                      ('branch:6', 'FIN_NET_REVENUE', 0.05))
+                      ('branch:6', 'FIN_NET_REVENUE', 0.05),
+                      ('category:Scale & Optimize', 'FIN_NET_REVENUE', 0.03), ('category:Scale & Optimize', 'INT_ALOS', 0.01))
+      - input: ref('stg_ref__bsc_hospital_category')
+        format: sql
+        rows: |
+          select toUInt8(b) as branch_id, c as category, toDateTime64('2026-10-01 00:00:00', 3) as last_changed_at
+          from values('b UInt8, c String', (1, 'Scale & Optimize'), (2, 'Scale & Optimize'), (3, 'Scale & Optimize'),
+                      (4, 'Scale & Optimize'), (5, 'Scale & Optimize'), (6, 'Scale & Optimize'), (7, 'Ramp-Up & Prove'))
     expect:
       format: sql
       rows: |
         select toInt64(bitShiftRight(cityHash64(concat(k, '|')), 1)) as bsc_kpi_key, toUInt8(b) as branch_key,
-               toFloat64(multiIf(b = 6 and k = 'FIN_NET_REVENUE', 0.05, b = 6, 0, k = 'FIN_NET_REVENUE', 0.042, 0.02)) as weight
+               toFloat64(multiIf(b = 6 and k = 'FIN_NET_REVENUE', 0.05, b = 6, 0,
+                                 b <= 5 and k = 'FIN_NET_REVENUE', 0.03, b <= 5, 0.01,
+                                 k = 'FIN_NET_REVENUE', 0.042, 0.02)) as weight
         from (select arrayJoin(['FIN_NET_REVENUE', 'INT_ALOS']) as k) as kpis cross join (select toUInt8(number + 1) as b from numbers(8)) as branches
 
   - name: fact_bsc_workforce_monthly_keeps_vw_work_force_people

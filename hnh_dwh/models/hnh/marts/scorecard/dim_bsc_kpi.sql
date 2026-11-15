@@ -2,7 +2,8 @@
 
 -- Balanced-scorecard KPI catalogue for SSAS (bsc ssas spec 6.2): the latest config rows of map_bsc_kpi with the
 -- objective and pillar, the Corporate owner (branch_id 0), the KPI's score thresholds (its own row, else '*') and
--- the corporate weight (used when several hospitals are selected). Without a '*' row the defaults are 85, 0.6, 85
+-- the corporate weight (used when several hospitals are selected): the KPI's weight averaged over the 8 hospitals of
+-- fact_bsc_weight, so it follows the category profiles. Without a '*' row the defaults are 85, 0.6, 85
 -- and 70, so a deleted default never empties the list. The key equals hnh_surrogate_key(['kpi_code']).
 with thresholds as (
     select kpi_code, score_base, score_slope, good_from, watch_from
@@ -48,6 +49,6 @@ left join (
 ) as ow on ow.kpi_code = k.kpi_code
 left join thresholds as t on t.kpi_code = k.kpi_code
 left join (
-    select kpi_code, weight from {{ ref('stg_ref__bsc_weight') }} where profile = 'corporate'
-) as w on w.kpi_code = k.kpi_code
+    select bsc_kpi_key, avg(weight) as weight from {{ ref('fact_bsc_weight') }} group by bsc_kpi_key
+) as w on w.bsc_kpi_key = toInt64(bitShiftRight(cityHash64(concat(k.kpi_code, '|')), 1))
 {{ hnh_settings() }}

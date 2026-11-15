@@ -47,6 +47,7 @@ export interface KpiRow {
 export interface PillarSummary {
     name: string;
     order: number;
+    /** The pillar's share of the scorecard: the sum of its KPI weights (pillarShare). */
     weight: number | null;
     question: string;
     score: number | null;
@@ -55,7 +56,7 @@ export interface PillarSummary {
     /** Counts, score and trend describe the first branch (or all rows without a branch series). */
     counts: Record<StateKey, number>;
     /** One entry per branch series, in data order; empty without a branch series. */
-    byBranch: { branch: string; score: number | null; counts: Record<StateKey, number> }[];
+    byBranch: { branch: string; score: number | null; weight: number | null; counts: Record<StateKey, number> }[];
 }
 
 export interface ViewModel {

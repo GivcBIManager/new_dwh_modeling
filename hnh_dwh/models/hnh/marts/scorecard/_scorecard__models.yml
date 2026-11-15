@@ -30,7 +30,7 @@ models:
         tests:
           - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8], quote: false, config: {severity: warn}}
   - name: fact_bsc_weight
-    description: Weight of each active KPI inside its pillar, per hospital.
+    description: Weight of each active KPI as a share of the hospital's scorecard, from the hospital's own profile, else its category's, else corporate.
     tests:
       - hnh_unique_combination:
           columns: [bsc_kpi_key, branch_key]
