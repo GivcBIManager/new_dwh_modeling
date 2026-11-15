@@ -236,3 +236,17 @@ describe("definition, notes and per-row thresholds", () => {
             scoreBase: 85, scoreSlope: 0.6, goodFrom: 85, watchFrom: 70 });
     });
 });
+
+describe("Net Revenue payload field (sharedPayload)", () => {
+    it("becomes the model's sharedRow, without adding a KPI row", () => {
+        const vm = parseDataView(makeDataView([{ kpi: "C1", pillar: "Customer", pillarOrder: 2, owner: "CCO",
+            payload: payload({ actual: 1, target: 1, variance: 0, score: 85, state: "On track", weight: 0.02 }),
+            sharedPayload: payload({ actual: 90, target: 100, variance: -0.1, score: 79, state: "Watch", weight: 0.0325 }) }]));
+        expect(vm.pillars.flatMap(p => p.kpis).map(k => k.code)).toEqual(["C1"]);
+        expect(vm.sharedRow).toMatchObject({ code: "FIN_NET_REVENUE", direction: "higher", actual: 90, target: 100, variance: -0.1 });
+    });
+    it("is null without the field", () => {
+        const vm = parseDataView(makeDataView([{ kpi: "C1", pillar: "Customer", pillarOrder: 2, payload: payload({ actual: 1, target: 1 }) }]));
+        expect(vm.sharedRow).toBeNull();
+    });
+});

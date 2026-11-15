@@ -574,6 +574,17 @@ describe("owner overview strip", () => {
         // The Net Revenue owner gets the same rule: own 85%, so 85%.
         expect(root.querySelector('.own-card[data-owner-card="CMOO"] .gauge text')!.textContent).toBe("85%");
     });
+    it("an Owner filter that leaves Net Revenue out still blends it, from the Net Revenue payload field", () => {
+        // Filtered to the CFO: no FIN_NET_REVENUE row, its payload comes in the sharedPayload measure on every row.
+        const rows = ovRows.filter(r => r.owner === "CFO").map(r => ({ ...r, sharedPayload: pay(0.85, 1, -0.15) }));
+        const root = mount();
+        renderView(root, parseDataView(makeDataView(rows)), "owner", ui());
+        const cfo = root.querySelector<HTMLElement>('.own-card[data-owner-card="CFO"]')!;
+        expect(cfo.querySelector(".gauge text")!.textContent).toBe("99%");
+        expect(cfo.querySelector(".own-mix")!.textContent).toBe("Own KPIs 105% × 70% + Net Revenue 85% × 30%");
+        // The Net Revenue row is not added to the scorecard itself.
+        expect(root.querySelectorAll('.own-card[data-owner-card="CMOO"]').length).toBe(0);
+    });
     it("says so when the selection has no C-suite owner", () => {
         const root = mount();
         renderView(root, parseDataView(makeDataView([row("X1", "Financial", 1, 1, { owner: "Quality Manager", payload: pay(1, 1, 0) })])), "owner",

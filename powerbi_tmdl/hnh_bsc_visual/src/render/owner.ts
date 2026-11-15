@@ -23,7 +23,7 @@ export const DEFAULT_OWNER_UI: OwnerUi = { score: "weighted", tier: "all", scope
 
 /** The cards the strip shows for this state. */
 export function stripCards(vm: ViewModel, ou: OwnerUi): OwnerCard[] {
-    return ownerCards(allFirstRows(vm), ou);
+    return ownerCards(allFirstRows(vm), ou, vm.sharedRow ?? null);
 }
 
 /** The pick, or null when its card is not in the strip. */

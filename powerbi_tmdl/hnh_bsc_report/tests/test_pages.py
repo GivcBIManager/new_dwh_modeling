@@ -27,6 +27,8 @@ README_ROLES = {
 # The three KPI-detail wells (README: "KPI detail only").
 DETAIL_ROLES = {"definition": [col("BSC KPI", "Definition")], "targetBasis": [meas("BSC Target Basis")],
                 "manualNote": [meas("BSC Manual Note")]}
+# Owner view only: Net Revenue's payload whatever the Owner slicer keeps (visual 1.1.8.0).
+SHARED_ROLE = {"sharedPayload": [meas("BSC Net Revenue Payload")]}
 SCORECARD = ["Overview", "Financial", "Customer", "Internal Process", "Learning & Growth", "Owner view",
              "Hospital comparison"]
 SCORECARD_NAMES = ["bsc", "financial", "customer", "internal_process", "learning_growth", "owner_view",
@@ -123,10 +125,12 @@ def test_page_names_and_order():
     shown = [p.display for p in PAGES]
     assert shown[:8] == SCORECARD + ["KPI detail"]
     assert [p.name for p in PAGES[:8]] == SCORECARD_NAMES + ["kpi_detail"]
-    assert [p.hidden for p in PAGES[:8]] == [False] * 7 + [True]
+    assert [p.hidden for p in PAGES[:8]] == [False] + [True] * 7
     assert shown[-2:] == ["How to use", "How scores are calculated"]
     assert [p.name for p in PAGES[-2:]] == ["guide", "definitions"]
-    assert [p.hidden for p in PAGES[-2:]] == [False, False]
+    assert [p.hidden for p in PAGES[-2:]] == [True, True]
+    # Only the Overview shows in the page list; the buttons reach the rest.
+    assert [p.name for p in PAGES if not p.hidden] == ["bsc"]
     assert [p.drill_fields for p in PAGES[-2:]] == [None, None]
     names = [p.name for p in PAGES]
     assert len(set(names)) == len(names)
@@ -180,7 +184,10 @@ def test_hnh_visual_roles_follow_the_readme(display):
     assert v.roles["selectionLabel"] == [meas("BSC Selection Label")]
     extra = set(v.roles) - set(README_ROLES) - {"payload", "selectionLabel"}
     assert extra == ({"branch"} if display == "Hospital comparison" else
-                     set(DETAIL_ROLES) if display == "KPI detail" else set())
+                     set(DETAIL_ROLES) if display == "KPI detail" else
+                     set(SHARED_ROLE) if display == "Owner view" else set())
+    if display == "Owner view":
+        assert {r: v.roles[r] for r in SHARED_ROLE} == SHARED_ROLE
     if display == "Hospital comparison":
         assert v.roles["branch"] == [BRANCH_NAME]
     if display == "KPI detail":
@@ -243,16 +250,20 @@ def test_scorecard_slicers_and_selection_label(display):
     page = by_display(display)
     sl = slicers(page)
     assert [(v.sample, v.roles["Values"], rect(v)) for v in sl] == [
-        ("slicerDropdown", [BRANCH_NAME], (30, 90, 330, 66)),
-        ("slicerDropdown", [col("Branch", "BSC Category")], (375, 90, 270, 66)),
-        ("slicerDateRange", [col("Date", "Date")], (660, 90, 420, 66))]
-    # headers read Hospital, BSC Category (the field's own name), Date
-    assert [v.labels for v in sl] == [{BRANCH_NAME: "Hospital"}, {}, {col("Date", "Date"): "Date"}]
+        ("slicerDropdown", [BRANCH_NAME], (30, 90, 300, 66)),
+        ("slicerDropdown", [col("Branch", "BSC Category")], (345, 90, 240, 66)),
+        ("slicerDropdown", [col("BSC KPI", "Owner")], (600, 90, 200, 66)),
+        ("slicerDateRange", [col("Date", "Date")], (815, 90, 400, 66))]
+    # headers read Hospital, BSC Category (the field's own name), Owner, Date
+    assert [v.labels for v in sl] == [{BRANCH_NAME: "Hospital"}, {}, {col("BSC KPI", "Owner"): "Owner"},
+                                      {col("Date", "Date"): "Date"}]
     (flt,) = sl[0].filters
     assert (flt.field, flt.op, flt.values) == (IS_HOSPITAL, "in", ["Yes"])
-    sel = sl[0].props["selection"][0]["properties"]
-    assert lit(sel["singleSelect"]) == "false"
-    assert lit(sel["selectAllCheckboxEnabled"]) == "true"
+    assert sl[2].filters == []
+    for v in (sl[0], sl[2]):  # Hospital and Owner: several at once, with Select all
+        sel = v.props["selection"][0]["properties"]
+        assert lit(sel["singleSelect"]) == "false"
+        assert lit(sel["selectAllCheckboxEnabled"]) == "true"
     for v in sl:  # the design's dropdown look: small grey header, #CBD3DC border, radius 6
         header = _obj(v, "header")
         assert (lit(header["textSize"]), colour(header["fontColor"])) == ("9D", f"'{MUTED}'")
@@ -260,7 +271,8 @@ def test_scorecard_slicers_and_selection_label(display):
         assert lit(border["show"]) == "true" and colour(border["color"]) == f"'{SLICER_BORDER}'"
         assert lit(border["radius"]) == "6D"
     (card,) = [v for v in page.visuals if v.sample == "card"]
-    assert rect(card) == (1100, 99, 470, 48)
+    assert rect(card) == (1230, 99, 345, 48)
+    assert card.x + card.w <= 1590  # left of How to use
     assert card.roles == {"Values": [meas("BSC Selection Label")]}
     labels = _obj(card, "labels")
     assert (lit(labels["fontSize"]), colour(labels["color"])) == ("12D", f"'{MUTED}'")
@@ -268,6 +280,21 @@ def test_scorecard_slicers_and_selection_label(display):
     assert lit(_obj(card, "background")["show"]) == "false"
     bar = next(v for v in page.visuals if rect(v) == (0, 84, 1920, 78))
     assert all(page.visuals.index(v) > page.visuals.index(bar) for v in sl + [card])  # drawn on the filter bar
+
+
+def test_every_hidden_page_is_reached_and_left_by_buttons():
+    """Only the Overview is in the page list, so each other page needs a button that opens it (a literal navigation or
+    drill-through destination, or for a drill-through page a drill button whose destination is a measure) and a way
+    out (the header tabs or Back)."""
+    buttons = [v for p in PAGES for v in p.visuals if v.sample in ("buttonNavigate", "buttonDrill") and "visualLink" in v.props]
+    literal = {target(v) for v in buttons}
+    dynamic = any(v.sample == "buttonDrill" and target(v) is None for v in buttons)
+    for page in PAGES:
+        if not page.hidden:
+            continue
+        assert page.name in literal or (page.drill_fields and dynamic), page.name
+        back = [v for v in page.visuals if v.sample == "buttonNavigate" and lit(link(v)["type"]) == "'Back'"]
+        assert tabs(page) or back, page.name
 
 
 def test_overview_navigation_buttons_over_the_pillar_cards():
@@ -538,9 +565,9 @@ CAPABILITIES = Path(__file__).resolve().parents[2] / "hnh_bsc_visual" / "capabil
 
 def test_role_names_come_from_the_visual_capabilities():
     roles = [r["name"] for r in json.loads(CAPABILITIES.read_text(encoding="utf-8-sig"))["dataRoles"]]
-    attributes = [r for r in roles if r not in ("branch", "payload", "selectionLabel", *DETAIL_ROLES)]
+    attributes = [r for r in roles if r not in ("branch", "payload", "selectionLabel", *DETAIL_ROLES, *SHARED_ROLE)]
     assert attributes == list(README_ROLES)
-    assert set(roles) == set(README_ROLES) | {"branch", "payload", "selectionLabel"} | set(DETAIL_ROLES)
+    assert set(roles) == set(README_ROLES) | {"branch", "payload", "selectionLabel"} | set(DETAIL_ROLES) | set(SHARED_ROLE)
     for display in SCORECARD + ["KPI detail"]:
         assert set(hnh(by_display(display)).roles) <= set(roles)
     # the README binds the three new wells on KPI detail only
@@ -959,10 +986,11 @@ def test_guide_page_copy():
         v = box(page, x, 336)
         assert (v.w, v.h) == (604, 420)
     choose = texts_at(page, 30, 336)
-    assert choose[0] == "Choose what you see" and len(choose) == 5
+    assert choose[0] == "Choose what you see" and len(choose) == 6
     assert choose[1] == ("• Hospital: pick one or more hospitals, or leave it empty for all hospitals together "
                          "(Corporate).")
-    assert choose[4] == "• Your choices carry over to every scorecard page and to KPI detail."
+    assert choose[3] == "• Owner: pick one or more KPI owners to see only their KPIs."
+    assert choose[5] == "• Your choices carry over to every scorecard page and to KPI detail."
     read = texts_at(page, 658, 336)
     assert read[0] == "Read the scores and colours" and len(read) == 8
     assert "• On track: 85 or more." in read and "• Watch: 70 to 84." in read

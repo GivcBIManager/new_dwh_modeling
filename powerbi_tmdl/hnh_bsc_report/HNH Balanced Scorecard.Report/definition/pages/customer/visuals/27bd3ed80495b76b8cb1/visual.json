@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "27bd3ed80495b76b8cb1",
   "position": {
-    "x": 660,
+    "x": 600,
     "y": 90,
     "z": 15000,
     "height": 66,
-    "width": 420,
+    "width": 200,
     "tabOrder": 15000
   },
   "visual": {
@@ -20,15 +20,15 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "BSC KPI"
                     }
                   },
-                  "Property": "Date"
+                  "Property": "Owner"
                 }
               },
-              "queryRef": "Date.Date",
-              "nativeQueryRef": "Date",
-              "displayName": "Date",
+              "queryRef": "BSC KPI.Owner",
+              "nativeQueryRef": "Owner",
+              "displayName": "Owner",
               "active": true
             }
           ]
@@ -42,74 +42,28 @@
             "mode": {
               "expr": {
                 "Literal": {
-                  "Value": "'Between'"
+                  "Value": "'Dropdown'"
                 }
               }
             }
           }
         }
       ],
-      "general": [
+      "selection": [
         {
           "properties": {
-            "filter": {
-              "filter": {
-                "Version": 2,
-                "From": [
-                  {
-                    "Name": "d",
-                    "Entity": "Date",
-                    "Type": 0
-                  }
-                ],
-                "Where": [
-                  {
-                    "Condition": {
-                      "And": {
-                        "Left": {
-                          "Comparison": {
-                            "ComparisonKind": 2,
-                            "Left": {
-                              "Column": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Source": "d"
-                                  }
-                                },
-                                "Property": "Date"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "datetime'2026-01-01T00:00:00'"
-                              }
-                            }
-                          }
-                        },
-                        "Right": {
-                          "Comparison": {
-                            "ComparisonKind": 4,
-                            "Left": {
-                              "Column": {
-                                "Expression": {
-                                  "SourceRef": {
-                                    "Source": "d"
-                                  }
-                                },
-                                "Property": "Date"
-                              }
-                            },
-                            "Right": {
-                              "Literal": {
-                                "Value": "datetime'2026-12-31T00:00:00'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                ]
+            "singleSelect": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "selectAllCheckboxEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
               }
             }
           }
@@ -201,7 +155,7 @@
       ]
     },
     "syncGroup": {
-      "groupName": "bsc Date.Date",
+      "groupName": "bsc BSC KPI.Owner",
       "fieldChanges": true,
       "filterChanges": true
     },

@@ -395,7 +395,7 @@ def test_slicers(project):
     bsc = PAGES[0]
     vs = visuals(project, bsc)
     sl = [(v, j) for v, j in zip(bsc.visuals, vs) if v.sample.startswith("slicer")]
-    assert len(sl) == 3
+    assert len(sl) == 4
     for v, j in sl:
         f = next(iter(v.roles.values()))[0]
         assert j["visual"]["syncGroup"] == {"groupName": f"bsc {f.ref}", "fieldChanges": True, "filterChanges": True}
@@ -403,9 +403,10 @@ def test_slicers(project):
         assert mode == ("'Between'" if v.sample == "slicerDateRange" else "'Dropdown'")
     # a field renamed in a visual is written as the projection's displayName, as Desktop does
     names = [[p.get("displayName") for p in j["visual"]["query"]["queryState"]["Values"]["projections"]] for _, j in sl]
-    assert names == [["Hospital"], [None], ["Date"]]
+    assert names == [["Hospital"], [None], ["Owner"], ["Date"]]
     branch = sl[0][1]
-    assert lit(branch["visual"]["objects"]["selection"][0]["properties"]["selectAllCheckboxEnabled"]) == "true"
+    for _, j in (sl[0], sl[2]):  # Hospital and Owner
+        assert lit(j["visual"]["objects"]["selection"][0]["properties"]["selectAllCheckboxEnabled"]) == "true"
     assert branch["filterConfig"]["filters"][0]["field"]["Column"]["Property"] == "Is Hospital"
     rng = next(j for v, j in sl if v.sample == "slicerDateRange")["visual"]["objects"]
     flt = rng["general"][0]["properties"]["filter"]["filter"]
@@ -831,3 +832,12 @@ def test_frame_project_converts_to_the_report_server_package(frame_project, tmp_
     assert "hnh_logo_white.png" in {i["name"] for i in reg["items"]}
     with zipfile.ZipFile(out) as z:
         assert "Report/StaticResources/RegisteredResources/hnh_logo_white.png" in z.namelist()
+
+
+def test_filter_pane_hidden_for_the_scorecard_only(project):
+    """The scorecard hides the Filters pane (its slicers are the filters); ReportSpec keeps it for other reports."""
+    import dataclasses
+    from pbir import BSC_REPORT, report_json
+    rep = load(report_dir(project) / "definition" / "report.json")
+    assert rep["objects"]["outspacePane"] == [{"properties": {"visible": {"expr": {"Literal": {"Value": "false"}}}}}]
+    assert "outspacePane" not in report_json(None, report=dataclasses.replace(BSC_REPORT, filter_pane=True))["objects"]

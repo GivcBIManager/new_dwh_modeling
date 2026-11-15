@@ -194,6 +194,12 @@ describe("owners", () => {
         expect(sharedPart([nr({ actual: null })], "weighted")).toBeNull();
         expect(sharedPart([k({})], "weighted")).toBeNull();
     });
+    it("sharedPart falls back to the given Net Revenue row only when the rows lack it", () => {
+        const fallback = k({ code: SHARED_KPI, owner: "", actual: 0.9, target: 1, variance: -0.1 });
+        expect(sharedPart([k({})], "weighted", fallback)).toBeCloseTo(90);
+        expect(sharedPart([k({})], "hitrate", fallback)).toBe(0);
+        expect(sharedPart([k({ code: SHARED_KPI, actual: 1.2, target: 1, variance: 0.2 })], "weighted", fallback)).toBeCloseTo(120);
+    });
     it("ownerCards blend each owner with Net Revenue, the Net Revenue owner included", () => {
         const rows = [k({ owner: "CCO", actual: 0.9, target: 1, variance: -0.1 }), k({ owner: "CCO", actual: 0.5, target: 1, variance: -0.5 }),
             k({ code: SHARED_KPI, owner: "CMOO", actual: 1.2, target: 1, variance: 0.2 })];

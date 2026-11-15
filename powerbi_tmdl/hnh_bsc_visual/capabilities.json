@@ -139,6 +139,11 @@
       "displayName": "Manual note",
       "name": "manualNote",
       "kind": "Measure"
+    },
+    {
+      "displayName": "Net Revenue payload",
+      "name": "sharedPayload",
+      "kind": "Measure"
     }
   ],
   "dataViewMappings": [
@@ -228,6 +233,9 @@
             "max": 1
           },
           "manualNote": {
+            "max": 1
+          },
+          "sharedPayload": {
             "max": 1
           }
         }
@@ -379,6 +387,11 @@
               {
                 "bind": {
                   "to": "manualNote"
+                }
+              },
+              {
+                "bind": {
+                  "to": "sharedPayload"
                 }
               }
             ],

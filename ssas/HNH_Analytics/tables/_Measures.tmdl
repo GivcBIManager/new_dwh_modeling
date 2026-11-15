@@ -7182,6 +7182,17 @@ table _Measures
 		displayFolder: Balanced Scorecard\Visual
 
 		annotation hnh_guard_allow = BSC KPI
+	/// [BSC Visual Payload] of Net Revenue Achievement (FIN_NET_REVENUE) in the hospitals and period in context, whatever the 'BSC KPI' filters (an Owner slicer leaves it out of the visual's rows): the owner view's 30% Net Revenue part of every owner score.
+	measure 'BSC Net Revenue Payload' =
+			VAR __Value = ( -- measure body
+				CALCULATE ( [BSC Visual Payload], REMOVEFILTERS ( 'BSC KPI' ), 'BSC KPI'[KPI Code] = "FIN_NET_REVENUE" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard 21 facts #44b6d100]
+			RETURN IF ( __Wrong = "", __Value, """BSC Net Revenue Payload"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Balanced Scorecard\Visual
+
+		annotation hnh_guard_allow = BSC KPI
 	/// Hospitals and period of the selection: the hospital, Corporate or n hospitals, then the first and last month in context up to today.
 	measure 'BSC Selection Label' =
 			VAR Hospitals = CALCULATE ( COUNTROWS ( Branch ), KEEPFILTERS ( Branch[Is Hospital] = "Yes" ) )

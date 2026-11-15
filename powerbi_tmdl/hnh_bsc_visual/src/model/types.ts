@@ -68,6 +68,9 @@ export interface ViewModel {
     thresholds: { base: number; slope: number; good: number; watch: number };
     branches: string[];
     guardMessage: string | null;
+    /** Net Revenue Achievement for the first branch series, from [BSC Net Revenue Payload] ('sharedPayload'): the
+     * owner score's shared part when an Owner filter leaves FIN_NET_REVENUE out of the rows; null without it. */
+    sharedRow?: KpiRow | null;
 }
 
 /** The nine fields of [BSC Visual Payload]. */

@@ -128,9 +128,10 @@ export function blend(own: number | null, shared: number | null): number | null 
 }
 
 /** Net Revenue Achievement's part of every card, in percent: its unit score (Weighted) or 100 / 0 for on or off target
- * (On-target); null when it cannot be scored or judged, or is not in the rows. */
-export function sharedPart(rows: KpiRow[], mode: ScoreMode): number | null {
-    const r = rows.find(x => x.code === SHARED_KPI);
+ * (On-target); null when it cannot be scored or judged, or is neither in the rows nor given as `fallback` (the row
+ * from [BSC Net Revenue Payload], for when an Owner filter leaves it out of the rows). */
+export function sharedPart(rows: KpiRow[], mode: ScoreMode, fallback: KpiRow | null = null): number | null {
+    const r = rows.find(x => x.code === SHARED_KPI) ?? fallback;
     if (!r) return null;
     if (mode === "hitrate") return canJudge(r) ? (onTarget(r) ? 100 : 0) : null;
     const u = unitScore(r);
@@ -154,8 +155,9 @@ export interface OwnerCard {
 /** One card per owner or co-owner in the tier, in strip order. A card always counts the owned and co-owned KPIs
  * (as the old report's _computeOwnerStats); the Owned / Owned + co-owned toggle changes only the KPI list. The value
  * blends the owner's own result with Net Revenue Achievement (blend). */
-export function ownerCards(rows: KpiRow[], o: { score: ScoreMode; tier: OwnerTier }): OwnerCard[] {
-    const shared = sharedPart(rows, o.score);
+export function ownerCards(rows: KpiRow[], o: { score: ScoreMode; tier: OwnerTier },
+                           sharedRow: KpiRow | null = null): OwnerCard[] {
+    const shared = sharedPart(rows, o.score, sharedRow);
     return ownersOf(rows, "co")
         .filter(n => o.tier === "all" || isCsuite(n))
         .map(owner => {

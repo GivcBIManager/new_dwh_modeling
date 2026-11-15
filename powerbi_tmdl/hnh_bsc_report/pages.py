@@ -3,8 +3,10 @@ guide pages (spec docs/superpowers/specs/2026-10-26-bsc-report-redesign-design.m
 
 Every page has the frame (frame.py: the navy header with the logo, the title and the tabs; the white filter bar with
 How to use and Calculations); the geometry is frame.py's. A scorecard page's own tab is current; KPI detail, the
-family pages and the guide pages have no tab of their own. `PAGES` is the list `build.py` writes; `build_pages`
-writes it with the Date slicer saved on another year.
+family pages and the guide pages have no tab of their own. Only the Overview shows in the page list: every other
+page is hidden and reached by the report's buttons (the tabs, How to use and Calculations, the Overview cards, the
+drill-throughs and Back). `PAGES` is the list `build.py` writes; `build_pages` writes it with the Date slicer saved
+on another year.
 """
 from __future__ import annotations
 
@@ -92,10 +94,11 @@ _SCORECARD = [
 PILLAR_COLOURS = {"Financial": "#002E5A", "Customer": "#1478BE", "Internal Process": "#13ACE3",
                   "Learning & Growth": "#6E8196"}
 
-# The filter bar: Hospital, BSC Category, Date, then the selection label; How to use and Calculations on the right.
-# The slicers fill the bar (84..162) less 6 px top and bottom: a header and a dropdown need 66 px.
-SLICER_RECTS = [(30, 90, 330, 66), (375, 90, 270, 66), (660, 90, 420, 66)]
-SELECTION_LABEL = (1100, 99, 470, 48)
+# The filter bar: Hospital, BSC Category, Owner, Date, then the selection label; How to use and Calculations on the
+# right. The slicers fill the bar (84..162) less 6 px top and bottom: a header and a dropdown need 66 px.
+SLICER_RECTS = [(30, 90, 300, 66), (345, 90, 240, 66), (600, 90, 200, 66), (815, 90, 400, 66)]
+SELECTION_LABEL = (1230, 99, 345, 48)
+OWNER = col("BSC KPI", "Owner")
 
 
 def year_range(build_date: datetime.date) -> tuple[str, str]:
@@ -112,14 +115,17 @@ def dropdown_look() -> dict:
 
 
 def _slicers(build_date: datetime.date) -> list[Visual]:
-    """The three filter-bar slicers (Branch, BSC Category, Date). The Date slicer is a From - To range saved at
-    `year_range(build_date)`. No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but
-    not to the target."""
-    hospital, category, date = SLICER_RECTS
+    """The four filter-bar slicers (Branch, BSC Category, KPI Owner, Date). The Date slicer is a From - To range saved
+    at `year_range(build_date)`. No Time Calculation slicer (controller ruling): its items applied to [BSC Actual] but
+    not to the target. The Owner slicer keeps the KPIs of the owners picked; the owner view still blends Net Revenue
+    into every owner score through [BSC Net Revenue Payload]."""
+    hospital, category, owner, date = SLICER_RECTS
     return [
         Visual("slicerDropdown", *hospital, roles={"Values": [BRANCH_NAME]}, filters=[_hospitals()],
                props={**select_all_selection(), **dropdown_look()}, labels={BRANCH_NAME: "Hospital"}),
         Visual("slicerDropdown", *category, roles={"Values": [col("Branch", "BSC Category")]}, props=dropdown_look()),
+        Visual("slicerDropdown", *owner, roles={"Values": [OWNER]}, props={**select_all_selection(), **dropdown_look()},
+               labels={OWNER: "Owner"}),
         Visual("slicerDateRange", *date, roles={"Values": [col("Date", "Date")]}, date_range=year_range(build_date),
                props=dropdown_look(), labels={col("Date", "Date"): "Date"}),
     ]
@@ -185,8 +191,10 @@ def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: 
     visual filters the chart (DataFilter): a bar chart's default is to highlight, which keeps every KPI in the chart's
     query, where `[BSC Actual]` is blank, so the chart would draw nothing."""
     comparison = mode == "comparison"
-    visual = _hnh_visual(CONTENT, mode, payload, {"branch": [BRANCH_NAME]} if comparison else None,
-                         [_hospitals()] if comparison else None)
+    extra = {"branch": [BRANCH_NAME]} if comparison else {}
+    if mode == "owner":  # Net Revenue for the owner scores when an Owner filter leaves it out of the rows
+        extra["sharedPayload"] = [meas("BSC Net Revenue Payload")]
+    visual = _hnh_visual(CONTENT, mode, payload, extra or None, [_hospitals()] if comparison else None)
     label = _selection_label()
     visuals = frame(name, _slicers(build_date) + [label]) + [visual]
     interactions: list[Interaction] = []
@@ -201,7 +209,7 @@ def _scorecard_page(build_date: datetime.date, name: str, display: str, pillar: 
         interactions = [Interaction(chart, visual, "NoFilter"), Interaction(chart, label, "NoFilter"),
                         Interaction(visual, chart, "DataFilter")]
     page_filters = [Filter(col("BSC KPI", "Pillar"), "eq", [pillar])] if pillar else []
-    return Page(name, display, visuals, filters=page_filters, interactions=interactions)
+    return Page(name, display, visuals, filters=page_filters, interactions=interactions, hidden=name != "bsc")
 
 
 def scorecard_pages(build_date: datetime.date) -> list[Page]:
@@ -417,6 +425,7 @@ def _guide_page() -> Page:
         _section("Choose what you see", [
             "Hospital: pick one or more hospitals, or leave it empty for all hospitals together (Corporate).",
             "BSC Category: pick a group of hospitals (Scale & Optimize, Anchor & Protect, Ramp-Up & Prove).",
+            "Owner: pick one or more KPI owners to see only their KPIs.",
             "Date: set the From and To dates. The report opens on 1 January to 31 December of this year; figures "
             "stop at today, so it reads as year to date. The report holds this year and last year only.",
             "Your choices carry over to every scorecard page and to KPI detail."]),
@@ -461,7 +470,7 @@ def _guide_page() -> Page:
             "KPI detail: how has this KPI moved by month and by hospital, and how is it defined?",
             "Detail pages: what is behind a hospital's figures for a month?",
             "How scores are calculated: how is each score worked out, and what does each KPI measure?"]]))
-    return Page("guide", "How to use", visuals)
+    return Page("guide", "How to use", visuals, hidden=True)
 
 
 def _definitions_page() -> Page:
@@ -518,7 +527,7 @@ def _definitions_page() -> Page:
     visuals.append(Visual("table", COLS[0], table_y, FULL_W, CONTENT_END - table_y, title="Every active KPI",
                           roles={"Values": fields}, filters=[Filter(col("BSC KPI", "Is Active"), "in", ["Yes"])],
                           sort=kpi_num, sort_dir="asc", props=word_wrap()))
-    return Page("definitions", "How scores are calculated", visuals)
+    return Page("definitions", "How scores are calculated", visuals, hidden=True)
 
 
 GUIDE_PAGES: list[Page] = [_guide_page(), _definitions_page()]

@@ -91,8 +91,9 @@ def test_scorecard_drillthrough_and_interactions_in_the_legacy_shape(tmp_path):
     assert param["fieldExpr"] == {"Column": {"Expression": {"SourceRef": {"Entity": "BSC KPI"}}, "Property": "KPI Code"}}
     assert json.loads(sections["kpi_detail"]["config"])["type"] == 2
     relationships = json.loads(sections["financial"]["config"])["relationships"]
-    assert {"source": "b9fa694d2041eaeb8a7d", "target": "f5d5edb844ccd8462460", "type": 1} in relationships  # DataFilter
-    assert {"source": "f5d5edb844ccd8462460", "target": "b9fa694d2041eaeb8a7d", "type": 3} in relationships  # NoFilter
+    # the HNH visual (f5d5...) filters the hospital chart (2f5e...); the chart filters neither it nor the label
+    assert {"source": "f5d5edb844ccd8462460", "target": "2f5ee841f4d8673baacf", "type": 1} in relationships  # DataFilter
+    assert {"source": "2f5ee841f4d8673baacf", "target": "f5d5edb844ccd8462460", "type": 3} in relationships  # NoFilter
     assert "type" not in json.loads(sections["financial"]["config"])
 
 

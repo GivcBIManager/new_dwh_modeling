@@ -46,7 +46,8 @@ class ReportSpec:
     registered beside the logo (RegisteredResources, by file name), for image visuals such as card icons.
     `cross_filter`: a selection in a chart filters the other visuals instead of highlighting them (report setting
     `defaultFilterActionIsDataFilter`, Desktop's "Change default visual interaction from cross highlighting to cross
-    filtering")."""
+    filtering"). `filter_pane`: False hides the Filters pane in reading view (report object
+    `outspacePane.visible`): the report's own slicers are then the only filters a reader sees."""
     name: str
     perspective: str
     theme: Path
@@ -54,9 +55,10 @@ class ReportSpec:
     custom_visual: bool
     images: tuple[Path, ...] = ()
     cross_filter: bool = False
+    filter_pane: bool = True
 
 
-BSC_REPORT = ReportSpec(REPORT_NAME, PERSPECTIVE, THEME, LOGO, True)
+BSC_REPORT = ReportSpec(REPORT_NAME, PERSPECTIVE, THEME, LOGO, True, filter_pane=False)
 
 _FABRIC = "https://developer.microsoft.com/json-schemas/fabric/"
 SCHEMAS = {  # every URL as the handover project has it, except modelReference (Desktop 2.158's packaging library)
@@ -204,7 +206,8 @@ def report_json(visual_package: dict | None, report_filters: list[Filter] = (),
             "customTheme": {"name": report.theme.name, "reportVersionAtImport": THEME_VERSION,
                             "type": "RegisteredResources"},
         },
-        "objects": {"section": [{"properties": {"verticalAlignment": _value("Top")}}]},
+        "objects": {"section": [{"properties": {"verticalAlignment": _value("Top")}}],
+                    **({} if report.filter_pane else {"outspacePane": [{"properties": {"visible": _value(False)}}]})},
         "resourcePackages": [
             {"name": "SharedResources", "type": "SharedResources",
              "items": [{"name": BASE_THEME_NAME, "path": f"BaseThemes/{BASE_THEME_NAME}.json",

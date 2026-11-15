@@ -7,6 +7,7 @@ import { Payload, KpiRow, PillarSummary, StateKey, ViewModel } from "./types";
 import { parseNumber, parseTrend } from "./trend";
 import { hasScore, stateOf } from "./state";
 import { overallScore, pillarScore, pillarTrend } from "./score";
+import { SHARED_KPI } from "./achievement";
 
 const GUARD_MARK = "can't be analysed by";
 
@@ -75,6 +76,21 @@ export function splitCoOwners(text: string, owner: string): string[] {
     return text.split("|").map(s => s.trim()).filter(s => s !== "" && s !== owner.trim());
 }
 
+/** Net Revenue Achievement as a row, from its payload alone: its catalogue attributes are fixed (higher is better,
+ * measured), so the owner score can use it when an Owner filter leaves it out of the visual's rows. */
+export function sharedRowOf(p: Payload): KpiRow {
+    const st = stateOf(p.stateText, "active", "measure");
+    return {
+        code: SHARED_KPI, name: "Net Revenue Achievement", shortLabel: "Net Revenue", pillar: "Financial", pillarOrder: 1,
+        pillarWeight: null, pillarQuestion: "", objectiveCode: "", objectiveTitle: "", objectiveOrder: 0, primary: true,
+        direction: "higher", valueFormat: "sar", displayOrder: 0, manual: false, parkedInCatalogue: false, owner: "",
+        definition: "", targetBasis: "", manualNote: "", scoreBase: 85, scoreSlope: 0.6, goodFrom: 85, watchFrom: 70,
+        coOwners: [], actual: p.actual, target: p.target, variance: p.variance, score: p.score, weight: p.weight,
+        state: st.key, stateWord: st.word, reason: st.reason, trend: p.trend, targetTrend: p.targetTrend,
+        scoreTrend: p.scoreTrend, branch: null, rowIndex: -1, seriesIndex: null,
+    };
+}
+
 export function parseDataView(dv: DataView): ViewModel {
     const cat = dv?.categorical;
     if (!cat || !cat.categories || !cat.values) return emptyModel(null);
@@ -103,6 +119,7 @@ export function parseDataView(dv: DataView): ViewModel {
     const rows: KpiRow[] = [];
     const labels: string[] = [];
     const branches: string[] = [];
+    let sharedRow: KpiRow | null = null;
 
     groups.forEach((g, gi) => {
         const branch = hasBranch ? (asStr(g.name) || "(Blank)") : null;
@@ -111,6 +128,9 @@ export function parseDataView(dv: DataView): ViewModel {
         const labelCol = find(g, "selectionLabel");
         const basisCol = find(g, "targetBasis");
         const noteCol = find(g, "manualNote");
+        const sharedCol = gi === 0 ? find(g, "sharedPayload") : undefined;
+        const sharedText = sharedCol?.values.find(v => v !== null && v !== undefined && v !== "");
+        if (sharedText !== undefined) sharedRow = sharedRowOf(parsePayload(sharedText as string) as Payload);
         for (let i = 0; i < kpiCol.values.length; i++) {
             if (!labels[gi] && labelCol && labelCol.values[i]) labels[gi] = asStr(labelCol.values[i]);
             const p = parsePayload(payloadCol ? (payloadCol.values[i] as string | null) : null) as Payload;
@@ -205,5 +225,6 @@ export function parseDataView(dv: DataView): ViewModel {
         thresholds: { base: first("scoreBase", 85), slope: first("scoreSlope", 0.6), good: first("goodFrom", 85), watch: first("watchFrom", 70) },
         branches,
         guardMessage: null,
+        sharedRow,
     };
 }

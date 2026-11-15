@@ -8,6 +8,7 @@ export interface FixtureRow {
     selectionLabel?: string | (string | null)[] | null;
     targetBasis?: string | (string | null)[] | null;
     manualNote?: string | (string | null)[] | null;
+    sharedPayload?: string | (string | null)[] | null;
 }
 
 export interface FixtureOpts {
@@ -43,12 +44,12 @@ export function makeDataView(rows: FixtureRow[], opts: FixtureOpts = {}): DataVi
         });
         const pay = (r: FixtureRow) => (Array.isArray(r.payload) ? r.payload[gi] ?? null : (r.payload ?? null));
         const lab = (r: FixtureRow) => (Array.isArray(r.selectionLabel) ? r.selectionLabel[gi] ?? null : (r.selectionLabel ?? null));
-        const pick = (role: "targetBasis" | "manualNote") => (r: FixtureRow) => {
+        const pick = (role: "targetBasis" | "manualNote" | "sharedPayload") => (r: FixtureRow) => {
             const v = r[role];
             return Array.isArray(v) ? v[gi] ?? null : (v ?? null);
         };
         const vals = [col("payload", pay), col("selectionLabel", lab)];
-        for (const role of ["targetBasis", "manualNote"] as const) {
+        for (const role of ["targetBasis", "manualNote", "sharedPayload"] as const) {
             if (rows.some(r => r[role] !== undefined)) vals.push(col(role, pick(role)));
         }
         return { name: b, values: vals };
