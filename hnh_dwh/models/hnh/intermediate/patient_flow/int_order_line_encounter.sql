@@ -23,26 +23,6 @@ encounters as (
     where patient_id is not null
 ),
 
-charge_orders as (
-    -- earliest live charge with a resolved encounter, per order line
-    select
-        c.branch_id                                                          as branch_id,
-        d.order_line                                                         as order_line,
-        argMin(c.encounter_key, tuple(c.delivery_date_key, c.delivery_time_key, c.charge_line_key)) as encounter_key
-    from (
-        select toUInt8(branch_key) as branch_id, delivery_line, encounter_key,
-               delivery_date_key, delivery_time_key, charge_line_key
-        from {{ ref('fact_charge_line') }}
-        where charge_status = 'Live' and resolved_encounter_type is not null and delivery_line is not null
-    ) as c
-    inner join (
-        select branch_id, delivery_line, assumeNotNull(order_line) as order_line
-        from {{ ref('stg_oasis__delivery_lines') }}
-        where order_line is not null
-    ) as d on d.branch_id = c.branch_id and d.delivery_line = c.delivery_line
-    group by c.branch_id, d.order_line
-),
-
 parsed as (
     select
         l.branch_id                                         as branch_id,
@@ -55,20 +35,54 @@ parsed as (
         toInt64OrNull(substring(ifNull(o.hl7_encounter, ''), 2)) as hl7_id
     from lines as l
     left join orders as o on o.branch_id = l.branch_id and o.master_order_no = l.master_order_no
+),
+
+from_order as (
+    select p.branch_id as branch_id, p.order_line as order_line, e.encounter_key as encounter_key
+    from parsed as p
+    inner join encounters as e
+        on e.branch_id = p.branch_id and e.encounter_type = p.hl7_type
+       and e.source_id = p.hl7_id and e.patient_id = p.patient_id
+),
+
+-- The charge fallback is built only for the lines the order did not resolve, so the delivery-line and charge
+-- reads (98M and 70M rows in full) are semi-filtered down to those lines before any join or aggregation.
+fallback_deliveries as (
+    select branch_id, delivery_line, assumeNotNull(order_line) as order_line
+    from {{ ref('stg_oasis__delivery_lines') }}
+    where order_line is not null
+      and (branch_id, assumeNotNull(order_line)) in (
+          select branch_id, order_line from parsed
+          where (branch_id, order_line) not in (select branch_id, order_line from from_order))
+),
+
+charge_orders as (
+    -- earliest live charge with a resolved encounter, per order line
+    select
+        d.branch_id                                          as branch_id,
+        d.order_line                                         as order_line,
+        argMin(c.encounter_key, tuple(c.delivery_date_key, c.delivery_time_key, c.charge_line_key)) as encounter_key
+    from (
+        select toUInt8(branch_key) as branch_id, assumeNotNull(delivery_line) as delivery_line, encounter_key,
+               delivery_date_key, delivery_time_key, charge_line_key
+        from {{ ref('fact_charge_line') }}
+        where charge_status = 'Live' and resolved_encounter_type is not null and delivery_line is not null
+          and (toUInt8(branch_key), assumeNotNull(delivery_line)) in (select branch_id, delivery_line from fallback_deliveries)
+    ) as c
+    inner join fallback_deliveries as d on d.branch_id = c.branch_id and d.delivery_line = c.delivery_line
+    group by d.branch_id, d.order_line
 )
 
 select
     p.branch_id                                             as branch_id,
     p.order_line                                            as order_line,
-    multiIf(e.encounter_key is not null, e.encounter_key,
+    multiIf(fo.encounter_key is not null, fo.encounter_key,
             co.encounter_key is not null, co.encounter_key,
             toInt64(-1))                                    as encounter_key,
-    multiIf(e.encounter_key is not null, 'order',
+    multiIf(fo.encounter_key is not null, 'order',
             co.encounter_key is not null, 'charge',
             'none')                                         as encounter_source
 from parsed as p
-left join encounters as e
-    on e.branch_id = p.branch_id and e.encounter_type = p.hl7_type
-   and e.source_id = p.hl7_id and e.patient_id = p.patient_id
+left join from_order as fo on fo.branch_id = p.branch_id and fo.order_line = p.order_line
 left join charge_orders as co on co.branch_id = p.branch_id and co.order_line = p.order_line
 {{ hnh_settings() }}
