@@ -30,5 +30,11 @@
    "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Date'[Year Month], Branch[Branch Name], TREATAS ( { \"FIN_NET_REVENUE\" }, 'BSC KPI'[KPI Code] ), TREATAS ( { 2026 }, 'Date'[Year] ), TREATAS ( { \"Yes\" }, Branch[Is Hospital] ), \"BSC Actual\", [BSC Actual], \"BSC Target\", [BSC Target] )"},
   {"name": "Scorecard family page: revenue detail, one hospital and month",
    "cold_limit": 10, "warm_limit": 5,
-   "dax": "EVALUATE TOPN ( 15, SUMMARIZECOLUMNS ( Department[Department Name], TREATAS ( { 6 }, Branch[Branch Key] ), TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Revenue\", [Revenue], \"Gross Charges\", [Gross Charges], \"Line Discount\", [Line Discount], \"Claimable Revenue\", [Claimable Revenue] ), [Revenue], DESC )"}
+   "dax": "EVALUATE TOPN ( 15, SUMMARIZECOLUMNS ( Department[Department Name], TREATAS ( { 6 }, Branch[Branch Key] ), TREATAS ( { 202608 }, 'Date'[Year Month] ), \"Revenue\", [Revenue], \"Gross Charges\", [Gross Charges], \"Line Discount\", [Line Discount], \"Claimable Revenue\", [Claimable Revenue] ), [Revenue], DESC )"},
+  {"name": "Revenue cycle by charges: Census (Charged) by product category, all branches, 2025 (TREATAS of a year's encounter keys)",
+   "cold_limit": 10, "warm_limit": 5,
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Product Category'[Unified Category], TREATAS ( { 2025 }, 'Date'[Year] ), \"Census (Charged)\", [Census (Charged)] )"},
+  {"name": "Revenue cycle by charges: Revenue per Charged Visit (CPV) by product category, all branches, 2025",
+   "cold_limit": 10, "warm_limit": 5,
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Product Category'[Unified Category], TREATAS ( { 2025 }, 'Date'[Year] ), \"CPV\", [Revenue per Charged Visit (CPV)] )"}
 ]

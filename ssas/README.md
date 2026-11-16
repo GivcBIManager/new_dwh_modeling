@@ -74,6 +74,25 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
   ClickHouse `default.map_bsc_*` tables, edited by the BI manager (`docs/bsc_config.md`). They reach the model through
   the nightly build and `process.ps1 -Mode Daily`; no deploy is needed.
 
+## Census by charges
+
+Folder `Revenue Cycle\By Charges` (spec `docs/superpowers/specs/2026-11-16-charge-line-relationships-design.md`) counts
+visits and episodes **by charges**: `Census (Charged)` and `Episodes (Charged)` are the visits and episodes counted as in
+`Census` and `Episodes` that have a recognised charge line (`Is Recognised Revenue = Yes`) in the current Charge Lines
+filter, so Product Category, Service, Service Department, Ordering Doctor, MRP 1-3, Charged By and Policy narrow them;
+`Census (Ordered)` does the same through Order Lines. Facts are not related to each other: the measures move the hidden
+`Encounter Key` / `Episode Key` with `TREATAS`. A visit counts once per category it was charged in, so the categories add
+up to more than the total, and with no charge slicer `Census (Charged)` is `Census` less the visits without a recognised
+charge. Department, Staff, Payer, Care Type and Patient, which filter both the visit and the charge, act on the **charge
+side only** (Department = Radiology: visits that had a Radiology charge, whatever clinic they were booked in). The
+**visit month governs**: Date and Branch select the visits or episodes, and their charges count whatever day they were
+delivered, so `Revenue (Charged Visits)` and the CPV of September include a September visit's charges delivered in
+October. `Revenue per Charged Visit (CPV)` and `Revenue per Charged Episode (CPE)` are cohort measures (revenue of the
+counted visits or episodes ÷ their count), not `BSC OP Revenue per Episode` (revenue by delivery date) or a budget. The
+measures call `[_Unguarded OP Visits]`, `[_Unguarded ER Visits]`, `[_Unguarded Episodes]` and `[_Unguarded Revenue]`,
+because the inner guards would reject the Charge Lines slicers, and allow those slicers with
+`annotation hnh_guard_allow`.
+
 ## Run
 
 | Task | Command |
