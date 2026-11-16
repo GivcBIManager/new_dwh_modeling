@@ -238,8 +238,16 @@ Describe 'int_charge_line_links: MRP' {
         $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '2026-06-10 23:59:59', 'O')", "(2, '1', 'D2', '2026-06-11 00:00:00', '', 'O')")
         Get-Mrp $r | Should Be 'D2'
     }
-    It 'skips a cancelled eligibility' {
+    It 'prefers a covering O row over a C row even when the C row starts later' {
         $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '', 'O')", "(2, '1', 'DC', '2026-06-10 00:00:00', '', 'C')")
+        Get-Mrp $r | Should Be 'D1'
+    }
+    It 'uses a C row when it is the only covering row' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '2026-06-10 00:00:00', 'O')", "(2, '1', 'DC', '2026-06-10 00:00:00', '', 'C')")
+        Get-Mrp $r | Should Be 'DC'
+    }
+    It 'does not choose a period that starts after the delivery' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '', 'O')", "(2, '1', 'DF', '2026-06-20 00:00:00', '', 'O')")
         Get-Mrp $r | Should Be 'D1'
     }
     It 'takes the latest start, then the highest id, of two covering periods' {

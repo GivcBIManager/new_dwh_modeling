@@ -145,8 +145,10 @@ department from `stg_oasis__service_departments`: `service_department_key`, `bra
 - `order_line_key` is not exposed; the ordering doctor is enough.
 - `mrp_1_staff_key`, `mrp_2_staff_key`, `mrp_3_staff_key`: for responsibility k (the user's "MRP responsibility
   1, 2, 3"), the eligibility rows of the charge's branch, patient and episode with
-  `eligibility_start <= delivered_at <= ifNull(eligibility_end, now())` and `eligibility_status != 'C'` (cancelled;
-  statuses seen: O, S, C); if several match, the latest `eligibility_start`, then the highest `patient_eligibility_id`.
+  `eligibility_start <= delivered_at <= ifNull(eligibility_end, now())`; if several match, a row that is not status C
+  (statuses seen: O, S, C) beats a C row, then the latest `eligibility_start`, then the highest
+  `patient_eligibility_id`. A C period is used only when no other row covers the time (C periods look like real
+  periods, so excluding them dropped coverage from 98% to 93%).
   Consultant → staff key. No covering period → -1 (Unknown), per the user's rule. October 2026 check: 510,352 of
   522,552 charges (98%) fall in a responsibility-1 period; 68,126 in a responsibility-2 and 42,719 in a
   responsibility-3 period.
