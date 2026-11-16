@@ -10,5 +10,8 @@ select
     {{ hnh_id('eligibility_service_dept') }}    as service_dept,
     {{ hnh_id('work_entity') }}                 as work_entity,
     {{ hnh_id('eligibility_work_entity') }}     as eligibility_work_entity,
-    {{ hnh_id('admission_no') }}                as admission_no
+    {{ hnh_id('admission_no') }}                as admission_no,
+    {{ hnh_ksa_wall_clock('eligibility_start') }} as eligibility_start,
+    {{ hnh_ksa_wall_clock('eligibility_end') }} as eligibility_end,
+    {{ hnh_code('eligibility_status') }}        as eligibility_status
 from {{ hnh_oasis_source('patient_eligibility') }} final
