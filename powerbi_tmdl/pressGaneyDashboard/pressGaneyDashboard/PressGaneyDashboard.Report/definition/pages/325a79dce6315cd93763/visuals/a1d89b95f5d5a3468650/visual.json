@@ -1,11 +1,11 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
-  "name": "9330832f03d176c12f02",
+  "name": "a1d89b95f5d5a3468650",
   "position": {
     "x": 16,
     "y": 144,
     "z": 15000,
-    "height": 276,
+    "height": 564,
     "width": 500,
     "tabOrder": 15000
   },
@@ -59,11 +59,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Group NPS (Bottom 8)"
+                  "Property": "NPS (Drivers)"
                 }
               },
-              "queryRef": "_Measures.Group NPS (Bottom 8)",
-              "nativeQueryRef": "Group NPS (Bottom 8)",
+              "queryRef": "_Measures.NPS (Drivers)",
+              "nativeQueryRef": "NPS (Drivers)",
               "displayName": "NPS"
             }
           ]
@@ -154,7 +154,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Group NPS (Bottom 8)"
+                "Property": "NPS (Drivers)"
               }
             },
             "direction": "Ascending"
@@ -177,7 +177,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Biggest drags: 8 lowest question groups'"
+                  "Value": "'Question groups by NPS, lowest first'"
                 }
               }
             }

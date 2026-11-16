@@ -1,13 +1,13 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
-  "name": "056d0d9b16ad53b7d62e",
+  "name": "809c1c0396d9b0b937bd",
   "position": {
     "x": 532,
     "y": 144,
-    "z": 17000,
+    "z": 16000,
     "height": 564,
     "width": 732,
-    "tabOrder": 17000
+    "tabOrder": 16000
   },
   "visual": {
     "visualType": "tableEx",
@@ -53,11 +53,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Q NPS (Bottom 8)"
+                  "Property": "NPS (Questions)"
                 }
               },
-              "queryRef": "_Measures.Q NPS (Bottom 8)",
-              "nativeQueryRef": "Q NPS (Bottom 8)",
+              "queryRef": "_Measures.NPS (Questions)",
+              "nativeQueryRef": "NPS (Questions)",
               "displayName": "NPS"
             },
             {
@@ -68,11 +68,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Q % Promoters (Bottom 8)"
+                  "Property": "% Promoters"
                 }
               },
-              "queryRef": "_Measures.Q % Promoters (Bottom 8)",
-              "nativeQueryRef": "Q % Promoters (Bottom 8)",
+              "queryRef": "_Measures.% Promoters",
+              "nativeQueryRef": "% Promoters",
               "displayName": "Promoters"
             },
             {
@@ -83,11 +83,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Q % Detractors (Bottom 8)"
+                  "Property": "% Detractors"
                 }
               },
-              "queryRef": "_Measures.Q % Detractors (Bottom 8)",
-              "nativeQueryRef": "Q % Detractors (Bottom 8)",
+              "queryRef": "_Measures.% Detractors",
+              "nativeQueryRef": "% Detractors",
               "displayName": "Detractors"
             },
             {
@@ -98,11 +98,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Q Answers (Bottom 8)"
+                  "Property": "NPS Answers"
                 }
               },
-              "queryRef": "_Measures.Q Answers (Bottom 8)",
-              "nativeQueryRef": "Q Answers (Bottom 8)",
+              "queryRef": "_Measures.NPS Answers",
+              "nativeQueryRef": "NPS Answers",
               "displayName": "Answers"
             }
           ]
@@ -118,7 +118,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Q NPS (Bottom 8)"
+                "Property": "NPS (Questions)"
               }
             },
             "direction": "Ascending"
@@ -141,7 +141,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'The 8 lowest-scoring questions'"
+                  "Value": "'Every question by NPS, lowest first'"
                 }
               }
             }
@@ -315,7 +315,7 @@
                 }
               }
             ],
-            "metadata": "_Measures.Q NPS (Bottom 8)"
+            "metadata": "_Measures.NPS (Questions)"
           }
         },
         {
@@ -397,7 +397,7 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.Q NPS (Bottom 8)"
+            "metadata": "_Measures.NPS (Questions)"
           }
         },
         {
@@ -411,7 +411,7 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.Q % Promoters (Bottom 8)"
+            "metadata": "_Measures.% Promoters"
           }
         },
         {
@@ -425,7 +425,7 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.Q % Detractors (Bottom 8)"
+            "metadata": "_Measures.% Detractors"
           }
         },
         {
@@ -439,7 +439,7 @@
             }
           },
           "selector": {
-            "metadata": "_Measures.Q Answers (Bottom 8)"
+            "metadata": "_Measures.NPS Answers"
           }
         }
       ],
@@ -457,5 +457,62 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "Filter099bbc0ab33005998c726801",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "NPS (Questions)"
+          }
+        },
+        "type": "Advanced",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "m",
+              "Entity": "_Measures",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "Not": {
+                  "Expression": {
+                    "Comparison": {
+                      "ComparisonKind": 0,
+                      "Left": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "m"
+                            }
+                          },
+                          "Property": "NPS (Questions)"
+                        }
+                      },
+                      "Right": {
+                        "Literal": {
+                          "Value": "null"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

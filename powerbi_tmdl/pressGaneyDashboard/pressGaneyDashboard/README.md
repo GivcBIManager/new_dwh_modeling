@@ -27,7 +27,7 @@ scrolling: long lists are shown as fixed Top / Bottom N views, using the `Rankin
 | Home | How are we doing? | NPS gauge, headline KPIs, four auto-generated takeaways, links to each chapter. Opens on month to date, like every page (see Date range below) |
 | 1 · Participation | Can we trust the numbers? | Taller page (1280 × 2460, fits to width), five numbered sections: 1 at a glance (volume, response rate, NPS margin, reliability, sample mix); 2 SMS vs call-centre agent (no SMS = agent call), monthly trend, data quality; 3 response rate by channel and patient profile; 4 **is the sample like our visits** (see below); 5 sample size vs visits by care type and branch |
 | 2 · Satisfaction & NPS | How do patients rate us? | NPS (5-point), Avg NPS by Question, Overall Satisfaction (0–100), Top Box, Hospital / Physician NPS, trend, care-setting scorecards |
-| 3 · What Drives the Score | Which parts of the journey pull NPS down? | 8 lowest and 8 highest question groups (drill down to questions), the 8 lowest-scoring questions |
+| 3 · What Drives the Score | Which parts of the journey pull NPS down? | Every question group by NPS, lowest first (drill down to questions), and every question by NPS, lowest first; items under the minimum answers are left out |
 | 4 · Branch Benchmark | Which branches lead and lag? | Branch scorecards vs network, the 5 weakest question groups by branch, gap to network |
 | 5 · Specialties & Doctors | Where to recognise, where to coach? | 15 most-surveyed specialties > doctors by branch; top 8 and bottom 8 doctors (30+ answers) |
 | 6 · Patient Profile | Does experience differ by patient? | NPS and satisfaction by gender, nationality, payer and the survey's basic questions |

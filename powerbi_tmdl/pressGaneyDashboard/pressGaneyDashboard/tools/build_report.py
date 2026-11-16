@@ -654,6 +654,24 @@ def story_banner(measure: str) -> dict:
     }
 
 
+def not_blank_filter(page: Page, container: dict, key: str, measure: str) -> None:
+    """Visual-level filter keeping only the rows where `measure` is not blank."""
+    container["filterConfig"] = {"filters": [{
+        "name": "Filter" + hex_id(page.key, key, n=24),
+        "field": meas(measure),
+        "type": "Advanced",
+        "filter": {
+            "Version": 2,
+            "From": [{"Name": "m", "Entity": MEASURE_TABLE[measure], "Type": 0}],
+            "Where": [{"Condition": {"Not": {"Expression": {"Comparison": {
+                "ComparisonKind": 0,
+                "Left": {"Measure": {"Expression": {"SourceRef": {"Source": "m"}}, "Property": measure}},
+                "Right": {"Literal": {"Value": "null"}}}}}}}],
+        },
+        "howCreated": "User",
+    }]}
+
+
 def filter_row(page: Page, slicers: list[tuple[str, str, str]], story_measure: str) -> None:
     """Period tiles, then the slicers (the date range is wider, for its two date boxes), the page's key takeaway on
     the right."""
@@ -674,20 +692,7 @@ def filter_row(page: Page, slicers: list[tuple[str, str, str]], story_measure: s
         if (table, column, label) == DATE_RANGE:
             # Only dates with scored answers, so the picker opens on the survey period, not the whole calendar. A Survey
             # Answers measure: page 3 filters Survey Question, which would turn [Invitations] into its guard message.
-            container["filterConfig"] = {"filters": [{
-                "name": "Filter" + hex_id(page.key, "date-range-has-surveys", n=24),
-                "field": meas("NPS Answers"),
-                "type": "Advanced",
-                "filter": {
-                    "Version": 2,
-                    "From": [{"Name": "m", "Entity": MEASURE_TABLE["NPS Answers"], "Type": 0}],
-                    "Where": [{"Condition": {"Not": {"Expression": {"Comparison": {
-                        "ComparisonKind": 0,
-                        "Left": {"Measure": {"Expression": {"SourceRef": {"Source": "m"}}, "Property": "NPS Answers"}},
-                        "Right": {"Literal": {"Value": "null"}}}}}}}],
-                },
-                "howCreated": "User",
-            }]}
+            not_blank_filter(page, container, "date-range-has-surveys", "NPS Answers")
         x += w + 12
     page.add("story", x, 76, W - 16 - x, 62, story_banner(story_measure))
 
@@ -965,33 +970,34 @@ def page_question_groups(drill: str | None = None) -> Page:
         p = chapter("question-groups")
     filter_row(p, [DATE_RANGE, BRANCH, SETTING], "Story Drivers")
     p.filter_in("Survey Question", "Is Scored", ["Yes"])
-    for key, y, measure, direction, title in [
-        ("drags", 144, "Group NPS (Bottom 8)", "Ascending", "Biggest drags: 8 lowest question groups"),
-        ("strengths", 432, "Group NPS (Top 8)", "Descending", "Strengths: 8 highest question groups"),
-    ]:
-        p.add(key, 16, y, 500, 276, chart(
-            "clusteredBarChart",
-            Q().c("Category", "Survey Question", "Domain En", "Question group", active=True)
-               .c("Category", "Survey Question", "Question En", "Question", active=False)
-               .m("Y", measure, "NPS").m("Tooltips", "NPS Answers").m("Tooltips", "% Promoters")
-               .m("Tooltips", "% Detractors").m("Tooltips", "NPS Margin of Error", "NPS margin (±)")
-               .m("Tooltips", "Reliability").sort_by(meas(measure), direction),
-            title, subtitle="30+ answers (10+ specialty, 5+ doctor). Right-click a bar > Drill down for questions",
-            objects={**nps_point_colors(), "labels": data_labels(), "valueAxis": obj({"show": lit(False)}),
-                     "categoryAxis": obj({"maxMarginFactor": lit(40)})}))  # room for "Moving Through your visit"
-    p.add("weak-questions", 532, 144, 732, 564, chart(
+    # Every question group and every question with enough answers, lowest NPS first (2026-11-16: the user wants the
+    # whole list sorted, not Top / Bottom 8 views). A group below its minimum answers has a blank NPS (Drivers) and
+    # drops out of the chart by itself; the table needs the not-blank filter because its share columns are never blank.
+    p.add("groups", 16, 144, 500, 564, chart(
+        "clusteredBarChart",
+        Q().c("Category", "Survey Question", "Domain En", "Question group", active=True)
+           .c("Category", "Survey Question", "Question En", "Question", active=False)
+           .m("Y", "NPS (Drivers)", "NPS").m("Tooltips", "NPS Answers").m("Tooltips", "% Promoters")
+           .m("Tooltips", "% Detractors").m("Tooltips", "NPS Margin of Error", "NPS margin (±)")
+           .m("Tooltips", "Reliability").sort_by(meas("NPS (Drivers)"), "Ascending"),
+        "Question groups by NPS, lowest first",
+        subtitle="30+ answers (10+ specialty, 5+ doctor). Right-click a bar > Drill down for questions",
+        objects={**nps_point_colors(), "labels": data_labels(), "valueAxis": obj({"show": lit(False)}),
+                 "categoryAxis": obj({"maxMarginFactor": lit(40)})}))  # room for "Moving Through your visit"
+    questions = p.add("questions", 532, 144, 732, 564, chart(
         "tableEx",
         Q().c("Values", "Survey Question", "Domain En", "Question group")
            .c("Values", "Survey Question", "Question En", "Question")
-           .m("Values", "Q NPS (Bottom 8)", "NPS").m("Values", "Q % Promoters (Bottom 8)", "Promoters")
-           .m("Values", "Q % Detractors (Bottom 8)", "Detractors").m("Values", "Q Answers (Bottom 8)", "Answers")
-           .sort_by(meas("Q NPS (Bottom 8)"), "Ascending"),
-        "The 8 lowest-scoring questions",
+           .m("Values", "NPS (Questions)", "NPS").m("Values", "% Promoters", "Promoters")
+           .m("Values", "% Detractors", "Detractors").m("Values", "NPS Answers", "Answers")
+           .sort_by(meas("NPS (Questions)"), "Ascending"),
+        "Every question by NPS, lowest first",
         subtitle="30+ answers (10+ specialty, 2+ doctor). Click a question group on the left to focus on it",
-        objects=table_objects(qref("Q NPS (Bottom 8)"), {
+        objects=table_objects(qref("NPS (Questions)"), {
             "Survey Question.Domain En": 128, "Survey Question.Question En": 258,
-            qref("Q NPS (Bottom 8)"): 84, qref("Q % Promoters (Bottom 8)"): 76,
-            qref("Q % Detractors (Bottom 8)"): 78, qref("Q Answers (Bottom 8)"): 66}, wrap=True)))
+            qref("NPS (Questions)"): 84, qref("% Promoters"): 76,
+            qref("% Detractors"): 78, qref("NPS Answers"): 66}, wrap=True)))
+    not_blank_filter(p, questions, "questions-with-nps", "NPS (Questions)")
     return p
 
 
@@ -1205,9 +1211,9 @@ def page_guide_rules() -> Page:
                           "rates 500+ invitations."),
     ])
     lists = ("Top and bottom lists", [
-        ("", "Long lists are shown as fixed Top / Bottom N views so no visual needs to scroll:"),
-        ("Page 3", "8 lowest and 8 highest question groups by NPS, and the 8 lowest-scoring questions. "
-                   "Ties are broken alphabetically."),
+        ("", "Pages 4 and 5 show fixed Top / Bottom N views so no visual needs to scroll:"),
+        ("Page 3", "every question group and every question with enough answers, sorted lowest NPS first "
+                   "(the question table scrolls)."),
         ("Page 4", "the 5 question groups with the lowest network NPS, shown by branch."),
         ("Page 5", "the 15 most-surveyed specialties (by scored answers); the 8 highest and 8 lowest doctors by "
                    "NPS (30+ answers), ties broken by answer volume then name."),
