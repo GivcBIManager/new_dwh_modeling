@@ -57,6 +57,9 @@ perspective 'Balanced Scorecard'
 	perspectiveTable 'Charge Lines'
 		includeAll
 
+	perspectiveTable 'Charged By'
+		includeAll
+
 	perspectiveTable 'Claim Lines'
 		includeAll
 
@@ -129,16 +132,31 @@ perspective 'Balanced Scorecard'
 	perspectiveTable Location
 		includeAll
 
+	perspectiveTable 'MRP 1'
+		includeAll
+
+	perspectiveTable 'MRP 2'
+		includeAll
+
+	perspectiveTable 'MRP 3'
+		includeAll
+
 	perspectiveTable 'NPHIES Reason'
 		includeAll
 
 	perspectiveTable 'Order Lines'
 		includeAll
 
+	perspectiveTable 'Ordering Doctor'
+		includeAll
+
 	perspectiveTable Patient
 		includeAll
 
 	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Policy
 		includeAll
 
 	perspectiveTable Position
@@ -157,6 +175,9 @@ perspective 'Balanced Scorecard'
 		includeAll
 
 	perspectiveTable Service
+		includeAll
+
+	perspectiveTable 'Service Department'
 		includeAll
 
 	perspectiveTable Staff

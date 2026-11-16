@@ -1,0 +1,57 @@
+/// Insurance policies of charge lines.
+table Policy
+
+	column 'Policy Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: policy_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Policy Code'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: policy_code
+
+	column 'Policy Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: policy_name
+
+	column Insurer
+		dataType: string
+		summarizeBy: none
+		sourceColumn: insurer
+
+	column 'Client Company'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: client_company
+
+	column 'Is Referral'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_referral
+
+	column 'Is Active'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_active
+
+	partition Policy = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_policy")
+				in
+				    Source
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_policy

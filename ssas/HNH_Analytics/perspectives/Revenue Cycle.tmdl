@@ -12,6 +12,9 @@ perspective 'Revenue Cycle'
 	perspectiveTable 'Charge Lines'
 		includeAll
 
+	perspectiveTable 'Charged By'
+		includeAll
+
 	perspectiveTable 'Claim Status'
 		includeAll
 
@@ -27,13 +30,28 @@ perspective 'Revenue Cycle'
 	perspectiveTable Invoices
 		includeAll
 
+	perspectiveTable 'MRP 1'
+		includeAll
+
+	perspectiveTable 'MRP 2'
+		includeAll
+
+	perspectiveTable 'MRP 3'
+		includeAll
+
 	perspectiveTable 'Order Lines'
+		includeAll
+
+	perspectiveTable 'Ordering Doctor'
 		includeAll
 
 	perspectiveTable Patient
 		includeAll
 
 	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Policy
 		includeAll
 
 	perspectiveTable 'Product Category'
@@ -43,6 +61,9 @@ perspective 'Revenue Cycle'
 		includeAll
 
 	perspectiveTable Service
+		includeAll
+
+	perspectiveTable 'Service Department'
 		includeAll
 
 	perspectiveTable Staff

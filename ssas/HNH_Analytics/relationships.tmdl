@@ -277,6 +277,10 @@ relationship charge_lines_care_type_key
 	fromColumn: 'Charge Lines'.'Care Type Key'
 	toColumn: 'Care Type'.'Care Type Key'
 
+relationship charge_lines_charged_by_staff_key
+	fromColumn: 'Charge Lines'.'Charged By Staff Key'
+	toColumn: 'Charged By'.'Staff Key'
+
 relationship charge_lines_delivery_date_key
 	fromColumn: 'Charge Lines'.'Delivery Date Key'
 	toColumn: Date.'Date Key'
@@ -294,13 +298,37 @@ relationship charge_lines_episode_payer_key
 	fromColumn: 'Charge Lines'.'Episode Payer Key'
 	toColumn: Payer.'Payer Key'
 
+relationship charge_lines_mrp_1_staff_key
+	fromColumn: 'Charge Lines'.'Mrp 1 Staff Key'
+	toColumn: 'MRP 1'.'Staff Key'
+
+relationship charge_lines_mrp_2_staff_key
+	fromColumn: 'Charge Lines'.'Mrp 2 Staff Key'
+	toColumn: 'MRP 2'.'Staff Key'
+
+relationship charge_lines_mrp_3_staff_key
+	fromColumn: 'Charge Lines'.'Mrp 3 Staff Key'
+	toColumn: 'MRP 3'.'Staff Key'
+
+relationship charge_lines_ordering_staff_key
+	fromColumn: 'Charge Lines'.'Ordering Staff Key'
+	toColumn: 'Ordering Doctor'.'Staff Key'
+
 relationship charge_lines_patient_key
 	fromColumn: 'Charge Lines'.'Patient Key'
 	toColumn: Patient.'Patient Key'
 
+relationship charge_lines_policy_key
+	fromColumn: 'Charge Lines'.'Policy Key'
+	toColumn: Policy.'Policy Key'
+
 relationship charge_lines_product_category_key
 	fromColumn: 'Charge Lines'.'Product Category Key'
 	toColumn: 'Product Category'.'Product Category Key'
+
+relationship charge_lines_service_department_key
+	fromColumn: 'Charge Lines'.'Service Department Key'
+	toColumn: 'Service Department'.'Service Department Key'
 
 relationship charge_lines_service_key
 	fromColumn: 'Charge Lines'.'Service Key'

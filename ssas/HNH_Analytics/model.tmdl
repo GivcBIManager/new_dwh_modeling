@@ -30,6 +30,7 @@ ref table 'Budget Line'
 ref table 'Care Type'
 ref table 'Cash Receipts'
 ref table 'Charge Lines'
+ref table 'Charged By'
 ref table 'Claim Lines'
 ref table 'Claim Payments'
 ref table 'Claim Status'
@@ -65,15 +66,20 @@ ref table Item
 ref table Job
 ref table 'Leave Balances'
 ref table Location
+ref table 'MRP 1'
+ref table 'MRP 2'
+ref table 'MRP 3'
 ref table 'Movement Type'
 ref table 'NPHIES Reason'
 ref table 'Order Lines'
+ref table 'Ordering Doctor'
 ref table Patient
 ref table 'Patient Consumption'
 ref table 'Patient Details'
 ref table 'Pay Category'
 ref table Payer
 ref table Payroll
+ref table Policy
 ref table Position
 ref table 'Pre-auth Lines'
 ref table 'Pre-auth Outcome'
@@ -83,6 +89,7 @@ ref table 'Purchase Lines'
 ref table Requisitions
 ref table 'Revenue Adjustments'
 ref table Service
+ref table 'Service Department'
 ref table Staff
 ref table 'Staff Productivity'
 ref table 'Stock Monthly'

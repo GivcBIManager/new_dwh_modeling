@@ -33,6 +33,9 @@ perspective Executive
 	perspectiveTable 'Charge Lines'
 		includeAll
 
+	perspectiveTable 'Charged By'
+		includeAll
+
 	perspectiveTable 'Claim Lines'
 		includeAll
 
@@ -81,13 +84,28 @@ perspective Executive
 	perspectiveTable Location
 		includeAll
 
+	perspectiveTable 'MRP 1'
+		includeAll
+
+	perspectiveTable 'MRP 2'
+		includeAll
+
+	perspectiveTable 'MRP 3'
+		includeAll
+
 	perspectiveTable 'NPHIES Reason'
+		includeAll
+
+	perspectiveTable 'Ordering Doctor'
 		includeAll
 
 	perspectiveTable Patient
 		includeAll
 
 	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Policy
 		includeAll
 
 	perspectiveTable Position
@@ -97,6 +115,9 @@ perspective Executive
 		includeAll
 
 	perspectiveTable Service
+		includeAll
+
+	perspectiveTable 'Service Department'
 		includeAll
 
 	perspectiveTable Staff
