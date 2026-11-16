@@ -872,15 +872,18 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """Order Cancellation Rate %"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Revenue Cycle\Order Fulfilment
-	/// Visits (OP and ER, counted as in Census) that have a recognised charge line in the current Charge Lines filter: Product Category, Service, Service Department, Ordering Doctor, MRP 1-3, Charged By, Policy, and Department, Staff, Payer, Care Type and Patient, which act on the charge only (Department = Radiology: visits with a Radiology charge). Date and Branch select the visits; a charge delivered on another day counts for its visit's month. A visit with charges in two categories counts once in each, so categories add up to more than the total. With no charge slicer it is Census less the visits without a recognised charge (about 10% of OP visits in 2025).
+	/// Visits (OP and ER, counted as in Census) that have a recognised charge line in the current Charge Lines filter: Product Category, Service, Service Department, Ordering Doctor, MRP 1-3, Charged By, Policy, and Department, Staff, Payer, Care Type and Patient, which act on the charge only (Department = Radiology: visits with a Radiology charge). Date and Branch select the visits; a charge delivered on another day counts for its visit's month. A visit with charges in two categories counts once in each, so categories add up to more than the total. With no charge slicer it is Census less the visits without a recognised charge (about 10% of OP visits in 2025). Charges delivered more than 400 days before or after the selected dates are not used to find visits. Visit-side slicers (Encounters, Booked Doctor, ER Priority, Eligibility Type, Appointment Outcome) select the visits.
 	measure 'Census (Charged)' =
 			VAR __Value = ( -- measure body
+				VAR FirstDay = MIN ( 'Date'[Date] )
+				VAR LastDay = MAX ( 'Date'[Date] )
 				VAR Keys =
 					CALCULATETABLE (
 						VALUES ( 'Charge Lines'[Encounter Key] ),
 						'Charge Lines'[Is Recognised Revenue] = "Yes",
 						REMOVEFILTERS ( 'Date' ),
-						REMOVEFILTERS ( 'Time' )
+						REMOVEFILTERS ( 'Time' ),
+						'Date'[Date] >= FirstDay - 400 && 'Date'[Date] <= LastDay + 400
 					)
 				RETURN
 					CALCULATE (
@@ -893,21 +896,24 @@ table _Measures
 						TREATAS ( Keys, Encounters[Encounter Key] )
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 2 facts #449fe2ad]
+			VAR __Wrong = [_Guard 2 facts #4cf7cebe]
 			RETURN IF ( __Wrong = "", __Value, """Census (Charged)"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department
-	/// Episodes (counted as in Episodes, by start date) that have a recognised charge line in the current Charge Lines filter; Department, Staff, Payer, Care Type and Patient act on the charge only, Date and Branch select the episodes. A charge delivered after the episode's start month still counts for the episode. An episode with charges in two categories counts once in each.
+		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department, Appointment Outcome, Booked Doctor, Encounters, ER Priority, Eligibility Type
+	/// Episodes (counted as in Episodes, by start date) that have a recognised charge line in the current Charge Lines filter; Department, Staff, Payer, Care Type and Patient act on the charge only, Date and Branch select the episodes. A charge delivered after the episode's start month still counts for the episode. An episode with charges in two categories counts once in each. Charges delivered more than 400 days before or after the selected dates are not used to find episodes. Episode-side slicers (Episodes, Eligibility Type) select the episodes.
 	measure 'Episodes (Charged)' =
 			VAR __Value = ( -- measure body
+				VAR FirstDay = MIN ( 'Date'[Date] )
+				VAR LastDay = MAX ( 'Date'[Date] )
 				VAR Keys =
 					CALCULATETABLE (
 						VALUES ( 'Charge Lines'[Episode Key] ),
 						'Charge Lines'[Is Recognised Revenue] = "Yes",
 						REMOVEFILTERS ( 'Date' ),
-						REMOVEFILTERS ( 'Time' )
+						REMOVEFILTERS ( 'Time' ),
+						'Date'[Date] >= FirstDay - 400 && 'Date'[Date] <= LastDay + 400
 					)
 				RETURN
 					CALCULATE (
@@ -920,15 +926,16 @@ table _Measures
 						TREATAS ( Keys, Episodes[Episode Key] )
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 2 facts #6881731b]
+			VAR __Wrong = [_Guard 2 facts #d7ea47cc]
 			RETURN IF ( __Wrong = "", __Value, """Episodes (Charged)"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department
+		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department, Eligibility Type, Episodes
 	/// Cohort revenue in SAR: Revenue of the charge lines in the current Charge Lines filter whose visit is counted in Census for the selected dates (Product Category = Lab: only the Lab revenue of those visits). Charges delivered after the period still count for a visit inside it. Department, Staff, Payer, Care Type and Patient act on the charge only. Not the same as Revenue, which is by delivery date.
 	measure 'Revenue (Charged Visits)' =
 			VAR __Value = ( -- measure body
+				// the visits Census counts: the filters of [OP Visits] and [ER Visits] (keep them in step)
 				VAR Keys =
 					CALCULATETABLE (
 						UNION (
@@ -958,12 +965,12 @@ table _Measures
 						TREATAS ( Keys, 'Charge Lines'[Encounter Key] )
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 2 facts #449fe2ad]
+			VAR __Wrong = [_Guard 2 facts #4cf7cebe]
 			RETURN IF ( __Wrong = "", __Value, """Revenue (Charged Visits)"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department
+		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department, Appointment Outcome, Booked Doctor, Encounters, ER Priority, Eligibility Type
 	/// Cohort revenue in SAR: Revenue of the charge lines in the current Charge Lines filter whose episode is counted in Episodes for the selected dates (by episode start). Charges delivered after the period still count for an episode started inside it. Department, Staff, Payer, Care Type and Patient act on the charge only.
 	measure 'Revenue (Charged Episodes)' =
 			VAR __Value = ( -- measure body
@@ -985,42 +992,45 @@ table _Measures
 						TREATAS ( Keys, 'Charge Lines'[Episode Key] )
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard 2 facts #6881731b]
+			VAR __Wrong = [_Guard 2 facts #d7ea47cc]
 			RETURN IF ( __Wrong = "", __Value, """Revenue (Charged Episodes)"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department
+		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department, Eligibility Type, Episodes
 	/// CPV in SAR: Revenue (Charged Visits) ÷ Census (Charged); with Product Category = Lab, the Lab revenue of the visits that had a Lab charge ÷ those visits. A cohort measure (revenue of the counted visits), not revenue by delivery date ÷ visits, and not a budget.
 	measure 'Revenue per Charged Visit (CPV)' =
 			VAR __Value = ( -- measure body
 				DIVIDE ( [Revenue (Charged Visits)], [Census (Charged)] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard 2 facts #449fe2ad]
+			VAR __Wrong = [_Guard 2 facts #4cf7cebe]
 			RETURN IF ( __Wrong = "", __Value, """Revenue per Charged Visit (CPV)"" can't be analysed by " & __Wrong )
 		formatString: #,0.00
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department
+		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department, Appointment Outcome, Booked Doctor, Encounters, ER Priority, Eligibility Type
 	/// CPE in SAR: Revenue (Charged Episodes) ÷ Episodes (Charged). A cohort measure (revenue of the counted episodes), different from BSC OP Revenue per Episode (revenue by delivery date ÷ episodes by start date) and from Target Cost per Episode (budget).
 	measure 'Revenue per Charged Episode (CPE)' =
 			VAR __Value = ( -- measure body
 				DIVIDE ( [Revenue (Charged Episodes)], [Episodes (Charged)] )
 			) -- end of measure body
-			VAR __Wrong = [_Guard 2 facts #6881731b]
+			VAR __Wrong = [_Guard 2 facts #d7ea47cc]
 			RETURN IF ( __Wrong = "", __Value, """Revenue per Charged Episode (CPE)"" can't be analysed by " & __Wrong )
 		formatString: #,0.00
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department
-	/// Visits (OP and ER, counted as in Census) that have an order line in the current Order Lines filter (Product Category, Service, ordering Department and Staff, …); Department, Staff, Payer, Care Type and Patient act on the order only. Date and Branch select the visits; an order placed on another day counts for its visit's month. A visit with orders in two categories counts once in each.
+		annotation hnh_guard_allow = Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department, Eligibility Type, Episodes
+	/// Visits (OP and ER, counted as in Census) that have an order line in the current Order Lines filter (Product Category, Service, ordering Department and Staff, …); Department, Staff, Payer, Care Type and Patient act on the order only. Date and Branch select the visits; an order placed on another day counts for its visit's month. A visit with orders in two categories counts once in each. Cancelled order lines count too unless Order Lines[Line Status] is sliced. Orders placed more than 400 days before or after the selected dates are not used to find visits. Visit-side slicers (Encounters, Booked Doctor, ER Priority, Eligibility Type, Appointment Outcome) select the visits.
 	measure 'Census (Ordered)' =
 			VAR __Value = ( -- measure body
+				VAR FirstDay = MIN ( 'Date'[Date] )
+				VAR LastDay = MAX ( 'Date'[Date] )
 				VAR Keys =
 					CALCULATETABLE (
 						VALUES ( 'Order Lines'[Encounter Key] ),
 						REMOVEFILTERS ( 'Date' ),
-						REMOVEFILTERS ( 'Time' )
+						REMOVEFILTERS ( 'Time' ),
+						'Date'[Date] >= FirstDay - 400 && 'Date'[Date] <= LastDay + 400
 					)
 				RETURN
 					CALCULATE (
@@ -1033,12 +1043,12 @@ table _Measures
 						TREATAS ( Keys, Encounters[Encounter Key] )
 					)
 			) -- end of measure body
-			VAR __Wrong = [_Guard Encounters + Order Lines | Order Lines, Product Category, Service]
+			VAR __Wrong = [_Guard 2 facts #dc9be705]
 			RETURN IF ( __Wrong = "", __Value, """Census (Ordered)"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Revenue Cycle\By Charges
 
-		annotation hnh_guard_allow = Order Lines, Product Category, Service
+		annotation hnh_guard_allow = Order Lines, Product Category, Service, Appointment Outcome, Booked Doctor, Encounters, ER Priority, Eligibility Type
 	/// Claimed amount in SAR of sent lines of the latest, not cancelled submission (Phase 2B spec section 8).
 	measure 'Claims Submitted' =
 			VAR __Value = ( -- measure body
@@ -9248,8 +9258,8 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
-	/// Filtered tables that cannot filter Charge Lines, Encounters (also allowed: Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 2 facts #449fe2ad' =
+	/// Filtered tables that cannot filter Charge Lines, Encounters (also allowed: Appointment Outcome, Booked Doctor, Charge Lines, Charged By, ER Priority, Eligibility Type, Encounters, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 2 facts #4cf7cebe' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -9261,7 +9271,6 @@ table _Measures
 				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
 				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
 				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
-				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
 				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
 				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
 				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
@@ -9272,7 +9281,6 @@ table _Measures
 				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
 				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
 				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
-				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
 				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
 				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
 				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
@@ -9281,11 +9289,8 @@ table _Measures
 				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
-				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
-				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
 				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
 				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
-				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
 				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
 				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
 				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
@@ -9341,8 +9346,8 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
-	/// Filtered tables that cannot filter Charge Lines, Episodes (also allowed: Charge Lines, Charged By, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard 2 facts #6881731b' =
+	/// Filtered tables that cannot filter Charge Lines, Episodes (also allowed: Charge Lines, Charged By, Eligibility Type, Episodes, MRP 1, MRP 2, MRP 3, Ordering Doctor, Policy, Product Category, Service, Service Department), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 2 facts #d7ea47cc' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
@@ -9375,12 +9380,10 @@ table _Measures
 				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
 				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
 				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
-				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
 				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
 				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
 				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
 				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
-				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
 				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
 				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
 				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
@@ -9427,6 +9430,101 @@ table _Measures
 				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
 				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
 				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Encounters, Order Lines (also allowed: Appointment Outcome, Booked Doctor, ER Priority, Eligibility Type, Encounters, Order Lines, Product Category, Service), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard 2 facts #dc9be705' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
 				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
 				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
 				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
@@ -13576,106 +13674,6 @@ table _Measures
 				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
 				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
 				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
-				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
-				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
-				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
-			RETURN MID ( __Names, 3, 4000 )
-		formatString: General
-		isHidden
-		displayFolder: Diagnostics\Guards
-
-	/// Filtered tables that cannot filter Encounters, Order Lines (also allowed: Order Lines, Product Category, Service), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
-	measure '_Guard Encounters + Order Lines | Order Lines, Product Category, Service' =
-			VAR __Names =
-				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
-				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
-				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
-				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
-				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
-				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
-				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
-				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
-				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
-				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
-				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
-				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
-				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
-				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
-				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
-				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
-				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
-				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
-				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
-				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
-				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
-				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
-				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
-				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
-				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
-				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
-				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
-				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
-				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
-				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
-				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
-				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
-				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
-				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
-				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
-				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
-				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
-				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
-				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
-				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
-				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
-				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
-				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
-				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
-				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
-				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
-				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
-				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
-				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
-				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
-				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
-				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
-				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
-				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
-				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
-				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
-				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
-				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
-				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
-				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
-				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
-				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
-				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
-				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
-				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
-				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
-				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
-				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
-				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
-				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
-				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
-				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
-				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
-				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
-				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
-				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
-				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
-				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
-				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
-				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
-				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
-				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
-				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
-				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
-				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
-				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
-				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
-				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
-				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
 				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
 				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
 				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )

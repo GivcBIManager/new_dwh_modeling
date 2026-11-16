@@ -91,7 +91,15 @@ October. `Revenue per Charged Visit (CPV)` and `Revenue per Charged Episode (CPE
 counted visits or episodes ÷ their count), not `BSC OP Revenue per Episode` (revenue by delivery date) or a budget. The
 measures call `[_Unguarded OP Visits]`, `[_Unguarded ER Visits]`, `[_Unguarded Episodes]` and `[_Unguarded Revenue]`,
 because the inner guards would reject the Charge Lines slicers, and allow those slicers with
-`annotation hnh_guard_allow`.
+`annotation hnh_guard_allow`, together with the visit-side slicers (Encounters, Booked Doctor, ER Priority, Eligibility
+Type, Appointment Outcome; Episodes and Eligibility Type for the episode measures), which select the visits or episodes.
+To keep a cell from scanning every year of charges, `Census (Charged)`, `Episodes (Charged)` and `Census (Ordered)` look
+for visits only among charges (order lines) dated within 400 days before or after the selected dates; a charge further
+away is ignored for finding visits (none in 2025 was more than 366 days before its visit). `Census (Ordered)` counts
+cancelled order lines too unless `Order Lines[Line Status]` is sliced. Row security applies on both sides and the
+measures' `REMOVEFILTERS ( Staff )` does not lift it: for a reader limited to a specialty (the `Staff` row filter of
+`HNH Readers`), both the charge lines and the visits are limited to that specialty's staff, so the cohort is narrower
+than a top-management reader's.
 
 ## Run
 

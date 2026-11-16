@@ -36,5 +36,11 @@
    "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Product Category'[Unified Category], TREATAS ( { 2025 }, 'Date'[Year] ), \"Census (Charged)\", [Census (Charged)] )"},
   {"name": "Revenue cycle by charges: Revenue per Charged Visit (CPV) by product category, all branches, 2025",
    "cold_limit": 10, "warm_limit": 5,
-   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Product Category'[Unified Category], TREATAS ( { 2025 }, 'Date'[Year] ), \"CPV\", [Revenue per Charged Visit (CPV)] )"}
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Product Category'[Unified Category], TREATAS ( { 2025 }, 'Date'[Year] ), \"CPV\", [Revenue per Charged Visit (CPV)] )"},
+  {"name": "Revenue cycle by charges: one month by product category, all branches, 2026-10 (charge keys bounded to the month +-400 days)",
+   "cold_limit": 10, "warm_limit": 5,
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Product Category'[Unified Category], TREATAS ( { 202610 }, 'Date'[Year Month] ), \"Census (Charged)\", [Census (Charged)], \"Episodes (Charged)\", [Episodes (Charged)], \"Census (Ordered)\", [Census (Ordered)], \"CPV\", [Revenue per Charged Visit (CPV)] )"},
+  {"name": "Revenue cycle by charges: 12 months x product category matrix, all branches, 2025",
+   "cold_limit": 10, "warm_limit": 5,
+   "dax": "EVALUATE SUMMARIZECOLUMNS ( 'Date'[Year Month], 'Product Category'[Unified Category], TREATAS ( { 2025 }, 'Date'[Year] ), \"Census (Charged)\", [Census (Charged)], \"CPV\", [Revenue per Charged Visit (CPV)] )"}
 ]
