@@ -83,6 +83,12 @@ models:
         tests:
           - not_null
           - accepted_values: {values: [0, 1], quote: false}
+  - name: dim_service_department
+    description: >
+      Oasis service departments (branch + service department) as charge lines carry them, plus the Unknown row.
+    columns:
+      - name: service_department_key
+        tests: [unique, not_null]
   - name: dim_patient
     columns:
       - name: patient_key

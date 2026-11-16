@@ -201,3 +201,95 @@ Describe 'dim_policy has three fixed members per branch and the Unknown row' {
         @($rows | Select-Object -ExpandProperty policy_key -Unique).Count | Should Be $rows.Count
     }
 }
+
+# int_charge_line_links fixtures. Charges: (id, delivery_line, 'delivered_at', patient, episode, signon).
+# Eligibility: (id, responsibility, 'staff', 'start', 'end' or '' for open, 'status'). Patient 1 episode 1, branch 6.
+function Get-ChargeLinks([string[]]$Charges, [string[]]$Eligibility = @(), [string[]]$Signons = @("(7, 'CASH1')"),
+                         [string[]]$DeliveryLines = @('(100, 200)'), [string[]]$OrderLines = @('(200, 300)'), [string[]]$Orders = @("(300, 'ORD1')")) {
+    $ch = "select toUInt8(6) as branch_id, toInt64(i) as delivery_charge_id, toNullable(toInt64(dl)) as delivery_line, " +
+          "toDateTime(d, 'Asia/Riyadh') as delivered_at, toNullable(toInt64(1)) as patient_id, toNullable(toInt64(1)) as episode_no, " +
+          "toNullable(toInt64(55)) as service_dept, toNullable(toInt64(sg)) as signon_id, toNullable(toInt64(77)) as policy_code " +
+          "from values('i Int64, dl Int64, d String, pt Int64, ep Int64, sg Int64', $(($Charges | ForEach-Object { $_ }) -join ', '))"
+    $el = if ($Eligibility.Count) {
+        "select toUInt8(6) as branch_id, toInt64(1) as patient_id, toInt64(1) as episode_no, toInt64(i) as patient_eligibility_id, " +
+        "toNullable(r) as responsibility, toNullable(s) as consultant_staff_id, toNullable(toDateTime(a, 'Asia/Riyadh')) as eligibility_start, " +
+        "if(z = '', cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime(z, 'Asia/Riyadh'))) as eligibility_end, " +
+        "toNullable(t) as eligibility_status from values('i Int64, r String, s String, a String, z String, t String', $($Eligibility -join ', '))"
+    } else {
+        "select toUInt8(6) as branch_id, toInt64(1) as patient_id, toInt64(1) as episode_no, toInt64(1) as patient_eligibility_id, " +
+        "toNullable('1') as responsibility, toNullable('x') as consultant_staff_id, toNullable(toDateTime('2000-01-01 00:00:00', 'Asia/Riyadh')) as eligibility_start, " +
+        "cast(null as Nullable(DateTime('Asia/Riyadh'))) as eligibility_end, toNullable('O') as eligibility_status where 0"
+    }
+    $sql = Get-RenderedModel 'int_charge_line_links' @{
+        stg_oasis__charges = $ch
+        stg_oasis__eligibility = $el
+        stg_oasis__cashier_signons = "select toUInt8(6) as branch_id, toInt64(i) as signon_id, toNullable(s) as staff_id from values('i Int64, s String', $($Signons -join ', '))"
+        stg_oasis__delivery_lines = "select toUInt8(6) as branch_id, toInt64(a) as delivery_line, toNullable(toInt64(b)) as order_line from values('a Int64, b Int64', $($DeliveryLines -join ', '))"
+        stg_oasis__order_lines = "select toUInt8(6) as branch_id, toInt64(a) as order_line, toInt64(b) as master_order_no from values('a Int64, b Int64', $($OrderLines -join ', '))"
+        stg_oasis__orders = "select toUInt8(6) as branch_id, toInt64(a) as master_order_no, toNullable(b) as orderer_staff_id from values('a Int64, b String', $($Orders -join ', '))"
+    }
+    return Invoke-ModelWithSources $sql @{}
+}
+$chg = "(1, 100, '2026-06-15 10:00:00', 1, 1, 7)"
+function Get-Mrp($Rows, [int]$K = 1) { return $Rows[0]."mrp_${K}_staff_id" }
+
+Describe 'int_charge_line_links: MRP' {
+    It 'picks the period covering the delivery time' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '2026-06-10 23:59:59', 'O')", "(2, '1', 'D2', '2026-06-11 00:00:00', '', 'O')")
+        Get-Mrp $r | Should Be 'D2'
+    }
+    It 'skips a cancelled eligibility' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '', 'O')", "(2, '1', 'DC', '2026-06-10 00:00:00', '', 'C')")
+        Get-Mrp $r | Should Be 'D1'
+    }
+    It 'takes the latest start, then the highest id, of two covering periods' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'A', '2026-06-01 00:00:00', '', 'O')", "(2, '1', 'B', '2026-06-05 00:00:00', '', 'O')", "(3, '1', 'C', '2026-06-05 00:00:00', '', 'S')")
+        Get-Mrp $r | Should Be 'C'
+    }
+    It 'gives null when no period covers the date' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '2026-06-10 23:59:59', 'O')")
+        $r.Count | Should Be 1
+        Get-Mrp $r | Should BeNullOrEmpty
+    }
+    It 'takes MRP 2 and MRP 3 from responsibilities 2 and 3' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'A', '2026-06-01 00:00:00', '', 'O')", "(2, '2', 'B', '2026-06-01 00:00:00', '', 'O')", "(3, '3', 'C', '2026-06-01 00:00:00', '', 'O')")
+        (Get-Mrp $r 1) | Should Be 'A'
+        (Get-Mrp $r 2) | Should Be 'B'
+        (Get-Mrp $r 3) | Should Be 'C'
+    }
+}
+
+Describe 'int_charge_line_links: ordering doctor, charged by, row count' {
+    It 'follows delivery line to order line to order' {
+        $r = Get-ChargeLinks @($chg)
+        $r[0].ordering_staff_id | Should Be 'ORD1'
+        $r[0].service_dept | Should Be 55
+        $r[0].policy_code | Should Be 77
+    }
+    It 'gives the staff of the cashier sign-on' {
+        (Get-ChargeLinks @($chg))[0].charged_by_staff_id | Should Be 'CASH1'
+    }
+    It 'gives one row per charge when a patient has five eligibility rows' {
+        $el = 1..5 | ForEach-Object { "($_, '1', 'D$_', '2026-06-0$_ 00:00:00', '', 'O')" }
+        $r = Get-ChargeLinks @($chg, "(2, 100, '2026-06-20 10:00:00', 1, 1, 7)") $el
+        $r.Count | Should Be 2
+        Get-Mrp $r | Should Be 'D5'
+    }
+}
+
+Describe 'dim_service_department has the title-cased department and the Unknown row' {
+    $sd = "select toUInt8(6) as branch_id, toInt64(55) as service_dept, toNullable('RADIOLOGY DEPT') as description, " +
+          "toNullable('R') as dept_type, toNullable('RAD') as short_code"
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_service_department' @{ stg_oasis__service_departments = $sd }) @{}
+    It 'has the department with its type and short code' {
+        $d = @($rows | Where-Object { $_.service_dept -eq 55 })[0]
+        $d.service_department_name | Should Be 'Radiology Dept'
+        $d.service_department_type | Should Be 'R'
+        $d.short_code | Should Be 'RAD'
+        $d.branch_key | Should Be 6
+    }
+    It 'has one Unknown row with key -1' {
+        @($rows | Where-Object { $_.service_department_key -eq -1 }).Count | Should Be 1
+        $rows.Count | Should Be 2
+    }
+}
