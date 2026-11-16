@@ -1038,9 +1038,9 @@ def test_definitions_page_copy():
                         "is on target, else 0%). Without a Net Revenue result, the own KPIs alone.")
     assert any("Primary KPI weighs twice a Supporting one" in t for t in pillar)
     assert any("Anchor 18/33/33/16%, Ramp-Up 21/27/36/16%, Scale 20/33/32/15%" in t for t in pillar)
-    assert owner[1] == ("• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual "
-                        "where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target "
-                        "KPIs, 100% less the distance from the target.")
+    assert owner[1] == ("• Each KPI's achievement: actual ÷ target where higher is better; where lower is better "
+                        "or for a ceiling, 100% at or below the target (zero included), target ÷ actual above it; "
+                        "for on-target KPIs, 100% less the distance from the target.")
     assert owner[-1] == "• Owners are roles: CMOO, CMO, COO, CCO, CPEO, CHRO (C-suite), then IAD, S&G, VPF."
     for x in COLS:
         v = box(page, x, 258)

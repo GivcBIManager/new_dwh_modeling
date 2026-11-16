@@ -57,14 +57,16 @@ function hasData(r: KpiRow): boolean {
     return num(r.actual) && num(r.target) && r.state !== "parked" && r.state !== "nodata";
 }
 
-/** The KPI's unit score (1 = on target, no cap), or null when it cannot be scored. */
+/** The KPI's unit score (1 = on target), or null when it cannot be scored. Higher is better: actual / target, no cap.
+ * Lower is better: 1 at or below the target (0 included; target / actual would explode as the actual nears 0), target
+ * / actual above it (user ruling 2026-11-16). */
 export function unitScore(r: KpiRow): number | null {
     if (!hasData(r)) return null;
     const a = r.actual as number, t = r.target as number;
     const ok = (u: number | null) => (u !== null && Number.isFinite(u) && u > 0 ? u : null);
     if (isBudgetVariance(r)) return ok(varianceUnit(a, t));
     if (r.direction === "ceiling") return ok(ceilingUnit(a, t));
-    if (r.direction === "lower") return a > 0 && t > 0 ? ok(t / a) : null;
+    if (r.direction === "lower") return t > 0 ? (a <= t ? 1 : ok(t / a)) : null;
     if (r.direction === "on_target") return t === 0 ? null : ok(Math.max(0, 1 - Math.abs(a - t) / Math.abs(t)));
     return t > 0 ? ok(a / t) : null;
 }

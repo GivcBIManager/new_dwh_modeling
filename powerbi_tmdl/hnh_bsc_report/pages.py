@@ -493,11 +493,11 @@ def _definitions_page() -> Page:
             "KPIs without a score (no data, no target, parked) are left out; the others' weights count in full.",
             "Hospital comparison ranks hospitals by these scores; equal rounded scores share a rank."]),
         _section("Owner achievement (%)", [
-            "Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is "
-            "better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance "
-            "from the target.",
+            "Each KPI's achievement: actual ÷ target where higher is better; where lower is better or for a "
+            "ceiling, 100% at or below the target (zero included), target ÷ actual above it; for on-target KPIs, "
+            "100% less the distance from the target.",
             "Own KPIs, Weighted: the owner's achievements averaged by KPI weight. On-target: the share of their "
-            "KPIs at or better than target. Not capped at 100%.",
+            "KPIs at or better than target. Higher-is-better KPIs are not capped at 100%.",
             "Owner score = 70% own KPIs + 30% KPI 1, Net Revenue Achievement (On-target: 100% if it is on target, "
             "else 0%). Without a Net Revenue result, the own KPIs alone.",
             "Owners are roles: CMOO, CMO, COO, CCO, CPEO, CHRO (C-suite), then IAD, S&G, VPF."]),

@@ -32,7 +32,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Each KPI's achievement: actual ÷ target where higher is better; target ÷ actual where lower is better; 100% when a ceiling KPI is at or below its ceiling; for on-target KPIs, 100% less the distance from the target.",
+                    "value": "• Each KPI's achievement: actual ÷ target where higher is better; where lower is better or for a ceiling, 100% at or below the target (zero included), target ÷ actual above it; for on-target KPIs, 100% less the distance from the target.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",
@@ -44,7 +44,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "• Own KPIs, Weighted: the owner's achievements averaged by KPI weight. On-target: the share of their KPIs at or better than target. Not capped at 100%.",
+                    "value": "• Own KPIs, Weighted: the owner's achievements averaged by KPI weight. On-target: the share of their KPIs at or better than target. Higher-is-better KPIs are not capped at 100%.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "12pt",

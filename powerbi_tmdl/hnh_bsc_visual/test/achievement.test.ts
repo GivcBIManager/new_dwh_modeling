@@ -30,11 +30,15 @@ describe("unit score (handover _v9KpiUnitScore)", () => {
     it("an unknown or empty direction counts as higher", () => {
         expect(unitScore(k({ direction: "", actual: 3, target: 4 }))).toBeCloseTo(0.75);
     });
-    it("lower is better: target / actual, both positive", () => {
+    it("lower is better: 1 at or below a positive target (0 and near 0 included), target / actual above it", () => {
         expect(unitScore(k({ direction: "lower", actual: 20, target: 18 }))).toBeCloseTo(0.9);
-        expect(unitScore(k({ direction: "lower", actual: 9, target: 18 }))).toBeCloseTo(2);
-        expect(unitScore(k({ direction: "lower", actual: 0, target: 0.094 }))).toBeNull();
-        expect(unitScore(k({ direction: "lower", actual: -1, target: 5 }))).toBeNull();
+        expect(unitScore(k({ direction: "lower", actual: 9, target: 18 }))).toBe(1);
+        expect(unitScore(k({ direction: "lower", actual: 18, target: 18 }))).toBe(1);
+        expect(unitScore(k({ direction: "lower", actual: 0, target: 0.094 }))).toBe(1);
+        // Revenue Leakage, all hospitals, 2026-08: 0.0011% against 5% was 441,300%
+        expect(unitScore(k({ direction: "lower", actual: 1.13296e-5, target: 0.05 }))).toBe(1);
+        expect(unitScore(k({ direction: "lower", actual: -1, target: 5 }))).toBe(1);
+        expect(unitScore(k({ direction: "lower", actual: 1, target: -5 }))).toBeNull();
     });
     it("ceiling: 1 at or under the target, target / actual above it", () => {
         expect(unitScore(k({ direction: "ceiling", actual: 0.02, target: 0.03 }))).toBe(1);
@@ -76,7 +80,7 @@ describe("unit score (handover _v9KpiUnitScore)", () => {
     });
     it("a readmission KPI follows its configured direction, not its name", () => {
         expect(unitScore(k({ name: "30-Day Readmission Rate", direction: "lower", actual: 0.04, target: 0.02 }))).toBeCloseTo(0.5);
-        expect(unitScore(k({ name: "30-Day Readmission Rate", direction: "lower", actual: 0.01, target: 0.02 }))).toBeCloseTo(2);
+        expect(unitScore(k({ name: "30-Day Readmission Rate", direction: "lower", actual: 0.01, target: 0.02 }))).toBe(1);
         expect(unitScore(k({ name: "30-Day Readmission Rate", direction: "ceiling", actual: 0.01, target: 0.02 }))).toBe(1);
     });
     it("no score without actual or target, or for a parked or no-data row", () => {
