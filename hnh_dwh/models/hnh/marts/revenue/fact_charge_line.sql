@@ -132,6 +132,29 @@ with_payers as (
         {{ hnh_surrogate_key(['k.branch_id', 'k.billed_purchaser_code']) }}  as billed_payer_key_raw,
         {{ hnh_surrogate_key(['k.branch_id', 'k.episode_purchaser_code']) }} as episode_payer_key_raw
     from keyed as k
+),
+
+with_links as (
+    -- int_charge_line_links: service department, policy, ordering doctor, MRP 1-3 and charged-by staff.
+    -- A line without a policy code goes to its branch's Cash (-2), Deductible (-3) or Not Recorded (-1) member of dim_policy.
+    select
+        w.*,
+        toUInt8(ifNull(w.bill_to, '') != '1' and w.has_purchaser_sibling = 1)          as is_patient_share,
+        toUInt8(ifNull(w.bill_to, '') in ('2', '3') and w.has_purchaser_sibling = 0)   as is_cash_billed,
+        ifNull(lk.policy_code, multiIf(is_cash_billed = 1, toInt64(-2), is_patient_share = 1, toInt64(-3), toInt64(-1))) as policy_code_for_key,
+        {{ hnh_surrogate_key(['w.branch_id', 'lk.service_dept']) }}         as service_department_key_raw,
+        {{ hnh_surrogate_key(['w.branch_id', 'lk.ordering_staff_id']) }}    as ordering_staff_key_raw,
+        {{ hnh_surrogate_key(['w.branch_id', 'lk.mrp_1_staff_id']) }}       as mrp_1_staff_key_raw,
+        {{ hnh_surrogate_key(['w.branch_id', 'lk.mrp_2_staff_id']) }}       as mrp_2_staff_key_raw,
+        {{ hnh_surrogate_key(['w.branch_id', 'lk.mrp_3_staff_id']) }}       as mrp_3_staff_key_raw,
+        {{ hnh_surrogate_key(['w.branch_id', 'lk.charged_by_staff_id']) }}  as charged_by_staff_key_raw,
+        {{ hnh_surrogate_key(['w.branch_id', 'policy_code_for_key']) }}     as policy_key_raw
+    from with_payers as w
+    left join (
+        select branch_id, delivery_charge_id, service_dept, policy_code, ordering_staff_id, mrp_1_staff_id,
+               mrp_2_staff_id, mrp_3_staff_id, charged_by_staff_id
+        from {{ ref('int_charge_line_links') }}
+    ) as lk on lk.branch_id = w.branch_id and lk.delivery_charge_id = w.delivery_charge_id
 )
 
 select
@@ -150,6 +173,14 @@ select
     ifNull(dbp.payer_key, toInt64(-1))                  as billed_payer_key,
     ifNull(dep.payer_key, toInt64(-1))                  as episode_payer_key,
     {{ hnh_care_type_key('w.care_type') }}              as care_type_key,
+    if(w.service_department_key_raw in (select service_department_key from {{ ref('dim_service_department') }}),
+       w.service_department_key_raw, toInt64(-1))      as service_department_key,
+    if(w.ordering_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.ordering_staff_key_raw, toInt64(-1)) as ordering_staff_key,
+    if(w.mrp_1_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.mrp_1_staff_key_raw, toInt64(-1))       as mrp_1_staff_key,
+    if(w.mrp_2_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.mrp_2_staff_key_raw, toInt64(-1))       as mrp_2_staff_key,
+    if(w.mrp_3_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.mrp_3_staff_key_raw, toInt64(-1))       as mrp_3_staff_key,
+    if(w.charged_by_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.charged_by_staff_key_raw, toInt64(-1)) as charged_by_staff_key,
+    if(w.policy_key_raw in (select policy_key from {{ ref('dim_policy') }}), w.policy_key_raw, toInt64(-1)) as policy_key,
     w.delivery_charge_id                                as delivery_charge_id,
     w.delivery_line                                     as delivery_line,
     w.encounter_id                                      as encounter_id,
@@ -164,8 +195,8 @@ select
     {{ hnh_charge_status('w.cancel_flag') }}            as charge_status,
     w.cancel_reason_code                                as cancel_reason_code,
     toUInt8(ifNull(w.package_deal_flag, 'N') = 'Y')     as is_package_component,
-    toUInt8(ifNull(w.bill_to, '') != '1' and w.has_purchaser_sibling = 1) as is_patient_share,
-    toUInt8(ifNull(w.bill_to, '') in ('2', '3') and w.has_purchaser_sibling = 0) as is_cash_billed,
+    w.is_patient_share                                  as is_patient_share,
+    w.is_cash_billed                                    as is_cash_billed,
     {{ hnh_is_medication('w.product_category_code', 'dd.entity_type') }}  as is_medication,
     w.is_ltc                                            as is_ltc,
     w.units_delivered                                   as units,
@@ -188,7 +219,7 @@ select
                     legacy_trans_purchaser))           as legacy_patient_purchaser,
     multiIf(w.episode_care_type = 'OP', 'OP', w.episode_care_type = 'ER', 'ER', 'IP') as legacy_care_type,
     now()                                               as _loaded_at
-from with_payers as w
+from with_links as w
 left join (select patient_key from {{ ref('dim_patient') }}) as dp on dp.patient_key = w.patient_key_raw
 left join (select staff_key from {{ ref('dim_staff') }}) as ds on ds.staff_key = w.staff_key_raw
 left join (select department_key, entity_type from {{ ref('hnh_dim_department') }}) as dd on dd.department_key = w.department_key_raw

@@ -2,7 +2,11 @@ version: 2
 
 models:
   - name: fact_charge_line
-    description: One live, cancelled or unknown-status Oasis charge row. Superseded (R) rows are excluded. Rebuilt in full every night.
+    description: >
+      One live, cancelled or unknown-status Oasis charge row. Superseded (R) rows are excluded. Rebuilt in full every night.
+      Service department, ordering doctor, MRP 1-3, charged-by staff and policy come from int_charge_line_links; a key
+      is -1 when its code is not in the dimension. A line without a policy code is its branch's Cash (cash-billed),
+      Deductible (patient share) or Not Recorded member of dim_policy.
     columns:
       - name: charge_line_key
         tests: [unique, not_null]
@@ -37,6 +41,48 @@ models:
       - name: care_type_key
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: service_department_key
+        tests:
+          - relationships:
+              to: ref('dim_service_department')
+              field: service_department_key
+              config: {severity: warn, where: "service_department_key != -1"}
+      - name: ordering_staff_key
+        tests:
+          - relationships:
+              to: ref('dim_staff')
+              field: staff_key
+              config: {severity: warn, where: "ordering_staff_key != -1"}
+      - name: mrp_1_staff_key
+        tests:
+          - relationships:
+              to: ref('dim_staff')
+              field: staff_key
+              config: {severity: warn, where: "mrp_1_staff_key != -1"}
+      - name: mrp_2_staff_key
+        tests:
+          - relationships:
+              to: ref('dim_staff')
+              field: staff_key
+              config: {severity: warn, where: "mrp_2_staff_key != -1"}
+      - name: mrp_3_staff_key
+        tests:
+          - relationships:
+              to: ref('dim_staff')
+              field: staff_key
+              config: {severity: warn, where: "mrp_3_staff_key != -1"}
+      - name: charged_by_staff_key
+        tests:
+          - relationships:
+              to: ref('dim_staff')
+              field: staff_key
+              config: {severity: warn, where: "charged_by_staff_key != -1"}
+      - name: policy_key
+        tests:
+          - relationships:
+              to: ref('dim_policy')
+              field: policy_key
+              config: {severity: warn, where: "policy_key != -1"}
       - name: charge_status
         tests:
           - accepted_values:
