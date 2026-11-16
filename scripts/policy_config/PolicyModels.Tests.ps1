@@ -71,6 +71,7 @@ Describe 'int_policy_client: exact rule beats pattern' {
     It 'takes the exact rule company' {
         $rows.Count | Should Be 1
         $rows[0].client_company | Should Be 'STC Pay'
+        $rows[0].is_client_from_rule | Should Be 1
         $rows[0].policy_name | Should Be 'BUPA - STC PAY (1)'
     }
 }
@@ -106,10 +107,10 @@ Describe 'int_policy_client: a pattern is literal text, never a regular expressi
         @("('PAT-CPP', 0, 0, 0, 'C++', 'Cpp Co', 9)", "('PAT-CO', 0, 0, 0, 'CO.', 'Co Dot', 9)")
     It 'C++ builds and matches only C++' {
         (Get-Row $rows 6 90).client_company | Should Be 'Cpp Co'
-        (Get-Row $rows 6 91).client_company | Should Be 'C Software'
+        (Get-Row $rows 6 91).client_company | Should BeExactly 'C SOFTWARE'
     }
     It 'CO. does not match COX' {
-        (Get-Row $rows 6 92).client_company | Should Be 'Cox'
+        (Get-Row $rows 6 92).client_company | Should BeExactly 'COX'
     }
 }
 
@@ -117,8 +118,8 @@ Describe 'int_policy_client: whole-word pattern does not match WESTCON or MISTCA
     $rows = Get-PolicyClient @("(6, 41, 11, 'BUPA - WESTCON SAUDI COMPANY (46084600)')", "(6, 42, 11, 'MEDGULF-MEDIVISA - MISTCA (13194840)')",
                                "(6, 43, 11, 'TAWUNIYA - SAUDI TELECOM CO 2133')") @($stc)
     It 'falls back for WESTCON and MISTCA and matches SAUDI TELECOM' {
-        (Get-Row $rows 6 41).client_company | Should Be 'Westcon Saudi Company'
-        (Get-Row $rows 6 42).client_company | Should Be 'Mistca'
+        (Get-Row $rows 6 41).client_company | Should BeExactly 'WESTCON SAUDI COMPANY'
+        (Get-Row $rows 6 42).client_company | Should BeExactly 'MISTCA'
         (Get-Row $rows 6 43).client_company | Should Be 'STC'
     }
 }
@@ -136,17 +137,18 @@ Describe 'int_policy_client: no rule gives fallback name and not referral' {
     $rows = Get-PolicyClient @("(6, 60, 11, 'TAWUNIYA - STC CHANNELS (2535)')", "(6, 61, 11, 'TAWUNIYA-STC SOLUTIONS(2246)')",
                                "(6, 62, 11, 'TAWUNIYA - STC PAY (2540)')", "(6, 63, 11, 'X - AL-RAJHI BANK')", "(6, 64, 11, 'PLAIN NAME 77')",
                                "(6, 65, 11, 'NCCI - STC MAIN - 2233')", "(6, 66, 11, 'NATIONAL GUARD (0041).')")
-    It 'takes the text after the dash, without the number, title-cased' {
-        (Get-Row $rows 6 60).client_company | Should Be 'Stc Channels'
+    It 'takes the text after the dash, without the number, as written (dim_policy title-cases it)' {
+        (Get-Row $rows 6 60).client_company | Should BeExactly 'STC CHANNELS'
+        (Get-Row $rows 6 60).is_client_from_rule | Should Be 0
         (Get-Row $rows 6 60).is_referral | Should Be 0
-        (Get-Row $rows 6 61).client_company | Should Be 'Stc Solutions'
-        (Get-Row $rows 6 62).client_company | Should Be 'Stc Pay'
-        (Get-Row $rows 6 63).client_company | Should Be 'Al-Rajhi Bank'
-        (Get-Row $rows 6 64).client_company | Should Be 'Plain Name'
+        (Get-Row $rows 6 61).client_company | Should BeExactly 'STC SOLUTIONS'
+        (Get-Row $rows 6 62).client_company | Should BeExactly 'STC PAY'
+        (Get-Row $rows 6 63).client_company | Should BeExactly 'AL-RAJHI BANK'
+        (Get-Row $rows 6 64).client_company | Should BeExactly 'PLAIN NAME'
     }
     It 'drops dots and dashes around the trailing number' {
-        (Get-Row $rows 6 65).client_company | Should Be 'Stc Main'
-        (Get-Row $rows 6 66).client_company | Should Be 'National Guard'
+        (Get-Row $rows 6 65).client_company | Should BeExactly 'STC MAIN'
+        (Get-Row $rows 6 66).client_company | Should BeExactly 'NATIONAL GUARD'
     }
 }
 
@@ -155,7 +157,7 @@ Describe 'int_policy_client: purchaser-limited rule skips other purchasers' {
     It 'applies to purchaser 11 only' {
         (Get-Row $rows 6 70).client_company | Should Be 'Acme'
         (Get-Row $rows 6 70).is_referral | Should Be 1
-        (Get-Row $rows 6 71).client_company | Should Be 'Acme Two'
+        (Get-Row $rows 6 71).client_company | Should BeExactly 'ACME TWO'
         (Get-Row $rows 6 71).is_referral | Should Be 0
     }
 }
@@ -176,8 +178,9 @@ Describe 'stg_ref__referral_policy reads the resolved referral policies' {
 }
 
 Describe 'dim_policy has three fixed members per branch and the Unknown row' {
-    $int = "select toUInt8(6) as branch_id, toInt64(10) as policy_code, toNullable(toInt64(11)) as purchaser_code, " +
-           "toNullable('BUPA - STC PAY (1)') as policy_name, 'STC' as client_company, toUInt8(1) as is_referral, toUInt8(1) as is_active"
+    $int = "select toUInt8(6) as branch_id, toInt64(c) as policy_code, toNullable(toInt64(11)) as purchaser_code, " +
+           "toNullable(n) as policy_name, co as client_company, toUInt8(fr) as is_client_from_rule, toUInt8(1) as is_referral, toUInt8(1) as is_active " +
+           "from values('c Int64, n String, co String, fr UInt8', (10, 'BUPA - STC PAY (1)', 'STC', 1), (12, 'BUPA - STC CHANNELS (2)', 'STC CHANNELS', 0))"
     $payer = "select toUInt8(6) as branch_key, toNullable(toInt64(11)) as purchaser_code, 'Bupa' as company"
     $branch = "select toUInt8(b) as branch_key from values('b UInt8', 0, 5, 6)"
     $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_policy' @{ int_policy_client = $int; dim_payer = $payer; hnh_dim_branch = $branch }) @{}
@@ -187,6 +190,10 @@ Describe 'dim_policy has three fixed members per branch and the Unknown row' {
         $p.insurer | Should Be 'Bupa'
         $p.client_company | Should Be 'STC'
         $p.branch_key | Should Be 6
+    }
+    It 'keeps a rule company as written and title-cases a name from the description' {
+        @($rows | Where-Object { $_.policy_code -eq 10 })[0].client_company | Should BeExactly 'STC'
+        @($rows | Where-Object { $_.policy_code -eq 12 })[0].client_company | Should BeExactly 'Stc Channels'
     }
     It 'has Cash, Deductible and Not Recorded for a branch without policies' {
         $b5 = @($rows | Where-Object { $_.branch_key -eq 5 } | Sort-Object policy_code)
@@ -203,7 +210,7 @@ Describe 'dim_policy has three fixed members per branch and the Unknown row' {
 }
 
 # int_charge_line_links fixtures. Charges: (id, delivery_line, 'delivered_at', patient, episode, signon).
-# Eligibility: (id, responsibility, 'staff', 'start', 'end' or '' for open, 'status'). Patient 1 episode 1, branch 6.
+# Eligibility: (id, responsibility, 'staff' or '' for none, 'start', 'end' or '' for open, 'status'). Patient 1 episode 1, branch 6.
 function Get-ChargeLinks([string[]]$Charges, [string[]]$Eligibility = @(), [string[]]$Signons = @("(7, 'CASH1')"),
                          [string[]]$DeliveryLines = @('(100, 200)'), [string[]]$OrderLines = @('(200, 300)'), [string[]]$Orders = @("(300, 'ORD1')")) {
     $ch = "select toUInt8(6) as branch_id, toInt64(i) as delivery_charge_id, toNullable(toInt64(dl)) as delivery_line, " +
@@ -212,7 +219,7 @@ function Get-ChargeLinks([string[]]$Charges, [string[]]$Eligibility = @(), [stri
           "from values('i Int64, dl Int64, d String, pt Int64, ep Int64, sg Int64', $(($Charges | ForEach-Object { $_ }) -join ', '))"
     $el = if ($Eligibility.Count) {
         "select toUInt8(6) as branch_id, toInt64(1) as patient_id, toInt64(1) as episode_no, toInt64(i) as patient_eligibility_id, " +
-        "toNullable(r) as responsibility, toNullable(s) as consultant_staff_id, toNullable(toDateTime(a, 'Asia/Riyadh')) as eligibility_start, " +
+        "toNullable(r) as responsibility, if(s = '', cast(null as Nullable(String)), toNullable(s)) as consultant_staff_id, toNullable(toDateTime(a, 'Asia/Riyadh')) as eligibility_start, " +
         "if(z = '', cast(null as Nullable(DateTime('Asia/Riyadh'))), toNullable(toDateTime(z, 'Asia/Riyadh'))) as eligibility_end, " +
         "toNullable(t) as eligibility_status from values('i Int64, r String, s String, a String, z String, t String', $($Eligibility -join ', '))"
     } else {
@@ -253,6 +260,11 @@ Describe 'int_charge_line_links: MRP' {
     It 'takes the latest start, then the highest id, of two covering periods' {
         $r = Get-ChargeLinks @($chg) @("(1, '1', 'A', '2026-06-01 00:00:00', '', 'O')", "(2, '1', 'B', '2026-06-05 00:00:00', '', 'O')", "(3, '1', 'C', '2026-06-05 00:00:00', '', 'S')")
         Get-Mrp $r | Should Be 'C'
+    }
+    It 'gives null when the winning period has no consultant, not the next period' {
+        $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '', 'O')", "(2, '1', '', '2026-06-05 00:00:00', '', 'O')")
+        $r.Count | Should Be 1
+        Get-Mrp $r | Should BeNullOrEmpty
     }
     It 'gives null when no period covers the date' {
         $r = Get-ChargeLinks @($chg) @("(1, '1', 'D1', '2026-06-01 00:00:00', '2026-06-10 23:59:59', 'O')")

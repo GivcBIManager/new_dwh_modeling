@@ -2,8 +2,8 @@
 
 -- One row per Oasis policy (branch + policy code) with its insurer and client company, plus three members per branch
 -- for charge lines without a policy code: -2 Cash, -3 Deductible, -1 Not Recorded; and the Unknown row (key -1).
--- client_company is the BI manager's name from default.map_policy_client as written, or the title-cased name from
--- the description (int_policy_client).
+-- client_company is the BI manager's name from default.map_policy_client as written, or the client name taken from
+-- the description by int_policy_client, title-cased here.
 
 with policies as (
     select
@@ -12,6 +12,7 @@ with policies as (
         p.policy_name     as policy_name,
         py.company        as insurer,
         p.client_company  as client_company,
+        p.is_client_from_rule as is_client_from_rule,
         p.is_referral     as is_referral,
         p.is_active       as is_active
     from {{ ref('int_policy_client') }} as p
@@ -37,7 +38,7 @@ select
     toNullable(p.policy_code)                              as policy_code,
     ifNull({{ hnh_title('p.policy_name') }}, 'Not named')  as policy_name,
     ifNull(p.insurer, 'Unknown')                           as insurer,
-    p.client_company                                       as client_company,
+    if(p.is_client_from_rule = 1, p.client_company, {{ hnh_title('p.client_company') }}) as client_company,
     p.is_referral                                          as is_referral,
     p.is_active                                            as is_active
 from policies as p

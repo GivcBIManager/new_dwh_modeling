@@ -9,7 +9,7 @@
 -- a typo cannot fail the build); each phrase matches whole words, ignoring case, with any run of spaces between words.
 -- No company rule: the client name in the description ("<INSURER> - <CLIENT> (<number>)"): the text after the first
 -- " - " (else after the first "-", else all of it), without a trailing "(digits)" or number and the spaces, dots and
--- dashes around it, title-cased.
+-- dashes around it, as written in Oasis (dim_policy title-cases it; is_client_from_rule = 0).
 -- No referral rule: not a referral. stg_ref__referral_policy reads the referral policies from here.
 
 with policies as (
@@ -87,7 +87,8 @@ select
     p.purchaser_code                                                as purchaser_code,
     p.description                                                   as policy_name,
     if(ifNull(m.client_company, '') != '', assumeNotNull(m.client_company),
-       ifNull({{ hnh_title('p.fallback_client') }}, 'Not named'))   as client_company,
+       ifNull(p.fallback_client, 'Not named'))                      as client_company,
+    toUInt8(ifNull(m.client_company, '') != '')                     as is_client_from_rule,
     toUInt8(ifNull(m.is_referral, 0))                               as is_referral,
     p.is_active                                                     as is_active
 from policies as p

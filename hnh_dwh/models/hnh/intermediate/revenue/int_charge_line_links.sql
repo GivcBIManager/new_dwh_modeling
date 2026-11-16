@@ -7,7 +7,9 @@
 -- MRP k: the eligibility row of responsibility k of the same branch, patient and episode that covers the delivery time
 -- (start <= delivered_at <= end, open end = still running). A row that is not cancelled beats a cancelled (C) one, then
 -- the latest start wins, then the highest eligibility id; a cancelled row is used only when no other row covers the
--- time; none gives null. Eligibility is joined once and aggregated per responsibility in the final select.
+-- time; none gives null, and so does a winning row without a consultant. Eligibility is grouped once per branch,
+-- patient and episode into an array of periods, joined 1:1 to the charges, and each MRP is picked from that array, so
+-- no aggregation over the charges is needed (memory).
 -- Lookups (orders, sign-ons) are limited to what the charges in the window reach, to keep memory down.
 -- Charged by: cashier sign-on -> staff_id.
 
@@ -64,27 +66,40 @@ linked as (
 ),
 
 eligibility as (
-    select branch_id, patient_id, episode_no, responsibility, consultant_staff_id, eligibility_status,
-           eligibility_start, eligibility_end, patient_eligibility_id
+    -- periods: (responsibility, not cancelled, start, end, eligibility id, consultant). A row without a start, or one that
+    -- ended before the history window, never covers a charge in the window.
+    select
+        branch_id, patient_id, episode_no,
+        groupArray(tuple(assumeNotNull(responsibility), toUInt8(ifNull(eligibility_status, '') != 'C'),
+                         assumeNotNull(eligibility_start), eligibility_end, patient_eligibility_id,
+                         consultant_staff_id)) as periods
     from {{ ref('stg_oasis__eligibility') }}
-    where responsibility in ('1', '2', '3')
+    where responsibility in ('1', '2', '3') and eligibility_start is not null
+      and (eligibility_end is null or eligibility_end >= toDateTime('{{ var('hnh_history_start_date') }} 00:00:00', 'Asia/Riyadh'))
+      and patient_id is not null and episode_no is not null
+    group by branch_id, patient_id, episode_no
 )
 
 select
     l.branch_id                       as branch_id,
     l.delivery_charge_id              as delivery_charge_id,
-    any(l.service_dept)               as service_dept,
-    any(l.policy_code)                as policy_code,
-    any(l.ordering_staff_id)          as ordering_staff_id,
-    argMaxIf(e.consultant_staff_id, tuple(ifNull(e.eligibility_status, '') != 'C', e.eligibility_start, e.patient_eligibility_id),
-             e.responsibility = '1' and e.eligibility_start <= l.delivered_at and l.delivered_at <= ifNull(e.eligibility_end, now())) as mrp_1_staff_id,
-    argMaxIf(e.consultant_staff_id, tuple(ifNull(e.eligibility_status, '') != 'C', e.eligibility_start, e.patient_eligibility_id),
-             e.responsibility = '2' and e.eligibility_start <= l.delivered_at and l.delivered_at <= ifNull(e.eligibility_end, now())) as mrp_2_staff_id,
-    argMaxIf(e.consultant_staff_id, tuple(ifNull(e.eligibility_status, '') != 'C', e.eligibility_start, e.patient_eligibility_id),
-             e.responsibility = '3' and e.eligibility_start <= l.delivered_at and l.delivered_at <= ifNull(e.eligibility_end, now())) as mrp_3_staff_id,
-    any(l.charged_by_staff_id)        as charged_by_staff_id
+    l.service_dept                    as service_dept,
+    l.policy_code                     as policy_code,
+    l.ordering_staff_id               as ordering_staff_id,
+    -- MRP 1: the best covering period of responsibility 1 (sorted by not cancelled, start, id; none gives null)
+    arrayReverseSort(p -> tuple(p.2, p.3, p.5),
+        arrayFilter(p -> p.1 = '1' and p.3 <= l.delivered_at and l.delivered_at <= ifNull(p.4, now()), e.periods)
+    )[1].6                            as mrp_1_staff_id,
+    -- MRP 2: the best covering period of responsibility 2 (sorted by not cancelled, start, id; none gives null)
+    arrayReverseSort(p -> tuple(p.2, p.3, p.5),
+        arrayFilter(p -> p.1 = '2' and p.3 <= l.delivered_at and l.delivered_at <= ifNull(p.4, now()), e.periods)
+    )[1].6                            as mrp_2_staff_id,
+    -- MRP 3: the best covering period of responsibility 3 (sorted by not cancelled, start, id; none gives null)
+    arrayReverseSort(p -> tuple(p.2, p.3, p.5),
+        arrayFilter(p -> p.1 = '3' and p.3 <= l.delivered_at and l.delivered_at <= ifNull(p.4, now()), e.periods)
+    )[1].6                            as mrp_3_staff_id,
+    l.charged_by_staff_id             as charged_by_staff_id
 from linked as l
 left join eligibility as e
     on e.branch_id = l.branch_id and e.patient_id = l.patient_id and e.episode_no = l.episode_no
-group by l.branch_id, l.delivery_charge_id
 {{ hnh_settings() }}

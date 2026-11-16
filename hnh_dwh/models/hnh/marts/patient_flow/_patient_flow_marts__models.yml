@@ -232,6 +232,12 @@ models:
       - name: care_type_key
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}
+      - name: encounter_key
+        tests:
+          - relationships:
+              to: ref('fact_encounter')
+              field: encounter_key
+              config: {severity: warn, where: "encounter_key != -1"}
       - name: fulfilment_status
         tests:
           - accepted_values:
