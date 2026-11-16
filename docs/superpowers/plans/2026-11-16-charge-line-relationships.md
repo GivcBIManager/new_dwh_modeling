@@ -48,7 +48,7 @@
   - Edit only between `VAR __Value = ( -- measure body` and `) -- end of measure body`.
   - Then run `python ssas/tools/measure_guards.py`, then `python ssas/tools/sync_perspectives.py`, then `python -m pytest ssas/tools`.
   - Every measure needs a `///` description, a format string and a check in `ssas/tests/measures/revenue_cycle.json`.
-- **Unchanged:** `Census`, `Episodes`, `Revenue` and every Balanced Scorecard measure. Referral episodes per branch and month must be identical before and after GATE G1.
+- **Unchanged:** `Census`, `Episodes`, `Revenue` and every Balanced Scorecard measure. Referral episodes per branch and month must not change at GATE G1: checked in the same build by `referral_snapshot.py --against-map` (flagged episodes = episodes whose branch + policy code is in `map_referral_policies`).
 - **Git:** branch `charge-line-relationships`. Commit at the end of each task, ending the message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
 ## Review Focus
@@ -192,7 +192,7 @@
   - `policy_key` = `hnh_surrogate_key(['branch_id', 'policy_code'])`.
   - `insurer` = `dim_payer.company` of the policy's purchaser.
 - `ssas_dim_policy` = `hnh_ssas_view('dim_policy')`, with `is_referral` and `is_active` as Yes/No like the other flags.
-- `referral_snapshot.py --save <csv>` / `--compare <csv>`: referral episodes per branch and start month, from `gold.fact_episode where is_referral_policy = 1`. `--compare` exits 1 and prints the differing rows if any differ.
+- `referral_snapshot.py --save <csv>` / `--compare <csv>`: referral episodes per branch and start month, from `gold.fact_episode where is_referral_policy = 1`. `--compare` exits 1 and prints the differing rows if any differ; it skips the open month and is a sanity check only (two builds read different Oasis data). `--against-map` (final review I1) is the gate: in one build, `is_referral_policy = 1` episodes per branch and start month against the episodes whose `(branch_key, policy_code)` is in `default.map_referral_policies`.
 - `draft_policy_client_map.py --out <csv>`: the 200 most frequent fallback client names by 2026 revenue, from rendered `int_policy_client` joined to charge lines on policy code. The BI manager turns them into rules. It only reads.
 
 - [ ] **Step 1: Add Describe blocks to `PolicyModels.Tests.ps1` for `int_policy_client`.** Use inline policies and rules:
@@ -345,11 +345,15 @@
 
 ### GATE G1 (the user's go-ahead, then the user or the agent runs these)
 
-1. `python scripts/policy_config/referral_snapshot.py --save scripts/policy_config/referral_baseline_<date>.csv` (read-only).
-2. `apply_policy_config.ps1 -DryRun`, then `apply_policy_config.ps1`. This is a ClickHouse write; it asks for an admin login.
-3. Copy the files to the receiving project per Task 5 and run its build selector there. Expected: ERROR=0. This runs the dbt unit tests too.
-4. `referral_snapshot.py --compare` the baseline. Expected: exit 0. Otherwise stop and report the rows.
-5. `python scripts/gen_view_contracts.py`, then commit the regenerated `_ssas__models.yml`.
+The order is the one in `docs/receiving_project_config.md`, "Charge line relationships".
+
+1. `apply_policy_config.ps1 -DryRun`, then `apply_policy_config.ps1`. This is a ClickHouse write; it asks for an admin login.
+2. `python scripts/policy_config/referral_snapshot.py --save scripts/policy_config/referral_baseline_<date>.csv` (read-only). A sanity check only.
+3. Copy the files to the receiving project per Task 5 and run its build selector there with `--threads 1`, off-hours. Expected: ERROR=0. This runs the dbt unit tests too.
+4. `python scripts/policy_config/referral_snapshot.py --against-map` is the gate. Expected: no rows printed, exit 0 (in the same build, referral episodes per branch and start month equal the episodes whose branch + policy code is in `map_referral_policies`). Otherwise stop and report the rows. `--compare` against the step 2 baseline is a sanity check only: the two builds read different Oasis data, and the open month is skipped.
+5. Read the peak memory of `int_charge_line_links`, `fact_charge_line` and `int_order_line_encounter` from `system.query_log` (each built alone by `--threads 1`) before the nightly job picks them up. If `fact_charge_line` peaks too high, the fallback is model-level settings: `join_algorithm='grace_hash'`, or `'auto'` with `max_bytes_in_join`.
+6. `python scripts/gen_view_contracts.py`, then commit the regenerated `_ssas__models.yml`. If its diff is not empty, run `python ssas/tools/generate.py --from-contracts`, `python -m pytest ssas/tools` and the BPA before GATE G2.
+7. Confirm the nightly dbt job's selector builds the new models, and that `process.ps1 -Selected` matches it (receiving doc, "Dagster / nightly").
 
 ---
 
@@ -467,8 +471,9 @@ RETURN
 1. `deploy.ps1 -Stage Test` (new tables, so not `TestMeasures`). Expected:
    - the measure checks pass;
    - the performance entries are under their thresholds.
-2. Report the model memory from `DISCOVER_OBJECT_MEMORY_USAGE` before and after, for `Charge Lines`, `Order Lines`, `Encounters` and `Episodes`.
-3. The user reviews `HNH_Analytics_Test` in a report: Product Category × the new measures, and the new slicers on Revenue.
+2. Report the model memory from `DISCOVER_OBJECT_MEMORY_USAGE` before and after, for `Charge Lines`, `Order Lines`, `Encounters` and `Episodes`. Alongside it, record the processing time of `Charge Lines` (and `Encounters`, `Episodes`, `Order Lines`) before and after, from the `process.ps1` / `deploy.ps1` transcripts in `ssas/logs/` (the anti-goal "Charge Lines refresh noticeably slower").
+3. Time the performance entries also as an admin / top-management user (no row filter, the whole network), not only as a reader limited to one branch or specialty.
+4. The user reviews `HNH_Analytics_Test` in a report: Product Category × the new measures, and the new slicers on Revenue.
 
 ### GATE G3 (the user's go-ahead)
 

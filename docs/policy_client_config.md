@@ -15,7 +15,7 @@ Every row ends with the same four columns:
 | `change_note` | why, in a few words |
 | `is_deleted` | `0`, or `1` to remove the rule |
 
-**When it shows in the report.** The next morning, after the nightly dbt build and the SSAS refresh. To see it sooner, run the dbt build in the receiving project and then `ssas\scripts\process.ps1 -Mode Daily`. That run changes the production SSAS database: ask before running it.
+**When it shows in the report.** The next morning, after the nightly dbt build and the SSAS refresh, **provided** the nightly dbt job's selector builds `stg_ref__policy_client`, `int_policy_client`, `stg_ref__referral_policy`, `dim_policy` and the facts that read them, and `process.ps1 -Selected` matches that selector (`docs/receiving_project_config.md`, "Charge line relationships", Dagster / nightly). Until that is confirmed, a change shows only after a manual build. To see it sooner, run the dbt build in the receiving project and then `ssas\scripts\process.ps1 -Mode Daily`. That run changes the production SSAS database: ask before running it.
 
 **See the history of a rule:**
 
@@ -92,7 +92,7 @@ FROM default.map_policy_client WHERE rule_id = 'REF-3-4521' ORDER BY changed_at 
 ## First load
 
 `scripts/policy_config/apply_policy_config.ps1` creates the table and seeds it:
-- one `REF-<branch>-<policy>` rule for every row of `default.map_referral_policies` (`is_referral` 1);
+- one `REF-<branch>-<policy>` rule for every row of `default.map_referral_policies` (`is_referral` 1), on branch + policy code like the old referral join: `purchaser_code` is left null and the old list's purchaser is kept in `change_note`;
 - two pattern rules, `PAT-STC` (`STC|SAUDI TELECOM`, company `STC`) and `PAT-ARAMCO` (`ARAMCO`, company `Saudi Aramco`).
 
 Run it with `-DryRun` first. A run without `-DryRun` writes to the live ClickHouse and asks for a ClickHouse login that may create tables and insert into `default`. A table that already has rows is not seeded again.

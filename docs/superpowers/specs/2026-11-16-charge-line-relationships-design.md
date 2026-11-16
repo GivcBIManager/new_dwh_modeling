@@ -149,7 +149,8 @@ department from `stg_oasis__service_departments`: `service_department_key`, `bra
   (statuses seen: O, S, C) beats a C row, then the latest `eligibility_start`, then the highest
   `patient_eligibility_id`. A C period is used only when no other row covers the time (C periods look like real
   periods, so excluding them dropped coverage from 98% to 93%).
-  Consultant → staff key. No covering period → -1 (Unknown), per the user's rule. October 2026 check: 510,352 of
+  Consultant → staff key. No covering period → -1 (Unknown), per the user's rule; so does a winning period without a
+  consultant (no fall-back to the next period). October 2026 check: 510,352 of
   522,552 charges (98%) fall in a responsibility-1 period; 68,126 in a responsibility-2 and 42,719 in a
   responsibility-3 period.
 - `charged_by_staff_key`: `signon_id` → `cashiers_signon.staff_id` → staff key.
@@ -169,7 +170,8 @@ the share resolved each way after the first build.
 **`fact_episode`**: `is_referral_policy` keeps its current expression (via `stg_ref__referral_policy`).
 
 **Tests**: uniqueness of the new dims' keys; relationship tests from the new fact keys (allowing -1); a reconciliation
-check that the count of referral episodes per branch and month is identical before and after the switch; the
+check that the count of referral episodes per branch and month is unchanged by the switch (in the same build:
+flagged episodes = episodes whose branch + policy code is in `map_referral_policies`, `referral_snapshot.py --against-map`); the
 title-case test covers `policy_name`, `service_department_name`, `client_company` (add to `extra` if the column name
 does not match the automatic pattern).
 
