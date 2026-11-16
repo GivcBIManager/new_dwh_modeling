@@ -34,24 +34,33 @@ Key: `rule_id` (any text, unique per rule).
 | `branch_id` | 0 = every branch, 1-8 = one branch |
 | `purchaser_code` | optional narrowing |
 | `policy_code` | set: an exact rule for one policy |
-| `name_pattern` | set: a whole-word, case-insensitive match on the policy description; several words separated by `\|` (`STC\|SAUDI TELECOM`). `''` = none |
+| `name_pattern` | set: literal words or phrases separated by `\|` (`STC\|SAUDI TELECOM`), matched as whole words on the policy description, case-insensitive. Not a regular expression. `''` = none |
 | `client_company` | the client name as it should appear (`STC`, `Saudi Aramco`). `''` = this row says nothing about the company |
 | `is_referral` | 1 = referral, 0 = not a referral, null = this row says nothing about referral |
 
 A row has either `policy_code` or `name_pattern`, never both.
+
+**Warning:** policy codes are numbered per branch. An exact rule with `branch_id` 0 applies its `policy_code` on every branch, which is usually a different policy on each one. Give exact rules their branch.
 
 ## Which rule wins
 
 Per policy (one per branch and policy code):
 1. An exact `policy_code` row wins over a pattern row.
 2. A row for the branch wins over a row for every branch (`branch_id` 0).
-3. Among pattern rows the longest pattern wins.
+3. Among pattern rows the most specific wins: the one whose matched text in the description is longest (in characters). `STC PAY` beats `STC|SAUDI TELECOM` on `TAWUNIYA - STC PAY (2540)`; on a tie the longer pattern, then the higher `rule_id`.
 
 `client_company` and `is_referral` are resolved separately, each from the best row that has a value in that column. A row added only for the company leaves the referral flag alone. A policy with no referral row is not a referral.
 
 ## Whole-word patterns
 
-A pattern matches whole words only. `STC` matches `TAWUNIYA - STC PAY (2540)` but not `WESTCON` or `MISTCA`, which contain the letters `STC` inside a word. Case does not matter.
+A pattern is plain text: one or more words or phrases separated by `|`. It is not a regular expression, so `C++` or `CO.` mean exactly those characters. A pattern can therefore never fail the nightly build.
+
+Each phrase matches whole words only:
+- `STC` matches `TAWUNIYA - STC PAY (2540)` and `TAWUNIYA-STC SOLUTIONS`.
+- `STC` does not match `WESTCON` or `MISTCA`, which contain the letters `STC` inside a word.
+- `CO.` does not match `COX`.
+- Case does not matter.
+- Any run of spaces in the description counts as one space.
 
 ## Examples
 

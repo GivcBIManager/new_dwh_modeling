@@ -103,9 +103,9 @@ models:
   - name: int_policy_client
     description: >
       Client company and referral flag of every Oasis policy, resolved from the rules in default.map_policy_client
-      (exact policy code over pattern, branch over all branches, longer pattern first); no company rule gives the
-      title-cased client name from the description, no referral rule gives 0. stg_ref__referral_policy and dim_policy
-      read it.
+      (exact policy code over pattern, branch over all branches, longest matched text first; patterns are literal
+      phrases); no company rule gives the title-cased client name from the description, no referral rule gives 0.
+      stg_ref__referral_policy and dim_policy read it.
     tests:
       - hnh_unique_combination:
           columns: [branch_id, policy_code]

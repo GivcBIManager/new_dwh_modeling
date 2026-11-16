@@ -7,14 +7,14 @@ $root = Split-Path -Parent (Split-Path -Parent $here)
 Import-Module (Join-Path $root 'scripts\HnhCh.psm1') -Force
 
 # $Replace maps a ref'd model to inline SQL, written to a temp file for --replace.
-function Get-RenderedModel([string]$Model, [hashtable]$Replace = @{}) {
+function Get-RenderedModel([string]$Model, [hashtable]$Replace = @{}, [string]$Wrap = 'select * from ({model}) order by 1, 2') {
     $pyArgs = @((Join-Path $root 'scripts\render_model_sql.py'), $Model)
     foreach ($k in $Replace.Keys) {
         $f = [IO.Path]::GetTempFileName()
         [IO.File]::WriteAllText($f, $Replace[$k])
         $pyArgs += @('--replace', "$k=$f")
     }
-    $pyArgs += @('--wrap', 'select * from ({model}) order by 1, 2')
+    $pyArgs += @('--wrap', $Wrap)
     $sql = (& python @pyArgs) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "render failed: $Model" }
     return $sql
@@ -92,6 +92,27 @@ Describe 'int_policy_client: longer pattern wins' {
     It 'takes SASREF' { $rows[0].client_company | Should Be 'SASREF' }
 }
 
+Describe 'int_policy_client: the longest matched text wins, not the longest pattern' {
+    $rows = Get-PolicyClient @("(6, 80, 11, 'TAWUNIYA - STC PAY (2540)')", "(6, 81, 11, 'TAWUNIYA - SAUDI TELECOM CO 2133')") `
+        @($stc, "('PAT-STCPAY', 0, 0, 0, 'STC PAY', 'STC Pay', 9)")
+    It 'gives STC PAY to STC Pay and SAUDI TELECOM to STC' {
+        (Get-Row $rows 6 80).client_company | Should Be 'STC Pay'
+        (Get-Row $rows 6 81).client_company | Should Be 'STC'
+    }
+}
+
+Describe 'int_policy_client: a pattern is literal text, never a regular expression' {
+    $rows = Get-PolicyClient @("(6, 90, 11, 'BUPA - C++ SOFTWARE (1)')", "(6, 91, 11, 'BUPA - C SOFTWARE (1)')", "(6, 92, 11, 'BUPA - COX (1)')") `
+        @("('PAT-CPP', 0, 0, 0, 'C++', 'Cpp Co', 9)", "('PAT-CO', 0, 0, 0, 'CO.', 'Co Dot', 9)")
+    It 'C++ builds and matches only C++' {
+        (Get-Row $rows 6 90).client_company | Should Be 'Cpp Co'
+        (Get-Row $rows 6 91).client_company | Should Be 'C Software'
+    }
+    It 'CO. does not match COX' {
+        (Get-Row $rows 6 92).client_company | Should Be 'Cox'
+    }
+}
+
 Describe 'int_policy_client: whole-word pattern does not match WESTCON or MISTCA' {
     $rows = Get-PolicyClient @("(6, 41, 11, 'BUPA - WESTCON SAUDI COMPANY (46084600)')", "(6, 42, 11, 'MEDGULF-MEDIVISA - MISTCA (13194840)')",
                                "(6, 43, 11, 'TAWUNIYA - SAUDI TELECOM CO 2133')") @($stc)
@@ -140,12 +161,17 @@ Describe 'int_policy_client: purchaser-limited rule skips other purchasers' {
 }
 
 Describe 'stg_ref__referral_policy reads the resolved referral policies' {
-    $int = "select toUInt8(b) as branch_id, toInt64(c) as policy_code, toNullable(toInt64(11)) as purchaser_code, toUInt8(r) as is_referral " +
-           "from values('b UInt8, c Int64, r UInt8', (6, 1, 1), (6, 2, 0), (5, 1, 1))"
+    $int = "select toUInt8(b) as branch_id, toInt64(c) as policy_code, if(pu = 0, null, toNullable(toInt64(pu))) as purchaser_code, toUInt8(r) as is_referral " +
+           "from values('b UInt8, c Int64, pu Int64, r UInt8', (6, 1, 11, 1), (6, 2, 11, 0), (5, 1, 11, 1), (6, 3, 0, 1))"
     $rows = Invoke-ModelWithSources (Get-RenderedModel 'stg_ref__referral_policy' @{ int_policy_client = $int }) @{}
-    It 'keeps the referral policies with their columns' {
-        $rows.Count | Should Be 2
-        ($rows | ForEach-Object { "$($_.branch_id)-$($_.purchaser_code)-$($_.policy_code)" }) -join ',' | Should Be '5-11-1,6-11-1'
+    $types = Invoke-ModelWithSources (Get-RenderedModel 'stg_ref__referral_policy' @{ int_policy_client = $int } `
+        'select toTypeName(branch_id) as b, toTypeName(purchaser_code) as pu, toTypeName(policy_code) as c from ({model}) limit 1') @{}
+    It 'keeps the referral policies, a policy without purchaser as -1' {
+        $rows.Count | Should Be 3
+        ($rows | ForEach-Object { "$($_.branch_id)/$($_.purchaser_code)/$($_.policy_code)" }) -join ',' | Should Be '5/11/1,6/-1/3,6/11/1'
+    }
+    It 'keeps the column types UInt8, Int64, Int64' {
+        "$($types[0].b),$($types[0].pu),$($types[0].c)" | Should Be 'UInt8,Int64,Int64'
     }
 }
 
