@@ -99,3 +99,20 @@ models:
         tests:
           - accepted_values:
               values: ['Not sent', 'No response', 'Adjudicated', 'Pended', 'Error']
+
+  - name: int_policy_client
+    description: >
+      Client company and referral flag of every Oasis policy, resolved from the rules in default.map_policy_client
+      (exact policy code over pattern, branch over all branches, longer pattern first); no company rule gives the
+      title-cased client name from the description, no referral rule gives 0. stg_ref__referral_policy and dim_policy
+      read it.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, policy_code]
+    columns:
+      - name: client_company
+        tests: [not_null]
+      - name: is_referral
+        tests:
+          - not_null
+          - accepted_values: {values: [0, 1], quote: false}
