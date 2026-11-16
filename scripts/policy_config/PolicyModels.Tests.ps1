@@ -301,3 +301,74 @@ Describe 'dim_service_department has the title-cased department and the Unknown 
         $rows.Count | Should Be 2
     }
 }
+
+# int_order_line_encounter fixtures. Lines: (order_line, master_order_no, patient). Orders: (master_order_no, 'hl7_encounter').
+# Encounters: ('type', source_id, patient). Charges: (delivery_line, 'delivered_at', 'resolved type' or '', 'status', charge_line_key, encounter_key).
+# Delivery lines: (delivery_line, order_line). Branch 6.
+function Get-OrderLineEncounter([string[]]$Lines, [string[]]$Orders, [string[]]$Encounters = @(), [string[]]$Charges = @(), [string[]]$DeliveryLines = @()) {
+    $ln = "select toUInt8(6) as branch_id, toInt64(a) as order_line, toInt64(m) as master_order_no, toNullable(toInt64(p)) as patient_id " +
+          "from values('a Int64, m Int64, p Int64', $($Lines -join ', '))"
+    $or = "select toUInt8(6) as branch_id, toInt64(m) as master_order_no, toNullable(h) as hl7_encounter from values('m Int64, h String', $($Orders -join ', '))"
+    $en = if ($Encounters.Count) {
+        "select toUInt8(6) as branch_id, t as encounter_type, toInt64(s) as source_id, toNullable(toInt64(p)) as patient_id from values('t String, s Int64, p Int64', $($Encounters -join ', '))"
+    } else { "select toUInt8(6) as branch_id, 'OP' as encounter_type, toInt64(1) as source_id, toNullable(toInt64(1)) as patient_id where 0" }
+    $ch = if ($Charges.Count) {
+        "select toUInt8(6) as branch_key, toNullable(toInt64(d)) as delivery_line, toInt64(k) as encounter_key, if(r = '', cast(null as Nullable(String)), toNullable(r)) as resolved_encounter_type, " +
+        "s as charge_status, toInt32(toYYYYMMDD(toDate(a))) as delivery_date_key, toInt32(toHour(toDateTime(a))) as delivery_time_key, toInt64(c) as charge_line_key " +
+        "from values('d Int64, a String, r String, s String, c Int64, k Int64', $($Charges -join ', '))"
+    } else { "select toUInt8(6) as branch_key, toNullable(toInt64(1)) as delivery_line, toInt64(1) as encounter_key, toNullable('OP') as resolved_encounter_type, 'Live' as charge_status, toInt32(1) as delivery_date_key, toInt32(1) as delivery_time_key, toInt64(1) as charge_line_key where 0" }
+    $dl = if ($DeliveryLines.Count) {
+        "select toUInt8(6) as branch_id, toInt64(a) as delivery_line, toNullable(toInt64(b)) as order_line from values('a Int64, b Int64', $($DeliveryLines -join ', '))"
+    } else { "select toUInt8(6) as branch_id, toInt64(1) as delivery_line, toNullable(toInt64(1)) as order_line where 0" }
+    $sql = Get-RenderedModel 'int_order_line_encounter' @{
+        int_order_line = $ln; stg_oasis__orders = $or; int_encounter = $en; fact_charge_line = $ch; stg_oasis__delivery_lines = $dl
+    }
+    return Invoke-ModelWithSources $sql @{}
+}
+function Get-EncKey([string]$Type, [long]$Id) {
+    return @(Invoke-HnhSelect -Dsn HNH_Gold -Sql "select toInt64(bitShiftRight(cityHash64(concat('6', '|', '$Type', '|', '$Id', '|')), 1)) as k")[0].k
+}
+$ol = "(10, 100, 1)"
+
+Describe 'int_order_line_encounter' {
+    It 'O-prefixed id of the same patient links to the OP encounter' {
+        $r = Get-OrderLineEncounter @($ol) @("(100, 'O555')") @("('OP', 555, 1)")
+        $r.Count | Should Be 1
+        $r[0].encounter_source | Should Be 'order'
+        [long]$r[0].encounter_key | Should Be (Get-EncKey 'OP' 555)
+    }
+    It 'E and I prefixes link to the ER and IP encounters' {
+        $e = Get-OrderLineEncounter @($ol) @("(100, 'E7')") @("('ER', 7, 1)", "('OP', 7, 1)")
+        [long]$e[0].encounter_key | Should Be (Get-EncKey 'ER' 7)
+        $i = Get-OrderLineEncounter @($ol) @("(100, 'I257207098')") @("('IP', 257207098, 1)")
+        [long]$i[0].encounter_key | Should Be (Get-EncKey 'IP' 257207098)
+    }
+    It 'X-prefixed order falls back to its charge encounter' {
+        $r = Get-OrderLineEncounter @($ol) @("(100, 'X9')") @() @("(200, '2026-06-15 10:00:00', 'OP', 'Live', 1, 4242)") @('(200, 10)')
+        $r[0].encounter_source | Should Be 'charge'
+        [long]$r[0].encounter_key | Should Be 4242
+    }
+    It 'the fallback takes the earliest live charge with a resolved encounter' {
+        $c = @("(200, '2026-06-15 09:00:00', '', 'Live', 1, 1111)",       # unresolved: skipped
+               "(200, '2026-06-15 10:00:00', 'OP', 'Cancelled', 2, 2222)", # not live: skipped
+               "(200, '2026-06-15 12:00:00', 'OP', 'Live', 3, 3333)",
+               "(200, '2026-06-15 11:00:00', 'OP', 'Live', 4, 4444)")
+        $r = Get-OrderLineEncounter @($ol) @("(100, 'X9')") @() $c @('(200, 10)')
+        [long]$r[0].encounter_key | Should Be 4444
+    }
+    It 'O-prefixed id of another patient falls back' {
+        $r = Get-OrderLineEncounter @($ol) @("(100, 'O555')") @("('OP', 555, 2)") @("(200, '2026-06-15 10:00:00', 'OP', 'Live', 1, 4242)") @('(200, 10)')
+        $r[0].encounter_source | Should Be 'charge'
+        [long]$r[0].encounter_key | Should Be 4242
+    }
+    It 'order with neither gives -1' {
+        $r = Get-OrderLineEncounter @($ol) @("(100, 'X9')") @() @("(200, '2026-06-15 10:00:00', '', 'Live', 1, 4242)") @('(200, 10)')
+        $r[0].encounter_source | Should Be 'none'
+        [long]$r[0].encounter_key | Should Be -1
+    }
+    It 'gives one row per order line' {
+        $r = Get-OrderLineEncounter @($ol, "(11, 100, 1)") @("(100, 'O555')") @("('OP', 555, 1)") `
+            @("(200, '2026-06-15 10:00:00', 'OP', 'Live', 1, 4242)", "(201, '2026-06-15 11:00:00', 'OP', 'Live', 2, 4243)") @('(200, 10)', '(201, 10)', '(201, 11)')
+        $r.Count | Should Be 2
+    }
+}

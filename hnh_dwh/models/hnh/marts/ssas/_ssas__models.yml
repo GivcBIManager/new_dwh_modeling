@@ -2374,6 +2374,8 @@ models:
         data_type: "Nullable(Int64)"
       - name: patient_key
         data_type: "Int64"
+      - name: encounter_key
+        data_type: "Int64"
       - name: payer_key
         data_type: "Int64"
       - name: ordering_staff_key
