@@ -4,8 +4,8 @@
 -- line (detail and subtotal). Fusion months: posted_amount is the same pipeline on the posted balance view, so
 -- unposted_amount = report - posted is what the Fusion report shows only because it includes unposted journals.
 -- moved_accounts_amount is the part of report_amount on accounts that finance moved to another report line in the
--- reference mapping (mapped_in 'pl-report', for all branches or for the branch's Fusion branch code, as
--- hnh_dim_gl_account applies branch rows). Oasis months have no posted view: posted = report, compare with the Oasis
+-- reference mapping (effective mapped_in 'pl-report': the branch's own row if it has one, else the row for all
+-- branches, as hnh_dim_gl_account applies branch rows). Oasis months have no posted view: posted = report, compare with the Oasis
 -- trial balance. Each side is summed per line, so a line only one side has still shows.
 with report as (
     select branch_key, month_start, source_system, pl_line_key, pl_line_code, sum(amount) as amount
@@ -17,23 +17,25 @@ posted_details as (
     {{ hnh_pl_report_fusion_details('posted') }}
 ),
 
--- the Fusion details of the report, kept to the accounts moved by the mapping
+-- the Fusion details of the report, kept to the accounts whose effective mapping row is 'pl-report': the row of the
+-- account's Fusion branch code where there is one, else the row for all branches (as hnh_dim_gl_account picks it)
 moved_details as (
     select d.*
     from ({{ hnh_pl_report_fusion_details('including_unposted') }}) as d
-    inner join (
-        select
-            toString(natural_account)                                   as account_code,
-            max(isNull(branch_segment))                                 as all_branches,
-            groupArray(branch_segment)                                  as branch_segments
-        from {{ ref('stg_ref__fs_account') }}
-        where mapped_in = 'pl-report'
-        group by account_code
-    ) as m on m.account_code = d.account_code
     left join (
         select branch_key, fusion_branch_code from {{ ref('hnh_dim_branch') }}
     ) as b on b.branch_key = d.branch_key
-    where m.all_branches = 1 or has(m.branch_segments, ifNull(b.fusion_branch_code, toInt64(-1)))
+    left join (
+        select toString(natural_account) as account_code, mapped_in
+        from {{ ref('stg_ref__fs_account') }}
+        where branch_segment is null
+    ) as fd on fd.account_code = d.account_code
+    left join (
+        select toString(natural_account) as account_code, branch_segment, mapped_in
+        from {{ ref('stg_ref__fs_account') }}
+        where branch_segment is not null
+    ) as fb on fb.account_code = d.account_code and fb.branch_segment = b.fusion_branch_code
+    where ifNull(fb.mapped_in, fd.mapped_in) = 'pl-report'
 ),
 
 posted as ({{ hnh_pl_report_rows('posted_details') }}),
