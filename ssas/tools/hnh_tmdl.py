@@ -8,7 +8,7 @@ from typing import Optional
 
 ACRONYMS = {
     "abc", "alos", "ap", "ar", "bsc", "cchi", "ctas", "dama", "er", "fs", "fte", "gl", "grn", "hhc", "hr", "icu", "id",
-    "ios", "ip", "je", "kpi", "los", "ltc", "moh", "mrn", "nphies", "nps", "op", "pg", "pii", "po", "sar", "scfhs", "sms",
+    "ios", "ip", "je", "kpi", "los", "ltc", "moh", "mrn", "nphies", "nps", "op", "pg", "pii", "pl", "po", "sar", "scfhs", "sms",
     "tpa", "uom", "vat",
 }
 DATA_SOURCE = "HNH_Gold"
@@ -129,12 +129,13 @@ def _format_string(dtype: str, base: str, hidden: bool) -> Optional[str]:
     return None
 
 
-def column_lines(table: Table, col: Column, overrides: dict, sort_by: dict) -> list[str]:
+def column_lines(table: Table, col: Column, overrides: dict, sort_by: dict, hidden_columns=frozenset()) -> list[str]:
     dtype = tmdl_type(col.ch_type)
     base, _ = unwrap(col.ch_type)
     is_key = col.name.endswith("_key")
     numeric = dtype in ("int64", "decimal", "double")
-    hidden = table.kind == "security" or is_key or (table.kind == "fact" and numeric)
+    hidden = (table.kind == "security" or is_key or (table.kind == "fact" and numeric)
+              or (table.view, col.name) in hidden_columns)
     lines = [f"\tcolumn {q(display_name(table, col.name, overrides))}", f"\t\tdataType: {dtype}"]
     if hidden:
         lines.append("\t\tisHidden")
@@ -191,7 +192,8 @@ def kept_blocks(text: str) -> list[str]:
     return blocks
 
 
-def render_table(table: Table, columns: list[Column], overrides: dict, sort_by: dict, kept: list[str]) -> str:
+def render_table(table: Table, columns: list[Column], overrides: dict, sort_by: dict, kept: list[str],
+                 hidden_columns=frozenset()) -> str:
     if table.partition_column and table.partition_column not in [c.name for c in columns]:
         raise ValueError(f"{table.name}: partition column {table.partition_column} is not in {table.view}")
     out = [f"/// {table.description}", f"table {q(table.name)}"]
@@ -202,7 +204,7 @@ def render_table(table: Table, columns: list[Column], overrides: dict, sort_by: 
     for block in kept:
         out += ["", block]
     for col in columns:
-        out += [""] + column_lines(table, col, overrides, sort_by)
+        out += [""] + column_lines(table, col, overrides, sort_by, hidden_columns)
     out += [""] + partition_lines(table)
     out += ["", f"\tannotation hnh_kind = {table.kind}", f"\tannotation hnh_view = {table.view}"]
     if table.partition_column:

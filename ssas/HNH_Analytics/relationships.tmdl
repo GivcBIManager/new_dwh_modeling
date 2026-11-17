@@ -800,6 +800,18 @@ relationship order_lines_service_key
 	fromColumn: 'Order Lines'.'Service Key'
 	toColumn: Service.'Service Key'
 
+relationship p_l_report_branch_key
+	fromColumn: 'P&L Report'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship p_l_report_month_date_key
+	fromColumn: 'P&L Report'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship p_l_report_pl_line_key
+	fromColumn: 'P&L Report'.'PL Line Key'
+	toColumn: 'P&L Line'.'PL Line Key'
+
 relationship patient_consumption_billed_payer_key
 	fromColumn: 'Patient Consumption'.'Billed Payer Key'
 	toColumn: Payer.'Payer Key'

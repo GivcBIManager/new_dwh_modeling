@@ -80,6 +80,8 @@ TABLES = [
     Table("ssas_fact_gl_journal_line", "GL Journal Lines", "fact", "One Fusion journal line.", "accounting_date_key"),
     Table("ssas_fact_gl_balance_monthly", "GL Balances", "fact", "Monthly opening, movement and closing balance per account."),
     Table("ssas_fact_income_statement_monthly", "Income Statement", "fact", "Monthly actual and budget per budget line."),
+    Table("ssas_dim_pl_report_line", "P&L Line", "dim", "Lines of the Fusion profitability report with their section and kind."),
+    Table("ssas_fact_pl_report_monthly", "P&L Report", "fact", "Monthly amount per P&L report line, branch and slicer, in the Fusion report's sign."),
     Table("ssas_fact_budget_monthly", "Budget", "fact", "Monthly budget per budget line."),
     Table("ssas_fact_ap_invoice_line", "AP Invoice Lines", "fact", "One payables invoice distribution line."),
     Table("ssas_fact_ap_open_item", "AP Open Items", "fact", "Open payables at the last refresh with ageing bucket."),
@@ -115,6 +117,7 @@ TABLES = [
 
 DIM_KEYS = {
     "branch_key": ("Branch", "branch_key"),
+    "pl_line_key": ("P&L Line", "pl_line_key"),
     "bsc_kpi_key": ("BSC KPI", "bsc_kpi_key"),
     "hr_kpi_key": ("HR KPI", "hr_kpi_key"),
     "hr_dq_issue_key": ("HR Data Issues", "hr_dq_issue_key"),
@@ -219,7 +222,7 @@ ACTIVE_DATE = {
     "Bed Occupancy": "date_key", "Surgeries": "operation_date_key", "Clinic Capacity": "date_key", "Targets": "date_key",
     "Survey Responses": "visit_date_key", "Survey Answers": "visit_date_key",
     "GL Journal Lines": "accounting_date_key", "GL Balances": "period_end_date_key",
-    "Income Statement": "month_date_key", "Budget": "month_date_key", "AP Invoice Lines": "accounting_date_key",
+    "Income Statement": "month_date_key", "P&L Report": "month_date_key", "Budget": "month_date_key", "AP Invoice Lines": "accounting_date_key",
     "AP Open Items": "invoice_date_key", "AP Payments": "payment_date_key", "Stock Monthly": "month_date_key",
     "Purchase Lines": "po_date_key", "Goods Receipts": "date_key", "Headcount": "month_date_key",
     "Worker Movements": "action_date_key", "Payroll": "month_date_key",
@@ -245,6 +248,12 @@ COLUMN_NAMES = {
     ("ssas_fact_claim_line", "claimed_amount"): "Line Claimed Amount",
 }
 
+# (view, column) of other columns to hide. A fact's copy of a dimension code that a measure tests on the dimension:
+# on rows it gives blanks (final review R15: P&L Amount needs one 'P&L Line'[PL Line Code]).
+HIDDEN_COLUMNS = {
+    ("ssas_fact_pl_report_monthly", "pl_line_code"),
+}
+
 # (view, column) -> sort column. generate.py checks each pair is one-to-one in the data.
 SORT_BY = {
     ("ssas_dim_date", "month_name"): "month",
@@ -256,6 +265,8 @@ SORT_BY = {
     ("ssas_dim_date", "hijri_month_name"): "hijri_month",
     ("ssas_dim_time", "time_label"): "time_key",
     ("ssas_dim_budget_line", "budget_line_name"): "sort_order",
+    ("ssas_dim_pl_report_line", "pl_line_label"): "pl_line_key",
+    ("ssas_dim_pl_report_line", "section_name"): "section_key",
     ("ssas_dim_pay_category", "pay_category"): "sort_order",
     ("ssas_dim_movement_type", "movement_type"): "sort_order",
     ("ssas_dim_fs_line", "fs_type"): "type_sort",
@@ -280,7 +291,7 @@ PERSPECTIVES = {
     "Patient Flow": ["Encounters", "Admissions", "Episodes", "Bed Occupancy", "Surgeries", "Clinic Capacity", "Targets"],
     "Revenue Cycle": ["Charge Lines", "Order Lines", "Invoices", "Cash Receipts", "Revenue Adjustments", "Episode Billing"],
     "Claims & Pre-auth": ["Claim Lines", "Claim Payments", "Pre-auth Lines"],
-    "Finance": ["GL Journal Lines", "GL Balances", "Income Statement", "Budget", "AP Invoice Lines", "AP Open Items",
+    "Finance": ["GL Journal Lines", "GL Balances", "Income Statement", "P&L Report", "Budget", "AP Invoice Lines", "AP Open Items",
                 "AP Payments"],
     "Workforce": ["Headcount", "Worker Movements", "Absences", "Absence Days", "Payroll", "Leave Balances",
                   "Staff Productivity"],

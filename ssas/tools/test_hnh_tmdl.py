@@ -62,6 +62,24 @@ def test_fact_text_stays_visible():
     assert "\t\tisHidden" not in lines
 
 
+def test_configured_fact_text_column_is_hidden():
+    hidden = {("ssas_fact_charge_line", "charge_status")}
+    lines = t.column_lines(FACT, t.Column("charge_status", "String"), {}, {}, hidden)
+    assert "\t\tisHidden" in lines
+    assert "\t\tisAvailableInMdx: false" in lines
+    other = t.column_lines(FACT, t.Column("charge_type", "String"), {}, {}, hidden)
+    assert "\t\tisHidden" not in other
+
+
+def test_pl_report_line_code_is_hidden_on_the_fact():
+    """Final review R15: 'P&L Report'[PL Line Code] on rows gave a blank P&L Amount (it tests the P&L Line dim)."""
+    import model_config as cfg
+    assert ("ssas_fact_pl_report_monthly", "pl_line_code") in cfg.HIDDEN_COLUMNS
+    text = (Path(__file__).resolve().parents[1] / "HNH_Analytics" / "tables" / "P&L Report.tmdl").read_text(encoding="utf-8")
+    block = text.split("\tcolumn 'PL Line Code'\n", 1)[1].split("\n\n", 1)[0]
+    assert "\t\tisHidden" in block
+
+
 def test_key_encoding_hints():
     surrogate = t.column_lines(FACT, t.Column("staff_key", "Int64"), {}, {})
     date_key = t.column_lines(FACT, t.Column("delivery_date_key", "Int64"), {}, {})

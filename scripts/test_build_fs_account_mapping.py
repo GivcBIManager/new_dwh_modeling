@@ -47,3 +47,48 @@ def test_infer_takes_a_group_position_only_when_two_siblings_agree():
     mapped = {11103116: bank, 11103117: bank, 21501101: DC, 21501102: GA}
     out = b.infer([11103139, 21501105, 43102501], mapped, {})
     assert out == {11103139: bank}
+
+
+def test_build_rows_applies_the_overrides():
+    contractual = ("IS", "Revenue", "Revenue - Discounts", "Revenue - Contractual Discount", "Contractual")
+    settle = ("IS", "Revenue", "Revenue - Discounts", "Revenue - Settlement Discount", "Rejection")
+    rows = b.build_rows({41310101: {"Abha": contractual}, 41310102: {"Abha": settle}}, [], {},
+                       overrides=b.OVERRIDES[:1])
+    assert (41310101, None, settle[:4] + ("Early Payment Discount",), "pl-report") in rows
+    assert (41310102, None, settle, "tb2026:abha") in rows
+
+
+CONTRACTUAL = ("IS", "Revenue", "Revenue - Discounts", "Revenue - Contractual Discount", "Contractual")
+SETTLE = ("IS", "Revenue", "Revenue - Discounts", "Revenue - Settlement Discount", "Rejection")
+EARLY = SETTLE[:4] + ("Early Payment Discount",)
+
+
+def test_build_rows_reports_an_override_the_workbook_positions_differently(capsys):
+    conflicts = []
+    rows = b.build_rows({41310101: {"Abha": CONTRACTUAL}, 41310102: {"Abha": SETTLE}}, [], {},
+                        overrides=b.OVERRIDES[:1], conflicts=conflicts)
+    assert (41310101, None, EARLY, "pl-report") in rows  # the override still wins
+    assert conflicts == [("override vs workbook", 41310101, None, CONTRACTUAL, "tb2026:abha", EARLY)]
+    assert "41310101" in capsys.readouterr().out
+    quiet = []
+    b.build_rows({41310101: {"Abha": EARLY}, 41310102: {"Abha": SETTLE}}, [], {},
+                 overrides=b.OVERRIDES[:1], conflicts=quiet)
+    assert quiet == []
+
+
+def test_build_rows_reports_a_workbook_branch_row_kept_under_an_overridden_default():
+    other = SETTLE[:4] + ("Other",)
+    conflicts = []
+    wb = {41310101: {"Abha": CONTRACTUAL, "Unaizah": CONTRACTUAL, "Jazan": other}, 41310102: {"Abha": SETTLE}}
+    rows = b.build_rows(wb, [], {}, overrides=b.OVERRIDES[:1], conflicts=conflicts)
+    assert (41310101, 105, other, "tb2026:jazan") in rows  # the override does not move the branch row
+    assert ("workbook branch row kept", 41310101, 105, other, "tb2026:jazan", EARLY) in conflicts
+
+
+def test_build_rows_does_not_carry_a_previous_pl_report_row_forward():
+    def prev(acc, pos, mapped_in):
+        return {"ORACLE_CODE": str(acc), "BRANCH_CODE": "", **dict(zip(b.LEVELS, pos)), "MAPPED_IN": mapped_in}
+    previous = [prev(43102302, EARLY, "pl-report"), prev(43102399, SETTLE, "tb2026:abha")]
+    rows = b.build_rows({41310102: {"Abha": SETTLE}}, previous, {}, overrides=[])
+    assert not [r for r in rows if r[0] == 43102302]  # deleting the override reverts the account
+    assert (43102399, None, SETTLE, "tb2026:abha") in rows

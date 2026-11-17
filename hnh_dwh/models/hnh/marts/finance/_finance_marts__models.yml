@@ -138,3 +138,60 @@ models:
       - name: source_system
         tests:
           - accepted_values: {values: ['oasis', 'fusion']}
+  - name: dim_pl_report_line
+    description: >
+      Lines of the Fusion HNH profitability (P&L) report in report order: detail lines, a Not mapped line per section,
+      and subtotals that add the sections listed in subtotal_sections.
+    columns:
+      - name: pl_line_key
+        description: Report order of the line.
+        tests: [unique, not_null]
+      - name: pl_line_code
+        tests: [unique, not_null]
+      - name: pl_line_name
+        description: Exact wording of the Fusion report; repeats across sections (Not mapped, Kitchen Expenses ...).
+      - name: pl_line_label
+        description: Unique display name; pl_line_name, or pl_line_name - section_name where the name repeats (a line named like its own section keeps the bare name). The cube sorts it by pl_line_key.
+        tests: [unique, not_null]
+      - name: section_key
+        description: Smallest pl_line_key of the section's lines; sorts the sections in report order.
+      - name: line_kind
+        tests:
+          - accepted_values: {values: ['detail', 'not_mapped', 'subtotal']}
+  - name: pl_report_line_rule
+    description: >
+      Match rules from lower-case income-statement labels to a report line. '' in source_system, fs_caption or fs_line
+      matches anything; score ranks the rules (source 1, caption 2, line 4) and the highest matching score wins.
+    tests:
+      - hnh_unique_combination:
+          columns: [source_system, fs_category, fs_caption, fs_line]
+    columns:
+      - name: fs_category
+        tests: [not_null]
+      - name: pl_line_code
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_pl_report_line'), field: pl_line_code}
+  - name: fact_pl_report_monthly
+    description: >
+      The P&L (Fusion HNH profitability report) by branch, month and report line, credit positive (revenue positive,
+      costs negative). Branches 1-8 take the Oasis rows of fact_gl_fs_monthly before their first Fusion GL month and
+      the Fusion GL (including unposted, opening-balance journals out) from it; Head Office (100) is always Fusion.
+      Detail rows carry the account, its lower-case FS labels and the Fusion slicer names (Unallocated for Oasis);
+      subtotal rows ('' account and labels) add the detail and not-mapped lines of the sections they list. Rows that
+      round to zero are left out.
+    columns:
+      - name: branch_key
+        tests:
+          - not_null
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 100], quote: false}
+      - name: source_system
+        tests:
+          - accepted_values: {values: ['oasis', 'fusion']}
+      - name: pl_line_key
+        tests:
+          - relationships: {to: ref('dim_pl_report_line'), field: pl_line_key}
+      - name: account_code
+        description: Oasis main + sub account or the Fusion natural account; '' on subtotal rows.
+      - name: amount
+        description: Movement of the month, credit positive (-movement of the GL).
