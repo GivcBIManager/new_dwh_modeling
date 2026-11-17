@@ -24,6 +24,8 @@ table 'P&L Report'
 
 	column 'PL Line Code'
 		dataType: string
+		isHidden
+		isAvailableInMdx: false
 		summarizeBy: none
 		sourceColumn: pl_line_code
 

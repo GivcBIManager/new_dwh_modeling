@@ -248,6 +248,12 @@ COLUMN_NAMES = {
     ("ssas_fact_claim_line", "claimed_amount"): "Line Claimed Amount",
 }
 
+# (view, column) of other columns to hide. A fact's copy of a dimension code that a measure tests on the dimension:
+# on rows it gives blanks (final review R15: P&L Amount needs one 'P&L Line'[PL Line Code]).
+HIDDEN_COLUMNS = {
+    ("ssas_fact_pl_report_monthly", "pl_line_code"),
+}
+
 # (view, column) -> sort column. generate.py checks each pair is one-to-one in the data.
 SORT_BY = {
     ("ssas_dim_date", "month_name"): "month",

@@ -73,7 +73,7 @@ def main():
     for table in cfg.TABLES:
         path = tables_dir / f"{table.name}.tmdl"
         kept = t.kept_blocks(path.read_text(encoding="utf-8")) if path.exists() else []
-        write(path, t.render_table(table, columns[table.name], cfg.COLUMN_NAMES, cfg.SORT_BY, kept))
+        write(path, t.render_table(table, columns[table.name], cfg.COLUMN_NAMES, cfg.SORT_BY, kept, cfg.HIDDEN_COLUMNS))
     write(MODEL_DIR / "relationships.tmdl", t.render_relationships(rels, col_display))
 
     has_calc_group = (tables_dir / f"{CALC_GROUP}.tmdl").exists()
