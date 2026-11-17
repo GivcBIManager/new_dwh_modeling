@@ -954,6 +954,26 @@ models:
         data_type: "Nullable(String)"
       - name: nphies_license
         data_type: "Nullable(String)"
+  - name: ssas_dim_policy
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: policy_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: policy_code
+        data_type: "Nullable(Int64)"
+      - name: policy_name
+        data_type: "String"
+      - name: insurer
+        data_type: "String"
+      - name: client_company
+        data_type: "String"
+      - name: is_referral
+        data_type: "String"
+      - name: is_active
+        data_type: "String"
   - name: ssas_dim_position
     config:
       contract: {enforced: true}
@@ -1042,6 +1062,22 @@ models:
         data_type: "String"
       - name: high_level_department
         data_type: "String"
+  - name: ssas_dim_service_department
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: service_department_key
+        data_type: "Int64"
+      - name: branch_key
+        data_type: "Int64"
+      - name: service_dept
+        data_type: "Nullable(Int64)"
+      - name: service_department_name
+        data_type: "String"
+      - name: service_department_type
+        data_type: "Nullable(String)"
+      - name: short_code
+        data_type: "Nullable(String)"
   - name: ssas_dim_staff
     config:
       contract: {enforced: true}
@@ -1686,6 +1722,10 @@ models:
         data_type: "Int64"
       - name: delivery_time_key
         data_type: "Nullable(Int64)"
+      - name: episode_key
+        data_type: "Int64"
+      - name: encounter_key
+        data_type: "Int64"
       - name: patient_key
         data_type: "Int64"
       - name: staff_key
@@ -1701,6 +1741,20 @@ models:
       - name: episode_payer_key
         data_type: "Int64"
       - name: care_type_key
+        data_type: "Int64"
+      - name: service_department_key
+        data_type: "Int64"
+      - name: ordering_staff_key
+        data_type: "Int64"
+      - name: mrp_1_staff_key
+        data_type: "Int64"
+      - name: mrp_2_staff_key
+        data_type: "Int64"
+      - name: mrp_3_staff_key
+        data_type: "Int64"
+      - name: charged_by_staff_key
+        data_type: "Int64"
+      - name: policy_key
         data_type: "Int64"
       - name: encounter_type
         data_type: "Nullable(String)"
@@ -1838,6 +1892,8 @@ models:
     config:
       contract: {enforced: true}
     columns:
+      - name: encounter_key
+        data_type: "Int64"
       - name: branch_key
         data_type: "Int64"
       - name: encounter_date_key
@@ -1914,6 +1970,8 @@ models:
     config:
       contract: {enforced: true}
     columns:
+      - name: episode_key
+        data_type: "Int64"
       - name: branch_key
         data_type: "Int64"
       - name: start_date_key
@@ -2315,6 +2373,8 @@ models:
       - name: first_delivery_date_key
         data_type: "Nullable(Int64)"
       - name: patient_key
+        data_type: "Int64"
+      - name: encounter_key
         data_type: "Int64"
       - name: payer_key
         data_type: "Int64"

@@ -140,6 +140,10 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, delivery_charge_id]
+  - name: stg_oasis__cashier_signons
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, signon_id]
   - name: stg_oasis__delivery_lines
     tests:
       - hnh_unique_combination:

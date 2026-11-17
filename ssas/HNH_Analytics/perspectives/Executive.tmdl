@@ -33,6 +33,9 @@ perspective Executive
 	perspectiveTable 'Charge Lines'
 		includeAll
 
+	perspectiveTable 'Charged By'
+		includeAll
+
 	perspectiveTable 'Claim Lines'
 		includeAll
 
@@ -81,13 +84,28 @@ perspective Executive
 	perspectiveTable Location
 		includeAll
 
+	perspectiveTable 'MRP 1'
+		includeAll
+
+	perspectiveTable 'MRP 2'
+		includeAll
+
+	perspectiveTable 'MRP 3'
+		includeAll
+
 	perspectiveTable 'NPHIES Reason'
+		includeAll
+
+	perspectiveTable 'Ordering Doctor'
 		includeAll
 
 	perspectiveTable Patient
 		includeAll
 
 	perspectiveTable Payer
+		includeAll
+
+	perspectiveTable Policy
 		includeAll
 
 	perspectiveTable Position
@@ -97,6 +115,9 @@ perspective Executive
 		includeAll
 
 	perspectiveTable Service
+		includeAll
+
+	perspectiveTable 'Service Department'
 		includeAll
 
 	perspectiveTable Staff
@@ -288,6 +309,8 @@ perspective Executive
 		perspectiveMeasure 'Cancelled Charges'
 		perspectiveMeasure 'Cash Revenue'
 		perspectiveMeasure Census
+		perspectiveMeasure 'Census (Charged)'
+		perspectiveMeasure 'Census (Ordered)'
 		perspectiveMeasure 'Claim Rejection Rate %'
 		perspectiveMeasure 'Claimable Revenue'
 		perspectiveMeasure 'Claimed Amount'
@@ -323,6 +346,7 @@ perspective Executive
 		perspectiveMeasure 'Employer Charges Share %'
 		perspectiveMeasure 'Encounter Link %'
 		perspectiveMeasure Episodes
+		perspectiveMeasure 'Episodes (Charged)'
 		perspectiveMeasure FTE
 		perspectiveMeasure 'Female Share %'
 		perspectiveMeasure 'First-pass Rejection Rate %'
@@ -542,7 +566,11 @@ perspective Executive
 		perspectiveMeasure 'Resubmission Recovery'
 		perspectiveMeasure 'Returning Patients'
 		perspectiveMeasure Revenue
+		perspectiveMeasure 'Revenue (Charged Episodes)'
+		perspectiveMeasure 'Revenue (Charged Visits)'
 		perspectiveMeasure 'Revenue by Episode Payer'
+		perspectiveMeasure 'Revenue per Charged Episode (CPE)'
+		perspectiveMeasure 'Revenue per Charged Visit (CPV)'
 		perspectiveMeasure 'Revenue per Payroll SAR'
 		perspectiveMeasure 'SMS Reach %'
 		perspectiveMeasure 'Sample Gap'
@@ -612,6 +640,9 @@ perspective Executive
 		perspectiveMeasure '_Guard 13 facts #317b6ff7'
 		perspectiveMeasure '_Guard 15 facts #f1ff93bc'
 		perspectiveMeasure '_Guard 18 facts #27e18bc6'
+		perspectiveMeasure '_Guard 2 facts #4cf7cebe'
+		perspectiveMeasure '_Guard 2 facts #d7ea47cc'
+		perspectiveMeasure '_Guard 2 facts #dc9be705'
 		perspectiveMeasure '_Guard 20 facts #f450ebef'
 		perspectiveMeasure '_Guard 21 facts #44b6d100'
 		perspectiveMeasure '_Guard AP Invoice Lines'
@@ -769,9 +800,11 @@ perspective Executive
 		perspectiveMeasure '_Unguarded BSC Turnover'
 		perspectiveMeasure '_Unguarded BSC Vacancy Rate'
 		perspectiveMeasure '_Unguarded ER Visits'
+		perspectiveMeasure '_Unguarded Episodes'
 		perspectiveMeasure '_Unguarded NPS (5-point)'
 		perspectiveMeasure '_Unguarded NPS Answers'
 		perspectiveMeasure '_Unguarded OP Visits'
 		perspectiveMeasure '_Unguarded Open Openings'
 		perspectiveMeasure '_Unguarded Overall Satisfaction (0-100)'
 		perspectiveMeasure '_Unguarded Respondents'
+		perspectiveMeasure '_Unguarded Revenue'

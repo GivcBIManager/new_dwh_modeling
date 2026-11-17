@@ -25,6 +25,22 @@ table 'Charge Lines'
 		summarizeBy: none
 		sourceColumn: delivery_time_key
 
+	column 'Episode Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: episode_key
+
+	column 'Encounter Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: encounter_key
+
 	column 'Patient Key'
 		dataType: int64
 		isHidden
@@ -88,6 +104,62 @@ table 'Charge Lines'
 		encodingHint: hash
 		summarizeBy: none
 		sourceColumn: care_type_key
+
+	column 'Service Department Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_department_key
+
+	column 'Ordering Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: ordering_staff_key
+
+	column 'Mrp 1 Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: mrp_1_staff_key
+
+	column 'Mrp 2 Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: mrp_2_staff_key
+
+	column 'Mrp 3 Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: mrp_3_staff_key
+
+	column 'Charged By Staff Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: charged_by_staff_key
+
+	column 'Policy Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: policy_key
 
 	column 'Encounter Type'
 		dataType: string

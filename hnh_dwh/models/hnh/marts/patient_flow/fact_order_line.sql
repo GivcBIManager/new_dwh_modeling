@@ -23,6 +23,7 @@ select
     {{ hnh_time_key('assumeNotNull(k.order_at)') }}         as order_time_key,
     {{ hnh_date_key_in_range('k.first_delivered_at') }}     as first_delivery_date_key,
     ifNull(dp.patient_key, toInt64(-1))                     as patient_key,
+    ifNull(oe.encounter_key, toInt64(-1))                   as encounter_key,
     k.episode_key                                           as episode_key,
     ifNull(dpy.payer_key, toInt64(-1))                      as payer_key,
     ifNull(ds.staff_key, toInt64(-1))                       as ordering_staff_key,
@@ -58,6 +59,8 @@ select
     now()                                                   as _loaded_at
 from keyed as k
 left join (select patient_key from {{ ref('dim_patient') }}) as dp on dp.patient_key = k.patient_key_raw
+left join (select branch_id, order_line, encounter_key from {{ ref('int_order_line_encounter') }}) as oe
+    on oe.branch_id = k.branch_id and oe.order_line = k.order_line
 left join (select payer_key from {{ ref('dim_payer') }}) as dpy on dpy.payer_key = k.payer_key_raw
 left join (select staff_key from {{ ref('dim_staff') }}) as ds on ds.staff_key = k.staff_key_raw
 left join (select department_key from {{ ref('hnh_dim_department') }}) as dd on dd.department_key = k.department_key_raw

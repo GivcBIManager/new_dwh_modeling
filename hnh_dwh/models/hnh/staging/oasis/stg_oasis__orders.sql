@@ -9,5 +9,6 @@ select
     {{ hnh_code('status') }}                    as order_status,
     {{ hnh_code('attendance_type') }}           as attendance_type,
     {{ hnh_id('service_dept') }}                as service_dept,
+    {{ hnh_code('hl7_encounter') }}             as hl7_encounter,
     recorded_updated_at                         as updated_at
 from {{ hnh_oasis_source('orders_master') }} final

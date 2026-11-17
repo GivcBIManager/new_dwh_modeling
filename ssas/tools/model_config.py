@@ -12,6 +12,13 @@ TABLES = [
     Table("ssas_dim_staff_role", "Booked Doctor", "role_copy", "Doctor the encounter was booked with (copy of Staff for this role)."),
     Table("ssas_dim_staff_role", "Admission Treating Doctor", "role_copy", "Treating doctor of the admission (copy of Staff for this role)."),
     Table("ssas_dim_staff_role", "Anaesthetist", "role_copy", "Anaesthetist of the surgery (copy of Staff for this role)."),
+    Table("ssas_dim_staff_role", "Ordering Doctor", "role_copy", "Ordering doctor of the charge line (copy of Staff for this role)."),
+    Table("ssas_dim_staff_role", "MRP 1", "role_copy", "Most responsible physician 1 of the charge line (eligibility responsibility 1, period covering the delivery) (copy of Staff for this role)."),
+    Table("ssas_dim_staff_role", "MRP 2", "role_copy", "Most responsible physician 2 of the charge line (eligibility responsibility 2, period covering the delivery) (copy of Staff for this role)."),
+    Table("ssas_dim_staff_role", "MRP 3", "role_copy", "Most responsible physician 3 of the charge line (eligibility responsibility 3, period covering the delivery) (copy of Staff for this role)."),
+    Table("ssas_dim_staff_role", "Charged By", "role_copy", "Staff member who charged the line (copy of Staff for this role)."),
+    Table("ssas_dim_service_department", "Service Department", "dim", "Departments that perform the service of a charge line."),
+    Table("ssas_dim_policy", "Policy", "dim", "Insurance policies of charge lines."),
     Table("ssas_dim_branch_role", "From Branch", "role_copy", "Branch a worker movement left, for transfers from one branch to another (copy of Branch for this role)."),
     Table("ssas_dim_patient", "Patient", "dim", "Patients per branch without personal identifiers; filtered to the user's branches."),
     Table("ssas_dim_patient_pii", "Patient Details", "dim", "Patient names and identifiers; visible only to users with PII access."),
@@ -146,12 +153,19 @@ DIM_KEYS = {
     "admission_source_key": ("Admission Source", "admission_source_key"),
     "discharge_outcome_key": ("Discharge Outcome", "discharge_outcome_key"),
     "bed_key": ("Bed", "bed_key"),
+    "service_department_key": ("Service Department", "service_department_key"),
+    "policy_key": ("Policy", "policy_key"),
 }
 
 # (table, column) -> (dimension table, dimension key, active). Spec 5.1 role-playing; 5.2 staff copies.
 ROLE_KEYS = {
     ("Charge Lines", "billed_payer_key"): ("Payer", "payer_key", True),
     ("Charge Lines", "episode_payer_key"): ("Payer", "payer_key", False),
+    ("Charge Lines", "ordering_staff_key"): ("Ordering Doctor", "staff_key", True),
+    ("Charge Lines", "mrp_1_staff_key"): ("MRP 1", "staff_key", True),
+    ("Charge Lines", "mrp_2_staff_key"): ("MRP 2", "staff_key", True),
+    ("Charge Lines", "mrp_3_staff_key"): ("MRP 3", "staff_key", True),
+    ("Charge Lines", "charged_by_staff_key"): ("Charged By", "staff_key", True),
     ("Order Lines", "ordering_staff_key"): ("Staff", "staff_key", True),
     ("Order Lines", "ordering_department_key"): ("Department", "department_key", True),
     ("Patient Consumption", "treating_staff_key"): ("Staff", "staff_key", True),
@@ -189,6 +203,11 @@ EXTRA_RELATIONSHIPS = [Relationship("Patient Details", "patient_key", "Patient",
 NO_RELATIONSHIP = {
     ("Survey Responses", "survey_response_key"),
     ("Survey Answers", "survey_response_key"),
+    ("Charge Lines", "encounter_key"),
+    ("Charge Lines", "episode_key"),
+    ("Order Lines", "encounter_key"),
+    ("Encounters", "encounter_key"),
+    ("Episodes", "episode_key"),
 }
 
 ACTIVE_DATE = {

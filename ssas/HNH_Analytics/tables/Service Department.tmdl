@@ -1,0 +1,47 @@
+/// Departments that perform the service of a charge line.
+table 'Service Department'
+
+	column 'Service Department Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: service_department_key
+
+	column 'Branch Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: branch_key
+
+	column 'Service Dept'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: service_dept
+
+	column 'Service Department Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_department_name
+
+	column 'Service Department Type'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: service_department_type
+
+	column 'Short Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: short_code
+
+	partition 'Service Department' = m
+		source =
+				let
+				    Source = Odbc.Query("dsn=HNH_Gold", "select * from gold.ssas_dim_service_department")
+				in
+				    Source
+
+	annotation hnh_kind = dim
+	annotation hnh_view = ssas_dim_service_department

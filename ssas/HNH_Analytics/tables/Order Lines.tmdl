@@ -41,6 +41,14 @@ table 'Order Lines'
 		summarizeBy: none
 		sourceColumn: patient_key
 
+	column 'Encounter Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: encounter_key
+
 	column 'Payer Key'
 		dataType: int64
 		isHidden

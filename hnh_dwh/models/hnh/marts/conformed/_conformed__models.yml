@@ -65,6 +65,30 @@ models:
               field: branch_key
       - name: creditor
         tests: [not_null]
+  - name: dim_policy
+    description: >
+      Oasis policies (branch + policy code) with insurer and client company, plus Cash (-2), Deductible (-3) and
+      Not Recorded (-1) members per branch for charge lines without a policy code, and the Unknown row.
+    columns:
+      - name: policy_key
+        tests: [unique, not_null]
+      - name: branch_key
+        tests:
+          - relationships:
+              to: ref('hnh_dim_branch')
+              field: branch_key
+      - name: client_company
+        tests: [not_null]
+      - name: is_referral
+        tests:
+          - not_null
+          - accepted_values: {values: [0, 1], quote: false}
+  - name: dim_service_department
+    description: >
+      Oasis service departments (branch + service department) as charge lines carry them, plus the Unknown row.
+    columns:
+      - name: service_department_key
+        tests: [unique, not_null]
   - name: dim_patient
     columns:
       - name: patient_key
