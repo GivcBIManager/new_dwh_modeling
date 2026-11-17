@@ -12,7 +12,7 @@
 ] -%}
 {#- Name-like columns that are not source text, or whose all-caps values are acronyms and codes. #}
 {%- set excluded = [
-    'dim_budget_line.budget_line_name',
+    'dim_budget_line.budget_line_name', 'dim_pl_report_line.pl_line_name', 'dim_pl_report_line.section_name',
     'hnh_dim_department.short_name',
     'hnh_dim_gl_account.natural_account_name', 'hnh_dim_gl_account.specialty_name', 'hnh_dim_gl_account.service_location_name',
     'hnh_dim_job.job_name', 'hnh_dim_position.position_name', 'hnh_dim_position.position_base_name',

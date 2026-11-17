@@ -138,3 +138,30 @@ models:
       - name: source_system
         tests:
           - accepted_values: {values: ['oasis', 'fusion']}
+  - name: dim_pl_report_line
+    description: >
+      Lines of the Fusion HNH profitability (P&L) report in report order: detail lines, a Not mapped line per section,
+      and subtotals that add the sections listed in subtotal_sections.
+    columns:
+      - name: pl_line_key
+        description: Report order of the line.
+        tests: [unique, not_null]
+      - name: pl_line_code
+        tests: [unique, not_null]
+      - name: line_kind
+        tests:
+          - accepted_values: {values: ['detail', 'not_mapped', 'subtotal']}
+  - name: pl_report_line_rule
+    description: >
+      Match rules from lower-case income-statement labels to a report line. '' in source_system, fs_caption or fs_line
+      matches anything; score ranks the rules (source 1, caption 2, line 4) and the highest matching score wins.
+    tests:
+      - hnh_unique_combination:
+          columns: [source_system, fs_category, fs_caption, fs_line]
+    columns:
+      - name: fs_category
+        tests: [not_null]
+      - name: pl_line_code
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_pl_report_line'), field: pl_line_code}
