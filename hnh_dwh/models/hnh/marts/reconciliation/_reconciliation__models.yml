@@ -75,11 +75,18 @@ models:
     description: >
       Explains the warehouse P&L report (fact_pl_report_monthly) against the Fusion report per branch, month and report
       line, detail and subtotal. Fusion months: posted_amount is the same pipeline on the posted balance view,
-      unposted_amount = report - posted, moved_accounts_amount is the part on accounts moved by the pl-report mapping.
-      Oasis months: posted = report; compare with the Oasis trial balance.
+      unposted_amount = report - posted. Oasis months: posted = report; compare with the Oasis trial balance.
     tests:
       - hnh_unique_combination:
           columns: [branch_key, month_start, source_system, pl_line_key]
+    columns:
+      - name: moved_accounts_amount
+        description: >
+          The part of report_amount on accounts re-mapped by the P&L alignment (effective mapping row MAPPED_IN
+          'pl-report'). Most of these moves put an account where the Fusion report already has it, so this is not the
+          difference to the Fusion report: the accounts that really differ (41502102 Unclaimed, maintenance, Head Office
+          salaries in G&A, the accounts the Fusion report counts twice or leaves out) carry no pl-report row and show 0
+          here. Those are listed in the sign-off pack.
   - name: rec_payroll_monthly
     tests:
       - hnh_unique_combination:

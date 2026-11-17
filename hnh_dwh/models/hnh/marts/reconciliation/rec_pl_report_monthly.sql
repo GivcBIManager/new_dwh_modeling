@@ -3,9 +3,9 @@
 -- Explains the warehouse P&L report (fact_pl_report_monthly) against the Fusion report, per branch, month and report
 -- line (detail and subtotal). Fusion months: posted_amount is the same pipeline on the posted balance view, so
 -- unposted_amount = report - posted is what the Fusion report shows only because it includes unposted journals.
--- moved_accounts_amount is the part of report_amount on accounts that finance moved to another report line in the
--- reference mapping (effective mapped_in 'pl-report': the branch's own row if it has one, else the row for all
--- branches, as hnh_dim_gl_account applies branch rows). Oasis months have no posted view: posted = report, compare with the Oasis
+-- moved_accounts_amount is the part of report_amount on accounts re-mapped by the P&L alignment (effective mapped_in
+-- 'pl-report': the branch's own row if it has one, else the row for all branches, as hnh_dim_gl_account applies branch
+-- rows); it is not the difference to the Fusion report (most moves follow the Fusion report). Oasis months have no posted view: posted = report, compare with the Oasis
 -- trial balance. Each side is summed per line, so a line only one side has still shows.
 with report as (
     select branch_key, month_start, source_system, pl_line_key, pl_line_code, sum(amount) as amount
