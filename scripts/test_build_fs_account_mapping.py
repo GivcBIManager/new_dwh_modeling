@@ -47,3 +47,12 @@ def test_infer_takes_a_group_position_only_when_two_siblings_agree():
     mapped = {11103116: bank, 11103117: bank, 21501101: DC, 21501102: GA}
     out = b.infer([11103139, 21501105, 43102501], mapped, {})
     assert out == {11103139: bank}
+
+
+def test_build_rows_applies_the_overrides():
+    contractual = ("IS", "Revenue", "Revenue - Discounts", "Revenue - Contractual Discount", "Contractual")
+    settle = ("IS", "Revenue", "Revenue - Discounts", "Revenue - Settlement Discount", "Rejection")
+    rows = b.build_rows({41310101: {"Abha": contractual}, 41310102: {"Abha": settle}}, [], {},
+                       overrides=b.OVERRIDES[:1])
+    assert (41310101, None, settle[:4] + ("Early Payment Discount",), "pl-report") in rows
+    assert (41310102, None, settle, "tb2026:abha") in rows

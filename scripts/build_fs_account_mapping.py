@@ -12,6 +12,10 @@ Accounts not in the workbook:
   the group exist and all share one FS position, the account takes it. Depreciation, accumulated depreciation and
   PP&E cost accounts whose group has per-asset lines take the line of the same asset class (see asset_line).
 
+The override layer (fs_report_alignment.OVERRIDES) then moves the accounts and branches that the Fusion "HNH
+profitability Report" places elsewhere, and gives the accounts finance did not map a position. It is code rather than
+a CSV because *.csv is not tracked; the rows it writes have MAPPED_IN = pl-report.
+
 Reads only local files. Export the two inputs read-only through the HNH_Gold DSN (scripts/HnhCh.psm1):
   previous:  select * from default.map_fs_account
   accounts:  select natural_account, any(natural_account_name) as name from gold.dim_gl_account
@@ -28,6 +32,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from openpyxl import load_workbook
+
+from fs_report_alignment import OVERRIDES, apply_overrides
 
 ROOT = Path(__file__).resolve().parent.parent
 LEVELS = ["FS_TYPE", "FS_ELEMENT", "FS_CATEGORY", "FS_CAPTION", "FS_LINE"]
@@ -161,6 +167,40 @@ def infer(accounts, mapped, names):
     return out
 
 
+def previous_defaults(previous):
+    """account -> (position, mapped_in) of the all-branches rows of the current table."""
+    out = {}
+    for r in previous:
+        if str(r.get("BRANCH_CODE") or "") not in ("", "0", "\\N"):
+            continue
+        out[int(float(r["ORACLE_CODE"]))] = (position(r[lvl] for lvl in LEVELS), r["MAPPED_IN"])
+    return out
+
+
+def build_rows(wb, previous, names, overrides=OVERRIDES):
+    """wb: account -> branch name -> position; previous: rows of the current table. Returns sorted rows."""
+    rows = []  # (account, branch code or None, position, mapped_in)
+    for acc in sorted(wb):
+        default = pick_default(acc, wb[acc], names)
+        users = sorted((b for b, p in wb[acc].items() if p == default), key=BRANCH_CODES.get)
+        rows.append((acc, None, default, SOURCE + ",".join(b.lower() for b in users)))
+        for b in sorted(wb[acc], key=BRANCH_CODES.get):
+            if wb[acc][b] != default:
+                rows.append((acc, BRANCH_CODES[b], wb[acc][b], SOURCE + b.lower()))
+
+    prev_default = previous_defaults(previous)
+    for acc, (pos, mapped_in) in sorted(prev_default.items()):
+        if acc not in wb and mapped_in != "inferred":
+            rows.append((acc, None, pos, mapped_in))
+
+    supplied = {acc: pos for acc, br, pos, _ in rows if br is None}
+    for acc, pos in sorted(infer(sorted(names), supplied, names).items()):
+        rows.append((acc, None, pos, "inferred"))
+    rows = apply_overrides(rows, overrides)
+    rows.sort(key=lambda r: (r[0], r[1] or 0))
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workbook", required=True)
@@ -180,29 +220,8 @@ def main():
         if branch in wb[acc]:
             raise SystemExit(f"workbook: {branch} lists {acc} twice")
         wb[acc][branch] = pos
-
-    rows = []  # (account, branch code or None, position, mapped_in)
-    for acc in sorted(wb):
-        default = pick_default(acc, wb[acc], names)
-        users = sorted((b for b, p in wb[acc].items() if p == default), key=BRANCH_CODES.get)
-        rows.append((acc, None, default, SOURCE + ",".join(b.lower() for b in users)))
-        for b in sorted(wb[acc], key=BRANCH_CODES.get):
-            if wb[acc][b] != default:
-                rows.append((acc, BRANCH_CODES[b], wb[acc][b], SOURCE + b.lower()))
-
-    prev_default = {}
-    for r in previous:
-        if str(r.get("BRANCH_CODE") or "") not in ("", "0", "\\N"):
-            continue
-        prev_default[int(float(r["ORACLE_CODE"]))] = (position(r[lvl] for lvl in LEVELS), r["MAPPED_IN"])
-    for acc, (pos, mapped_in) in sorted(prev_default.items()):
-        if acc not in wb and mapped_in != "inferred":
-            rows.append((acc, None, pos, mapped_in))
-
-    supplied = {acc: pos for acc, br, pos, _ in rows if br is None}
-    for acc, pos in sorted(infer(sorted(names), supplied, names).items()):
-        rows.append((acc, None, pos, "inferred"))
-    rows.sort(key=lambda r: (r[0], r[1] or 0))
+    rows = build_rows(wb, previous, names)
+    prev_default = previous_defaults(previous)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
