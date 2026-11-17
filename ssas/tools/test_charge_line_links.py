@@ -43,10 +43,31 @@ def test_no_fact_to_fact():
     assert bad == []
 
 
+def _column_block(table, col):
+    text = (MODEL / "tables" / f"{table}.tmdl").read_text(encoding="utf-8")
+    m = re.search(rf"(?ms)^\tcolumn '?{_col(col)}'?\r?\n(.*?)(?=^\t\w|\Z)", text)
+    return m.group(1) if m else None
+
+
 def test_hidden_link_keys():
-    cases = [("Charge Lines", "encounter_key"), ("Charge Lines", "episode_key"), ("Order Lines", "encounter_key"),
-             ("Encounters", "encounter_key"), ("Episodes", "episode_key")]
+    # The by-charges measures count distinct visits / episodes on these keys; they relate to nothing.
+    for table, col in [("Charge Lines", "encounter_key"), ("Charge Lines", "episode_key"), ("Order Lines", "encounter_key")]:
+        block = _column_block(table, col)
+        assert block is not None and "isHidden" in block, (table, col)
+        assert not [b for b in BLOCKS if _ends(b)[0] == (table, _col(col))], (table, col)
+
+
+def test_visit_keys_not_in_encounters_or_episodes():
+    # Only the charge and order lines carry visit keys (about 380 MB of hash keys at G2 were on these two tables).
+    assert _column_block("Encounters", "encounter_key") is None
+    assert _column_block("Episodes", "episode_key") is None
+
+
+def test_visit_dates_are_inactive_date_roles():
+    cases = [("Charge Lines", "visit_date_key"), ("Charge Lines", "episode_start_date_key"),
+             ("Order Lines", "visit_date_key")]
     for table, col in cases:
-        text = (MODEL / "tables" / f"{table}.tmdl").read_text(encoding="utf-8")
-        m = re.search(rf"(?ms)^\tcolumn '?{_col(col)}'?\r?\n(.*?)(?=^\t\w)", text)
-        assert m and "isHidden" in m.group(1), (table, col)
+        hits = [b for b in BLOCKS if _ends(b)[0] == (table, _col(col))]
+        assert len(hits) == 1, (table, col)
+        assert _ends(hits[0])[1] == ("Date", "Date Key")
+        assert "isActive: false" in hits[0], (table, col)

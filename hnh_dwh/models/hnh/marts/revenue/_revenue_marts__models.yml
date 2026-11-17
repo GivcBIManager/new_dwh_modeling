@@ -83,6 +83,18 @@ models:
               to: ref('dim_policy')
               field: policy_key
               config: {severity: warn, where: "policy_key != -1"}
+      - name: visit_date_key
+        description: Date of the line's OP or ER visit (fact_encounter.encounter_date_key); null when the line has none. SSAS counts Census (Charged) by it.
+      - name: is_census_visit
+        description: 1 when the line's visit is counted in Census (arrived, not cancelled OP; not cancelled ER).
+        tests:
+          - accepted_values: {values: [0, 1]}
+      - name: episode_start_date_key
+        description: Start date of the line's episode (fact_episode.start_date_key); null when the episode is not in fact_episode.
+      - name: is_counted_episode
+        description: 1 when the line's episode is counted in Episodes (has an arrived, not follow-up OP or ER encounter).
+        tests:
+          - accepted_values: {values: [0, 1]}
       - name: charge_status
         tests:
           - accepted_values:

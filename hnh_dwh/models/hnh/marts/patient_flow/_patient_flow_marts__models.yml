@@ -238,6 +238,12 @@ models:
               to: ref('fact_encounter')
               field: encounter_key
               config: {severity: warn, where: "encounter_key != -1"}
+      - name: visit_date_key
+        description: Date of the line's OP or ER visit (fact_encounter.encounter_date_key); null when it has none. SSAS counts Census (Ordered) by it.
+      - name: is_census_visit
+        description: 1 when the line's visit is counted in Census (arrived, not cancelled OP; not cancelled ER).
+        tests:
+          - accepted_values: {values: [0, 1]}
       - name: fulfilment_status
         tests:
           - accepted_values:

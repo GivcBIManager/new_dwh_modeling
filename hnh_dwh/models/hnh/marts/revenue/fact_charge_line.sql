@@ -184,6 +184,12 @@ select
     if(w.mrp_3_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.mrp_3_staff_key_raw, toInt64(-1))       as mrp_3_staff_key,
     if(w.charged_by_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.charged_by_staff_key_raw, toInt64(-1)) as charged_by_staff_key,
     if(w.policy_key_raw in (select policy_key from {{ ref('dim_policy') }}), w.policy_key_raw, toInt64(-1)) as policy_key,
+    -- The line's visit and episode as Census and Episodes count them (fact_encounter, fact_episode), so the SSAS
+    -- by-charges measures count distinct visits / episodes on this table by visit date (inactive Date roles).
+    fv.encounter_date_key                               as visit_date_key,
+    toUInt8(ifNull(fv.is_census_visit, 0))              as is_census_visit,
+    fe.start_date_key                                   as episode_start_date_key,
+    toUInt8(ifNull(fe.has_arrived_non_follow_up_encounter, 0)) as is_counted_episode,
     w.delivery_charge_id                                as delivery_charge_id,
     w.delivery_line                                     as delivery_line,
     w.encounter_id                                      as encounter_id,
@@ -230,4 +236,14 @@ left join (select service_key from {{ ref('dim_service') }}) as dsv on dsv.servi
 left join (select product_category_key from {{ ref('dim_product_category') }}) as dpc on dpc.product_category_key = w.product_category_key_raw
 left join (select payer_key from {{ ref('dim_payer') }}) as dbp on dbp.payer_key = w.billed_payer_key_raw
 left join (select payer_key, creditor from {{ ref('dim_payer') }}) as dep on dep.payer_key = w.episode_payer_key_raw
+-- Census: arrived, not cancelled OP visits and not cancelled ER visits (the filters of OP Visits and ER Visits).
+left join (
+    select encounter_key, encounter_date_key,
+           toUInt8((encounter_type = 'OP' and is_arrived = 1 and is_cancelled = 0)
+                   or (encounter_type = 'ER' and is_cancelled = 0)) as is_census_visit
+    from {{ ref('fact_encounter') }}
+    where encounter_type in ('OP', 'ER')
+) as fv on fv.encounter_key = w.encounter_key
+left join (select episode_key, start_date_key, has_arrived_non_follow_up_encounter from {{ ref('fact_episode') }}) as fe
+    on fe.episode_key = w.episode_key
 {{ hnh_settings() }}

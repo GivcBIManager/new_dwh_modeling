@@ -190,6 +190,17 @@ does not match the automatic pattern).
 - `Charge Lines[policy_key]` → `Policy`
 - `Charge Lines[encounter_key]`, `Order Lines[encounter_key]`, `Encounters[encounter_key]`: hidden, in `NO_RELATIONSHIP`.
 
+**Amendment after GATE G2 (user, 2026-11-17):** the `TREATAS` design below took 13-20 s for a year by product
+category and 328 s for a 12-month × category matrix across the network, so the measures now count on the charge
+(order) lines themselves. `fact_charge_line` carries `visit_date_key` and `is_census_visit` (from `fact_encounter`:
+arrived, not cancelled OP; not cancelled ER) and `episode_start_date_key` and `is_counted_episode` (from
+`fact_episode`); `fact_order_line` carries `visit_date_key` and `is_census_visit`. They relate to Date as inactive
+roles, and the measures are `DISTINCTCOUNT` of `Encounter Key` / `Episode Key` (and `[Revenue]`) with
+`USERELATIONSHIP`. Same numbers by visit date, without the 400-day bound; Encounters and Episodes no longer keep
+their keys. Visit-side slicers (Encounters, Booked Doctor, ER Priority, Eligibility Type, Appointment Outcome) no
+longer select the visits (the guard shows its message); the visit type is sliced with
+`Charge Lines[Resolved Encounter Type]`. The rest of this section is the first design.
+
 **Measures** (folder `Revenue Cycle\By Charges`, perspective Revenue Cycle and Executive):
 - `Census (Charged)`: `[Census]` restricted to encounters that have a charge line in the current Charge Lines filter:
   `TREATAS` of the encounter keys of the filtered, recognised charge lines (Date filter removed on the charge side)

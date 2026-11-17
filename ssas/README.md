@@ -79,27 +79,25 @@ Perspective `Balanced Scorecard` (spec `docs/superpowers/specs/2026-10-20-hnh-bs
 Folder `Revenue Cycle\By Charges` (spec `docs/superpowers/specs/2026-11-16-charge-line-relationships-design.md`) counts
 visits and episodes **by charges**: `Census (Charged)` and `Episodes (Charged)` are the visits and episodes counted as in
 `Census` and `Episodes` that have a recognised charge line (`Is Recognised Revenue = Yes`) in the current Charge Lines
-filter, so Product Category, Service, Service Department, Ordering Doctor, MRP 1-3, Charged By and Policy narrow them;
-`Census (Ordered)` does the same through Order Lines. Facts are not related to each other: the measures move the hidden
-`Encounter Key` / `Episode Key` with `TREATAS`. A visit counts once per category it was charged in, so the categories add
-up to more than the total, and with no charge slicer `Census (Charged)` is `Census` less the visits without a recognised
-charge. Department, Staff, Payer, Care Type and Patient, which filter both the visit and the charge, act on the **charge
-side only** (Department = Radiology: visits that had a Radiology charge, whatever clinic they were booked in). The
-**visit month governs**: Date and Branch select the visits or episodes, and their charges count whatever day they were
-delivered, so `Revenue (Charged Visits)` and the CPV of September include a September visit's charges delivered in
-October. `Revenue per Charged Visit (CPV)` and `Revenue per Charged Episode (CPE)` are cohort measures (revenue of the
-counted visits or episodes ÷ their count), not `BSC OP Revenue per Episode` (revenue by delivery date) or a budget. The
-measures call `[_Unguarded OP Visits]`, `[_Unguarded ER Visits]`, `[_Unguarded Episodes]` and `[_Unguarded Revenue]`,
-because the inner guards would reject the Charge Lines slicers, and allow those slicers with
-`annotation hnh_guard_allow`, together with the visit-side slicers (Encounters, Booked Doctor, ER Priority, Eligibility
-Type, Appointment Outcome; Episodes and Eligibility Type for the episode measures), which select the visits or episodes.
-To keep a cell from scanning every year of charges, `Census (Charged)`, `Episodes (Charged)` and `Census (Ordered)` look
-for visits only among charges (order lines) dated within 400 days before or after the selected dates; a charge further
-away is ignored for finding visits (none in 2025 was more than 366 days before its visit). `Census (Ordered)` counts
-cancelled order lines too unless `Order Lines[Line Status]` is sliced. Row security applies on both sides and the
-measures' `REMOVEFILTERS ( Staff )` does not lift it: for a reader limited to a specialty (the `Staff` row filter of
-`HNH Readers`), both the charge lines and the visits are limited to that specialty's staff, so the cohort is narrower
-than a top-management reader's.
+filter, so Product Category, Service, Service Department, Ordering Doctor, MRP 1-3, Charged By, Policy, Department,
+Staff, Payer, Care Type and Patient narrow them (Department = Radiology: visits that had a Radiology charge, whatever
+clinic they were booked in); `Census (Ordered)` does the same through Order Lines. They are counted on the charge (order)
+lines themselves, as distinct hidden `Encounter Key` / `Episode Key` values. dbt puts on each line the visit's date and
+whether Census counts it (`visit_date_key`, `is_census_visit`, from `fact_encounter`) and the episode's start date and
+whether Episodes counts it (`episode_start_date_key`, `is_counted_episode`, from `fact_episode`). The measures switch
+Date to those keys with `USERELATIONSHIP` (inactive roles), so the **visit month governs**: a September visit's charges
+delivered in October count for September, in `Revenue (Charged Visits)` and the CPV too. A visit counts once per
+category it was charged in, so the categories add up to more than the total, and with no charge slicer
+`Census (Charged)` is `Census` less the visits without a recognised charge. `Revenue per Charged Visit (CPV)` and
+`Revenue per Charged Episode (CPE)` are cohort measures (revenue of the counted visits or episodes ÷ their count), not
+`BSC OP Revenue per Episode` (revenue by delivery date) or a budget. Slice the visit type with
+`Charge Lines[Resolved Encounter Type]`: Encounters, Booked Doctor, ER Priority, Eligibility Type and Appointment Outcome
+do not filter Charge Lines, so the guard shows its message. Time is removed (it is the charge's delivery time).
+`Census (Ordered)` counts cancelled order lines too unless `Order Lines[Line Status]` is sliced. Row security applies
+to the charge lines: for a reader limited to a specialty (the `Staff` row filter of `HNH Readers`), only that
+specialty's charge lines count. The first version (2026-11-16) moved the keys onto Encounters with `TREATAS`; across the
+network it took 13-20 s for a year by category and 328 s for a 12-month matrix (G2, 2026-11-17), and the keys on
+Encounters and Episodes cost about 380 MB, so it was replaced.
 
 ## Run
 

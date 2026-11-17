@@ -209,8 +209,6 @@ NO_RELATIONSHIP = {
     ("Charge Lines", "encounter_key"),
     ("Charge Lines", "episode_key"),
     ("Order Lines", "encounter_key"),
-    ("Encounters", "encounter_key"),
-    ("Episodes", "episode_key"),
 }
 
 ACTIVE_DATE = {

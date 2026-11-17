@@ -161,6 +161,32 @@ table 'Charge Lines'
 		summarizeBy: none
 		sourceColumn: policy_key
 
+	column 'Visit Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: visit_date_key
+
+	column 'Is Census Visit'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_census_visit
+
+	column 'Episode Start Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: episode_start_date_key
+
+	column 'Is Counted Episode'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_counted_episode
+
 	column 'Encounter Type'
 		dataType: string
 		summarizeBy: none

@@ -298,6 +298,11 @@ relationship charge_lines_episode_payer_key
 	fromColumn: 'Charge Lines'.'Episode Payer Key'
 	toColumn: Payer.'Payer Key'
 
+relationship charge_lines_episode_start_date_key
+	isActive: false
+	fromColumn: 'Charge Lines'.'Episode Start Date Key'
+	toColumn: Date.'Date Key'
+
 relationship charge_lines_mrp_1_staff_key
 	fromColumn: 'Charge Lines'.'Mrp 1 Staff Key'
 	toColumn: 'MRP 1'.'Staff Key'
@@ -337,6 +342,11 @@ relationship charge_lines_service_key
 relationship charge_lines_staff_key
 	fromColumn: 'Charge Lines'.'Staff Key'
 	toColumn: Staff.'Staff Key'
+
+relationship charge_lines_visit_date_key
+	isActive: false
+	fromColumn: 'Charge Lines'.'Visit Date Key'
+	toColumn: Date.'Date Key'
 
 relationship claim_lines_branch_key
 	fromColumn: 'Claim Lines'.'Branch Key'
@@ -799,6 +809,11 @@ relationship order_lines_product_category_key
 relationship order_lines_service_key
 	fromColumn: 'Order Lines'.'Service Key'
 	toColumn: Service.'Service Key'
+
+relationship order_lines_visit_date_key
+	isActive: false
+	fromColumn: 'Order Lines'.'Visit Date Key'
+	toColumn: Date.'Date Key'
 
 relationship p_l_report_branch_key
 	fromColumn: 'P&L Report'.'Branch Key'

@@ -49,6 +49,19 @@ table 'Order Lines'
 		summarizeBy: none
 		sourceColumn: encounter_key
 
+	column 'Visit Date Key'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: visit_date_key
+
+	column 'Is Census Visit'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_census_visit
+
 	column 'Payer Key'
 		dataType: int64
 		isHidden
