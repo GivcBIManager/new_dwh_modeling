@@ -12,7 +12,7 @@ with report as (
 gl as (
     select branch_key, month_start, -sum(movement) as amount
     from {{ ref('fact_gl_fs_monthly') }}
-    where fs_type = 'is'
+    where fs_type = 'is' and branch_key between 1 and 8
     group by branch_key, month_start
     union all
     select f.branch_key, p.month_start, -sum(f.period_movement_excl_opening)

@@ -39,6 +39,7 @@ from (
             ('oasis', 'general and administrative expenses', 'other indirect expenses', 'inma supervising expenses', 'HO_CHARGES'),
             ('fusion', 'general and administrative expenses', 'audit fee', 'audit fee', 'GA_AUDIT'),
             ('fusion', 'general and administrative expenses', 'maintenance expense', 'it maintenance', 'GA_MAINTENANCE'),
+            ('oasis', 'general and administrative expenses', 'maintenance', 'maintenance expense', 'GA_MAINTENANCE'),
             ('oasis', 'expected credit loss', 'expected credit loss', 'expected credit loss', 'GA_ECL'),
             ('fusion', 'direct cost', 'some new caption', 'x', 'DC_NM'),
             ('oasis', 'not mapped', 'not mapped', 'not mapped', 'NOT_MAPPED'))
