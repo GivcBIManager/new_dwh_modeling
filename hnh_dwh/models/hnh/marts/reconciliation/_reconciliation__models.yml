@@ -71,6 +71,15 @@ models:
               # budget file subtotals are stored rounded; differences up to ~0.12 SAR measured 2026-10-05
               tolerance: 1
               config: {severity: warn}
+  - name: rec_pl_report_monthly
+    description: >
+      Explains the warehouse P&L report (fact_pl_report_monthly) against the Fusion report per branch, month and report
+      line, detail and subtotal. Fusion months: posted_amount is the same pipeline on the posted balance view,
+      unposted_amount = report - posted, moved_accounts_amount is the part on accounts moved by the pl-report mapping.
+      Oasis months: posted = report; compare with the Oasis trial balance.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start, source_system, pl_line_key]
   - name: rec_payroll_monthly
     tests:
       - hnh_unique_combination:
