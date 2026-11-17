@@ -165,3 +165,26 @@ models:
         tests:
           - not_null
           - relationships: {to: ref('dim_pl_report_line'), field: pl_line_code}
+  - name: fact_pl_report_monthly
+    description: >
+      The P&L (Fusion HNH profitability report) by branch, month and report line, credit positive (revenue positive,
+      costs negative). Branches 1-8 take the Oasis rows of fact_gl_fs_monthly before their first Fusion GL month and
+      the Fusion GL (including unposted, opening-balance journals out) from it; Head Office (100) is always Fusion.
+      Detail rows carry the account, its lower-case FS labels and the Fusion slicer names (Unallocated for Oasis);
+      subtotal rows ('' account and labels) add the detail and not-mapped lines of the sections they list. Rows that
+      round to zero are left out.
+    columns:
+      - name: branch_key
+        tests:
+          - not_null
+          - accepted_values: {values: [1, 2, 3, 4, 5, 6, 7, 8, 100], quote: false}
+      - name: source_system
+        tests:
+          - accepted_values: {values: ['oasis', 'fusion']}
+      - name: pl_line_key
+        tests:
+          - relationships: {to: ref('dim_pl_report_line'), field: pl_line_key}
+      - name: account_code
+        description: Oasis main + sub account or the Fusion natural account; '' on subtotal rows.
+      - name: amount
+        description: Movement of the month, credit positive (-movement of the GL).
