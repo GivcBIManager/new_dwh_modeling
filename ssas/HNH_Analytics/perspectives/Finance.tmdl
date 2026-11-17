@@ -39,6 +39,12 @@ perspective Finance
 	perspectiveTable 'Income Statement'
 		includeAll
 
+	perspectiveTable 'P&L Line'
+		includeAll
+
+	perspectiveTable 'P&L Report'
+		includeAll
+
 	perspectiveTable Supplier
 		includeAll
 
@@ -68,6 +74,7 @@ perspective Finance
 		perspectiveMeasure 'On-time Payment Rate %'
 		perspectiveMeasure 'Open Payables'
 		perspectiveMeasure 'Overdue Payables'
+		perspectiveMeasure 'P&L Amount'
 		perspectiveMeasure 'Profit for the Year'
 		perspectiveMeasure 'Profit for the Year (incl. Unposted)'
 		perspectiveMeasure 'Supplier Spend'
@@ -143,6 +150,7 @@ perspective Finance
 		perspectiveMeasure '_Guard Invoices'
 		perspectiveMeasure '_Guard Leave Balances'
 		perspectiveMeasure '_Guard Order Lines'
+		perspectiveMeasure '_Guard P&L Report'
 		perspectiveMeasure '_Guard Patient Consumption'
 		perspectiveMeasure '_Guard Payroll'
 		perspectiveMeasure '_Guard Pre-auth Lines'

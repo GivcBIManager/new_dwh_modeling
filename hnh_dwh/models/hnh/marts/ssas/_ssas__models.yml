@@ -954,6 +954,22 @@ models:
         data_type: "Nullable(String)"
       - name: nphies_license
         data_type: "Nullable(String)"
+  - name: ssas_dim_pl_report_line
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: pl_line_key
+        data_type: "Int64"
+      - name: pl_line_code
+        data_type: "String"
+      - name: pl_line_name
+        data_type: "String"
+      - name: section_name
+        data_type: "String"
+      - name: line_kind
+        data_type: "String"
+      - name: is_in_fusion_report
+        data_type: "String"
   - name: ssas_dim_policy
     config:
       contract: {enforced: true}
@@ -2515,6 +2531,36 @@ models:
       - name: oasis_deduction_amount
         data_type: "Nullable(Decimal(18, 4))"
       - name: grade_key
+        data_type: "Int64"
+  - name: ssas_fact_pl_report_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: source_system
+        data_type: "String"
+      - name: pl_line_key
+        data_type: "Int64"
+      - name: pl_line_code
+        data_type: "String"
+      - name: account_code
+        data_type: "String"
+      - name: fs_category
+        data_type: "String"
+      - name: fs_caption
+        data_type: "String"
+      - name: fs_line
+        data_type: "String"
+      - name: specialty_name
+        data_type: "String"
+      - name: service_location_name
+        data_type: "String"
+      - name: service_group_name
+        data_type: "String"
+      - name: amount
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: month_date_key
         data_type: "Int64"
   - name: ssas_fact_preauth_line
     config:

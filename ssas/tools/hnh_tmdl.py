@@ -8,7 +8,7 @@ from typing import Optional
 
 ACRONYMS = {
     "abc", "alos", "ap", "ar", "bsc", "cchi", "ctas", "dama", "er", "fs", "fte", "gl", "grn", "hhc", "hr", "icu", "id",
-    "ios", "ip", "je", "kpi", "los", "ltc", "moh", "mrn", "nphies", "nps", "op", "pg", "pii", "po", "sar", "scfhs", "sms",
+    "ios", "ip", "je", "kpi", "los", "ltc", "moh", "mrn", "nphies", "nps", "op", "pg", "pii", "pl", "po", "sar", "scfhs", "sms",
     "tpa", "uom", "vat",
 }
 DATA_SOURCE = "HNH_Gold"
