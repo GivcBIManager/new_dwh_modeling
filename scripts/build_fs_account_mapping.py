@@ -7,14 +7,17 @@ its own row with its Fusion branch code. Head Office maps staff, utilities and m
 map them to Direct Cost, so those accounts get a 101 row.
 
 Accounts not in the workbook:
-- a row supplied earlier (previous file, MAPPED_IN other than 'inferred') is kept;
+- a row supplied earlier (previous file, MAPPED_IN other than 'inferred' or 'pl-report') is kept; a pl-report row is
+  not, so deleting an override reverts its account;
 - every other Fusion account is inferred again from its 6-digit parent group: when at least two supplied accounts in
   the group exist and all share one FS position, the account takes it. Depreciation, accumulated depreciation and
   PP&E cost accounts whose group has per-asset lines take the line of the same asset class (see asset_line).
 
 The override layer (fs_report_alignment.OVERRIDES) then moves the accounts and branches that the Fusion "HNH
 profitability Report" places elsewhere, and gives the accounts finance did not map a position. It is code rather than
-a CSV because *.csv is not tracked; the rows it writes have MAPPED_IN = pl-report.
+a CSV because *.csv is not tracked; the rows it writes have MAPPED_IN = pl-report. Overrides win over the workbook,
+but every override key the workbook positions differently, and every workbook branch row left in place under an
+overridden default, is printed and written to the review CSV.
 
 Reads only local files. Export the two inputs read-only through the HNH_Gold DSN (scripts/HnhCh.psm1):
   previous:  select * from default.map_fs_account
@@ -33,7 +36,7 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from fs_report_alignment import OVERRIDES, apply_overrides
+from fs_report_alignment import MAPPED_IN as OVERRIDE_SOURCE, OVERRIDES, apply_overrides
 
 ROOT = Path(__file__).resolve().parent.parent
 LEVELS = ["FS_TYPE", "FS_ELEMENT", "FS_CATEGORY", "FS_CAPTION", "FS_LINE"]
@@ -177,8 +180,43 @@ def previous_defaults(previous):
     return out
 
 
-def build_rows(wb, previous, names, overrides=OVERRIDES):
-    """wb: account -> branch name -> position; previous: rows of the current table. Returns sorted rows."""
+WB_VS_OVERRIDE = "override vs workbook"
+BRANCH_KEPT = "workbook branch row kept"
+BRANCH_NAMES = {code: name for name, code in BRANCH_CODES.items()}
+
+
+def override_conflicts(wb, before, after, overrides):
+    """Where an override overrules the workbook: (kind, account, branch code or None, workbook position, its MAPPED_IN,
+    override position). before/after: (account, branch) -> (position, mapped_in) around apply_overrides.
+    - WB_VS_OVERRIDE: the workbook positions the override's key differently (a branch that does not list the account
+      takes the workbook default);
+    - BRANCH_KEPT: a workbook branch row of an account whose default is overridden, left as the workbook has it."""
+    out = []
+    for acc, br, *_ in overrides:
+        if acc not in wb:
+            continue
+        new_pos = after.get((acc, br), after[(acc, None)])[0]
+        name = BRANCH_NAMES.get(br)
+        old_pos, old_m = before.get((acc, br)) if name in wb[acc] and (acc, br) in before else before[(acc, None)]
+        if old_pos != new_pos:
+            out.append((WB_VS_OVERRIDE, acc, br, old_pos, old_m, new_pos))
+    for acc in sorted({o[0] for o in overrides if o[1] is None and o[0] in wb}):
+        for (a, br), (pos, m) in sorted(after.items(), key=lambda kv: (kv[0][0], kv[0][1] or 0)):
+            if a == acc and br is not None and m.startswith(SOURCE):
+                out.append((BRANCH_KEPT, acc, br, pos, m, after[(acc, None)][0]))
+    return out
+
+
+def describe(conflict):
+    kind, acc, br, old_pos, old_m, new_pos = conflict
+    key = acc if br is None else f"{acc}@{br}"
+    return (f"{kind}: {key} workbook {' | '.join(old_pos[2:])} ({old_m}); "
+            f"{'override' if kind == WB_VS_OVERRIDE else 'overridden default'} {' | '.join(new_pos[2:])}")
+
+
+def build_rows(wb, previous, names, overrides=OVERRIDES, conflicts=None):
+    """wb: account -> branch name -> position; previous: rows of the current table. Returns sorted rows.
+    The override conflicts (override_conflicts) are printed and, when a list is given, appended to conflicts."""
     rows = []  # (account, branch code or None, position, mapped_in)
     for acc in sorted(wb):
         default = pick_default(acc, wb[acc], names)
@@ -190,13 +228,19 @@ def build_rows(wb, previous, names, overrides=OVERRIDES):
 
     prev_default = previous_defaults(previous)
     for acc, (pos, mapped_in) in sorted(prev_default.items()):
-        if acc not in wb and mapped_in != "inferred":
+        if acc not in wb and mapped_in not in ("inferred", OVERRIDE_SOURCE):
             rows.append((acc, None, pos, mapped_in))
 
     supplied = {acc: pos for acc, br, pos, _ in rows if br is None}
     for acc, pos in sorted(infer(sorted(names), supplied, names).items()):
         rows.append((acc, None, pos, "inferred"))
+    before = {(acc, br): (pos, m) for acc, br, pos, m in rows}
     rows = apply_overrides(rows, overrides)
+    found = override_conflicts(wb, before, {(acc, br): (pos, m) for acc, br, pos, m in rows}, overrides)
+    for c in found:
+        print(describe(c))
+    if conflicts is not None:
+        conflicts.extend(found)
     rows.sort(key=lambda r: (r[0], r[1] or 0))
     return rows
 
@@ -220,7 +264,8 @@ def main():
         if branch in wb[acc]:
             raise SystemExit(f"workbook: {branch} lists {acc} twice")
         wb[acc][branch] = pos
-    rows = build_rows(wb, previous, names)
+    conflicts = []
+    rows = build_rows(wb, previous, names, conflicts=conflicts)
     prev_default = previous_defaults(previous)
 
     out = Path(args.out)
@@ -255,6 +300,12 @@ def main():
             diff = [lvl for lvl, a, b in zip(LEVELS, old_pos, new_pos) if a != b]
             w.writerow([change, acc, names.get(acc, ""), old_m, new_m, ",".join(diff), *old_pos, *new_pos,
                         "; ".join(branch_rows.get(acc, []))])
+        # Overrides that overrule the workbook: OLD_* is the workbook, NEW_* the override (or the overridden default).
+        for kind, acc, br, old_pos, old_m, new_pos in conflicts:
+            counts[kind] += 1
+            diff = [lvl for lvl, a, b in zip(LEVELS, old_pos, new_pos) if a != b]
+            w.writerow([kind, acc, names.get(acc, ""), old_m, OVERRIDE_SOURCE, ",".join(diff), *old_pos, *new_pos,
+                        "" if br is None else br])
 
     by_source = Counter("inferred" if m == "inferred" else "branch" if br is not None else "supplied"
                         for _, br, _, m in rows)
