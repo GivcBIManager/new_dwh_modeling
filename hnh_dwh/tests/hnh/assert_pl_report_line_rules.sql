@@ -52,5 +52,6 @@ from (
     left join picked as k
         on k.source_system = p.source_system and k.fs_category = p.fs_category
            and k.fs_caption = p.fs_caption and k.fs_line = p.fs_line
-    where k.pl_line_code != p.expected
+    where ifNull(k.pl_line_code, '') != p.expected
+    {{ hnh_settings() }}
 )

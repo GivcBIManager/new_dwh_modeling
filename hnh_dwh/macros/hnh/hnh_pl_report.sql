@@ -2,11 +2,11 @@
    fs_caption and fs_line; returns those columns plus pl_line_code: the highest-score matching rule of
    pl_report_line_rule (same category; source, caption and line equal or '' in the rule), else 'NOT_MAPPED'.
    ClickHouse cannot take the OR conditions in a join's ON, so the rules join on the category, a where filters, and the
-   picked code joins back to the labels. #}
+   picked code joins back to the labels; unmatched labels give NULL or '' by join_use_nulls, both become NOT_MAPPED. #}
 {% macro hnh_pl_report_line_pick(labels) -%}
 select
     l.source_system as source_system, l.fs_category as fs_category, l.fs_caption as fs_caption, l.fs_line as fs_line,
-    if(p.pl_line_code = '', 'NOT_MAPPED', p.pl_line_code) as pl_line_code
+    coalesce(nullIf(p.pl_line_code, ''), 'NOT_MAPPED') as pl_line_code
 from (select distinct source_system, fs_category, fs_caption, fs_line from {{ labels }}) as l
 left join (
     select
