@@ -46,6 +46,8 @@ OVERRIDES = [
     (54101604, None, GA, "Expected credit loss", "ECL Provision - Insurance", "unmapped: by account name"),
     (54101606, None, DC, "Cost of Goods Sold", "Inventory Provision", "unmapped: by account name"),
     (57101201, None, "Finance Cost", "Finance Cost", "Interest Expense", "unmapped: by account name"),
+    (57101301, None, "Finance Cost", "Finance Cost", "Interest Expense", "unmapped: by account name (Interest expense 1), user 2026-11-17"),
+    (54101404, None, DC, "Kitchen Expenses", "Hospitality", "unmapped: like sibling 54101403 (Social activities), user 2026-11-17"),
 ]
 
 

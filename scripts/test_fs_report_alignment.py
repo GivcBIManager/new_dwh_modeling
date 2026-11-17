@@ -75,7 +75,7 @@ def test_blank_level_and_duplicate_override_are_refused():
 
 def test_overrides_are_well_formed():
     keys = [(o[0], o[1]) for o in a.OVERRIDES]
-    assert len(a.OVERRIDES) == 28 and len(set(keys)) == 28
+    assert len(a.OVERRIDES) == 30 and len(set(keys)) == 30
     for acc, branch, cat, caption, line, reason in a.OVERRIDES:
         assert 10_000_000 <= acc <= 99_999_999
         assert branch is None or 101 <= branch <= 109
