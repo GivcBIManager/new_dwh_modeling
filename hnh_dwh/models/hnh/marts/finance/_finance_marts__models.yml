@@ -148,6 +148,13 @@ models:
         tests: [unique, not_null]
       - name: pl_line_code
         tests: [unique, not_null]
+      - name: pl_line_name
+        description: Exact wording of the Fusion report; repeats across sections (Not mapped, Kitchen Expenses ...).
+      - name: pl_line_label
+        description: Unique display name; pl_line_name, or pl_line_name - section_name where the name repeats (a line named like its own section keeps the bare name). The cube sorts it by pl_line_key.
+        tests: [unique, not_null]
+      - name: section_key
+        description: Smallest pl_line_key of the section's lines; sorts the sections in report order.
       - name: line_kind
         tests:
           - accepted_values: {values: ['detail', 'not_mapped', 'subtotal']}

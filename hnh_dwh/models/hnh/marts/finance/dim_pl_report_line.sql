@@ -3,11 +3,16 @@
 -- Report lines of the Fusion "HNH profitability Report" (P&L), in report order. line_kind: detail lines take amounts
 -- through pl_report_line_rule; not_mapped lines catch labels the rules do not know; a subtotal adds the sections it lists
 -- in subtotal_sections. is_in_fusion_report = 0 for lines the Fusion report does not show.
+-- pl_line_name keeps the exact Fusion wording; pl_line_label is unique (a repeated name gets its section, except a line
+-- named like its own section) so the cube can sort it by pl_line_key; section_key puts the sections in report order.
 select
     toUInt16(pl_line_key)                                   as pl_line_key,
     pl_line_code,
     pl_line_name,
+    if(count() over (partition by pl_line_name) = 1 or pl_line_name = section_name,
+       pl_line_name, concat(pl_line_name, ' - ', section_name)) as pl_line_label,
     section_name,
+    toUInt16(min(pl_line_key) over (partition by section_name)) as section_key,
     toLowCardinality(line_kind)                             as line_kind,
     subtotal_sections,
     toUInt8(is_in_fusion_report)                            as is_in_fusion_report

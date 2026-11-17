@@ -13,16 +13,24 @@ table 'P&L Line'
 		summarizeBy: none
 		sourceColumn: pl_line_code
 
-	column 'PL Line Name'
+	column 'PL Line Label'
 		dataType: string
 		summarizeBy: none
 		sortByColumn: 'PL Line Key'
-		sourceColumn: pl_line_name
+		sourceColumn: pl_line_label
 
 	column 'Section Name'
 		dataType: string
 		summarizeBy: none
+		sortByColumn: 'Section Key'
 		sourceColumn: section_name
+
+	column 'Section Key'
+		dataType: int64
+		isHidden
+		encodingHint: hash
+		summarizeBy: none
+		sourceColumn: section_key
 
 	column 'Line Kind'
 		dataType: string

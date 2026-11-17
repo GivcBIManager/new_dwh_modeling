@@ -962,10 +962,12 @@ models:
         data_type: "Int64"
       - name: pl_line_code
         data_type: "String"
-      - name: pl_line_name
+      - name: pl_line_label
         data_type: "String"
       - name: section_name
         data_type: "String"
+      - name: section_key
+        data_type: "Int64"
       - name: line_kind
         data_type: "String"
       - name: is_in_fusion_report
