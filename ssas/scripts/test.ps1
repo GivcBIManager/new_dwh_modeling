@@ -55,6 +55,7 @@ try {
     $facts = @($tables | Where-Object { (Get-HnhAnnotation $_ 'hnh_kind') -eq 'fact' })
     $payTables = @('Payroll', 'Leave Balances', 'Staff Productivity')
     $hasHrKpi = @($db.Model.Tables | Where-Object { $_.Name -eq 'HR KPI' }).Count -gt 0   # the HR dashboard tables are deployed
+    $hasFinance = (@($db.Model.Tables | Where-Object { $_.Name -eq 'P&L Report' }).Count -gt 0) -and (@($db.Model.Tables | Where-Object { $_.Name -eq 'Finance KPI' }).Count -gt 0)   # the finance report tables are deployed
     $securityConfig = Get-Content (Join-Path $root 'tests\security.json') -Raw | ConvertFrom-Json
 
     if (Want 'RowCounts') {
@@ -131,6 +132,25 @@ try {
                         $payTargetExpected = Get-HnhScalar (Sql ('select count() from gold.ssas_fact_hr_target_monthly where branch_key in ({0}) and hr_kpi_key in (select hr_kpi_key from gold.ssas_dim_hr_kpi where needs_pay = 1)' -f ($branches -join ',')))
                     }
                     Report "$($p.Name) HR pay target rows" ($payTargetRows -eq $payTargetExpected) "pay KPI target rows visible: $payTargetRows, expected $payTargetExpected (can_see_pay: $pay)"
+                }
+
+                if ($hasFinance -and $branches.Count -eq 1) {
+                    # Finance report review focus 5: a one-hospital reader sees the P&L of their hospital only. "All" (no branch
+                    # filter) is their hospital, the other hospitals read blank, for [FR Actual] and for the EBITDA margin KPI.
+                    $own = $branches[0]
+                    $otherKey = Get-HnhScalar (Sql ('select min(branch_key) from gold.ssas_dim_branch where branch_key > 0 and branch_key <> {0}' -f $own))
+                    $plNet = "'P&L Line'[PL Line Code] = ""NET_REVENUE"""
+                    $kpiMargin = "'Finance KPI'[KPI Code] = ""FR_EBITDA_MARGIN"""
+                    $frQuery = 'EVALUATE ROW("own", CALCULATE([FR Actual], {0}, Branch[Branch Key] = {1}), "all", CALCULATE([FR Actual], {0}), "other", CALCULATE([FR Actual], {0}, Branch[Branch Key] = {2}) + 0)' -f $plNet, $own, $otherKey
+                    $fr = (Dax $frQuery $login).Rows[0]
+                    $frExpected = Get-HnhScalar (Sql ("select sum(amount) from gold.ssas_fact_pl_report_monthly where pl_line_code = 'NET_REVENUE' and branch_key = $own and month_date_key <= toYYYYMMDD(today())"))
+                    Report "$($p.Name) FR Actual own branch" ([math]::Abs([double]$fr[0] - [double]$frExpected) -le 0.01) "branch $own sees $($fr[0]), ClickHouse $frExpected"
+                    Report "$($p.Name) FR Actual All is the own branch" ([math]::Abs([double]$fr[1] - [double]$fr[0]) -le 0.01) "all branches $($fr[1]), own branch $($fr[0])"
+                    Report "$($p.Name) FR Actual other branch blank" ([double]$fr[2] -eq 0) "branch $otherKey reads $($fr[2]) (0 means blank)"
+                    $kpiQuery = 'EVALUATE ROW("own", CALCULATE([FR KPI Value], {0}, Branch[Branch Key] = {1}), "all", CALCULATE([FR KPI Value], {0}), "other", CALCULATE([FR KPI Value], {0}, Branch[Branch Key] = {2}))' -f $kpiMargin, $own, $otherKey
+                    $kpi = (Dax $kpiQuery $login).Rows[0]
+                    $kpiOk = (-not [string]::IsNullOrWhiteSpace([string]$kpi[0])) -and ([math]::Abs([double]$kpi[1] - [double]$kpi[0]) -le 0.000001) -and [string]::IsNullOrWhiteSpace([string]$kpi[2])
+                    Report "$($p.Name) FR KPI Value EBITDA margin" $kpiOk "own $($kpi[0]), all $($kpi[1]), branch $otherKey '$($kpi[2])' (must be blank)"
                 }
 
                 if ($specialties.Count -eq 0) {
