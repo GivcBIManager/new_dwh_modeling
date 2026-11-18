@@ -4423,6 +4423,39 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// Text colour of the FR KPI Status chip, matching FR KPI Status Colour: On target #04564A, Watch #5C3F00, Off target #6E1505, muted #4D5B6B for No target yet or no status.
+	measure 'FR KPI Status Text Colour' =
+			VAR __Value = ( -- measure body
+				SWITCH ( [FR KPI Status], "On target", "#04564A", "Watch", "#5C3F00", "Off target", "#6E1505", "#4D5B6B" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI Status Text Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// Change against budget of a card's budget line (the vs Bud text of FR KPI Cell); blank when the KPI has no budget, so the card's Budget figure shows the placeholder ('No budget yet' or a dash) once.
+	measure 'FR KPI Card Budget Change' =
+			VAR __Value = ( -- measure body
+				IF ( NOT ISBLANK ( [FR KPI Budget] ), [FR KPI Cell] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI Card Budget Change"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// Change against last year of a card's last-year line (the vs LY text of FR KPI Cell); blank when the KPI has no last-year value, so the card's Last year figure shows the placeholder once.
+	measure 'FR KPI Card LY Change' =
+			VAR __Value = ( -- measure body
+				IF ( NOT ISBLANK ( [FR KPI Last Year] ), [FR KPI Cell] )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI Card LY Change"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
 	/// Most likely budget in SAR of one budget code (Phase 3 spec section 8; budget covers branches 1-6).
 	measure 'IS Budget' =
 			VAR __Value = ( -- measure body

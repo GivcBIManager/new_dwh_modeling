@@ -36,6 +36,9 @@ TREND_WINDOW = Filter(MONTH_OFFSET, "in", list(range(1, 13)))  # the 12 closed m
 CELL = meas("FR KPI Cell")
 CELL_COLOUR, CELL_BACKGROUND = "FR KPI Cell Colour", meas("FR KPI Cell Background")
 STATUS, STATUS_COLOUR = meas("FR KPI Status"), "FR KPI Status Colour"
+STATUS_TEXT_COLOUR = "FR KPI Status Text Colour"
+# the change next to Budget / Last year is blank when that figure is a placeholder: the placeholder shows once
+CHANGE = {"vs_bud": meas("FR KPI Card Budget Change"), "vs_ly": meas("FR KPI Card LY Change")}
 COUNTS = [(meas("FR KPI Count On"), "on target", CHIP_ON, 168), (meas("FR KPI Count Watch"), "watch, within 5%", CHIP_WATCH, 214),
           (meas("FR KPI Count Off"), "off target", CHIP_OFF, 168)]
 
@@ -95,7 +98,7 @@ def _kind_filters(code: str, kind: str, view: str = "monthly") -> list[Filter]:
 
 def _status_chip(x: float, y: float, w: float, h: float, code: str) -> Visual:
     """[FR KPI Status] on a chip filled by [FR KPI Status Colour] (On target / Watch / Off target; grey without a target)."""
-    look = hr_frame.card_look(11, INK)
+    look = hr_frame.card_look(11, hr_frame.measure_colour(STATUS_TEXT_COLOUR))
     look["labels"][0]["properties"]["horizontalAlignment"] = _lit("center")
     look["background"] = [{"properties": {"show": _lit(True), "color": hr_frame.measure_colour(STATUS_COLOUR),
                                           "transparency": _num(0)}}]
@@ -134,7 +137,7 @@ def card(view: str, rect: tuple, number: int, code: str, name: str) -> list[Visu
         if view == "monthly":
             out.append(_text(ix, ly, 60, 20, label, "10pt", MUTED))
             out.append(_figure(ix + 62, ly, 84, 20, CELL, 11, INK, _kind_filters(code, kind)))
-            out.append(_figure(ix + 150, ly, iw - 150, 20, CELL, 11, hr_frame.measure_colour(CELL_COLOUR),
+            out.append(_figure(ix + 150, ly, iw - 150, 20, CHANGE[delta], 11, hr_frame.measure_colour(CELL_COLOUR),
                                _kind_filters(code, delta)))
         else:
             out.append(_text(ix, ly, 46, 20, best, "10pt", MUTED))

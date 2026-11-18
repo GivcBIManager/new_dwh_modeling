@@ -98,6 +98,7 @@ def test_status_chips_present():
         assert [_codes(v) for v in chips] == [[c] for c in CARDS.values()], name
         for v in chips:
             assert "FR KPI Status Colour" in repr(v.props["background"]), name
+            assert "FR KPI Status Text Colour" in repr(v.props["labels"]), name  # R16a
         counts = {meas(n): fg for n, fg in (("FR KPI Count On", "#04564A"), ("FR KPI Count Watch", "#5C3F00"),
                                             ("FR KPI Count Off", "#6E1505"))}
         header = [v for v in p.visuals if v.sample == "card" and v.roles.get("Values", [None])[0] in counts]
@@ -120,12 +121,21 @@ def test_kpi_matrix_rows_are_group_and_kpi():
         assert "FR KPI Cell Background" in repr(m.props["values"][0]["properties"]["backColor"])
 
 
+def _changes(page, kind, measure):
+    return [v for v in page.visuals if v.sample == "card" and v.roles.get("Values") == [meas(measure)]
+            and any(f.field.name == "Kind" and f.values == [kind] for f in v.filters)]
+
+
 def test_card_lines_by_page():
     monthly, hospitals = _page("kpi_monthly"), _page("kpi_hospitals")
-    for kind in ("budget", "vs_bud", "ly", "vs_ly"):
+    for kind in ("budget", "ly"):
         assert len(_cells(monthly, kind)) == 6 and not _cells(hospitals, kind), kind
-    for v in _cells(monthly, "vs_bud") + _cells(monthly, "vs_ly"):
-        assert "FR KPI Cell Colour" in repr(v.props["labels"])
+    # R16b: the change is its own measure, blank when the figure beside it is a placeholder (shown once)
+    for kind, measure in (("vs_bud", "FR KPI Card Budget Change"), ("vs_ly", "FR KPI Card LY Change")):
+        found = _changes(monthly, kind, measure)
+        assert len(found) == 6 and not _cells(monthly, kind) and not _changes(hospitals, kind, measure), kind
+        for v in found:
+            assert "FR KPI Cell Colour" in repr(v.props["labels"])
     for measure in ("FR KPI Card Best", "FR KPI Card Lowest"):
         found = [v for v in hospitals.visuals if v.roles.get("Values") == [meas(measure)]]
         assert [_codes(v) for v in found] == [[c] for c in CARDS.values()], measure
