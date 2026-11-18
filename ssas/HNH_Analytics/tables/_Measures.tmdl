@@ -3824,7 +3824,7 @@ table _Measures
 							"FR_INTEREST_COVER",
 								VAR Interest = [Fin Finance Cost]
 								RETURN
-									IF ( Interest > 0, DIVIDE ( [Fin EBITDA], Interest ) ),
+									IF ( Interest > 0, DIVIDE ( [Fin EBITDA] - [Fin D&A], Interest ) ),
 							"FR_EQUITY_RATIO", DIVIDE ( [Fin Total Assets] - [Fin Total Liabilities], [Fin Total Assets] ),
 							"FR_COST_TO_REV", DIVIDE ( [Fin Direct Cost], [Fin Net Revenue] ),
 							"FR_STAFF_COST_RATIO", DIVIDE ( [Fin Employee Cost], [Fin Net Revenue] ),
