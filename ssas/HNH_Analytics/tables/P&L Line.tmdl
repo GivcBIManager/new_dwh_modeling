@@ -42,6 +42,22 @@ table 'P&L Line'
 		summarizeBy: none
 		sourceColumn: is_in_fusion_report
 
+	column 'Budget Line Code'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: budget_line_code
+
+	column 'Budget Sign'
+		dataType: int64
+		formatString: 0
+		summarizeBy: none
+		sourceColumn: budget_sign
+
+	column 'Budget Kind'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: budget_kind
+
 	partition 'P&L Line' = m
 		source =
 				let

@@ -559,6 +559,18 @@ relationship episodes_start_date_key
 	fromColumn: Episodes.'Start Date Key'
 	toColumn: Date.'Date Key'
 
+relationship finance_budget_branch_key
+	fromColumn: 'Finance Budget'.'Branch Key'
+	toColumn: Branch.'Branch Key'
+
+relationship finance_budget_month_date_key
+	fromColumn: 'Finance Budget'.'Month Date Key'
+	toColumn: Date.'Date Key'
+
+relationship finance_budget_pl_line_key
+	fromColumn: 'Finance Budget'.'PL Line Key'
+	toColumn: 'P&L Line'.'PL Line Key'
+
 relationship gl_account_fs_line_key
 	fromColumn: 'GL Account'.'FS Line Key'
 	toColumn: 'FS Line'.'FS Line Key'

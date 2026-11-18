@@ -111,6 +111,11 @@ TABLES = [
     # HR dashboard: KPI catalogue, monthly targets and the data quality issues with their records.
     Table("ssas_dim_hr_kpi", "HR KPI", "dim", "HR dashboard KPIs with definition, formula, direction and target source."),
     Table("ssas_fact_hr_target_monthly", "HR Targets", "fact", "HR KPI targets and watch values per branch (hospitals 1-8 and Head Office) and month."),
+    # Finance report: budget by P&L line or balance-sheet caption, KPI catalogue, column catalogue and yearly targets.
+    Table("ssas_fact_finance_budget_monthly", "Finance Budget", "fact", "Monthly budget per hospital and P&L line or balance-sheet caption, from the budget file and the BI manager's overrides."),
+    Table("ssas_dim_finance_kpi", "Finance KPI", "dim", "Finance report KPIs with group, unit, direction and card."),
+    Table("ssas_dim_finance_column", "Finance Column", "dim", "Columns of the finance report's tables by page and view, with group and month number."),
+    Table("ssas_dim_finance_target", "Finance Target", "dim", "Yearly finance KPI targets per hospital (branch 0 = all hospitals) with the watch band."),
     Table("ssas_dim_hr_dq_issue", "HR Data Issues", "dim", "HR data quality issues with owner, severity and how to fix them."),
     Table("ssas_fact_hr_dq_record", "HR Data Issue Records", "fact", "One HR record that has a data quality issue."),
 ]
@@ -220,6 +225,7 @@ ACTIVE_DATE = {
     "Bed Occupancy": "date_key", "Surgeries": "operation_date_key", "Clinic Capacity": "date_key", "Targets": "date_key",
     "Survey Responses": "visit_date_key", "Survey Answers": "visit_date_key",
     "GL Journal Lines": "accounting_date_key", "GL Balances": "period_end_date_key",
+    "Finance Budget": "month_date_key",
     "Income Statement": "month_date_key", "P&L Report": "month_date_key", "Budget": "month_date_key", "AP Invoice Lines": "accounting_date_key",
     "AP Open Items": "invoice_date_key", "AP Payments": "payment_date_key", "Stock Monthly": "month_date_key",
     "Purchase Lines": "po_date_key", "Goods Receipts": "date_key", "Headcount": "month_date_key",
@@ -244,12 +250,29 @@ COLUMN_NAMES = {
     ("ssas_fact_stock_monthly", "stock_value"): "Stock Value Amount",
     ("ssas_fact_stock_movement", "consumption_cost"): "Consumption Cost Amount",
     ("ssas_fact_claim_line", "claimed_amount"): "Line Claimed Amount",
+    # finance report (ruling R3): the plan's names; "bs" is not an acronym elsewhere in the model
+    ("ssas_fact_gl_fs_monthly", "bs_side"): "BS Side",
+    ("ssas_fact_gl_fs_monthly", "bs_element"): "BS Element",
+    ("ssas_fact_gl_fs_monthly", "bs_category"): "BS Category",
+    ("ssas_fact_gl_fs_monthly", "bs_caption"): "BS Caption",
+    ("ssas_fact_gl_fs_monthly", "bs_element_order"): "BS Element Order",
+    ("ssas_fact_gl_fs_monthly", "bs_category_order"): "BS Category Order",
+    ("ssas_fact_finance_budget_monthly", "bs_caption"): "BS Caption",
+    # a Float64 on purpose (the config's own type, no Decimal scale 0 truncation); "Target Value" would trip the BPA amount rule
+    ("ssas_dim_finance_target", "target_value"): "Target",
 }
 
 # (view, column) of other columns to hide. A fact's copy of a dimension code that a measure tests on the dimension:
 # on rows it gives blanks (final review R15: P&L Amount needs one 'P&L Line'[PL Line Code]).
 HIDDEN_COLUMNS = {
     ("ssas_fact_pl_report_monthly", "pl_line_code"),
+    ("ssas_fact_finance_budget_monthly", "pl_line_code"),
+    # sort and technical columns of the finance dimensions; Kind, Page and View stay visible as visual filters
+    ("ssas_dim_finance_kpi", "group_order"),
+    ("ssas_dim_finance_kpi", "display_order"),
+    ("ssas_dim_finance_column", "group_order"),
+    ("ssas_dim_finance_column", "column_order"),
+    ("ssas_dim_finance_column", "month_num"),
 }
 
 # (view, column) -> sort column. generate.py checks each pair is one-to-one in the data.
@@ -272,6 +295,13 @@ SORT_BY = {
     ("ssas_dim_fs_line", "fs_category"): "category_sort",
     ("ssas_dim_fs_line", "fs_caption"): "caption_sort",
     ("ssas_dim_fs_line", "fs_line"): "line_sort",
+    ("ssas_dim_date", "year_pick"): "year",  # finance report Year slicer
+    ("ssas_dim_finance_column", "column_name"): "column_order",
+    ("ssas_dim_finance_column", "group_name"): "group_order",
+    ("ssas_dim_finance_kpi", "kpi_name"): "display_order",
+    ("ssas_dim_finance_kpi", "kpi_group"): "group_order",
+    ("ssas_fact_gl_fs_monthly", "bs_element"): "bs_element_order",
+    ("ssas_fact_gl_fs_monthly", "bs_category"): "bs_category_order",
     ("ssas_dim_bsc_kpi", "kpi_name"): "display_order",
     ("ssas_dim_bsc_kpi", "pillar"): "pillar_order",
     ("ssas_dim_bsc_kpi", "objective_title"): "objective_order",
@@ -302,17 +332,22 @@ PERSPECTIVES = {
                            "Admissions", "Episodes", "Bed Occupancy", "Clinic Capacity", "Claim Lines", "Pre-auth Lines",
                            "Invoices", "Survey Answers", "Income Statement", "Targets",
                            # the family detail pages of the report (bsc report plan, Task 6)
-                           "Order Lines", "GL Journal Lines", "Headcount", "Worker Movements", "Survey Responses"],
+                           "Order Lines", "GL Journal Lines", "Headcount", "Worker Movements", "Survey Responses",
+                           # the finance measures the scorecard KPIs read (finance report plan, Task 12)
+                           "P&L Report", "Finance Budget"],
     "HR Dashboard": ["Headcount", "Worker Movements", "Absences", "Absence Days", "Payroll", "Leave Balances",
                      "Staff Productivity", "Workforce Monthly", "Requisitions", "BSC Budgeted FTE", "HR Targets",
-                     "HR Data Issue Records"],
+                     "HR Data Issue Records", "P&L Report", "Finance Budget"],
+    "Finance Report": ["GL FS Monthly", "P&L Report", "Finance Budget"],
 }
 PERSPECTIVE_EXTRA = {"Patient Details": ["Patient Details"], "Workforce": ["Employee Details"],
                      "Balanced Scorecard": ["BSC Parameters"],
-                     "HR Dashboard": ["Employee Details", "HR KPI", "HR Data Issues"]}
+                     "HR Dashboard": ["Employee Details", "HR KPI", "HR Data Issues"],
+                     "Finance Report": ["Finance KPI", "Finance Column", "Finance Target"]}
 # Measures live in _Measures with display folder "<domain>\<topic>" (decision P26). A perspective shows the measures of
 # its own domain plus Diagnostics; these override that (None = every measure).
 PERSPECTIVE_MEASURE_DOMAINS = {"Executive": None, "Patient Details": ["Patient Flow", "Revenue Cycle"],
                                "Balanced Scorecard": ["Balanced Scorecard", "Revenue Cycle", "Claims & Pre-auth", "Finance",
                                                       "Patient Flow", "Workforce", "Patient Experience"],
-                               "HR Dashboard": ["HR Dashboard", "Workforce", "Balanced Scorecard"]}
+                               "HR Dashboard": ["HR Dashboard", "Workforce", "Balanced Scorecard"],
+                               "Finance Report": ["Finance"]}

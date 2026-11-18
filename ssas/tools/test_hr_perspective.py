@@ -47,7 +47,7 @@ def test_date_month_pick_sorts_by_year_month():
     assert "\t\tsourceColumn: month_pick\n" in block.group(1)
 
 
-def test_date_contract_ends_with_month_pick():
+def test_date_contract_ends_with_month_pick_and_year_pick():
     contracts = (MODEL.parents[1] / "hnh_dwh" / "models" / "hnh" / "marts" / "ssas" / "_ssas__models.yml")
     columns = t.contract_columns(contracts.read_text(encoding="utf-8"))["ssas_dim_date"]
-    assert (columns[-1].name, columns[-1].ch_type) == ("month_pick", "String")
+    assert [(c.name, c.ch_type) for c in columns[-2:]] == [("month_pick", "String"), ("year_pick", "String")]

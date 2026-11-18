@@ -24,6 +24,9 @@ perspective 'HR Dashboard'
 	perspectiveTable 'Employee Details'
 		includeAll
 
+	perspectiveTable 'Finance Budget'
+		includeAll
+
 	perspectiveTable 'From Branch'
 		includeAll
 
@@ -55,6 +58,12 @@ perspective 'HR Dashboard'
 		includeAll
 
 	perspectiveTable Location
+		includeAll
+
+	perspectiveTable 'P&L Line'
+		includeAll
+
+	perspectiveTable 'P&L Report'
 		includeAll
 
 	perspectiveTable 'Pay Category'

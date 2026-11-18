@@ -217,6 +217,12 @@ table Date
 		sortByColumn: 'Year Month'
 		sourceColumn: month_pick
 
+	column 'Year Pick'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: Year
+		sourceColumn: year_pick
+
 	partition Date = m
 		source =
 				let

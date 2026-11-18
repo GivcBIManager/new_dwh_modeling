@@ -76,6 +76,27 @@ table 'GL FS Monthly'
 		summarizeBy: none
 		sourceColumn: closing_balance
 
+	column Debit
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: debit
+
+	column Credit
+		dataType: decimal
+		isHidden
+		isAvailableInMdx: false
+		formatString: #,0.00
+		summarizeBy: none
+		sourceColumn: credit
+
+	column 'Account Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: account_name
+
 	column 'Month Date Key'
 		dataType: int64
 		isHidden
@@ -83,6 +104,67 @@ table 'GL FS Monthly'
 		encodingHint: value
 		summarizeBy: none
 		sourceColumn: month_date_key
+
+	column 'FS Type Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_type_name
+
+	column 'FS Element Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_element_name
+
+	column 'FS Category Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_category_name
+
+	column 'FS Caption Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_caption_name
+
+	column 'BS Side'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: bs_side
+
+	column 'BS Element'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'BS Element Order'
+		sourceColumn: bs_element
+
+	column 'BS Category'
+		dataType: string
+		summarizeBy: none
+		sortByColumn: 'BS Category Order'
+		sourceColumn: bs_category
+
+	column 'BS Caption'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: bs_caption
+
+	column 'Display Sign'
+		dataType: int64
+		isHidden
+		isAvailableInMdx: false
+		summarizeBy: none
+		sourceColumn: display_sign
+
+	column 'BS Element Order'
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: bs_element_order
+
+	column 'BS Category Order'
+		dataType: int64
+		isHidden
+		summarizeBy: none
+		sourceColumn: bs_category_order
 
 	partition 'GL FS Monthly' = m
 		source =
