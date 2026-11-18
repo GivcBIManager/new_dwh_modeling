@@ -2889,6 +2889,851 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_snapshot = 1
+	/// Balance sheet budget (FR BS Budget, display sign) of the trial balance rows in debit-positive sign: assets as they are, liabilities and equity negated, added up over the balance sheet sides in context; trial balance accounts that are not on the balance sheet have none. Blank when no budget is entered. Snapshot.
+	measure 'FR TB Budget' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					FILTER ( VALUES ( 'GL FS Monthly'[BS Side] ), 'GL FS Monthly'[BS Side] IN { "Assets", "Liabilities & equity" } ),
+					IF ( 'GL FS Monthly'[BS Side] = "Assets", 1, -1 ) * CALCULATE ( [FR BS Budget] )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly | GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR TB Budget"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly
+	/// FR BS Balance (Budgeted) in the trial balance's debit-positive sign, over the balance sheet sides in context: the closing balance of the hospital and caption pairs that have a FR TB Budget, so with FR TB Budget it gives the trial balance vs-budget figures. Snapshot.
+	measure 'FR TB Balance (Budgeted)' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					FILTER ( VALUES ( 'GL FS Monthly'[BS Side] ), 'GL FS Monthly'[BS Side] IN { "Assets", "Liabilities & equity" } ),
+					IF ( 'GL FS Monthly'[BS Side] = "Assets", 1, -1 ) * CALCULATE ( [FR BS Balance (Budgeted)] )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR TB Balance (Budgeted)"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly
+	/// Income statement matrix cell, text in SAR thousands (or a percentage), for the column of 'Finance Column' in context: a month column shows that month's FR Actual and is blank when the month is not among those picked or lies after today; budget, variance, variance %, last year, growth, % of revenue and achievement come from the FR measures; a budget cell without a budget reads the FR Budget Label placeholder ('Not budgeted' / 'No budget yet') on a row that has figures. Blank when every component is blank, so empty rows drop.
+	measure 'FR IS Cell' =
+			VAR __Value = ( -- measure body
+				VAR Kind = SELECTEDVALUE ( 'Finance Column'[Kind] )
+				VAR MonthNum = SELECTEDVALUE ( 'Finance Column'[Month Num] )
+				RETURN
+					-- the figures below are read without the Finance Column filter, which only chooses the figure
+					CALCULATE (
+						VAR Amount =
+							SWITCH (
+								Kind,
+								"month", IF ( MonthNum IN VALUES ( 'Date'[Month] ), CALCULATE ( [FR Actual], 'Date'[Month] = MonthNum ) ),
+								"actual", [FR Actual],
+								"budget", [FR Budget],
+								"variance", [FR Budget Variance],
+								"ly", [FR Last Year]
+							)
+						VAR Arrow = SWITCH ( Kind, "var_pct", [FR Budget Variance %], "growth", [FR Growth %] )
+						VAR Plain = SWITCH ( Kind, "pct_rev", [FR % of Revenue], "ach", [FR Achievement %] )
+						VAR Label =
+							IF (
+								Kind IN { "budget", "variance", "var_pct", "ach" } && ISBLANK ( Amount ) && ISBLANK ( Arrow ) && ISBLANK ( Plain )
+									&& ( NOT ISBLANK ( [FR Actual] ) || NOT ISBLANK ( [FR Last Year] ) ),
+								[FR Budget Label]
+							)
+						RETURN
+							SWITCH (
+								TRUE (),
+								Kind IN { "month", "actual", "budget", "variance", "ly" }, IF ( ISBLANK ( Amount ), IF ( Label <> "", Label ), IF ( ISBLANK ( Amount ), BLANK (), FORMAT ( Amount / 1000, "#,0;(#,0);–" ) ) ),
+								Kind IN { "var_pct", "growth" }, IF ( ISBLANK ( Arrow ), IF ( Label <> "", Label ), IF ( ISBLANK ( Arrow ), BLANK (), IF ( ABS ( Arrow ) > 9.99, "n/m", IF ( ABS ( Arrow ) < 0.0005, "0.0%", FORMAT ( Arrow, "▲ 0.0%;▼ 0.0%" ) ) ) ) ),
+								Kind IN { "pct_rev", "ach" }, IF ( ISBLANK ( Plain ), IF ( Label <> "", Label ), IF ( ISBLANK ( Plain ), BLANK (), IF ( ABS ( Plain ) > 9.99, "n/m", FORMAT ( Plain, "0.0%" ) ) ) )
+							),
+						REMOVEFILTERS ( 'Finance Column' )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report | Finance Column, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR IS Cell"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, P&L Report
+	/// Trial balance matrix cell, text in SAR thousands (credits in brackets) or a percentage, for the column of 'Finance Column' in context: opening, opening journals, debit, credit, closing, cutover difference, net movement of a month column (blank when the month is not picked or lies after today), last year, growth, budget, vs budget and achievement (closing against budget); empty opening journals and cutover columns are blank; blank when every component is blank, so empty rows drop.
+	measure 'FR TB Cell' =
+			VAR __Value = ( -- measure body
+				VAR Kind = SELECTEDVALUE ( 'Finance Column'[Kind] )
+				VAR MonthNum = SELECTEDVALUE ( 'Finance Column'[Month Num] )
+				RETURN
+					CALCULATE (
+						VAR Closing = [FR GL Closing]
+						VAR Credit = [FR GL Credit]
+						VAR Journals = [FR GL Opening Journals]
+						VAR Amount =
+							SWITCH (
+								Kind,
+								"opening", [FR GL Opening],
+								"opening_journal", IF ( Journals <> 0, Journals ),
+								"debit", [FR GL Debit],
+								"credit", IF ( NOT ISBLANK ( Credit ), -Credit ),
+								"closing", Closing,
+								"cutover", [FR GL Cutover Difference],
+								"month", IF ( MonthNum IN VALUES ( 'Date'[Month] ), CALCULATE ( [FR GL Net Movement], 'Date'[Month] = MonthNum ) ),
+								"ly", [FR GL Closing Last Year],
+								"budget", [FR TB Budget]
+							)
+						VAR LastYear = IF ( Kind = "growth", [FR GL Closing Last Year] )
+						VAR BudgetFig = IF ( Kind IN { "vs_bud", "ach" }, [FR TB Budget] )
+						VAR Budgeted = IF ( Kind IN { "vs_bud", "ach" }, [FR TB Balance (Budgeted)] )
+						VAR Growth = IF ( NOT ISBLANK ( Closing ) && NOT ISBLANK ( LastYear ), DIVIDE ( Closing - LastYear, ABS ( LastYear ) ) )
+						VAR VsBudget = IF ( NOT ISBLANK ( BudgetFig ), DIVIDE ( Budgeted - BudgetFig, ABS ( BudgetFig ) ) )
+						VAR Achievement = IF ( NOT ISBLANK ( BudgetFig ), DIVIDE ( Budgeted, BudgetFig ) )
+						VAR Label =
+							IF (
+								Kind IN { "budget", "vs_bud", "ach" } && ISBLANK ( Amount ) && ISBLANK ( VsBudget ) && ISBLANK ( Achievement )
+									&& NOT ISBLANK ( Closing ) && NOT ISFILTERED ( 'GL FS Monthly'[Account Name] ) && NOT ISFILTERED ( 'GL FS Monthly'[Account Code] ),
+								"No budget yet"
+							)
+						RETURN
+							SWITCH (
+								TRUE (),
+								Kind IN { "opening", "opening_journal", "debit", "credit", "closing", "cutover", "month", "ly", "budget" },
+									IF ( ISBLANK ( Amount ), IF ( Label <> "", Label ), IF ( ISBLANK ( Amount ), BLANK (), FORMAT ( Amount / 1000, "#,0;(#,0);–" ) ) ),
+								Kind = "growth", IF ( ISBLANK ( Growth ), BLANK (), IF ( ABS ( Growth ) > 9.99, "n/m", IF ( ABS ( Growth ) < 0.0005, "0.0%", FORMAT ( Growth, "▲ 0.0%;▼ 0.0%" ) ) ) ),
+								Kind = "vs_bud", IF ( ISBLANK ( VsBudget ), IF ( Label <> "", Label ), IF ( ISBLANK ( VsBudget ), BLANK (), IF ( ABS ( VsBudget ) > 9.99, "n/m", IF ( ABS ( VsBudget ) < 0.0005, "0.0%", FORMAT ( VsBudget, "▲ 0.0%;▼ 0.0%" ) ) ) ) ),
+								Kind = "ach", IF ( ISBLANK ( Achievement ), IF ( Label <> "", Label ), IF ( ISBLANK ( Achievement ), BLANK (), IF ( ABS ( Achievement ) > 9.99, "n/m", FORMAT ( Achievement, "0.0%" ) ) ) )
+							),
+						REMOVEFILTERS ( 'Finance Column' )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR TB Cell"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, GL FS Monthly
+	/// Balance sheet matrix cell, text in SAR thousands or a percentage, for the column of 'Finance Column' in context: a month column shows that month's month-end balance (blank when the month is not picked or lies after today), closing, last year, growth, budget, vs budget, achievement (balance against budget) and % of assets; a budget cell without a budget reads 'No budget yet' on a row that has a balance; blank when every component is blank, so empty rows drop.
+	measure 'FR BS Cell' =
+			VAR __Value = ( -- measure body
+				VAR Kind = SELECTEDVALUE ( 'Finance Column'[Kind] )
+				VAR MonthNum = SELECTEDVALUE ( 'Finance Column'[Month Num] )
+				RETURN
+					CALCULATE (
+						VAR Balance = [FR BS Balance]
+						VAR Amount =
+							SWITCH (
+								Kind,
+								"month", IF ( MonthNum IN VALUES ( 'Date'[Month] ), CALCULATE ( [FR BS Balance], 'Date'[Month] = MonthNum ) ),
+								"closing", Balance,
+								"ly", [FR BS Last Year],
+								"budget", [FR BS Budget]
+							)
+						VAR LastYear = IF ( Kind = "growth", [FR BS Last Year] )
+						VAR BudgetFig = IF ( Kind IN { "vs_bud", "ach" }, [FR BS Budget] )
+						VAR Budgeted = IF ( Kind IN { "vs_bud", "ach" }, [FR BS Balance (Budgeted)] )
+						VAR Growth = IF ( NOT ISBLANK ( Balance ) && NOT ISBLANK ( LastYear ), DIVIDE ( Balance - LastYear, ABS ( LastYear ) ) )
+						VAR VsBudget = IF ( NOT ISBLANK ( BudgetFig ), DIVIDE ( Budgeted - BudgetFig, ABS ( BudgetFig ) ) )
+						VAR Achievement = IF ( NOT ISBLANK ( BudgetFig ), DIVIDE ( Budgeted, BudgetFig ) )
+						VAR OfAssets = IF ( Kind = "pct_assets", [FR % of Assets] )
+						VAR Label =
+							IF (
+								Kind IN { "budget", "vs_bud", "ach" } && ISBLANK ( Amount ) && ISBLANK ( VsBudget ) && ISBLANK ( Achievement )
+									&& NOT ISBLANK ( Balance ),
+								[FR BS Budget Label]
+							)
+						RETURN
+							SWITCH (
+								TRUE (),
+								Kind IN { "month", "closing", "ly", "budget" }, IF ( ISBLANK ( Amount ), IF ( Label <> "", Label ), IF ( ISBLANK ( Amount ), BLANK (), FORMAT ( Amount / 1000, "#,0;(#,0);–" ) ) ),
+								Kind = "growth", IF ( ISBLANK ( Growth ), BLANK (), IF ( ABS ( Growth ) > 9.99, "n/m", IF ( ABS ( Growth ) < 0.0005, "0.0%", FORMAT ( Growth, "▲ 0.0%;▼ 0.0%" ) ) ) ),
+								Kind = "vs_bud", IF ( ISBLANK ( VsBudget ), IF ( Label <> "", Label ), IF ( ISBLANK ( VsBudget ), BLANK (), IF ( ABS ( VsBudget ) > 9.99, "n/m", IF ( ABS ( VsBudget ) < 0.0005, "0.0%", FORMAT ( VsBudget, "▲ 0.0%;▼ 0.0%" ) ) ) ) ),
+								Kind = "ach", IF ( ISBLANK ( Achievement ), IF ( Label <> "", Label ), IF ( ISBLANK ( Achievement ), BLANK (), IF ( ABS ( Achievement ) > 9.99, "n/m", FORMAT ( Achievement, "0.0%" ) ) ) ),
+								Kind = "pct_assets", IF ( ISBLANK ( OfAssets ), BLANK (), IF ( ABS ( OfAssets ) > 9.99, "n/m", FORMAT ( OfAssets, "0.0%" ) ) )
+							),
+						REMOVEFILTERS ( 'Finance Column' )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR BS Cell"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, GL FS Monthly
+	/// Font colour (hex) of a matrix cell for the column of 'Finance Column' in context: placeholder grey #9AA7B5 where the budget is missing, favourable #04705F / unfavourable #C2230A on income statement variance and growth (P&L sign: positive is favourable), muted #4D5B6B on trial balance and balance sheet growth and vs budget, else ink #0A1E32.
+	measure 'FR Cell Colour' =
+			VAR __Value = ( -- measure body
+				VAR Page = SELECTEDVALUE ( 'Finance Column'[Page] )
+				VAR Kind = SELECTEDVALUE ( 'Finance Column'[Kind] )
+				RETURN
+					CALCULATE (
+						VAR NoBudget =
+							Kind IN { "budget", "variance", "var_pct", "vs_bud", "ach" }
+								&& ISBLANK ( SWITCH ( Page, "is", [FR Budget], "tb", [FR TB Budget], "bs", [FR BS Budget] ) )
+						-- income statement figures are in the P&L sign: a positive variance or growth is favourable on every line (ruling R9b)
+						VAR Signed =
+							ROUND (
+								SWITCH (
+									TRUE (),
+									Page = "is" && Kind IN { "variance", "var_pct" }, [FR Budget Variance],
+									Page = "is" && Kind = "growth", [FR Growth %]
+								),
+								3
+							)
+						RETURN
+							SWITCH (
+								TRUE (),
+								NoBudget, "#9AA7B5",
+								Page IN { "tb", "bs" } && Kind IN { "growth", "vs_bud" }, "#4D5B6B",
+								Signed > 0, "#04705F",
+								Signed < 0, "#C2230A",
+								"#0A1E32"
+							),
+						REMOVEFILTERS ( 'Finance Column' )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Cell Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, GL FS Monthly, P&L Report
+	/// Period of the selection up to today as text for the report header: 'Oct 2026' for one month, 'Jan to Oct 2026' for a range in one year, 'Nov 2025 to Mar 2026' across years. Blank when no day up to today is selected.
+	measure 'FR Period Text' =
+			VAR Dates = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+			VAR StartDay = MINX ( Dates, 'Date'[Date] )
+			VAR EndDay = MAXX ( Dates, 'Date'[Date] )
+			VAR FirstMonth = LOOKUPVALUE ( 'Date'[Month Short], 'Date'[Date], StartDay )
+			VAR LastMonth = LOOKUPVALUE ( 'Date'[Month Short], 'Date'[Date], EndDay )
+			RETURN
+				IF (
+					NOT ISEMPTY ( Dates ),
+					SWITCH (
+						TRUE (),
+						YEAR ( StartDay ) <> YEAR ( EndDay ), FirstMonth & " " & YEAR ( StartDay ) & " to " & LastMonth & " " & YEAR ( EndDay ),
+						FirstMonth = LastMonth, LastMonth & " " & YEAR ( EndDay ),
+						FirstMonth & " to " & LastMonth & " " & YEAR ( EndDay )
+					)
+				)
+		formatString: General
+		displayFolder: Finance\Report
+	/// Result of net revenue against budget as text, e.g. '▲ 3.2% vs budget (budgeted hospitals)': FR Actual (Budgeted) against FR Budget of line NET_REVENUE, with the FR Budget Basis Label wording; 'No budget yet' without a budget; blank when the budget is 0.
+	measure 'FR Tile Net Revenue vs Budget' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "No budget yet", IF ( NOT ISBLANK ( Change ), IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " " & [FR Budget Basis Label] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Revenue vs Budget"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile Net Revenue vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile Net Revenue vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Revenue vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Growth of net revenue on the same months last year as text, e.g. '▲ 3.2% vs last year' (FR Growth % of line NET_REVENUE); blank without a last-year figure.
+	measure 'FR Tile Net Revenue vs LY' =
+			VAR __Value = ( -- measure body
+				VAR Growth = CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				RETURN
+					IF ( NOT ISBLANK ( Growth ), IF ( ISBLANK ( Growth ), BLANK (), IF ( ABS ( Growth ) > 9.99, "n/m", IF ( ABS ( Growth ) < 0.0005, "0.0%", FORMAT ( Growth, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Revenue vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile Net Revenue vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile Net Revenue vs LY Colour' =
+			VAR __Value = ( -- measure body
+				VAR Growth = CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				RETURN
+					IF ( ISBLANK ( Growth ), "#4D5B6B", IF ( ROUND ( Growth, 3 ) > 0, "#04705F", IF ( ROUND ( Growth, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Revenue vs LY Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Result of EBITDA against budget as text, e.g. '▲ 3.2% vs budget (budgeted hospitals)': FR Actual (Budgeted) against FR Budget of line EBITDA, with the FR Budget Basis Label wording; 'No budget yet' without a budget; blank when the budget is 0.
+	measure 'FR Tile EBITDA vs Budget' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "EBITDA" )
+				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "No budget yet", IF ( NOT ISBLANK ( Change ), IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " " & [FR Budget Basis Label] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA vs Budget"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile EBITDA vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile EBITDA vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "EBITDA" )
+				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Growth of EBITDA on the same months last year as text, e.g. '▲ 3.2% vs last year' (FR Growth % of line EBITDA); blank without a last-year figure.
+	measure 'FR Tile EBITDA vs LY' =
+			VAR __Value = ( -- measure body
+				VAR Growth = CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "EBITDA" )
+				RETURN
+					IF ( NOT ISBLANK ( Growth ), IF ( ISBLANK ( Growth ), BLANK (), IF ( ABS ( Growth ) > 9.99, "n/m", IF ( ABS ( Growth ) < 0.0005, "0.0%", FORMAT ( Growth, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile EBITDA vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile EBITDA vs LY Colour' =
+			VAR __Value = ( -- measure body
+				VAR Growth = CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "EBITDA" )
+				RETURN
+					IF ( ISBLANK ( Growth ), "#4D5B6B", IF ( ROUND ( Growth, 3 ) > 0, "#04705F", IF ( ROUND ( Growth, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA vs LY Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Result of net profit against budget as text, e.g. '▲ 3.2% vs budget (budgeted hospitals)': FR Actual (Budgeted) against FR Budget of line NET_PROFIT, with the FR Budget Basis Label wording; 'No budget yet' without a budget; blank when the budget is 0.
+	measure 'FR Tile Net Profit vs Budget' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "No budget yet", IF ( NOT ISBLANK ( Change ), IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " " & [FR Budget Basis Label] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Profit vs Budget"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile Net Profit vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile Net Profit vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Profit vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Growth of net profit on the same months last year as text, e.g. '▲ 3.2% vs last year' (FR Growth % of line NET_PROFIT); blank without a last-year figure.
+	measure 'FR Tile Net Profit vs LY' =
+			VAR __Value = ( -- measure body
+				VAR Growth = CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+				RETURN
+					IF ( NOT ISBLANK ( Growth ), IF ( ISBLANK ( Growth ), BLANK (), IF ( ABS ( Growth ) > 9.99, "n/m", IF ( ABS ( Growth ) < 0.0005, "0.0%", FORMAT ( Growth, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Profit vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile Net Profit vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile Net Profit vs LY Colour' =
+			VAR __Value = ( -- measure body
+				VAR Growth = CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+				RETURN
+					IF ( ISBLANK ( Growth ), "#4D5B6B", IF ( ROUND ( Growth, 3 ) > 0, "#04705F", IF ( ROUND ( Growth, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Profit vs LY Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Change of the EBITDA margin (EBITDA / net revenue) against the budget margin in percentage points, e.g. '+1.4 pt vs budget (budgeted hospitals)'; actual over the budgeted hospital-months; 'No budget yet' without a budget.
+	measure 'FR Tile EBITDA Margin vs Budget' =
+			VAR __Value = ( -- measure body
+				VAR BudgetMargin =
+					DIVIDE (
+						CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "EBITDA" ),
+						CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+					)
+				VAR ActualMargin =
+					DIVIDE (
+						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" ),
+						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+					)
+				VAR Change = ( ActualMargin - BudgetMargin ) * 100
+				RETURN
+					IF ( ISBLANK ( BudgetMargin ), "No budget yet", IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+0.0 ""pt"";-0.0 ""pt"";0.0 ""pt""" ) & " " & [FR Budget Basis Label] ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA Margin vs Budget"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile EBITDA Margin vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile EBITDA Margin vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR BudgetMargin =
+					DIVIDE (
+						CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "EBITDA" ),
+						CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+					)
+				VAR ActualMargin =
+					DIVIDE (
+						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" ),
+						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+					)
+				VAR Change = ( ActualMargin - BudgetMargin ) * 100
+				RETURN
+					IF ( ISBLANK ( BudgetMargin ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA Margin vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Change of the EBITDA margin on the same months last year in percentage points, e.g. '+1.4 pt vs last year'.
+	measure 'FR Tile EBITDA Margin vs LY' =
+			VAR __Value = ( -- measure body
+				VAR ActualMargin =
+					DIVIDE ( CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
+				VAR LastYearMargin =
+					DIVIDE ( CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
+				VAR Change = ( ActualMargin - LastYearMargin ) * 100
+				RETURN
+					IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+0.0 ""pt"";-0.0 ""pt"";0.0 ""pt""" ) & " vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA Margin vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile EBITDA Margin vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile EBITDA Margin vs LY Colour' =
+			VAR __Value = ( -- measure body
+				VAR ActualMargin =
+					DIVIDE ( CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
+				VAR LastYearMargin =
+					DIVIDE ( CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
+				VAR Change = ( ActualMargin - LastYearMargin ) * 100
+				RETURN
+					IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile EBITDA Margin vs LY Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Total assets against the assets budget as text, e.g. '▲ 3.2% vs budget (budgeted hospitals)': FR BS Balance (Budgeted) against FR BS Budget of the Assets side; 'No budget yet' without a budget. Balance sheet comparisons are muted, not favourable or unfavourable.
+	measure 'FR Tile Total Assets vs Budget' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR BS Budget], 'GL FS Monthly'[BS Side] = "Assets" )
+				VAR Actual = CALCULATE ( [FR BS Balance (Budgeted)], 'GL FS Monthly'[BS Side] = "Assets" )
+				VAR Whole = CALCULATE ( [FR BS Balance], 'GL FS Monthly'[BS Side] = "Assets" )
+				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				RETURN
+					IF (
+						ISBLANK ( BudgetFig ),
+						"No budget yet",
+						IF (
+							NOT ISBLANK ( Change ),
+							IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & IF ( ROUND ( Whole - Actual, 0 ) <> 0, " vs budget (budgeted hospitals)", " vs budget" )
+						)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Total Assets vs Budget"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly
+	/// Colour of FR Tile Total Assets vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile Total Assets vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR BudgetFig = CALCULATE ( [FR BS Budget], 'GL FS Monthly'[BS Side] = "Assets" )
+				RETURN
+					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", "#4D5B6B" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly | GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Total Assets vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly
+	/// Total assets against the same point last year as text, e.g. '▲ 3.2% vs last year' (FR BS Last Year of the Assets side).
+	measure 'FR Tile Total Assets vs LY' =
+			VAR __Value = ( -- measure body
+				VAR Balance = CALCULATE ( [FR BS Balance], 'GL FS Monthly'[BS Side] = "Assets" )
+				VAR LastYear = CALCULATE ( [FR BS Last Year], 'GL FS Monthly'[BS Side] = "Assets" )
+				VAR Growth = IF ( NOT ISBLANK ( Balance ) && NOT ISBLANK ( LastYear ), DIVIDE ( Balance - LastYear, ABS ( LastYear ) ) )
+				RETURN
+					IF ( NOT ISBLANK ( Growth ), IF ( ISBLANK ( Growth ), BLANK (), IF ( ABS ( Growth ) > 9.99, "n/m", IF ( ABS ( Growth ) < 0.0005, "0.0%", FORMAT ( Growth, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly + P&L Report | GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Total Assets vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly
+	/// Colour of FR Tile Total Assets vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile Total Assets vs LY Colour' =
+			"#4D5B6B"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly
+	/// Placeholder of the net working capital against budget: the balance sheet budget has no line for it, so 'No budget yet'.
+	measure 'FR Tile Net Working Capital vs Budget' =
+			"No budget yet"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Colour of FR Tile Net Working Capital vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile Net Working Capital vs Budget Colour' =
+			"#9AA7B5"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Change of the net working capital on the same point last year as text, e.g. '+120k vs last year'; blank without a last-year figure.
+	measure 'FR Tile Net Working Capital vs LY' =
+			VAR __Value = ( -- measure body
+				VAR ThisPeriod = [FR Net Working Capital] / 1000
+				VAR LastYear = CALCULATE ( [FR Net Working Capital] / 1000, SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) )
+				VAR Change = IF ( NOT ISBLANK ( ThisPeriod ) && NOT ISBLANK ( LastYear ), ThisPeriod - LastYear )
+				RETURN
+					IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+#,0;-#,0;0" ) & "k vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Net Working Capital vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Colour of FR Tile Net Working Capital vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile Net Working Capital vs LY Colour' =
+			"#4D5B6B"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Placeholder of the current ratio (current assets / current liabilities) against budget: the balance sheet budget has no line for it, so 'No budget yet'.
+	measure 'FR Tile Current Ratio vs Budget' =
+			"No budget yet"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Colour of FR Tile Current Ratio vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile Current Ratio vs Budget Colour' =
+			"#9AA7B5"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Change of the current ratio (current assets / current liabilities) on the same point last year as text, e.g. '+0.12 x vs last year'; blank without a last-year figure.
+	measure 'FR Tile Current Ratio vs LY' =
+			VAR __Value = ( -- measure body
+				VAR ThisPeriod = DIVIDE ( [Fin Current Assets], [Fin Current Liabilities] )
+				VAR LastYear = CALCULATE ( DIVIDE ( [Fin Current Assets], [Fin Current Liabilities] ), SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) )
+				VAR Change = IF ( NOT ISBLANK ( ThisPeriod ) && NOT ISBLANK ( LastYear ), ThisPeriod - LastYear )
+				RETURN
+					IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+0.00;-0.00;0.00" ) & " x vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Current Ratio vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Colour of FR Tile Current Ratio vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile Current Ratio vs LY Colour' =
+			"#4D5B6B"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Placeholder of the receivable days (trade receivables / net revenue x days in the period) against budget: the balance sheet budget has no line for it, so 'No budget yet'.
+	measure 'FR Tile Receivable Days vs Budget' =
+			"No budget yet"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Colour of FR Tile Receivable Days vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	measure 'FR Tile Receivable Days vs Budget Colour' =
+			"#9AA7B5"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Change of the receivable days (trade receivables / net revenue x days in the period) on the same point last year as text, e.g. '+3 days vs last year'; blank without a last-year figure.
+	measure 'FR Tile Receivable Days vs LY' =
+			VAR __Value = ( -- measure body
+				VAR ThisPeriod = DIVIDE ( [Fin Trade Receivables], [Fin Net Revenue] ) * [Fin Period Days]
+				VAR LastYear = CALCULATE ( DIVIDE ( [Fin Trade Receivables], [Fin Net Revenue] ) * [Fin Period Days], SAMEPERIODLASTYEAR ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) )
+				VAR Change = IF ( NOT ISBLANK ( ThisPeriod ) && NOT ISBLANK ( LastYear ), ThisPeriod - LastYear )
+				RETURN
+					IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+0;-0;0" ) & " days vs last year" )
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly + P&L Report | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Receivable Days vs LY"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Colour of FR Tile Receivable Days vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	measure 'FR Tile Receivable Days vs LY Colour' =
+			"#4D5B6B"
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: trial balance month-end closing (debit positive) actual. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart TB Actual' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[FS Type Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Element Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Category Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Caption Name] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					[FR GL Closing],
+					CALCULATE ( [FR GL Closing], 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart TB Actual"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: trial balance month-end closing (debit positive) budget. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart TB Budget' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[FS Type Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Element Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Category Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Caption Name] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					[FR TB Budget],
+					CALCULATE ( [FR TB Budget], 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart TB Budget"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: trial balance month-end closing (debit positive) last year. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart TB Last Year' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[FS Type Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Element Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Category Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Caption Name] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					[FR GL Closing Last Year],
+					CALCULATE ( [FR GL Closing Last Year], 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart TB Last Year"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: trial balance month-end closing (debit positive) against budget, as a ratio. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart TB vs Budget %' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[FS Type Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Element Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Category Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Caption Name] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					DIVIDE ( [FR TB Balance (Budgeted)] - [FR TB Budget], ABS ( [FR TB Budget] ) ),
+					CALCULATE ( DIVIDE ( [FR TB Balance (Budgeted)] - [FR TB Budget], ABS ( [FR TB Budget] ) ), 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart TB vs Budget %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: trial balance month-end closing (debit positive) against last year, as a ratio. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart TB vs LY %' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[FS Type Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Element Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Category Name] ) || ISFILTERED ( 'GL FS Monthly'[FS Caption Name] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					DIVIDE ( [FR GL Closing] - [FR GL Closing Last Year], ABS ( [FR GL Closing Last Year] ) ),
+					CALCULATE ( DIVIDE ( [FR GL Closing] - [FR GL Closing Last Year], ABS ( [FR GL Closing Last Year] ) ), 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart TB vs LY %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: income statement actual. The matrix row in context drives it; with no row selected it shows the default line (Net revenue).
+	measure 'FR Chart IS Actual' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'P&L Line'[PL Line Label] ) || ISFILTERED ( 'P&L Line'[Section Name] ) || ISFILTERED ( 'P&L Report'[Account Name] ),
+					[FR Actual],
+					CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS Actual"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Chart series: income statement budget. The matrix row in context drives it; with no row selected it shows the default line (Net revenue).
+	measure 'FR Chart IS Budget' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'P&L Line'[PL Line Label] ) || ISFILTERED ( 'P&L Line'[Section Name] ) || ISFILTERED ( 'P&L Report'[Account Name] ),
+					[FR Budget],
+					CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS Budget"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Chart series: income statement last year. The matrix row in context drives it; with no row selected it shows the default line (Net revenue).
+	measure 'FR Chart IS Last Year' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'P&L Line'[PL Line Label] ) || ISFILTERED ( 'P&L Line'[Section Name] ) || ISFILTERED ( 'P&L Report'[Account Name] ),
+					[FR Last Year],
+					CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS Last Year"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Chart series: income statement against budget, as a ratio. The matrix row in context drives it; with no row selected it shows the default line (Net revenue).
+	measure 'FR Chart IS vs Budget %' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'P&L Line'[PL Line Label] ) || ISFILTERED ( 'P&L Line'[Section Name] ) || ISFILTERED ( 'P&L Report'[Account Name] ),
+					[FR Budget Variance %],
+					CALCULATE ( [FR Budget Variance %], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS vs Budget %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Chart series: income statement against last year, as a ratio. The matrix row in context drives it; with no row selected it shows the default line (Net revenue).
+	measure 'FR Chart IS vs LY %' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'P&L Line'[PL Line Label] ) || ISFILTERED ( 'P&L Line'[Section Name] ) || ISFILTERED ( 'P&L Report'[Account Name] ),
+					[FR Growth %],
+					CALCULATE ( [FR Growth %], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS vs LY %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Chart series: balance sheet month-end balance (display sign) actual. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart BS Actual' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[BS Side] ) || ISFILTERED ( 'GL FS Monthly'[BS Element] ) || ISFILTERED ( 'GL FS Monthly'[BS Category] ) || ISFILTERED ( 'GL FS Monthly'[BS Caption] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					[FR BS Balance],
+					CALCULATE ( [FR BS Balance], 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly + P&L Report | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart BS Actual"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: balance sheet month-end balance (display sign) budget. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart BS Budget' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[BS Side] ) || ISFILTERED ( 'GL FS Monthly'[BS Element] ) || ISFILTERED ( 'GL FS Monthly'[BS Category] ) || ISFILTERED ( 'GL FS Monthly'[BS Caption] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					[FR BS Budget],
+					CALCULATE ( [FR BS Budget], 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart BS Budget"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: balance sheet month-end balance (display sign) last year. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart BS Last Year' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[BS Side] ) || ISFILTERED ( 'GL FS Monthly'[BS Element] ) || ISFILTERED ( 'GL FS Monthly'[BS Category] ) || ISFILTERED ( 'GL FS Monthly'[BS Caption] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					[FR BS Last Year],
+					CALCULATE ( [FR BS Last Year], 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly + P&L Report | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart BS Last Year"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: balance sheet month-end balance (display sign) against budget, as a ratio. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart BS vs Budget %' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[BS Side] ) || ISFILTERED ( 'GL FS Monthly'[BS Element] ) || ISFILTERED ( 'GL FS Monthly'[BS Category] ) || ISFILTERED ( 'GL FS Monthly'[BS Caption] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					DIVIDE ( [FR BS Balance (Budgeted)] - [FR BS Budget], ABS ( [FR BS Budget] ) ),
+					CALCULATE ( DIVIDE ( [FR BS Balance (Budgeted)] - [FR BS Budget], ABS ( [FR BS Budget] ) ), 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart BS vs Budget %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Chart series: balance sheet month-end balance (display sign) against last year, as a ratio. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
+	measure 'FR Chart BS vs LY %' =
+			VAR __Value = ( -- measure body
+				IF (
+					ISFILTERED ( 'GL FS Monthly'[BS Side] ) || ISFILTERED ( 'GL FS Monthly'[BS Element] ) || ISFILTERED ( 'GL FS Monthly'[BS Category] ) || ISFILTERED ( 'GL FS Monthly'[BS Caption] ) || ISFILTERED ( 'GL FS Monthly'[Account Name] ),
+					DIVIDE ( [FR BS Balance] - [FR BS Last Year], ABS ( [FR BS Last Year] ) ),
+					CALCULATE ( DIVIDE ( [FR BS Balance] - [FR BS Last Year], ABS ( [FR BS Last Year] ) ), 'GL FS Monthly'[FS Caption] = "trade receivables, net" )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly + P&L Report | GL FS Monthly, P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart BS vs LY %"" can't be analysed by " & __Wrong )
+		formatString: 0.0%
+		displayFolder: Finance\Report
+
+		annotation hnh_snapshot = 1
+		annotation hnh_guard_allow = GL FS Monthly, P&L Report
 	/// Most likely budget in SAR of one budget code (Phase 3 spec section 8; budget covers branches 1-6).
 	measure 'IS Budget' =
 			VAR __Value = ( -- measure body
@@ -15437,6 +16282,233 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
+	/// Filtered tables that cannot filter Finance Budget, GL FS Monthly, P&L Report (also allowed: Finance Column, GL FS Monthly), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, GL FS Monthly' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
+				& IF ( ISFILTERED ( 'P&L Report' ), ", ""P&L Report""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Finance Budget, GL FS Monthly, P&L Report (also allowed: Finance Column, GL FS Monthly, P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, GL FS Monthly, P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
 	/// Filtered tables that cannot filter Finance Budget, GL FS Monthly, P&L Report (also allowed: GL FS Monthly), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard Finance Budget + GL FS Monthly + P&L Report | GL FS Monthly' =
 			VAR __Names =
@@ -15552,6 +16624,120 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
+	/// Filtered tables that cannot filter Finance Budget, GL FS Monthly, P&L Report (also allowed: GL FS Monthly, P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget + GL FS Monthly + P&L Report | GL FS Monthly, P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
 	/// Filtered tables that cannot filter Finance Budget, GL FS Monthly (also allowed: GL FS Monthly), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard Finance Budget + GL FS Monthly | GL FS Monthly' =
 			VAR __Names =
@@ -15629,6 +16815,348 @@ table _Measures
 				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
 				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
 				& IF ( ISFILTERED ( 'P&L Report' ), ", ""P&L Report""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Finance Budget, GL FS Monthly (also allowed: GL FS Monthly, P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget + GL FS Monthly | GL FS Monthly, P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Finance Budget, P&L Report, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget + P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Report' ), ", ""P&L Report""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Finance Budget, P&L Report (also allowed: Finance Column, P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget + P&L Report | Finance Column, P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
 				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
 				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
 				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
@@ -16239,6 +17767,120 @@ table _Measures
 		isHidden
 		displayFolder: Diagnostics\Guards
 
+	/// Filtered tables that cannot filter GL FS Monthly, P&L Report (also allowed: GL FS Monthly, P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard GL FS Monthly + P&L Report | GL FS Monthly, P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
 	/// Filtered tables that cannot filter GL FS Monthly, Workforce Monthly, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard GL FS Monthly + Workforce Monthly' =
 			VAR __Names =
@@ -16317,6 +17959,120 @@ table _Measures
 				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
 				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
 				& IF ( ISFILTERED ( 'P&L Report' ), ", ""P&L Report""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter GL FS Monthly (also allowed: GL FS Monthly, P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard GL FS Monthly | GL FS Monthly, P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Line' ), ", ""P&L Line""" )
 				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
 				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
 				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
@@ -17806,6 +19562,120 @@ table _Measures
 
 	/// Filtered tables that cannot filter P&L Report, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
 	measure '_Guard P&L Report' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Budget' ), ", ""Finance Budget""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter P&L Report (also allowed: P&L Report), as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard P&L Report | P&L Report' =
 			VAR __Names =
 				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
 				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
