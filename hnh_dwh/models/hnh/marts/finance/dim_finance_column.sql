@@ -4,17 +4,21 @@
 -- hospital comparison view, in which group and order. kind is what the measures switch on; month_num is 1..12 on the
 -- month columns and 0 elsewhere. Labels are repo labels, not title-cased. column_key = page base + 50 per hospital view +
 -- column_order, unique per page and view.
+-- SSAS sorts Column Name by Column Order and Group Name by Group Order, which needs one order per label; the same label
+-- has other orders on other pages ('Budget' is 21 on tb, 14 on is), so each label gets as many zero-width spaces
+-- (U+200B, invisible) as its (page, view) pair's index: tb, is, bs, kpi monthly 0..3, hospital 4..7 (ruling R15e).
+-- Measures key on kind, month_num, page and view, never on the labels.
 select
     toUInt16(multiIf(page = 'tb', 100, page = 'is', 200, page = 'bs', 300, 400) + if(view = 'hospital', 50, 0) + column_order) as column_key,
     page,
     view,
-    group_name,
+    concat(group_label, repeat(unhex('E2808B'), toUInt8(multiIf(page = 'tb', 0, page = 'is', 1, page = 'bs', 2, 3) + if(view = 'hospital', 4, 0)))) as group_name,
     group_order,
-    column_name,
+    concat(column_label, repeat(unhex('E2808B'), toUInt8(multiIf(page = 'tb', 0, page = 'is', 1, page = 'bs', 2, 3) + if(view = 'hospital', 4, 0)))) as column_name,
     column_order,
     kind,
     month_num
-from values('page String, view String, group_name String, group_order UInt8, column_name String, column_order UInt8, kind String, month_num UInt8',
+from values('page String, view String, group_label String, group_order UInt8, column_label String, column_order UInt8, kind String, month_num UInt8',
     ('tb', 'monthly', 'Period', 1, 'Opening', 1, 'opening', 0), ('tb', 'monthly', 'Period', 1, 'Opening journals', 2, 'opening_journal', 0), ('tb', 'monthly', 'Period', 1, 'Debit', 3, 'debit', 0),
     ('tb', 'monthly', 'Period', 1, 'Credit', 4, 'credit', 0), ('tb', 'monthly', 'Period', 1, 'Closing', 5, 'closing', 0), ('tb', 'monthly', 'Period', 1, 'Cutover difference', 6, 'cutover', 0),
     ('tb', 'monthly', 'Net movement by month', 2, 'Jan', 7, 'month', 1), ('tb', 'monthly', 'Net movement by month', 2, 'Feb', 8, 'month', 2), ('tb', 'monthly', 'Net movement by month', 2, 'Mar', 9, 'month', 3),

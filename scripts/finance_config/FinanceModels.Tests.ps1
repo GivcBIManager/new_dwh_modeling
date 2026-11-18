@@ -377,8 +377,10 @@ Describe 'dim_finance_kpi' {
 
 Describe 'dim_finance_column' {
     $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_finance_column') @{}
+    # labels carry zero-width spaces (U+200B) per (page, view) so that each label has one sort order (R15e)
+    function Visible($label) { return ([string]$label).Replace([string][char]0x200B, '') }
     function Kinds($page, $view, $group = $null) {
-        $r = @($rows | Where-Object { $_.page -eq $page -and $_.view -eq $view -and ($null -eq $group -or $_.group_name -eq $group) } | Sort-Object { [int]$_.column_order })
+        $r = @($rows | Where-Object { $_.page -eq $page -and $_.view -eq $view -and ($null -eq $group -or (Visible $_.group_name) -eq $group) } | Sort-Object { [int]$_.column_order })
         return ($r | ForEach-Object { $_.kind }) -join ','
     }
     It 'has 12 month columns per monthly page' {
@@ -386,7 +388,7 @@ Describe 'dim_finance_column' {
             $m = @($rows | Where-Object { $_.page -eq $p -and $_.view -eq 'monthly' -and $_.kind -eq 'month' })
             $m.Count | Should Be 12
             (($m | Sort-Object { [int]$_.month_num } | ForEach-Object { $_.month_num }) -join ',') | Should Be '1,2,3,4,5,6,7,8,9,10,11,12'
-            (($m | Sort-Object { [int]$_.column_order } | ForEach-Object { $_.column_name }) -join ',') | Should Be 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'
+            (($m | Sort-Object { [int]$_.column_order } | ForEach-Object { Visible $_.column_name }) -join ',') | Should Be 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'
         }
     }
     It 'has no month columns on the hospital views and a unique column_key' {
@@ -400,11 +402,32 @@ Describe 'dim_finance_column' {
         Kinds 'is' 'monthly' 'Period total' | Should Be 'actual,budget,variance,var_pct,ly,growth,pct_rev'
         Kinds 'bs' 'monthly' 'End of period vs last year and budget' | Should Be 'ly,growth,budget,vs_bud,pct_assets'
         Kinds 'kpi' 'monthly' 'Period' | Should Be 'target,actual,status,budget,vs_bud,ly,vs_ly'
-        foreach ($p in 'tb', 'is', 'bs', 'kpi') { @($rows | Where-Object { $_.page -eq $p -and $_.view -eq 'hospital' -and $_.group_name -ne '' }).Count | Should Be 0 }
+        foreach ($p in 'tb', 'is', 'bs', 'kpi') { @($rows | Where-Object { $_.page -eq $p -and $_.view -eq 'hospital' -and (Visible $_.group_name) -ne '' }).Count | Should Be 0 }
         Kinds 'kpi' 'hospital' | Should Be 'actual,vs_bud,vs_ly'
         Kinds 'tb' 'hospital' | Should Be 'closing,ach,growth'
         Kinds 'bs' 'hospital' | Should Be 'closing,ach,growth'
         Kinds 'is' 'hospital' | Should Be 'actual,ach,growth'
+    }
+    It 'maps every label to one sort order, ignoring case as SSAS does (sortByColumn, R15e)' {
+        foreach ($pair in @(@('column_name', 'column_order'), @('group_name', 'group_order'))) {
+            $orders = New-Object 'System.Collections.Generic.Dictionary[string, System.Collections.Generic.HashSet[string]]' ([StringComparer]::OrdinalIgnoreCase)
+            foreach ($r in $rows) {
+                $label = [string]$r.($pair[0])
+                if (-not $orders.ContainsKey($label)) { $orders[$label] = New-Object 'System.Collections.Generic.HashSet[string]' }
+                [void]$orders[$label].Add([string]$r.($pair[1]))
+            }
+            $bad = @($orders.Keys | Where-Object { $orders[$_].Count -gt 1 } | ForEach-Object { "$($pair[0]) '$(Visible $_)'" })
+            ($bad -join '; ') | Should Be ''
+        }
+    }
+    It 'keeps the visible labels: only zero-width spaces are added, the same count within a page and view' {
+        (Visible ($rows | Where-Object { $_.page -eq 'is' -and $_.view -eq 'monthly' -and $_.kind -eq 'budget' }).column_name) | Should Be 'Budget'
+        (Visible ($rows | Where-Object { $_.page -eq 'tb' -and $_.view -eq 'monthly' -and $_.kind -eq 'debit' }).group_name) | Should Be 'Period'
+        foreach ($g in ($rows | Group-Object { "$($_.page)|$($_.view)" })) {
+            $counts = @($g.Group | ForEach-Object { ([string]$_.column_name).Length - (Visible $_.column_name).Length } | Select-Object -Unique)
+            $counts.Count | Should Be 1
+        }
+        @($rows | Where-Object { ([string]$_.column_name).Length -eq (Visible $_.column_name).Length }).Count | Should BeGreaterThan 0
     }
 }
 
