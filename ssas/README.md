@@ -100,6 +100,35 @@ specialty's charge lines count. The first version (2026-11-16) moved the keys on
 network it took 13-20 s for a year by category and 328 s for a 12-month matrix (G2, 2026-11-17), and the keys on
 Encounters and Episodes cost about 380 MB, so it was replaced.
 
+## Finance report
+
+Perspective `Finance Report` (spec `docs/superpowers/specs/2026-11-18-finance-report-design.md`).
+
+- **Building blocks.** The `Fin *` measures (`Fin Net Revenue`, `Fin Direct Cost`, `Fin G&A`, `Fin EBITDA`,
+  `Fin Net Profit`, `Fin Trade Receivables`, `Fin Inventories`, `Fin Total Assets`, `Fin Budget *`, `Fin Period Days`,
+  `Fin Annualise` and the rest) hold the one definition of each finance figure. The report's `FR *` measures and the
+  Balanced Scorecard's finance KPIs both read them. Every actual stops at today
+  (`KEEPFILTERS ( 'Date'[Date] <= TODAY () )`) and budgets stop at today too. Balances are taken per branch at the
+  branch's last period (`VALUES ( Branch[Branch Key] )`).
+- **Unified definitions** (the scorecard now uses them):
+  - EBITDA includes other income.
+  - Receivable and inventory days use month-end balances.
+  - G&A is the P&L report's G&A section.
+  - Consumables include the Oasis cost of goods sold (the P&L rule).
+  - ROA is annualised on month-end total assets.
+  - Days in Period is the days up to today.
+  - Cost to Revenue is operating cost / net revenue (meaning kept).
+- **Config tables.** `map_finance_budget` and `map_finance_target` in ClickHouse `default` (`docs/finance_config.md`),
+  read through `stg_ref__finance_budget` and `stg_ref__finance_target`. Percentage targets are fractions (`0.21`).
+- **Compare the scorecard before and after:** `ssas/scripts/compare_bsc_actuals.ps1 -Compare
+  C:\HNH\finance\bsc_before.csv <after.csv>`. Before-snapshots exist for 202610 and 202609 (October's GL was thin).
+  Show the user the table before production.
+- **Known older defect (not fixed by this work).** `GL Closing Balance`, `Profit for the Year`, `TB Opening Balance`,
+  `TB Closing Balance` and similar older measures take the last period across all selected branches instead of per
+  branch (`VALUES ( Branch[Branch Key] )` inside a `REMOVEFILTERS` `CALCULATE`). The new `Fin` and `FR` measures use
+  the per-branch pattern, so with several branches selected the old and new measures can differ.
+- The report, its checklist and first-open checks: `powerbi_tmdl/hnh_finance_report/README.md`.
+
 ## Run
 
 | Task | Command |

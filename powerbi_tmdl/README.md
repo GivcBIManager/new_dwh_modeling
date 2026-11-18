@@ -3,7 +3,8 @@
 How a report built in this repository reaches Power BI Report Server, and the rules learned on the way. Every report
 here is a Power BI project (PBIP, PBIR format) written by a generator and connected live to the SSAS model
 `HNH_Analytics` (or `HNH_Analytics_Test`): `hnh_bsc_report/` (the Balanced Scorecard) and
-`hnh_hr_report/` (the HR dashboard, "HNH Workforce") and
+`hnh_hr_report/` (the HR dashboard, "HNH Workforce"),
+`hnh_finance_report/` (the finance report, "HNH Finance") and
 `pressGaneyDashboard/pressGaneyDashboard/` (the Press Ganey dashboard). Measures live in the model
 (`ssas/HNH_Analytics/tables/_Measures.tmdl`), never in the report.
 
@@ -98,3 +99,16 @@ Same route as above, with the HR report's paths. It is built against `HNH_Analyt
 - The KPI detail 24-month line shows 24 points after drilling from the Scorecard.
 - `HRM_CORP` sees all hospitals and Head Office, pay figures, Head Office data quality records and the placeholder marks on the targets.
 - `EXE_ABH` sees Abha only (no Head Office in the Branch slicer or any figure), no Head Office (100) data quality records and no Fusion names on the Employee list.
+
+## HNH Finance route
+
+Same route, with the finance report's paths. Built against `HNH_Analytics_Test` (perspective `Finance Report`). These steps are G4 of the checklist in `hnh_finance_report/README.md` ("Deployment checklist": G1 ClickHouse, G2 dbt, G3 test slot, G4 upload, G5 production); do G1 to G3 first.
+
+1. `python powerbi_tmdl/hnh_finance_report/build.py` (prints `report schemas: passed` and `Desktop project reader: opened`).
+2. `python powerbi_tmdl/hnh_bsc_report/pbir_to_pbix.py "powerbi_tmdl/hnh_finance_report/HNH Finance.pbip" --out "C:\HNH\report\HNH Finance.pbix"`.
+3. `pbix.check_upload_rules` on the file must return `[]` (run from `powerbi_tmdl/hnh_bsc_report`).
+4. Open the `.pbix` in Desktop for Report Server without saving; upload it into a new Finance folder at `http://hnhanalyticssrv/reports` only on the user's go-ahead.
+
+**Switch to production.** After the model is deployed to production (a separate go-ahead), rebuild with `--database HNH_Analytics`, convert again and upload (a separate go-ahead).
+
+**How to test as a user, what to check on first open, known limits:** `hnh_finance_report/README.md`.
