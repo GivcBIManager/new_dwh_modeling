@@ -128,6 +128,7 @@ Perspective `Finance Report` (spec `docs/superpowers/specs/2026-11-18-finance-re
   branch (`VALUES ( Branch[Branch Key] )` inside a `REMOVEFILTERS` `CALCULATE`). The new `Fin` and `FR` measures use
   the per-branch pattern, so with several branches selected the old and new measures can differ.
 - The report, its checklist and first-open checks: `powerbi_tmdl/hnh_finance_report/README.md`.
+- **Nightly dbt selection.** The nightly Dagster dbt selection must include `stg_ref__finance_*`, `fact_finance_budget_monthly`, `dim_finance_*` and the changed `fact_gl_fs_monthly`, `fact_pl_report_monthly` and `dim_pl_report_line` (with their `ssas_*` views). The Dagster dbt runs are not `tag:hnh`, so add them to the selector, or edits to the finance config tables (`default.map_finance_budget`, `default.map_finance_target`) never reach the report.
 
 ## Run
 

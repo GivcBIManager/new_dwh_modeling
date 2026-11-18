@@ -72,12 +72,12 @@ BRANCH_NAME = col("Branch", "Branch Name")
 BRANCH_KEY = col("Branch", "Branch Key")
 HOSPITAL_KEYS = [1, 2, 3, 4, 5, 6, 7, 8]
 YEAR_PICK = col("Date", "Year Pick")
-YEAR_OFFSET = col("Date", "Year Offset")
+YEAR = col("Date", "Year")
 MONTH_SHORT = col("Date", "Month Short")
 PERIOD_TEXT = meas("FR Period Text")
 CURRENT_YEAR = "Current year"
-# 'Date'[Year Offset] 0 is the current year, 1 last year, ...: 0..10 offers the years from 2022 on without a rebuild
-YEARS_OFFERED = Filter(YEAR_OFFSET, "in", list(range(0, 11)))
+# 'Date'[Year] 2022..2040: the years with data (the GL starts in 2022) up to a fixed horizon, no yearly rebuild until 2040
+YEARS_OFFERED = Filter(YEAR, "in", list(range(2022, 2041)))
 
 # Filter bar rects (the frame's bar is y 84..162; controls 96..150)
 VIEW_W, VIEW_GAP, BAR_Y, BAR_H = 110, 6, 96, 54

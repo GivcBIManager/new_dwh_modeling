@@ -29,6 +29,14 @@ function Report([string]$Name, [bool]$Ok, [string]$Detail) {
     if (-not $Ok) { $word = 'FAIL'; $script:failures++ }
     Write-Host ('{0} {1}: {2}' -f $word, $Name, $Detail)
 }
+function Skip([string]$Name, [string]$Detail) { Write-Host ('SKIP {0}: {1}' -f $Name, $Detail) }
+# DBNull, blank or non-numeric text -> $null (so a blank cell is a failed comparison, not an exception); else a double
+function ConvertTo-HnhNumber($Value) {
+    if ($Value -eq $null -or $Value -is [System.DBNull] -or [string]::IsNullOrWhiteSpace([string]$Value)) { return $null }
+    $n = 0.0
+    if ([double]::TryParse([string]$Value, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$n)) { return $n }
+    return $null
+}
 function Want([string]$Name) { return ($Stage -contains 'All' -or $Stage -contains $Name) }
 $script:credentials = $null
 function Dax([string]$Query, [string]$User) {
@@ -138,19 +146,32 @@ try {
                     # Finance report review focus 5: a one-hospital reader sees the P&L of their hospital only. "All" (no branch
                     # filter) is their hospital, the other hospitals read blank, for [FR Actual] and for the EBITDA margin KPI.
                     $own = $branches[0]
-                    $otherKey = Get-HnhScalar (Sql ('select min(branch_key) from gold.ssas_dim_branch where branch_key > 0 and branch_key <> {0}' -f $own))
+                    # the "other" hospital is one that has NET_REVENUE rows, so a blank read is the row filter and not an empty branch
+                    $otherKey = Get-HnhScalar (Sql ('select min(branch_key) from gold.ssas_fact_pl_report_monthly where pl_line_code = ''NET_REVENUE'' and branch_key between 1 and 8 and branch_key <> {0}' -f $own))
                     $plNet = "'P&L Line'[PL Line Code] = ""NET_REVENUE"""
                     $kpiMargin = "'Finance KPI'[KPI Code] = ""FR_EBITDA_MARGIN"""
+                    $frExpected = Get-HnhScalar (Sql ("select sum(amount) from gold.ssas_fact_pl_report_monthly where pl_line_code = 'NET_REVENUE' and branch_key = $own and month_date_key <= toYYYYMMDD(today())"))
+                    if ([string]::IsNullOrWhiteSpace([string]$otherKey) -or $otherKey -is [System.DBNull]) {
+                        Skip "$($p.Name) FR Actual / KPI" "no other hospital has NET_REVENUE rows in gold.ssas_fact_pl_report_monthly"
+                    } else {
                     $frQuery = 'EVALUATE ROW("own", CALCULATE([FR Actual], {0}, Branch[Branch Key] = {1}), "all", CALCULATE([FR Actual], {0}), "other", CALCULATE([FR Actual], {0}, Branch[Branch Key] = {2}) + 0)' -f $plNet, $own, $otherKey
                     $fr = (Dax $frQuery $login).Rows[0]
-                    $frExpected = Get-HnhScalar (Sql ("select sum(amount) from gold.ssas_fact_pl_report_monthly where pl_line_code = 'NET_REVENUE' and branch_key = $own and month_date_key <= toYYYYMMDD(today())"))
-                    Report "$($p.Name) FR Actual own branch" ([math]::Abs([double]$fr[0] - [double]$frExpected) -le 0.01) "branch $own sees $($fr[0]), ClickHouse $frExpected"
-                    Report "$($p.Name) FR Actual All is the own branch" ([math]::Abs([double]$fr[1] - [double]$fr[0]) -le 0.01) "all branches $($fr[1]), own branch $($fr[0])"
-                    Report "$($p.Name) FR Actual other branch blank" ([double]$fr[2] -eq 0) "branch $otherKey reads $($fr[2]) (0 means blank)"
+                    $frOwn = ConvertTo-HnhNumber $fr[0]; $frAll = ConvertTo-HnhNumber $fr[1]; $frOther = ConvertTo-HnhNumber $fr[2]
+                    $expectedNum = ConvertTo-HnhNumber $frExpected
+                    # a blank read is a FAIL; a SKIP when ClickHouse itself holds no NET_REVENUE for the own branch (nothing to compare)
+                    if ($expectedNum -eq $null -or $expectedNum -eq 0) {
+                        Skip "$($p.Name) FR Actual own branch" "ClickHouse holds no NET_REVENUE for branch $own (expected $frExpected); nothing to compare"
+                    } else {
+                        Report "$($p.Name) FR Actual own branch" (($frOwn -ne $null) -and [math]::Abs($frOwn - $expectedNum) -le 0.01) "branch $own sees '$($fr[0])', ClickHouse $frExpected"
+                    }
+                    Report "$($p.Name) FR Actual All is the own branch" (($frOwn -ne $null) -and ($frAll -ne $null) -and [math]::Abs($frAll - $frOwn) -le 0.01) "all branches '$($fr[1])', own branch '$($fr[0])'"
+                    Report "$($p.Name) FR Actual other branch blank" (($frOther -eq $null) -or ($frOther -eq 0)) "branch $otherKey reads '$($fr[2])' (0 means blank)"
                     $kpiQuery = 'EVALUATE ROW("own", CALCULATE([FR KPI Value], {0}, Branch[Branch Key] = {1}), "all", CALCULATE([FR KPI Value], {0}), "other", CALCULATE([FR KPI Value], {0}, Branch[Branch Key] = {2}))' -f $kpiMargin, $own, $otherKey
                     $kpi = (Dax $kpiQuery $login).Rows[0]
-                    $kpiOk = (-not [string]::IsNullOrWhiteSpace([string]$kpi[0])) -and ([math]::Abs([double]$kpi[1] - [double]$kpi[0]) -le 0.000001) -and [string]::IsNullOrWhiteSpace([string]$kpi[2])
-                    Report "$($p.Name) FR KPI Value EBITDA margin" $kpiOk "own $($kpi[0]), all $($kpi[1]), branch $otherKey '$($kpi[2])' (must be blank)"
+                    $kpiOwn = ConvertTo-HnhNumber $kpi[0]; $kpiAll = ConvertTo-HnhNumber $kpi[1]
+                    $kpiOk = ($kpiOwn -ne $null) -and ($kpiAll -ne $null) -and ([math]::Abs($kpiAll - $kpiOwn) -le 0.000001) -and [string]::IsNullOrWhiteSpace([string]$kpi[2])
+                    Report "$($p.Name) FR KPI Value EBITDA margin" $kpiOk "own '$($kpi[0])', all '$($kpi[1])', branch $otherKey '$($kpi[2])' (must be blank)"
+                    }
                 }
 
                 if ($specialties.Count -eq 0) {

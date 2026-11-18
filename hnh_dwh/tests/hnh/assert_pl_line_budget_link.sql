@@ -13,8 +13,12 @@ where (budget_line_code = '' and budget_sign != 0) or (budget_line_code != '' an
 
 union all
 
+-- no correlated subquery: on ClickHouse it returns NULL for an unmatched key, not 0, so an unlinked line was never flagged.
+-- An unmatched left join gives '' (not NULL), so the matches are counted with countIf.
 select 'budget line is not linked exactly once', b.budget_line_code
 from {{ ref('dim_budget_line') }} as b
+left join {{ ref('dim_pl_report_line') }} as l on l.budget_line_code = b.budget_line_code
 where b.is_subtotal = 0
   and b.budget_line_code not in ('REV_OP', 'REV_IP', 'REV_ER', 'REV_UNALLOCATED', 'DIS_REJECTION_INS', 'DIS_REJECTION_MOH', 'UNBUDGETED')
-  and (select count() from {{ ref('dim_pl_report_line') }} as l where l.budget_line_code = b.budget_line_code) != 1
+group by b.budget_line_code
+having countIf(l.budget_line_code != '') != 1

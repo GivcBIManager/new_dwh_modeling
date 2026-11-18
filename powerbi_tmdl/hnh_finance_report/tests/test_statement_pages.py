@@ -59,7 +59,7 @@ def test_matrix_rows_per_page():
     gl, pl, rep = "GL FS Monthly", "P&L Line", "P&L Report"
     rows = {"tb": [col(gl, "FS Type Name"), col(gl, "FS Element Name"), col(gl, "FS Category Name"),
                    col(gl, "FS Caption Name"), col(gl, "Account Name")],
-            "is": [col(pl, "Section Name"), col(pl, "PL Line Label"), col(rep, "FS Caption"), col(rep, "Account Name")],
+            "is": [col(pl, "Section Name"), col(pl, "PL Line Label"), col(rep, "FS Caption Name"), col(rep, "Account Name")],
             "bs": [col(gl, "BS Side"), col(gl, "BS Element"), col(gl, "BS Category"), col(gl, "BS Caption"),
                    col(gl, "Account Name")]}
     cells = {"tb": "FR TB Cell", "is": "FR IS Cell", "bs": "FR BS Cell"}
@@ -155,8 +155,16 @@ def test_income_statement_hides_the_grand_total_and_bands_subtotal_lines():
         level = [e for e in m.props["subTotals"] if e.get("selector") == {"metadata": "P&L Line.Section Name"}]
         assert level and level[0]["properties"]["levelSubtotalEnabled"]["expr"]["Literal"]["Value"] == "false"
         assert "FR Row Band" in repr(m.props["values"][0]["properties"]["backColor"])
-    for name in ("tb_monthly", "bs_monthly"):
+    for name in ("tb_monthly",):
         assert "levelSubtotalEnabled" not in repr(_matrix(_page(name)).props["subTotals"])
+
+
+def test_balance_sheet_hides_the_grand_total():
+    # the grand total would add Assets + Liabilities & equity + Not mapped
+    for name in ("bs_monthly", "bs_hospitals"):
+        m = _matrix(_page(name))
+        level = [e for e in m.props["subTotals"] if e.get("selector") == {"metadata": "GL FS Monthly.BS Side"}]
+        assert level and level[0]["properties"]["levelSubtotalEnabled"]["expr"]["Literal"]["Value"] == "false", name
 
 
 def test_page_headers_and_the_income_statement_note():

@@ -467,3 +467,66 @@ Describe 'finance SSAS contracts' {
         (Names 'ssas_fact_finance_budget_monthly') -join ',' | Should Be 'branch_key,month_date_key,statement,pl_line_key,pl_line_code,bs_caption,amount,source'
     }
 }
+
+# Config typos (final review): BS captions are lower-cased, and rows with a month outside 1..12 or a branch outside 1..8 / 100 are
+# ignored by fact_finance_budget_monthly (and listed by the warn test assert_finance_budget_config_valid), not a build failure.
+Describe 'stg_ref__finance_budget BS caption' {
+    $src = "select toUInt8(1) as branch_id, toUInt16(2026) as year, toUInt8(1) as month, st as statement, lc as line_code, toFloat64(5) as amount, $cl, toUInt8(0) as is_deleted " +
+           "from values('st String, lc String, s UInt32', ('bs', ' Trade Receivables, Net ', 10), ('IS', 'DC_Employee', 10))"
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'stg_ref__finance_budget') @{ map_finance_budget = $src }
+    $k = @{}; foreach ($r in $rows) { $k[$r.statement] = $r }
+    It 'lower-cases the line_code of BS rows only' {
+        $k['BS'].line_code | Should Be 'trade receivables, net'
+        $k['IS'].line_code | Should Be 'DC_Employee'
+    }
+}
+
+Describe 'fact_finance_budget_monthly ignores impossible months and branches' {
+    $fim = "select toUInt8(1) as branch_key, toDate('2026-01-01') as month_start, 'DC_EMPLOYEE' as budget_line_code, toFloat64(100) as budget_most_likely"
+    $plLine = "select toUInt16(300) as pl_line_key, 'DC_EMPLOYEE' as pl_line_code, 'Direct Cost' as section_name, 'detail' as line_kind, " +
+              "cast([] as Array(String)) as subtotal_sections, 'DC_EMPLOYEE' as budget_line_code, toInt8(-1) as budget_sign"
+    $stg = "select toUInt8(b) as branch_id, toUInt16(2026) as year, toUInt8(m) as month, st as statement, lc as line_code, toFloat64(a) as amount, now() as last_changed_at " +
+           "from values('b UInt8, m UInt8, st String, lc String, a Float64', (1, 1, 'IS', 'DC_EMPLOYEE', 120), (1, 13, 'IS', 'DC_EMPLOYEE', 7), " +
+           "(1, 0, 'BS', 'cash', 8), (9, 1, 'IS', 'DC_EMPLOYEE', 9), (100, 2, 'BS', 'cash', 50))"
+    $rep = @{ fact_income_statement_monthly = $fim; dim_pl_report_line = $plLine; stg_ref__finance_budget = $stg }
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_finance_budget_monthly' $rep) @{}
+    It 'keeps the valid override and the Head Office balance sheet row, drops month 13, month 0 and branch 9' {
+        $rows.Count | Should Be 2
+        $is = @($rows | Where-Object { $_.statement -eq 'IS' })
+        $is.Count | Should Be 1
+        [double]$is[0].amount | Should Be -120
+        $bs = @($rows | Where-Object { $_.statement -eq 'BS' })
+        $bs.Count | Should Be 1
+        $bs[0].branch_key | Should Be 100
+    }
+}
+
+Describe 'assert_finance_budget_config_valid' {
+    $stg = "select toUInt8(b) as branch_id, toUInt16(2026) as year, toUInt8(m) as month, st as statement, 'x' as line_code, toFloat64(1) as amount " +
+           "from values('b UInt8, m UInt8, st String', (1, 1, 'IS'), (1, 13, 'IS'), (9, 1, 'IS'), (100, 12, 'BS'), (2, 3, 'XX'))"
+    $sql = (Get-Content (Join-Path $root 'hnh_dwh\tests\hnh\assert_finance_budget_config_valid.sql') -Raw)
+    $sql = ($sql -replace '(?m)^\{\{ config.*$', '') -replace '\{\{ ref\(''stg_ref__finance_budget''\) \}\}', "($stg)"
+    $rows = Invoke-ModelWithSources $sql @{}
+    It 'lists month 13, branch 9 and an unknown statement, not the valid rows' {
+        $rows.Count | Should Be 3
+    }
+}
+
+# assert_pl_line_budget_link (final review): the "linked exactly once" branch used a correlated count() that is NULL, not 0, for an
+# unmatched key on ClickHouse 26.5, so an unlinked budget line was never flagged.
+Describe 'assert_pl_line_budget_link linked-exactly-once branch' {
+    $b = "(select c as budget_line_code, toUInt8(0) as is_subtotal from values('c String', ('A_UNLINKED'), ('B_ONCE'), ('C_TWICE'), ('UNBUDGETED')))"
+    $l = "(select l as pl_line_code, c as budget_line_code, toInt8(if(c = '', 0, 1)) as budget_sign, 'detail' as line_kind " +
+         "from values('l String, c String', ('L1', 'B_ONCE'), ('L2', 'C_TWICE'), ('L3', 'C_TWICE'), ('L4', '')))"
+    $sql = (Get-Content (Join-Path $root 'hnh_dwh\tests\hnh\assert_pl_line_budget_link.sql') -Raw)
+    $sql = $sql.Replace("{{ ref('dim_budget_line') }}", $b).Replace("{{ ref('dim_pl_report_line') }}", $l)
+    $rows = Invoke-ModelWithSources $sql @{}
+    $found = @($rows | ForEach-Object { $_.detail })
+    It 'flags an unlinked and a twice-linked budget line, not a once-linked or an excepted one' {
+        $found -contains 'A_UNLINKED' | Should Be $true
+        $found -contains 'C_TWICE' | Should Be $true
+        $found -contains 'B_ONCE' | Should Be $false
+        $found -contains 'UNBUDGETED' | Should Be $false
+        $rows.Count | Should Be 2
+    }
+}

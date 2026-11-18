@@ -7,6 +7,8 @@
 --                  line's budget_sign, or by its section for an unlinked line (Revenue, Other Income, OCI +1, the rest -1);
 --   subtotal     = linked amount + the override differences of its sections, or the sum of its sections' lines when it has
 --                  no linked amount (a hospital without a budget). Subtotal and not_mapped overrides are ignored.
+-- Config rows with a month outside 1..12 or a branch other than 1..8 and 100 are ignored (assert_finance_budget_config_valid
+-- warns and lists them) instead of failing the nightly build.
 with fim as (
     select branch_key, month_start, budget_line_code, sum(budget_most_likely) as amount
     from {{ ref('fact_income_statement_monthly') }}
@@ -50,6 +52,7 @@ overrides as (
     from {{ ref('stg_ref__finance_budget') }} as o
     inner join lines as l on l.pl_line_code = o.line_code
     where o.statement = 'IS' and l.line_kind = 'detail'
+      and o.month between 1 and 12 and (o.branch_id between 1 and 8 or o.branch_id = 100)
 ),
 
 detail_parts as (
@@ -122,7 +125,7 @@ is_rows as (
 bs_rows as (
     select toUInt8(branch_id) as branch_key, makeDate(year, month, 1) as month_start, line_code as bs_caption, toFloat64(amount) as amount
     from {{ ref('stg_ref__finance_budget') }}
-    where statement = 'BS'
+    where statement = 'BS' and month between 1 and 12 and (branch_id between 1 and 8 or branch_id = 100)
 ),
 
 all_rows as (

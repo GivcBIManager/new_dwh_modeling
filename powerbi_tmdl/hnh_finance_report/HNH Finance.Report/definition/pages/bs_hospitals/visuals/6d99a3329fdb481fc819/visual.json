@@ -298,6 +298,13 @@
                   "Value": "true"
                 }
               }
+            },
+            "perRowLevel": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
           }
         },
@@ -334,6 +341,20 @@
           },
           "selector": {
             "metadata": "Branch.Branch Name"
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "GL FS Monthly.BS Side"
           }
         }
       ]

@@ -82,7 +82,9 @@ def test_hospital_slicer_only_on_monthly_pages():
 def test_year_and_month_slicers():
     bar = filter_bar("tb", "monthly")
     year = next(v for v in bar if col("Date", "Year Pick") in v.roles.get("Values", []))
-    assert "Current year" in json.dumps(year.props) and any(f.field == col("Date", "Year Offset") for f in year.filters)
+    assert "Current year" in json.dumps(year.props) and any(f.field == col("Date", "Year") for f in year.filters)
+    offered = next(f for f in year.filters if f.field == col("Date", "Year"))
+    assert offered.values == list(range(2022, 2041))
     month = next(v for v in bar if col("Date", "Month Short") in v.roles.get("Values", []))
     assert "filter" not in json.dumps(month.props.get("general", []))
 

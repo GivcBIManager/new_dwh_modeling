@@ -291,7 +291,28 @@
                   }
                 }
               }
+            },
+            "perRowLevel": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "GL FS Monthly.BS Side"
           }
         }
       ]

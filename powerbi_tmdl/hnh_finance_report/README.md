@@ -36,6 +36,10 @@ In this order. Every step except the read-only ones needs the user's go-ahead at
 - **G4 upload.** Build, convert, `check_upload_rules` returns `[]`, open in Desktop for Report Server, upload (Route above). Take screenshots of the eight pages against the canvas.
 - **G5 production** (separate, later). `deploy.ps1 -Stage Promote`, rebuild with `--database HNH_Analytics`, upload again.
 
+## Nightly refresh
+
+The nightly Dagster dbt selection must include `stg_ref__finance_*`, `fact_finance_budget_monthly`, `dim_finance_*` and the changed `fact_gl_fs_monthly`, `fact_pl_report_monthly` and `dim_pl_report_line` (with their `ssas_*` views). The Dagster dbt runs are not `tag:hnh`, so add them to the selector, or edits to the finance config tables (`default.map_finance_budget`, `default.map_finance_target`) never reach the report.
+
 ## How to test as a one-hospital user
 
 Log in to Windows as a non-admin member of `HNH_BI_Users` limited to one hospital (for example `HNHANALYTICSSRV\EXE_ABH`). An SSAS server administrator bypasses the row filters. A domain reader needs a `bi_users.csv` row with the UPN `<name>@hnhriyadh.com`, or sees no data. Every hospital page then shows that hospital's figures and blanks for the others, and "All hospitals" equals the one hospital.
@@ -44,7 +48,7 @@ Log in to Windows as a non-admin member of `HNH_BI_Users` limited to one hospita
 
 Not yet done. Desktop for Report Server, then the portal.
 
-- Year opens on "Current year". It offers 2016 to 2026; years before 2022 are empty. Months are picked in the Month slicer.
+- Year opens on "Current year". It offers 2022 to 2040 (a fixed list, no yearly rebuild). Months are picked in the Month slicer.
 - The cutover difference column appears only when the selection crosses a branch's cutover (the move from Oasis to Fusion).
 - "Not budgeted" (the line has no budget row) and "No budget yet" (no budget is loaded for that hospital and period) read differently. With an unbudgeted hospital in the selection the column reads "vs budget (budgeted hospitals)": the comparison is like for like.
 - The balance sheet Difference card shows the cutover difference and the unmapped accounts (it includes the "Not mapped" side). "Current year profit" is the year-to-date total comprehensive income.

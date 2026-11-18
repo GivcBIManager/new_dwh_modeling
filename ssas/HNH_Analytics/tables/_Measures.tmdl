@@ -3394,7 +3394,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly
-	/// Colour of FR Tile Total Assets vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	/// Colour of FR Tile Total Assets vs Budget: the muted #4D5B6B (a balance sheet line has no favourable or unfavourable reading), placeholder grey #9AA7B5 without a budget.
 	measure 'FR Tile Total Assets vs Budget Colour' =
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR BS Budget], 'GL FS Monthly'[BS Side] = "Assets" )
@@ -3422,7 +3422,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly
-	/// Colour of FR Tile Total Assets vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	/// Colour of FR Tile Total Assets vs LY: always the muted #4D5B6B (the balance sheet tile has no favourable or unfavourable reading against last year).
 	measure 'FR Tile Total Assets vs LY Colour' =
 			"#4D5B6B"
 		formatString: General
@@ -3436,7 +3436,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
-	/// Colour of FR Tile Net Working Capital vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	/// Colour of FR Tile Net Working Capital vs Budget: always the placeholder grey #9AA7B5 (the balance sheet budget has no line for it).
 	measure 'FR Tile Net Working Capital vs Budget Colour' =
 			"#9AA7B5"
 		formatString: General
@@ -3458,7 +3458,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
-	/// Colour of FR Tile Net Working Capital vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	/// Colour of FR Tile Net Working Capital vs LY: always the muted #4D5B6B (the balance sheet tile has no favourable or unfavourable reading against last year).
 	measure 'FR Tile Net Working Capital vs LY Colour' =
 			"#4D5B6B"
 		formatString: General
@@ -3472,7 +3472,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
-	/// Colour of FR Tile Current Ratio vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	/// Colour of FR Tile Current Ratio vs Budget: always the placeholder grey #9AA7B5 (the balance sheet budget has no line for it).
 	measure 'FR Tile Current Ratio vs Budget Colour' =
 			"#9AA7B5"
 		formatString: General
@@ -3494,7 +3494,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
-	/// Colour of FR Tile Current Ratio vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	/// Colour of FR Tile Current Ratio vs LY: always the muted #4D5B6B (the balance sheet tile has no favourable or unfavourable reading against last year).
 	measure 'FR Tile Current Ratio vs LY Colour' =
 			"#4D5B6B"
 		formatString: General
@@ -3508,7 +3508,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
-	/// Colour of FR Tile Receivable Days vs Budget: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line, placeholder grey #9AA7B5 without a budget.
+	/// Colour of FR Tile Receivable Days vs Budget: always the placeholder grey #9AA7B5 (the balance sheet budget has no line for it).
 	measure 'FR Tile Receivable Days vs Budget Colour' =
 			"#9AA7B5"
 		formatString: General
@@ -3530,7 +3530,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
-	/// Colour of FR Tile Receivable Days vs LY: favourable #04705F / unfavourable #C2230A, muted #4D5B6B on a neutral or balance sheet line.
+	/// Colour of FR Tile Receivable Days vs LY: always the muted #4D5B6B (the balance sheet tile has no favourable or unfavourable reading against last year).
 	measure 'FR Tile Receivable Days vs LY Colour' =
 			"#4D5B6B"
 		formatString: General
@@ -3935,7 +3935,7 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """FR Tile Out of Balance Colour"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: Finance\Report
-	/// Value of the finance KPI in context ('Finance KPI'[KPI Code]) for the hospitals and months picked, from the Fin building blocks: margins and cost ratios on net revenue, return on assets and equity, asset turnover and net debt / EBITDA on annualised flows, days as balance / flow x days up to today (receivable days exactly as the balance sheet tile), liquidity ratios on month-end balances, growth against the same months last year, net revenue and net profit vs budget as actual over budget on the budgeted hospital-months (100% = on budget). A zero denominator gives blank; so does a negative one for net debt / EBITDA and interest cover (EBITDA <= 0, no finance cost). Blank without one KPI in context.
+	/// Value of the finance KPI in context ('Finance KPI'[KPI Code]) for the hospitals and months picked, from the Fin building blocks: margins and cost ratios on net revenue, return on assets and equity, asset turnover and net debt / EBITDA on annualised flows, days as balance / flow x days up to today (receivable days exactly as the balance sheet tile), liquidity ratios on month-end balances, growth against the same months last year, net revenue and net profit vs budget as actual over budget on the budgeted hospital-months (100% = on budget). A denominator of zero or less gives blank for every ratio (net revenue, total assets, net assets, current liabilities, EBITDA, finance cost), not a misleading figure. Blank without one KPI in context.
 	measure 'FR KPI Value' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'Finance KPI'[KPI Code] )
@@ -4239,28 +4239,6 @@ table _Measures
 			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
 			RETURN IF ( __Wrong = "", __Value, """FR KPI vs Budget Colour"" can't be analysed by " & __Wrong )
 		formatString: General
-		displayFolder: Finance\Report
-
-		annotation hnh_guard_allow = Finance Column, Finance KPI
-	/// Budget of the finance KPI of a card's small line chart, per month on the chart's axis (FR KPI Budget).
-	measure 'FR KPI Card Line Budget' =
-			VAR __Value = ( -- measure body
-				[FR KPI Budget]
-			) -- end of measure body
-			VAR __Wrong = [_Guard Finance Budget | Finance Column, Finance KPI]
-			RETURN IF ( __Wrong = "", __Value, """FR KPI Card Line Budget"" can't be analysed by " & __Wrong )
-		formatString: 0.0000
-		displayFolder: Finance\Report
-
-		annotation hnh_guard_allow = Finance Column, Finance KPI
-	/// Last-year value of the finance KPI of a card's small line chart, per month on the chart's axis (FR KPI Last Year).
-	measure 'FR KPI Card Line LY' =
-			VAR __Value = ( -- measure body
-				[FR KPI Last Year]
-			) -- end of measure body
-			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
-			RETURN IF ( __Wrong = "", __Value, """FR KPI Card Line LY"" can't be analysed by " & __Wrong )
-		formatString: 0.0000
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI

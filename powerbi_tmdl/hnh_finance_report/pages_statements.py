@@ -28,7 +28,7 @@ GL, PL, PLR = "GL FS Monthly", "P&L Line", "P&L Report"
 ROWS: dict[str, list[Field]] = {
     "tb": [col(GL, "FS Type Name"), col(GL, "FS Element Name"), col(GL, "FS Category Name"), col(GL, "FS Caption Name"),
            col(GL, "Account Name")],
-    "is": [col(PL, "Section Name"), col(PL, "PL Line Label"), col(PLR, "FS Caption"), col(PLR, "Account Name")],
+    "is": [col(PL, "Section Name"), col(PL, "PL Line Label"), col(PLR, "FS Caption Name"), col(PLR, "Account Name")],
     "bs": [col(GL, "BS Side"), col(GL, "BS Element"), col(GL, "BS Category"), col(GL, "BS Caption"),
            col(GL, "Account Name")],
 }
@@ -159,7 +159,9 @@ def matrix(statement: str, view: str) -> Visual:
     if statement == "is":  # R9e: budget figures are blank over several sections, so no grand total row
         return statement_matrix("is", view, ROWS["is"], CELLS["is"], (_MX, y, _MW, h), EXPAND["is"],
                                 grand_total=False, row_band=ROW_BAND)
-    return statement_matrix(statement, view, ROWS[statement], CELLS[statement], (_MX, y, _MW, h), EXPAND[statement])
+    # the balance sheet's grand total would add Assets + Liabilities & equity + Not mapped (about twice the assets)
+    return statement_matrix(statement, view, ROWS[statement], CELLS[statement], (_MX, y, _MW, h), EXPAND[statement],
+                            grand_total=statement != "bs")
 
 
 def interactions(m: Visual, chart_visuals: list[Visual], cards: list[Visual]) -> list[Interaction]:

@@ -85,6 +85,11 @@ table 'P&L Report'
 		summarizeBy: none
 		sourceColumn: month_date_key
 
+	column 'FS Caption Name'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: fs_caption_name
+
 	partition 'P&L Report' = m
 		source =
 				let

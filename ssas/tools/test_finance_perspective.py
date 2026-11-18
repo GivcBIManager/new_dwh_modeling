@@ -63,7 +63,7 @@ def test_column_names_follow_the_plan():
         "GL FS Monthly": ["BS Side", "BS Element", "BS Category", "BS Caption", "FS Caption Name", "Account Name"],
         "Date": ["Year Pick"],
         "Finance Column": ["Group Name", "Column Name", "Kind", "Page", "View", "Month Num"],
-        "P&L Report": ["Account Name"],
+        "P&L Report": ["Account Name", "FS Caption Name"],
     }
     for table, columns in names.items():
         for column in columns:
