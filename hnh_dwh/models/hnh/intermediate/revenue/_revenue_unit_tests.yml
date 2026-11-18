@@ -206,10 +206,16 @@ unit_tests:
         rows: |
           select toUInt8(1) as branch_id, toInt64(c) as contract_no, k as policy_class, 'Description' as class_source
           from values('c UInt32, k String', (501, 'B'), (502, 'VIP'))
+    # dict, not sql: dbt-clickhouse selects every model column from a sql-format expectation
+    # ("Unknown expression identifier branch_id"); a dict compares only the columns listed.
     expect:
-      format: sql
-      rows: |
-        select toInt64(id) as delivery_charge_id, nullIf(k, '') as policy_class,
-               if(pol = 0, cast(null as Nullable(Int64)), toNullable(toInt64(pol))) as policy_code
-        from values('id UInt32, k String, pol UInt32', (1, 'REF', 77), (2, 'REF', 0), (3, 'VIP', 55), (4, 'VIP', 0),
-                    (5, '', 0), (6, '', 55), (7, 'VIP', 55), (8, '', 0), (9, 'B', 0))
+      rows:
+        - {delivery_charge_id: 1, policy_class: REF,  policy_code: 77}
+        - {delivery_charge_id: 2, policy_class: REF,  policy_code: null}
+        - {delivery_charge_id: 3, policy_class: VIP,  policy_code: 55}
+        - {delivery_charge_id: 4, policy_class: VIP,  policy_code: null}
+        - {delivery_charge_id: 5, policy_class: null, policy_code: null}
+        - {delivery_charge_id: 6, policy_class: null, policy_code: 55}
+        - {delivery_charge_id: 7, policy_class: VIP,  policy_code: 55}
+        - {delivery_charge_id: 8, policy_class: null, policy_code: null}
+        - {delivery_charge_id: 9, policy_class: B,    policy_code: null}
