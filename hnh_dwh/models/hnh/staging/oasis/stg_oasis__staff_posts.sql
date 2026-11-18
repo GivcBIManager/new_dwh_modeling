@@ -6,5 +6,6 @@ select
     {{ hnh_id('position_type') }}            as position_type,
     {{ hnh_ksa_wall_clock('date_started') }} as started_at,
     {{ hnh_ksa_wall_clock('date_ended') }}   as ended_at,
-    {{ hnh_id('posts_id') }}                 as posts_id
+    {{ hnh_id('posts_id') }}                 as posts_id,
+    {{ hnh_str('stop_reason') }}             as stop_reason
 from {{ hnh_oasis_source('staff_posts') }} final
