@@ -5,7 +5,13 @@ models:
     columns:
       - name: oasis_gl_account_key
         tests: [not_null]
+      - name: debit
+        description: Debit side of the line (amount = debit - credit).
+      - name: credit
+        description: Credit side of the line.
   - name: stg_bsc__oasis_gl_account
     columns:
       - name: oasis_gl_account_key
         tests: [unique, not_null]
+      - name: account_name
+        description: Account name as entered in Oasis (raw; the mart title-cases it).

@@ -6,5 +6,7 @@ select
     month_start,
     is_posted,
     is_brought_forward,
-    amount
+    amount,
+    debit,
+    credit
 from {{ hnh_oasis_gl_source('fact_oasis_gl_line') }}

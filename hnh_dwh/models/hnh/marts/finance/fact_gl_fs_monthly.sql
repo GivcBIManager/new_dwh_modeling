@@ -17,7 +17,9 @@ oasis_month as (
         l.oasis_gl_account_key                     as oasis_gl_account_key,
         assumeNotNull(l.month_start)               as month_start,
         sumIf(l.amount, l.is_brought_forward = 1)  as bf_amount,
-        sumIf(l.amount, l.is_brought_forward = 0)  as mv_amount
+        sumIf(l.amount, l.is_brought_forward = 0)  as mv_amount,
+        sumIf(l.debit, l.is_brought_forward = 0)   as dr_amount,
+        sumIf(l.credit, l.is_brought_forward = 0)  as cr_amount
     from {{ ref('stg_bsc__oasis_gl_line') }} as l
     where l.is_posted = 1
       and l.branch_key between 1 and 8
@@ -58,6 +60,8 @@ oasis_rolled as (
         g.month_start                     as month_start,
         ifNull(m.bf_amount, 0)            as oj_amount,
         ifNull(m.mv_amount, 0)            as mv,
+        ifNull(m.dr_amount, 0)            as dr,
+        ifNull(m.cr_amount, 0)            as cr,
         sum(ifNull(m.bf_amount, 0) + ifNull(m.mv_amount, 0)) over (
             partition by g.branch_key, g.oasis_gl_account_key, toYear(g.month_start)
             order by g.month_start rows between unbounded preceding and 1 preceding) as open_amount
@@ -79,9 +83,12 @@ oasis as (
         ifNull(a.fs_category, '')                                  as fs_category,
         ifNull(a.fs_caption, '')                                   as fs_caption,
         ifNull(a.fs_line, '')                                      as fs_line,
+        ifNull(any(a.account_name), '')                            as account_name,
         sum(r.open_amount)                                         as opening_amount,
         sum(r.oj_amount)                                           as opening_journal,
-        sum(r.mv)                                                  as movement_amount
+        sum(r.mv)                                                  as movement_amount,
+        sum(r.dr)                                                  as debit_amount,
+        sum(r.cr)                                                  as credit_amount
     from oasis_rolled as r
     left join {{ ref('stg_bsc__oasis_gl_account') }} as a on a.oasis_gl_account_key = r.oasis_gl_account_key
     group by branch_key, month_start, account_code, fs_type, fs_element, fs_category, fs_caption, fs_line
@@ -103,7 +110,8 @@ fusion as (
         -- an adjustment period folds into its quarter's last month: its movement counts, its opening does not
         sumIf(f.opening_balance, p.is_adjustment = 0)               as opening_amount,
         sum(f.period_movement - f.period_movement_excl_opening)     as opening_journal,
-        sum(f.period_movement_excl_opening)                         as movement_amount
+        sum(f.period_movement_excl_opening)                         as movement_amount,
+        ifNull(any(a.natural_account_name), '')                     as account_name
     from {{ ref('fact_gl_balance_monthly') }} as f
     inner join {{ ref('hnh_dim_gl_period') }} as p on p.period_key = f.period_key
     inner join {{ ref('hnh_dim_gl_account') }} as a on a.gl_account_key = f.gl_account_key
@@ -113,18 +121,39 @@ fusion as (
     group by branch_key, month_start, account_code, fs_type, fs_element, fs_category, fs_caption, fs_line
 ),
 
+-- debit and credit of the month from the journal lines (opening-balance journals out; posted or not, like the
+-- including_unposted balances above); adjustment periods fold into their quarter's last month as in `fusion`
+fusion_dc as (
+    select
+        j.branch_key                                                as branch_key,
+        p.month_start                                               as month_start,
+        ifNull(toString(a.natural_account), toString(j.gl_account_key)) as account_code,
+        sumIf(j.amount, j.amount > 0)                               as debit_amount,
+        -sumIf(j.amount, j.amount < 0)                              as credit_amount
+    from {{ ref('hnh_fact_gl_journal_line') }} as j
+    inner join {{ ref('hnh_dim_gl_period') }} as p on p.period_key = j.period_key
+    inner join {{ ref('hnh_dim_gl_account') }} as a on a.gl_account_key = j.gl_account_key
+    where j.is_opening_balance_journal = 0
+      and j.branch_key between 1 and 8
+    group by branch_key, month_start, account_code
+),
+
 selected as (
     select o.branch_key as branch_key, o.month_start as month_start, o.source_system as source_system,
            o.account_code as account_code, o.fs_type as fs_type, o.fs_element as fs_element,
            o.fs_category as fs_category, o.fs_caption as fs_caption, o.fs_line as fs_line,
-           o.opening_amount as opening_amount, o.opening_journal as opening_journal, o.movement_amount as movement_amount
+           o.opening_amount as opening_amount, o.opening_journal as opening_journal, o.movement_amount as movement_amount,
+           o.debit_amount as debit_amount, o.credit_amount as credit_amount, o.account_name as account_name
     from oasis as o
     left join cutover as c on c.branch_id = o.branch_key
     where c.first_fusion_gl_month_start is null or o.month_start < c.first_fusion_gl_month_start
     union all
     select fu.branch_key, fu.month_start, fu.source_system, fu.account_code, fu.fs_type, fu.fs_element,
-           fu.fs_category, fu.fs_caption, fu.fs_line, fu.opening_amount, fu.opening_journal, fu.movement_amount
+           fu.fs_category, fu.fs_caption, fu.fs_line, fu.opening_amount, fu.opening_journal, fu.movement_amount,
+           ifNull(d.debit_amount, 0), ifNull(d.credit_amount, 0), fu.account_name
     from fusion as fu
+    left join fusion_dc as d
+      on d.branch_key = fu.branch_key and d.month_start = fu.month_start and d.account_code = fu.account_code
     inner join cutover as c on c.branch_id = fu.branch_key
     where fu.month_start >= c.first_fusion_gl_month_start
 )
@@ -143,7 +172,10 @@ select
     opening_journal                                        as opening_journal_amount,
     movement_amount                                        as movement,
     opening_amount + opening_journal + movement_amount     as closing_balance,
+    debit_amount                                           as debit,
+    credit_amount                                          as credit,
+    ifNull(nullIf({{ hnh_title('s.account_name') }}, ''), s.account_code) as account_name,
     now()                                                  as _loaded_at
-from selected
+from selected as s
 where abs(opening_amount) >= 0.005 or abs(opening_journal) >= 0.005 or abs(movement_amount) >= 0.005
 {{ hnh_settings() }}

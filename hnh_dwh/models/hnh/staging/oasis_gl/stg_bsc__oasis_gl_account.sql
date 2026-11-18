@@ -4,6 +4,7 @@ select
     oasis_gl_account_key,
     branch_key,
     oasis_account                          as account_code,
+    account_name                           as account_name,
     lower(trimBoth(ifNull(fs_type, '')))     as fs_type,
     lower(trimBoth(ifNull(fs_element, '')))  as fs_element,
     lower(trimBoth(ifNull(fs_category, ''))) as fs_category,

@@ -138,6 +138,12 @@ models:
       - name: source_system
         tests:
           - accepted_values: {values: ['oasis', 'fusion']}
+      - name: debit
+        description: Debit side of the month's movement, >= 0, opening-balance and brought-forward lines out. Oasis - posted lines; Fusion - journal lines, posted or not.
+      - name: credit
+        description: Credit side of the month's movement, >= 0, same scope as debit. debit - credit = movement.
+      - name: account_name
+        description: Account name (Oasis account name, Fusion natural account name), title-cased; the account code where the source has none.
   - name: dim_pl_report_line
     description: >
       Lines of the Fusion HNH profitability (P&L) report in report order: detail lines, a Not mapped line per section,
