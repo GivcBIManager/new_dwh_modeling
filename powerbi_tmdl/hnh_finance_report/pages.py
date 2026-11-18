@@ -1,13 +1,14 @@
 """The Finance report's pages, in order (`PAGES`), and its report-level filters (`REPORT_FILTERS`); build.py writes
 them. Eight pages, a monthly and a hospitals view of each statement: the trial balance, income statement and balance
-sheet pages from pages_statements.py; the KPI pages for now empty apart from the frame."""
+sheet pages from pages_statements.py, the two KPI pages from pages_kpi.py."""
 from __future__ import annotations
 
 import fin_frame
+import pages_kpi
 import pages_statements
 from model import Filter, Page
 
-_STATEMENT_PAGES = {p.name: p for p in pages_statements.PAGES}
+_STATEMENT_PAGES = {p.name: p for p in [*pages_statements.PAGES, *pages_kpi.PAGES]}
 
 PAGES: list[Page] = [
     _STATEMENT_PAGES.get(name) or Page(name, fin_frame.DISPLAY[name], fin_frame.page_frame(statement, view),

@@ -4375,6 +4375,54 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// Font colour (hex) of a finance KPI matrix cell for the column of 'Finance Column' in context (pages of kind kpi): vs budget by FR KPI vs Budget Colour, vs last year favourable #04705F or unfavourable #C2230A by the KPI's direction (muted #4D5B6B when equal), placeholder grey #9AA7B5 where the target, budget or last-year figure is missing, else ink #0A1E32.
+	measure 'FR KPI Cell Colour' =
+			VAR __Value = ( -- measure body
+				VAR Kind = SELECTEDVALUE ( 'Finance Column'[Kind] )
+				RETURN
+					CALCULATE (
+						VAR Direction = SELECTEDVALUE ( 'Finance KPI'[Direction] )
+						VAR Actual = [FR KPI Value]
+						VAR Prior = [FR KPI Last Year]
+						VAR Gap = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( Prior ), ( Actual - Prior ) * Direction )
+						RETURN
+							SWITCH (
+								Kind,
+								"vs_bud", [FR KPI vs Budget Colour],
+								"vs_ly", IF ( ISBLANK ( Gap ), "#9AA7B5", IF ( ROUND ( Gap, 6 ) > 0, "#04705F", IF ( ROUND ( Gap, 6 ) < 0, "#C2230A", "#4D5B6B" ) ) ),
+								"target", IF ( ISBLANK ( [FR KPI Target] ), "#9AA7B5", "#0A1E32" ),
+								"budget", IF ( ISBLANK ( [FR KPI Budget] ), "#9AA7B5", "#0A1E32" ),
+								"#0A1E32"
+							),
+						REMOVEFILTERS ( 'Finance Column' )
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI Cell Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// Background colour (hex) of a finance KPI matrix cell: the status colour of FR KPI Status (On target #D9F3EE, Watch #FFDF8A, Off target #F5A99B) on the Actual column of the hospital comparison and the Status column of the monthly view; blank (no fill) on every other column and where the KPI has no target or no status.
+	measure 'FR KPI Cell Background' =
+			VAR __Value = ( -- measure body
+				VAR Kind = SELECTEDVALUE ( 'Finance Column'[Kind] )
+				VAR View = SELECTEDVALUE ( 'Finance Column'[View] )
+				RETURN
+					IF (
+						( View = "hospital" && Kind = "actual" ) || ( View = "monthly" && Kind = "status" ),
+						CALCULATE (
+							IF ( [FR KPI Status] IN { "On target", "Watch", "Off target" }, [FR KPI Status Colour] ),
+							REMOVEFILTERS ( 'Finance Column' )
+						)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI Cell Background"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
 	/// Most likely budget in SAR of one budget code (Phase 3 spec section 8; budget covers branches 1-6).
 	measure 'IS Budget' =
 			VAR __Value = ( -- measure body

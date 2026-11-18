@@ -24,7 +24,7 @@ if str(BSC_DIR) not in sys.path:
 import frame  # noqa: E402
 from frame import LOGO, Rect, _colour, _lit, _num, button_props, no_container  # noqa: E402
 from layout import aliases, lit, source_expr  # noqa: E402
-from model import Field, Filter, Visual, col, meas  # noqa: E402
+from model import Field, Filter, Interaction, Visual, col, meas  # noqa: E402
 from pbir import THEME, ReportSpec  # noqa: E402
 from pbir import _text as pbir_text  # noqa: E402
 
@@ -201,3 +201,16 @@ def filter_bar(statement: str, view: str) -> list[Visual]:
 def page_frame(statement: str, view: str) -> list[Visual]:
     """The BSC frame with the Finance title and tabs, the statement's tab current, and filter_bar(statement, view)."""
     return frame.frame(PAGE_NAMES[statement][0], filter_bar(statement, view), spec=FIN_FRAME)
+
+
+def frame_targets(visuals: list[Visual]) -> list[Visual]:
+    """The frame visuals a click in the content must not filter: the period text card and the slicers (a selected
+    matrix row or chart bar would otherwise filter [FR Period Text], and cross-filter the slicers' items)."""
+    return [v for v in visuals if v.sample.startswith("slicer") or
+            (v.sample == "card" and v.roles.get("Values") == [PERIOD_TEXT])]
+
+
+def isolate_from_frame(sources: list[Visual], page_visuals: list[Visual]) -> list[Interaction]:
+    """Interaction NoFilter from each content visual in `sources` (matrix, charts, sparklines) to the page's period
+    text card and slicers (Task 15 review, every page)."""
+    return [Interaction(s, t, "NoFilter") for s in sources for t in frame_targets(page_visuals)]

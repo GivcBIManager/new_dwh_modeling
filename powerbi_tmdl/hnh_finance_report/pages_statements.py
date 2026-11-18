@@ -182,8 +182,10 @@ def statement_page(statement: str, view: str) -> Page:
     if statement == "bs":
         content.append(difference_card(m))
     cards = [v for v in content if v.sample == "card"]
-    return Page(name, fin_frame.DISPLAY[name], fin_frame.page_frame(statement, view) + content,
-                filters=[fin_frame.hospitals()], interactions=interactions(m, chart_visuals, cards))
+    visuals = fin_frame.page_frame(statement, view) + content
+    return Page(name, fin_frame.DISPLAY[name], visuals, filters=[fin_frame.hospitals()],
+                interactions=interactions(m, chart_visuals, cards)
+                + fin_frame.isolate_from_frame([m, *chart_visuals], visuals))
 
 
 PAGES: list[Page] = [statement_page(st, view) for st in STATEMENTS for view, _label in fin_frame.VIEWS]

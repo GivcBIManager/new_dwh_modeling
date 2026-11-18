@@ -132,7 +132,8 @@ def ranked_bars(title: str, measure: Field, rect: Rect, favourable: Field | None
 
 
 def statement_matrix(page: str, view: str, rows: list[Field], cell: Field, rect: Rect,
-                     expand_levels: int, grand_total: bool = True, row_band: Field | None = None) -> Visual:
+                     expand_levels: int, grand_total: bool = True, row_band: Field | None = None,
+                     cell_colour: str = CELL_COLOUR, expand: bool = False) -> Visual:
     """The page's statement matrix: `rows` down, `cell` in the values, filtered to the page's and view's Finance Column
     rows ('Finance Column'[View] holds "monthly" / "hospital"). Monthly: `Finance Column[Group Name]` > `[Column Name]`
     across, no column subtotals (a text cell has no total across columns). Hospitals (ruling R15b): `[Column Name]` >
@@ -144,14 +145,15 @@ def statement_matrix(page: str, view: str, rows: list[Field], cell: Field, rect:
     total) off, the others on. `row_band`: a measure returning each row's background colour (conditional formatting
     of the values by field value; row headers keep theirs). The matrix opens at its first row level (expand=False);
     opening `expand_levels` levels is not expressible by the generator (see the task report), the argument is only
-    checked to be at least 1."""
+    checked to be at least 1. `cell_colour`: the measure for the font colour (default [FR Cell Colour]); `expand`:
+    True opens every row level (the KPI pages' group > KPI)."""
     if expand_levels < 1:
         raise ValueError(f"expand_levels {expand_levels}: at least 1")
     if view not in VIEW_VALUES:
         raise ValueError(f"view must be one of {', '.join(VIEW_VALUES)}, got {view!r}")
     hospitals = view == "hospitals"
     columns = [FC_COLUMN, BRANCH_NAME] if hospitals else [FC_GROUP, FC_COLUMN]
-    values = {"fontColor": hr_frame.measure_colour(CELL_COLOUR), "fontSize": _num(11),
+    values = {"fontColor": hr_frame.measure_colour(cell_colour), "fontSize": _num(11),
               "fontFamily": _lit("Segoe UI"), "alignment": _lit("Right")}
     if row_band is not None:
         values["backColor"] = hr_frame.measure_colour(row_band.name)
@@ -176,4 +178,4 @@ def statement_matrix(page: str, view: str, rows: list[Field], cell: Field, rect:
     }
     return Visual("matrix", *rect, roles={"Rows": list(rows), "Columns": columns, "Values": [cell]},
                   filters=[Filter(FC_PAGE, "eq", [page]), Filter(FC_VIEW, "eq", [VIEW_VALUES[view]])], props=props,
-                  expand=False)
+                  expand=expand)
