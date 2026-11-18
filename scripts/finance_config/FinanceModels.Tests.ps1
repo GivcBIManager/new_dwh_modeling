@@ -352,6 +352,16 @@ Describe 'dim_finance_kpi' {
         $groups = @($sorted | ForEach-Object { [int]$_.group_order })
         (($groups | Sort-Object) -join ',') | Should Be ($groups -join ',')
     }
+    It 'uses the design canvas KPI names and group names' {
+        $n = @{}; foreach ($r in $rows) { $n[$r.kpi_code] = $r.kpi_name }
+        $n['FR_REV_GROWTH'] | Should Be 'Net revenue growth'; $n['FR_REV_VS_BUD'] | Should Be 'Net revenue vs budget'
+        $n['FR_NP_GROWTH'] | Should Be 'Net profit growth'; $n['FR_NP_VS_BUD'] | Should Be 'Net profit vs budget'
+        $n['FR_CCC'] | Should Be 'Cash conversion cycle'; $n['FR_NET_DEBT_EBITDA'] | Should Be 'Net debt to EBITDA'
+        $n['FR_ECL_RATIO'] | Should Be 'Credit loss charge'; $n['FR_REJECTION_RATE'] | Should Be 'Claim rejection rate'
+        @($rows | Where-Object { $_.kpi_name -match '%' }).Count | Should Be 0
+        $g = @($rows | Sort-Object { [int]$_.group_order } | Select-Object -ExpandProperty kpi_group -Unique) -join '|'
+        $g | Should Be 'Growth & budget achievement|Profitability|Liquidity|Efficiency & working capital|Leverage & solvency|Cost structure & revenue cycle'
+    }
     It 'sets the lower-is-better and higher-is-better directions' {
         $d = @{}; foreach ($r in $rows) { $d[$r.kpi_code] = [int]$r.direction }
         foreach ($c in 'FR_AR_DAYS', 'FR_INV_DAYS', 'FR_CCC', 'FR_DEBT_EQUITY', 'FR_NET_DEBT_EBITDA', 'FR_COST_TO_REV', 'FR_STAFF_COST_RATIO',
