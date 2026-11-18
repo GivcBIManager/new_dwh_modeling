@@ -135,7 +135,7 @@ with_payers as (
 ),
 
 with_links as (
-    -- int_charge_line_links: service department, policy, ordering doctor, MRP 1-3 and charged-by staff.
+    -- int_charge_line_links: service department, policy, policy class, ordering doctor, MRP 1-3 and charged-by staff.
     -- A line without a policy code goes to its branch's Cash (-2), Deductible (-3) or Not Recorded (-1) member of dim_policy.
     -- A line with no link row at all (int_charge_line_links not rebuilt with it) gets the Unknown policy -1, like the
     -- other link keys, rather than a guessed member.
@@ -151,11 +151,12 @@ with_links as (
         {{ hnh_surrogate_key(['w.branch_id', 'lk.mrp_3_staff_id']) }}       as mrp_3_staff_key_raw,
         {{ hnh_surrogate_key(['w.branch_id', 'lk.charged_by_staff_id']) }}  as charged_by_staff_key_raw,
         if(lk.delivery_charge_id is null, toInt64(-1),
-           {{ hnh_surrogate_key(['w.branch_id', 'policy_code_for_key']) }}) as policy_key_raw
+           {{ hnh_surrogate_key(['w.branch_id', 'policy_code_for_key']) }}) as policy_key_raw,
+        lk.policy_class                                                      as link_policy_class
     from with_payers as w
     left join (
         select branch_id, delivery_charge_id, service_dept, policy_code, ordering_staff_id, mrp_1_staff_id,
-               mrp_2_staff_id, mrp_3_staff_id, charged_by_staff_id
+               mrp_2_staff_id, mrp_3_staff_id, charged_by_staff_id, policy_class
         from {{ ref('int_charge_line_links') }}
     ) as lk on lk.branch_id = w.branch_id and lk.delivery_charge_id = w.delivery_charge_id
 )
@@ -184,6 +185,8 @@ select
     if(w.mrp_3_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.mrp_3_staff_key_raw, toInt64(-1))       as mrp_3_staff_key,
     if(w.charged_by_staff_key_raw in (select staff_key from {{ ref('dim_staff') }}), w.charged_by_staff_key_raw, toInt64(-1)) as charged_by_staff_key,
     if(w.policy_key_raw in (select policy_key from {{ ref('dim_policy') }}), w.policy_key_raw, toInt64(-1)) as policy_key,
+    -- REF (referral policy), VIP, A, B, C (int_contract_class via int_charge_line_links), else Not classified
+    ifNull(w.link_policy_class, 'Not classified')       as policy_class,
     -- The line's visit and episode as Census and Episodes count them (fact_encounter, fact_episode), so the SSAS
     -- by-charges measures count distinct visits / episodes on this table by visit date (inactive Date roles).
     fv.encounter_date_key                               as visit_date_key,

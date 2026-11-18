@@ -1774,6 +1774,8 @@ models:
         data_type: "Int64"
       - name: policy_key
         data_type: "Int64"
+      - name: policy_class
+        data_type: "String"
       - name: visit_date_key
         data_type: "Nullable(Int64)"
       - name: is_census_visit

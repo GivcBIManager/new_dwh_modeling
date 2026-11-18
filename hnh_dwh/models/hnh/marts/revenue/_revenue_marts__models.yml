@@ -4,7 +4,7 @@ models:
   - name: fact_charge_line
     description: >
       One live, cancelled or unknown-status Oasis charge row. Superseded (R) rows are excluded. Rebuilt in full every night.
-      Service department, ordering doctor, MRP 1-3, charged-by staff and policy come from int_charge_line_links; a key
+      Service department, ordering doctor, MRP 1-3, charged-by staff, policy and policy class come from int_charge_line_links; a key
       is -1 when its code is not in the dimension. A line without a policy code is its branch's Cash (cash-billed),
       Deductible (patient share) or Not Recorded member of dim_policy.
     columns:
@@ -83,6 +83,15 @@ models:
               to: ref('dim_policy')
               field: policy_key
               config: {severity: warn, where: "policy_key != -1"}
+      - name: policy_class
+        description: >
+          REF when the line's policy is a referral; else the insurance class of the line's contract (int_contract_class:
+          the Oasis class description, else the old server's mapping); else Not classified (no contract, or a contract
+          without a class). Repo labels, not title-cased.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['REF', 'VIP', 'A', 'B', 'C', 'Not classified']
       - name: visit_date_key
         description: Date of the line's OP or ER visit (fact_encounter.encounter_date_key); null when the line has none. SSAS counts Census (Charged) by it.
       - name: is_census_visit

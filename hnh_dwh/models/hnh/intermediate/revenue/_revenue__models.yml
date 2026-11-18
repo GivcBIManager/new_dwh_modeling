@@ -122,7 +122,8 @@ models:
       One row per Oasis charge line in the history window with its service department, policy, ordering doctor
       (delivery line, order line, order), MRP 1-3 on the delivery date (the eligibility row of responsibility 1-3 covering
       the delivery time: not cancelled first, then latest start, then highest id; its consultant, null if it has none)
-      and the staff who charged it. No aggregation over the charges: eligibility is grouped per episode into an array
+      and the staff who charged it, and its policy class (REF for a referral policy, else the class of its contract from
+      int_contract_class, else null). No aggregation over the charges: eligibility is grouped per episode into an array
       and joined 1:1. fact_charge_line reads it.
     tests:
       - hnh_unique_combination:
