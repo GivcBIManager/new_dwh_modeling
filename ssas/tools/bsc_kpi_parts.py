@@ -52,7 +52,8 @@ PARTS = {
     "FIN_NET_COLLECTION": ("[BSC AR Collected YTD]", "[BSC Credit AR Closing]", "ratio"),
     "FIN_DAYS_INVENTORY": ("[BSC GL Inventory Average] * [BSC Days in Period]", "[BSC GL COGS]", "ratio"),
     "FIN_REVENUE_PER_BED": ("[BSC GL Net Revenue]", "[BSC Available Beds]", "ratio"),
-    "FIN_RETURN_ON_ASSETS": ("[BSC GL Income]", "[BSC GL Assets Opening]", "ratio"),
+    # as FR_ROA: annualised net profit over month-end total assets, blank when the assets are not positive
+    "FIN_RETURN_ON_ASSETS": ("[BSC GL Income] * [Fin Annualise]", "IF ( [Fin Total Assets] > 0, [Fin Total Assets] )", "ratio"),
     "FIN_EBITDA_PER_BED": ("[BSC GL EBITDA]", "[BSC Available Beds]", "ratio"),
     "FIN_REVENUE_PER_DOCTOR": ("[BSC GL Net Revenue]", "[BSC Average Doctors]", "ratio"),
     "FIN_EBITDA_PER_DOCTOR": ("[BSC GL EBITDA]", "[BSC Average Doctors]", "ratio"),
