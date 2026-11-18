@@ -46,7 +46,7 @@ PARTS = {
     # the actual is the revenue; the growth is scored against last year's revenue as the target
     "FIN_REVENUE_GROWTH": ("[BSC GL Net Revenue]", "", "value"),
     "FIN_EBITDA_MARGIN": ("[BSC GL EBITDA]", "[BSC GL Net Revenue]", "ratio"),
-    "FIN_COST_TO_REVENUE": ("[BSC GL Net Revenue] - [BSC GL EBITDA]", "[BSC GL Net Revenue]", "ratio"),
+    "FIN_COST_TO_REVENUE": ("[BSC GL Opex]", "[BSC GL Net Revenue]", "ratio"),
     "FIN_CONSUMABLES_RATIO": ("[BSC GL Consumables]", "[BSC GL Net Revenue]", "ratio"),
     "FIN_DAYS_IN_AR": ("[BSC GL AR Average] * [BSC Days in Period]", "[BSC GL Net Revenue]", "ratio"),
     "FIN_NET_COLLECTION": ("[BSC AR Collected YTD]", "[BSC Credit AR Closing]", "ratio"),
