@@ -1,0 +1,2 @@
+-- Finance report config: no first content. default.map_finance_budget and default.map_finance_target start empty;
+-- the BI manager fills them with INSERTs (docs/finance_config.md).

@@ -400,6 +400,20 @@ models:
       - name: month
         tests:
           - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false, config: {severity: warn}}
+  - name: stg_ref__finance_budget
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, year, month, statement, line_code]
+          config: {severity: warn}
+    columns:
+      - name: statement
+        tests:
+          - accepted_values: {values: ['IS', 'BS'], config: {severity: warn}}
+  - name: stg_ref__finance_target
+    tests:
+      - hnh_unique_combination:
+          columns: [kpi_code, branch_id, year]
+          config: {severity: warn}
   - name: stg_ref__hr_dq_issue
     columns:
       - name: issue_code
