@@ -138,3 +138,37 @@ Describe 'fact_pl_report_monthly account_name' {
         [double]$k['fusion|REV_TOTAL|'].amount | Should Be -71
     }
 }
+
+# dim_pl_report_line budget link (task 4). The model and dim_budget_line are rendered as they are (no refs); the sign
+# check reads gold read-only for branch 3, 2026 Jan-Sep: sign(budget * budget_sign) = sign(P&L amount).
+Describe 'dim_pl_report_line budget link' {
+    $lines = Invoke-ModelWithSources (Get-RenderedModel 'dim_pl_report_line') @{}
+    $budget = Invoke-ModelWithSources (Get-RenderedModel 'dim_budget_line') @{}
+    $byCode = @{}; foreach ($l in $lines) { $byCode[$l.pl_line_code] = $l }
+    It 'links every non-subtotal budget line once or lists it as unlinked' {
+        $skip = 'REV_OP', 'REV_IP', 'REV_ER', 'REV_UNALLOCATED', 'DIS_REJECTION_INS', 'DIS_REJECTION_MOH', 'UNBUDGETED'
+        $bad = @()
+        foreach ($b in $budget | Where-Object { [int]$_.is_subtotal -eq 0 -and $skip -notcontains $_.budget_line_code }) {
+            $n = @($lines | Where-Object { $_.budget_line_code -eq $b.budget_line_code }).Count
+            if ($n -ne 1) { $bad += "$($b.budget_line_code)=$n" }
+        }
+        $bad -join ',' | Should Be ''
+    }
+    It 'only links codes that exist in dim_budget_line, with a sign' {
+        $codes = @($budget | ForEach-Object { $_.budget_line_code })
+        $bad = @($lines | Where-Object { ($_.budget_line_code -ne '' -and $codes -notcontains $_.budget_line_code) -or
+            ($_.budget_line_code -eq '' -and [int]$_.budget_sign -ne 0) -or ($_.budget_line_code -ne '' -and [math]::Abs([int]$_.budget_sign) -ne 1) })
+        $bad.Count | Should Be 0
+    }
+    It 'gives budget and actual the same sign' {
+        $bud = @{}; foreach ($r in (Invoke-HnhSelect -Dsn HNH_Gold -Sql "select budget_line_code, sum(budget_most_likely) as v from gold.fact_income_statement_monthly where branch_key = 3 and month_start between '2026-01-01' and '2026-09-01' group by 1")) { $bud[$r.budget_line_code] = [double]$r.v }
+        $act = @{}; foreach ($r in (Invoke-HnhSelect -Dsn HNH_Gold -Sql "select d.pl_line_code as c, sum(f.amount) as v from gold.fact_pl_report_monthly as f inner join gold.dim_pl_report_line as d on d.pl_line_key = f.pl_line_key where f.branch_key = 3 and f.month_start between '2026-01-01' and '2026-09-01' group by 1")) { $act[$r.c] = [double]$r.v }
+        $bad = @()
+        foreach ($c in 'NET_REVENUE', 'DIRECT_COST', 'GROSS_PROFIT', 'EBITDA', 'DC_EMPLOYEE', 'NET_PROFIT') {
+            $l = $byCode[$c]
+            $b = $bud[$l.budget_line_code] * [int]$l.budget_sign
+            if ([math]::Sign($b) -ne [math]::Sign($act[$c])) { $bad += "$c budget=$b actual=$($act[$c])" }
+        }
+        $bad -join ';' | Should Be ''
+    }
+}

@@ -164,6 +164,15 @@ models:
       - name: line_kind
         tests:
           - accepted_values: {values: ['detail', 'not_mapped', 'subtotal']}
+      - name: budget_line_code
+        description: Code in dim_budget_line the line is budgeted under; '' = no budget line (Not budgeted). GA_TOTAL links to TOTAL_GA, whose budget the budget comparison reduces by GA_MARKETING and GA_HO_CHARGES.
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_budget_line'), field: budget_line_code, where: "budget_line_code != ''"}
+      - name: budget_sign
+        description: Multiplies a budget_most_likely amount (natural side) into the P&L sign - +1 revenue, profit and other income, -1 costs and discounts, 0 when unlinked.
+        tests:
+          - accepted_values: {values: [-1, 0, 1]}
   - name: pl_report_line_rule
     description: >
       Match rules from lower-case income-statement labels to a report line. '' in source_system, fs_caption or fs_line
