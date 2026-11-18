@@ -110,3 +110,38 @@ unit_tests:
         - {line_natural_id: A4, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: COMPLETE, response_count: 2, request_send_count: 1, nphies_approved_amount: 90, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null, payer_license: null, pull_count: null}
         - {line_natural_id: A5, line_source: Oasis, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: APPROVED, response_count: 1, request_send_count: 1, nphies_approved_amount: 70, is_latest_request_for_service: 1, legacy_is_last_request: 1, primary_reason_code: null, payer_approved_amount: null, preauth_reference: null, payer_license: null, pull_count: null}
         - {line_natural_id: V7001-R1, line_source: Payer advance, preauth_outcome: Approved, nphies_final_status: APPROVED, nphies_first_status: APPROVED, nphies_last_status: APPROVED, response_count: 3, request_send_count: 0, nphies_approved_amount: 150, is_latest_request_for_service: 0, legacy_is_last_request: 0, primary_reason_code: null, payer_approved_amount: 150, preauth_reference: R1, payer_license: '7001', pull_count: 3}
+
+  - name: int_contract_class_description_beats_mapping
+    description: >
+      The class comes from the Oasis class description first (a class after a caret, else a stand-alone VIP, A, B or C,
+      upper-cased first), then from the old server's mapping. Contract 1 NTW2+^B is B; 2 VIP; 3 GOLD (S) has none, so the
+      mapping's A; 4 GOSI^C is C although the mapping says B (the description wins, unlike the old server); 5 MOH has no
+      class and no mapping row, so no row; 6 "class a" is A; 7 MG5^C with trailing tabs is C; 8 ART-1 and 9 ABC COMPANY
+      have no class (a word that only starts with A, B or C does not count); 10 has no class id and gets the mapping's
+      VIP; 11 is not in Oasis contracts and gets the mapping's C.
+    model: int_contract_class
+    given:
+      - input: ref('stg_oasis__contracts')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(c) as contract_no,
+                 if(c = 10, cast(null as Nullable(Int64)), toNullable(toInt64(100 + c))) as class_id
+          from values('c UInt32', (1), (2), (3), (4), (5), (6), (7), (8), (9), (10))
+      - input: ref('stg_oasis__policy_classes')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(100 + c) as class_id, toNullable(d) as description
+          from values('c UInt32, d String', (1, 'NTW2+^B'), (2, 'VIP'), (3, 'GOLD  (S)'), (4, 'GOSI^C'), (5, 'MOH'),
+                      (6, 'class a'), (7, 'MG5^C\t\t'), (8, 'ART-1'), (9, 'ABC COMPANY'))
+      - input: ref('stg_ref__contract_class')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(c) as contract_no, toInt64(0) as class_id, k as classification
+          from values('c UInt32, k String', (3, 'A'), (4, 'B'), (10, 'VIP'), (11, 'C'))
+    expect:
+      format: sql
+      rows: |
+        select toUInt8(1) as branch_id, toInt64(c) as contract_no, k as policy_class, s as class_source
+        from values('c UInt32, k String, s String', (1, 'B', 'Description'), (2, 'VIP', 'Description'),
+                    (3, 'A', 'Mapping'), (4, 'C', 'Description'), (6, 'A', 'Description'), (7, 'C', 'Description'),
+                    (10, 'VIP', 'Mapping'), (11, 'C', 'Mapping'))

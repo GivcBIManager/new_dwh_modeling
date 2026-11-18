@@ -127,3 +127,22 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, delivery_charge_id]
+
+  - name: int_contract_class
+    description: >
+      Insurance class (VIP, A, B, C) of each Oasis contract that has one: from the class description (a class after a
+      caret, else a stand-alone VIP, A, B or C), else from the old server's hand mapping (stg_ref__contract_class).
+      class_source says which. The description wins over the mapping (policy class design 2026-11-18).
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, contract_no]
+    columns:
+      - name: policy_class
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['VIP', 'A', 'B', 'C']
+      - name: class_source
+        tests:
+          - accepted_values:
+              values: ['Description', 'Mapping']
