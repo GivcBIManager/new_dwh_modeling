@@ -284,13 +284,13 @@ unit_tests:
       - input: ref('dim_pl_report_line')
         format: dict
         rows:
-          - {pl_line_key: 100, pl_line_code: REV_CASH, pl_line_name: Revenue Cash, pl_line_label: Revenue Cash, section_name: Revenue, section_key: 100, line_kind: detail, subtotal_sections: [], is_in_fusion_report: 1}
-          - {pl_line_key: 110, pl_line_code: REV_CREDIT, pl_line_name: Revenue Credit, pl_line_label: Revenue Credit, section_name: Revenue, section_key: 110, line_kind: detail, subtotal_sections: [], is_in_fusion_report: 1}
-          - {pl_line_key: 190, pl_line_code: REV_NM, pl_line_name: Not mapped, pl_line_label: Not mapped - Revenue, section_name: Revenue, section_key: 190, line_kind: not_mapped, subtotal_sections: [], is_in_fusion_report: 0}
-          - {pl_line_key: 199, pl_line_code: REV_TOTAL, pl_line_name: Revenue Total, pl_line_label: Revenue Total, section_name: Revenue, section_key: 199, line_kind: subtotal, subtotal_sections: [Revenue], is_in_fusion_report: 1}
-          - {pl_line_key: 755, pl_line_code: GA_EMPLOYEE, pl_line_name: Employee Cost, pl_line_label: Employee Cost, section_name: General and administrative expenses, section_key: 755, line_kind: detail, subtotal_sections: [], is_in_fusion_report: 1}
-          - {pl_line_key: 830, pl_line_code: NOT_MAPPED, pl_line_name: Not mapped, pl_line_label: Not mapped, section_name: Not mapped, section_key: 830, line_kind: not_mapped, subtotal_sections: [], is_in_fusion_report: 0}
-          - {pl_line_key: 999, pl_line_code: NET_PROFIT, pl_line_name: Net Profit / (Loss), pl_line_label: Net Profit / (Loss), section_name: Net Profit / (Loss), section_key: 999, line_kind: subtotal, subtotal_sections: [Revenue, General and administrative expenses], is_in_fusion_report: 1}
+          - {pl_line_key: 100, pl_line_code: REV_CASH, pl_line_name: Revenue Cash, pl_line_label: Revenue Cash, section_name: Revenue, section_key: 100, line_kind: detail, subtotal_sections: [], is_in_fusion_report: 1, budget_line_code: '', budget_sign: 0}
+          - {pl_line_key: 110, pl_line_code: REV_CREDIT, pl_line_name: Revenue Credit, pl_line_label: Revenue Credit, section_name: Revenue, section_key: 110, line_kind: detail, subtotal_sections: [], is_in_fusion_report: 1, budget_line_code: '', budget_sign: 0}
+          - {pl_line_key: 190, pl_line_code: REV_NM, pl_line_name: Not mapped, pl_line_label: Not mapped - Revenue, section_name: Revenue, section_key: 190, line_kind: not_mapped, subtotal_sections: [], is_in_fusion_report: 0, budget_line_code: '', budget_sign: 0}
+          - {pl_line_key: 199, pl_line_code: REV_TOTAL, pl_line_name: Revenue Total, pl_line_label: Revenue Total, section_name: Revenue, section_key: 199, line_kind: subtotal, subtotal_sections: [Revenue], is_in_fusion_report: 1, budget_line_code: '', budget_sign: 0}
+          - {pl_line_key: 755, pl_line_code: GA_EMPLOYEE, pl_line_name: Employee Cost, pl_line_label: Employee Cost, section_name: General and administrative expenses, section_key: 755, line_kind: detail, subtotal_sections: [], is_in_fusion_report: 1, budget_line_code: 'GA_EMPLOYEE', budget_sign: -1}
+          - {pl_line_key: 830, pl_line_code: NOT_MAPPED, pl_line_name: Not mapped, pl_line_label: Not mapped, section_name: Not mapped, section_key: 830, line_kind: not_mapped, subtotal_sections: [], is_in_fusion_report: 0, budget_line_code: '', budget_sign: 0}
+          - {pl_line_key: 999, pl_line_code: NET_PROFIT, pl_line_name: Net Profit / (Loss), pl_line_label: Net Profit / (Loss), section_name: Net Profit / (Loss), section_key: 999, line_kind: subtotal, subtotal_sections: [Revenue, General and administrative expenses], is_in_fusion_report: 1, budget_line_code: 'NET_PROFIT', budget_sign: 1}
       - input: ref('stg_ref__fs_account')
         format: dict
         rows:
