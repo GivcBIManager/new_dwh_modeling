@@ -2057,12 +2057,9 @@ table _Measures
 		displayFolder: Finance\Building Blocks
 
 		annotation hnh_snapshot = 1
-	/// Days of the months in the selection up to the current month (every day of each month, 29 February in leap years); used for days ratios such as receivable days.
+	/// Days of the selection up to today (actuals stop at today, so the rest of the current month is not counted); used for days ratios such as receivable days.
 	measure 'Fin Period Days' =
-			SUMX (
-				CALCULATETABLE ( VALUES ( 'Date'[Start Of Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ),
-				DAY ( EOMONTH ( 'Date'[Start Of Month], 0 ) )
-			)
+			COUNTROWS ( CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) )
 		formatString: #,0
 		isHidden
 		displayFolder: Finance\Building Blocks
