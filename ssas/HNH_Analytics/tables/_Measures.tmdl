@@ -3122,7 +3122,7 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
 				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF ( ISBLANK ( BudgetFig ), "No budget yet", IF ( NOT ISBLANK ( Change ), IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " " & [FR Budget Basis Label] ) )
 			) -- end of measure body
@@ -3135,7 +3135,7 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
 				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
 			) -- end of measure body
@@ -3170,7 +3170,7 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "EBITDA" )
 				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF ( ISBLANK ( BudgetFig ), "No budget yet", IF ( NOT ISBLANK ( Change ), IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " " & [FR Budget Basis Label] ) )
 			) -- end of measure body
@@ -3183,7 +3183,7 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "EBITDA" )
 				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
 			) -- end of measure body
@@ -3218,7 +3218,7 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
 				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF ( ISBLANK ( BudgetFig ), "No budget yet", IF ( NOT ISBLANK ( Change ), IF ( ISBLANK ( Change ), BLANK (), IF ( ABS ( Change ) > 9.99, "n/m", IF ( ABS ( Change ) < 0.0005, "0.0%", FORMAT ( Change, "▲ 0.0%;▼ 0.0%" ) ) ) ) & " " & [FR Budget Basis Label] ) )
 			) -- end of measure body
@@ -3231,7 +3231,7 @@ table _Measures
 			VAR __Value = ( -- measure body
 				VAR BudgetFig = CALCULATE ( [FR Budget], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
 				VAR Actual = CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_PROFIT" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF ( ISBLANK ( BudgetFig ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
 			) -- end of measure body
@@ -3274,7 +3274,7 @@ table _Measures
 						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" ),
 						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
 					)
-				VAR Change = ( ActualMargin - BudgetMargin ) * 100
+				VAR Change = IF ( NOT ISBLANK ( ActualMargin ) && NOT ISBLANK ( BudgetMargin ), ( ActualMargin - BudgetMargin ) * 100 )
 				RETURN
 					IF ( ISBLANK ( BudgetMargin ), "No budget yet", IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+0.0 ""pt"";-0.0 ""pt"";0.0 ""pt""" ) & " " & [FR Budget Basis Label] ) )
 			) -- end of measure body
@@ -3295,7 +3295,7 @@ table _Measures
 						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "EBITDA" ),
 						CALCULATE ( [FR Actual (Budgeted)], 'P&L Line'[PL Line Code] = "NET_REVENUE" )
 					)
-				VAR Change = ( ActualMargin - BudgetMargin ) * 100
+				VAR Change = IF ( NOT ISBLANK ( ActualMargin ) && NOT ISBLANK ( BudgetMargin ), ( ActualMargin - BudgetMargin ) * 100 )
 				RETURN
 					IF ( ISBLANK ( BudgetMargin ), "#9AA7B5", IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
 			) -- end of measure body
@@ -3310,7 +3310,7 @@ table _Measures
 					DIVIDE ( CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
 				VAR LastYearMargin =
 					DIVIDE ( CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
-				VAR Change = ( ActualMargin - LastYearMargin ) * 100
+				VAR Change = IF ( NOT ISBLANK ( ActualMargin ) && NOT ISBLANK ( LastYearMargin ), ( ActualMargin - LastYearMargin ) * 100 )
 				RETURN
 					IF ( NOT ISBLANK ( Change ), FORMAT ( Change, "+0.0 ""pt"";-0.0 ""pt"";0.0 ""pt""" ) & " vs last year" )
 			) -- end of measure body
@@ -3325,7 +3325,7 @@ table _Measures
 					DIVIDE ( CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Actual], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
 				VAR LastYearMargin =
 					DIVIDE ( CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "EBITDA" ), CALCULATE ( [FR Last Year], 'P&L Line'[PL Line Code] = "NET_REVENUE" ) )
-				VAR Change = ( ActualMargin - LastYearMargin ) * 100
+				VAR Change = IF ( NOT ISBLANK ( ActualMargin ) && NOT ISBLANK ( LastYearMargin ), ( ActualMargin - LastYearMargin ) * 100 )
 				RETURN
 					IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#04705F", IF ( ROUND ( Change, 3 ) < 0, "#C2230A", "#4D5B6B" ) ) )
 			) -- end of measure body
@@ -3339,7 +3339,7 @@ table _Measures
 				VAR BudgetFig = CALCULATE ( [FR BS Budget], 'GL FS Monthly'[BS Side] = "Assets" )
 				VAR Actual = CALCULATE ( [FR BS Balance (Budgeted)], 'GL FS Monthly'[BS Side] = "Assets" )
 				VAR Whole = CALCULATE ( [FR BS Balance], 'GL FS Monthly'[BS Side] = "Assets" )
-				VAR Change = DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) )
+				VAR Change = IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( BudgetFig ), DIVIDE ( Actual - BudgetFig, ABS ( BudgetFig ) ) )
 				RETURN
 					IF (
 						ISBLANK ( BudgetFig ),
@@ -3734,6 +3734,28 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 		annotation hnh_guard_allow = GL FS Monthly, P&L Report
+	/// Trial balance tile line: "In balance" when FR Out of Balance is within SAR 1 of zero, "Review" when the ledger of the selection does not balance; blank without postings.
+	measure 'FR Tile Out of Balance' =
+			VAR __Value = ( -- measure body
+				VAR Gap = [FR Out of Balance]
+				RETURN
+					IF ( NOT ISBLANK ( Gap ), IF ( ABS ( Gap ) < 1, "In balance", "Review" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Out of Balance"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+	/// Colour of FR Tile Out of Balance: teal #04705F when in balance, red #C2230A when to review, muted #4D5B6B without postings.
+	measure 'FR Tile Out of Balance Colour' =
+			VAR __Value = ( -- measure body
+				VAR Gap = [FR Out of Balance]
+				RETURN
+					IF ( ISBLANK ( Gap ), "#4D5B6B", IF ( ABS ( Gap ) < 1, "#04705F", "#C2230A" ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """FR Tile Out of Balance Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
 	/// Most likely budget in SAR of one budget code (Phase 3 spec section 8; budget covers branches 1-6).
 	measure 'IS Budget' =
 			VAR __Value = ( -- measure body
