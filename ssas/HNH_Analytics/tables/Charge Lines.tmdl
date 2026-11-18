@@ -161,6 +161,11 @@ table 'Charge Lines'
 		summarizeBy: none
 		sourceColumn: policy_key
 
+	column 'Policy Class'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: policy_class
+
 	column 'Visit Date Key'
 		dataType: int64
 		isHidden

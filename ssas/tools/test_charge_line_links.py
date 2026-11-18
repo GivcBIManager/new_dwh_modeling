@@ -71,3 +71,12 @@ def test_visit_dates_are_inactive_date_roles():
         assert len(hits) == 1, (table, col)
         assert _ends(hits[0])[1] == ("Date", "Date Key")
         assert "isActive: false" in hits[0], (table, col)
+
+
+def test_policy_class_column():
+    # Policy class (REF, VIP, A, B, C, Not classified) is a visible text column on Charge Lines, related to nothing.
+    block = _column_block("Charge Lines", "policy_class")
+    assert block is not None
+    assert "isHidden" not in block
+    assert "dataType: string" in block
+    assert not [b for b in BLOCKS if _ends(b)[0] == ("Charge Lines", "Policy Class")]
