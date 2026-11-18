@@ -1,6 +1,6 @@
 {{ hnh_ssas_view('fact_gl_fs_monthly', drop=['month_start'], decimals=['opening_balance', 'movement', 'opening_journal_amount', 'closing_balance', 'debit', 'credit'], extra=[
     'toInt64(toYYYYMMDD(t.month_start)) as month_date_key',
-    hnh_title('toString(t.fs_type)') ~ ' as fs_type_name',
+    hnh_fs_type_label('t.fs_type') ~ ' as fs_type_name',
     hnh_title('toString(t.fs_element)') ~ ' as fs_element_name',
     hnh_title('toString(t.fs_category)') ~ ' as fs_category_name',
     hnh_title('toString(t.fs_caption)') ~ ' as fs_caption_name',

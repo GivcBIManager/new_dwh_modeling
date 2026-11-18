@@ -315,6 +315,11 @@ Describe 'gl_fs balance sheet grouping (ssas_fact_gl_fs_monthly)' {
         $e = $by['bs|equity|equity|retained earnings']
         $e.bs_side | Should Be 'Liabilities & equity'; $e.bs_element | Should Be 'Equity'; $e.bs_category | Should Be 'Equity'
     }
+    It 'labels fs_type_name Balance sheet and Income statement' {
+        $r = Invoke-HnhSelect -Dsn HNH_Gold -Sql ("select t.fs_type as k, " + (Get-MacroSql "hnh_fs_type_label('t.fs_type')") + " as v from values('fs_type String', ('bs'), ('is'), ('other')) as t order by k")
+        $m = @{}; foreach ($x in $r) { $m[$x.k] = $x.v }
+        $m['bs'] | Should Be 'Balance sheet'; $m['is'] | Should Be 'Income statement'; $m['other'] | Should Be 'other'
+    }
     It 'orders elements and categories, one order per label' {
         [int]$by['bs|assets|current assets|cash and bank balances'].eo | Should Be 1
         [int]$by['bs|liabilities|current liabilities|trade payables'].eo | Should Be 2

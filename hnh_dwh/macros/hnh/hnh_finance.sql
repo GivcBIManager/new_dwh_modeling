@@ -51,3 +51,8 @@ toInt64(multiIf({{ fs_type }} = 'is', -1,
     {{ fs_element }} not in ('assets', 'liabilities', 'equity') or {{ fs_category }} = 'not mapped', 1,
     {{ fs_element }} = 'assets', 1, -1))
 {%- endmacro %}
+
+{# Top level of the trial balance: the repo label of the statement; any other fs_type value keeps its own text. #}
+{% macro hnh_fs_type_label(fs_type) -%}
+toString(multiIf({{ fs_type }} = 'bs', 'Balance sheet', {{ fs_type }} = 'is', 'Income statement', {{ fs_type }}))
+{%- endmacro %}
