@@ -264,6 +264,16 @@ models:
       - name: month
         tests:
           - accepted_values: {values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], quote: false, config: {severity: warn}}
+  - name: stg_ref__contract_class
+    description: The old warehouse's class of each contract (VIP, A, B, C), a fallback for contracts whose Oasis class description has none.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, contract_no]
+    columns:
+      - name: classification
+        tests:
+          - accepted_values:
+              values: ['VIP', 'A', 'B', 'C']
   - name: stg_ref__policy_client
     tests:
       - hnh_unique_combination:

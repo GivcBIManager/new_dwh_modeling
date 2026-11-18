@@ -235,6 +235,15 @@ SMALL_TABLES = {
         [("bi_user_name", "String", s), ("can_see_pay", "UInt8", b), ("can_see_pii", "UInt8", b)],
         "bi_user_name",
     ),
+    # The old warehouse's hand classes of contracts whose Oasis class description has none (old server
+    # default.patient_contract_mapping, exported by scripts/export_contract_class_mapping.py). int_contract_class uses
+    # it only when the description gives no class (policy class design 2026-11-18).
+    "map_contract_class": (
+        "contract_class_mapping.csv",
+        [("BRANCH_ID", "UInt8", i), ("CONTRACT_NO", "Int64", i), ("CLASS_ID", "Int64", i),
+         ("CLASSIFICATION", "LowCardinality(String)", s)],
+        "(BRANCH_ID, CONTRACT_NO)",
+    ),
 }
 
 BUDGET_DDL = f"""
