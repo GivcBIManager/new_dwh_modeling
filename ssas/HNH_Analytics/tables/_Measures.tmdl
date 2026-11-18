@@ -193,10 +193,10 @@ table _Measures
 		formatString: 0.0%
 		displayFolder: Patient Experience\Survey Quality
 	/// The login SSAS sees for this connection; use it to check row-level security from a report.
-	measure 'Current User' = USERPRINCIPALNAME ()
+	measure 'Current User' =
+			USERPRINCIPALNAME ()
 		formatString: General
 		displayFolder: Diagnostics
-
 	/// Emergency visits: ER encounters that are not cancelled (gold spec section 8).
 	measure 'ER Visits' =
 			VAR __Value = ( -- measure body
@@ -2286,30 +2286,44 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """FR Last Year"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Finance\Report
-	/// Budget in SAR of the P&L line(s) in context (Finance Budget income-statement rows, P&L sign), months up to the current one (ruling R2). Only hospital-months with a budget row add up, so several hospitals give the budgeted ones (like-for-like). Blank below line level (caption, account).
+	/// The P&L line whose budget the FR budget measures compare: the line in context; with several lines of one section, that section's own subtotal line (Revenue: REV_TOTAL, Direct Cost: DIRECT_COST); blank for a section without a subtotal line or several sections (ruling R9e).
+	measure 'FR Budget Line Key' =
+			IF (
+				HASONEVALUE ( 'P&L Line'[PL Line Key] ),
+				VALUES ( 'P&L Line'[PL Line Key] ),
+				-- several lines of one section: that section's own subtotal line; a section without one, or several sections: blank
+				VAR Section = SELECTEDVALUE ( 'P&L Line'[Section Name] )
+				RETURN
+					IF (
+						NOT ISBLANK ( Section ),
+						CALCULATE (
+							MAX ( 'P&L Line'[PL Line Key] ),
+							REMOVEFILTERS ( 'P&L Line' ),
+							'P&L Line'[Section Name] = Section,
+							'P&L Line'[Line Kind] = "subtotal"
+						)
+					)
+			)
+		formatString: 0
+		isHidden
+		displayFolder: Finance\Report
+
+	/// Budget in SAR (Finance Budget income-statement rows, P&L sign) of the line FR Budget Line Key names: the line in context, or the subtotal line of the one section in context; blank for several sections. Months up to the current one (ruling R2); only hospital-months with a budget row add up, so several hospitals give the budgeted ones (like-for-like). Blank below line level (caption, account).
 	measure 'FR Budget' =
 			VAR __Value = ( -- measure body
-				VAR Total =
-					VAR OneLine = HASONEVALUE ( 'P&L Line'[PL Line Key] )
-					RETURN
-						IF (
-							OneLine,
-							CALCULATE (
-								SUM ( 'Finance Budget'[Amount] ),
-								'Finance Budget'[Statement] = "IS",
-								KEEPFILTERS ( 'Date'[Date] <= TODAY () )
-							),
-							-- several lines (a section, the grand total): their detail and not-mapped lines, as a subtotal adds them
-							CALCULATE (
-								SUM ( 'Finance Budget'[Amount] ),
-								'Finance Budget'[Statement] = "IS",
-								KEEPFILTERS ( 'Date'[Date] <= TODAY () ),
-								KEEPFILTERS ( 'P&L Line'[Line Kind] <> "subtotal" )
-							)
-						)
+				VAR LineKey = [FR Budget Line Key]
 				RETURN
 					-- the budget has no caption or account grain
-					IF ( NOT ISFILTERED ( 'P&L Report' ), Total )
+					IF (
+						NOT ISBLANK ( LineKey ) && NOT ISFILTERED ( 'P&L Report' ),
+						CALCULATE (
+							SUM ( 'Finance Budget'[Amount] ),
+							'Finance Budget'[Statement] = "IS",
+							REMOVEFILTERS ( 'P&L Line' ),
+							'P&L Line'[PL Line Key] = LineKey,
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					)
 			) -- end of measure body
 			VAR __Wrong = [_Guard Finance Budget + P&L Report | P&L Report]
 			RETURN IF ( __Wrong = "", __Value, """FR Budget"" can't be analysed by " & __Wrong )
@@ -2317,20 +2331,25 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = P&L Report
-	/// FR Actual over exactly the hospital-months (and lines) that have a FR Budget row, so a hospital or month without a budget leaves both sides of the comparison (like-for-like). Blank below line level.
+	/// FR Actual of the line FR Budget Line Key names over exactly the hospital-months that have a FR Budget row for it, so a hospital or month without a budget leaves both sides of the comparison (like-for-like). Blank below line level and for several sections.
 	measure 'FR Actual (Budgeted)' =
 			VAR __Value = ( -- measure body
+				VAR LineKey = [FR Budget Line Key]
 				VAR BudgetCells =
 					CALCULATETABLE (
 						SUMMARIZE ( 'Finance Budget', 'Finance Budget'[Branch Key], 'Finance Budget'[Month Date Key], 'Finance Budget'[PL Line Key] ),
 						'Finance Budget'[Statement] = "IS",
+						REMOVEFILTERS ( 'P&L Line' ),
+						'P&L Line'[PL Line Key] = LineKey,
 						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 					)
 				RETURN
 					IF (
-						NOT ISFILTERED ( 'P&L Report' ) && NOT ISEMPTY ( BudgetCells ),
+						NOT ISBLANK ( LineKey ) && NOT ISFILTERED ( 'P&L Report' ) && NOT ISEMPTY ( BudgetCells ),
 						CALCULATE (
 							[FR Actual],
+							REMOVEFILTERS ( 'P&L Line' ),
+							'P&L Line'[PL Line Key] = LineKey,
 							TREATAS ( BudgetCells, 'P&L Report'[Branch Key], 'P&L Report'[Month Date Key], 'P&L Report'[PL Line Key] )
 						)
 					)
@@ -2404,16 +2423,25 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """FR % of Revenue"" can't be analysed by " & __Wrong )
 		formatString: 0.0%
 		displayFolder: Finance\Report
-	/// Placeholder text of a budget cell: "Not budgeted" for a line without a budget line (unlinked, or a subtotal of unlinked sections) that has no budget row in context (no override entered), "No budget yet" when the budget is blank otherwise, else empty. Empty below line level.
+	/// Placeholder text of a budget cell for the line FR Budget Line Key names: "Not budgeted" when it has no budget line (unlinked, or a subtotal of unlinked sections such as REV_TOTAL) and no budget row in context (no override entered), "No budget yet" when the budget is blank otherwise, else empty. Empty below line level and for several sections.
 	measure 'FR Budget Label' =
 			VAR __Value = ( -- measure body
-				VAR Kind = SELECTEDVALUE ( 'P&L Line'[Budget Kind] )
-				VAR Unlinked = Kind = "unlinked" || ( Kind = "subtotal" && SELECTEDVALUE ( 'P&L Line'[Budget Line Code] ) = "" )
-				VAR BudgetRows = CALCULATE ( COUNTROWS ( 'Finance Budget' ), 'Finance Budget'[Statement] = "IS", KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
+				VAR LineKey = [FR Budget Line Key]
+				VAR Kind = CALCULATE ( SELECTEDVALUE ( 'P&L Line'[Budget Kind] ), REMOVEFILTERS ( 'P&L Line' ), 'P&L Line'[PL Line Key] = LineKey )
+				VAR LinkCode = CALCULATE ( SELECTEDVALUE ( 'P&L Line'[Budget Line Code] ), REMOVEFILTERS ( 'P&L Line' ), 'P&L Line'[PL Line Key] = LineKey )
+				VAR Unlinked = Kind = "unlinked" || ( Kind = "subtotal" && LinkCode = "" )
+				VAR BudgetRows =
+					CALCULATE (
+						COUNTROWS ( 'Finance Budget' ),
+						'Finance Budget'[Statement] = "IS",
+						REMOVEFILTERS ( 'P&L Line' ),
+						'P&L Line'[PL Line Key] = LineKey,
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
 				RETURN
 					SWITCH (
 						TRUE (),
-						ISFILTERED ( 'P&L Report' ), "",
+						ISBLANK ( LineKey ) || ISFILTERED ( 'P&L Report' ), "",
 						Unlinked && ISBLANK ( BudgetRows ), "Not budgeted",
 						ISBLANK ( [FR Budget] ), "No budget yet",
 						""
@@ -2562,7 +2590,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_snapshot = 1
-	/// Balance sheet month-end balance in SAR in the display sign (assets debit positive, liabilities and equity credit positive) of the last month in context per hospital, summed. Current year profit is not the income statement accounts' GL balance but the year-to-date net profit of the P&L Report (Fin Net Profit, January to that month), so it ties to the income statement; its accounts show no balance. Snapshot.
+	/// Balance sheet month-end balance in SAR in the display sign (assets debit positive, liabilities and equity credit positive) of the last month in context per hospital, summed. Current year profit is not the income statement accounts' GL balance but the year-to-date total comprehensive income of the P&L Report (line TOTAL_COMPREHENSIVE_INCOME, net profit plus OCI, January to that month), so it ties to the income statement and OCI closes into it (ruling R9f); its accounts show no balance. Snapshot.
 	measure 'FR BS Balance' =
 			VAR __Value = ( -- measure body
 				VAR ShowProfit =
@@ -2597,7 +2625,9 @@ table _Measures
 								VAR MonthStart = DATE ( QUOTIENT ( LastMonth, 10000 ), MOD ( QUOTIENT ( LastMonth, 100 ), 100 ), 1 )
 								RETURN
 									CALCULATE (
-										[Fin Net Profit],
+										SUM ( 'P&L Report'[Amount] ),
+										'P&L Line'[PL Line Code] = "TOTAL_COMPREHENSIVE_INCOME",
+										KEEPFILTERS ( 'Date'[Date] <= TODAY () ),
 										REMOVEFILTERS ( 'GL FS Monthly' ),
 										Branch[Branch Key] = B,
 										DATESBETWEEN ( 'Date'[Date], DATE ( YEAR ( MonthStart ), 1, 1 ), EOMONTH ( MonthStart, 0 ) )
@@ -2614,7 +2644,7 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 		annotation hnh_guard_allow = GL FS Monthly
-	/// What stops the balance sheet balancing, in SAR: assets minus liabilities and equity minus current year profit (FR BS Balance's year-to-date net profit) at the last month in context per hospital, whatever balance sheet row is in context. Not mapped balances and a cutover gap show here; blank when below SAR 1. Snapshot.
+	/// What stops the balance sheet balancing, in SAR: assets minus liabilities and equity minus current year profit (the year-to-date total comprehensive income, as FR BS Balance) at the last month in context per hospital, whatever balance sheet row is in context. Not mapped balances and a cutover gap show here; blank when below SAR 1. Snapshot.
 	measure 'FR BS Difference' =
 			VAR __Value = ( -- measure body
 				VAR Gap =
@@ -2645,7 +2675,9 @@ table _Measures
 								VAR MonthStart = DATE ( QUOTIENT ( LastMonth, 10000 ), MOD ( QUOTIENT ( LastMonth, 100 ), 100 ), 1 )
 								RETURN
 									CALCULATE (
-										[Fin Net Profit],
+										SUM ( 'P&L Report'[Amount] ),
+										'P&L Line'[PL Line Code] = "TOTAL_COMPREHENSIVE_INCOME",
+										KEEPFILTERS ( 'Date'[Date] <= TODAY () ),
 										REMOVEFILTERS ( 'GL FS Monthly' ),
 										Branch[Branch Key] = B,
 										DATESBETWEEN ( 'Date'[Date], DATE ( YEAR ( MonthStart ), 1, 1 ), EOMONTH ( MonthStart, 0 ) )
@@ -2664,7 +2696,7 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 		annotation hnh_guard_allow = GL FS Monthly
-	/// Balance sheet budget in SAR (display sign) at the month FR BS Balance shows per hospital: Finance Budget BS rows of the FS captions in context, summed over captions, categories and sides; Current year profit takes the year-to-date budgeted net profit (Fin Budget Net Profit). Blank at account level and when no budget is entered. Snapshot.
+	/// Balance sheet budget in SAR (display sign) at the month FR BS Balance shows per hospital: Finance Budget BS rows of the FS captions in context, summed over captions, categories and sides; Current year profit takes the year-to-date budgeted total comprehensive income (each month the TOTAL_COMPREHENSIVE_INCOME budget when it comes from the budget or an override, else the NET_PROFIT budget). Blank at account level and when no budget is entered. Snapshot.
 	measure 'FR BS Budget' =
 			VAR __Value = ( -- measure body
 				VAR AccountLevel = ISFILTERED ( 'GL FS Monthly'[Account Name] ) || ISFILTERED ( 'GL FS Monthly'[Account Code] )
@@ -2704,7 +2736,24 @@ table _Measures
 									VAR MonthStart = DATE ( QUOTIENT ( LastMonth, 10000 ), MOD ( QUOTIENT ( LastMonth, 100 ), 100 ), 1 )
 									RETURN
 										CALCULATE (
-											[Fin Budget Net Profit],
+											SUMX (
+												VALUES ( 'Date'[Start Of Month] ),
+												VAR Tci =
+													CALCULATE (
+														SUM ( 'Finance Budget'[Amount] ),
+														'Finance Budget'[Statement] = "IS",
+														'P&L Line'[PL Line Code] = "TOTAL_COMPREHENSIVE_INCOME",
+														'Finance Budget'[Source] <> "rollup"
+													)
+												RETURN
+													-- a rolled-up TCI misses the budget held on linked subtotals (revenue): take the net profit budget instead
+													IF (
+														NOT ISBLANK ( Tci ),
+														Tci,
+														CALCULATE ( SUM ( 'Finance Budget'[Amount] ), 'Finance Budget'[Statement] = "IS", 'P&L Line'[PL Line Code] = "NET_PROFIT" )
+													)
+											),
+											KEEPFILTERS ( 'Date'[Date] <= TODAY () ),
 											REMOVEFILTERS ( 'GL FS Monthly' ),
 											Branch[Branch Key] = B,
 											DATESBETWEEN ( 'Date'[Date], DATE ( YEAR ( MonthStart ), 1, 1 ), EOMONTH ( MonthStart, 0 ) )
@@ -2752,7 +2801,7 @@ table _Measures
 
 		annotation hnh_snapshot = 1
 		annotation hnh_guard_allow = GL FS Monthly
-	/// FR BS Balance at the same point last year (display sign): the months in context shifted a year, those after today left out first, then each hospital's last month; Current year profit is last year's net profit January to that month. Snapshot.
+	/// FR BS Balance at the same point last year (display sign): the months in context shifted a year, those after today left out first, then each hospital's last month; Current year profit is last year's total comprehensive income January to that month. Snapshot.
 	measure 'FR BS Last Year' =
 			VAR __Value = ( -- measure body
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
@@ -8667,7 +8716,6 @@ table _Measures
 		displayFolder: Balanced Scorecard\Visual
 
 		annotation hnh_guard_allow = BSC KPI
-
 	/// Display name of the family detail page of the KPI in context, for the KPI detail page's family button: revenue, finance, volume, beds, revenue_cycle, workforce, experience map to the report's seven family pages. Blank when no single KPI is in context.
 	measure 'BSC Detail Page' =
 			SWITCH (
@@ -8683,7 +8731,6 @@ table _Measures
 			)
 		formatString: General
 		displayFolder: Balanced Scorecard\Detail
-
 	/// How the target of the KPI in context is set, in words: Fixed target (the target table), Budget, Same period last year; blank for a KPI without a target and when no single KPI is in context.
 	measure 'BSC Target Basis' =
 			SWITCH (
@@ -8695,7 +8742,6 @@ table _Measures
 			)
 		formatString: General
 		displayFolder: Balanced Scorecard\Detail
-
 	/// The distinct notes entered with the manual values of the KPI in context, for the selected hospitals and the months up to today, sorted and joined with " · ". Blank for a measure KPI and when there is no note.
 	measure 'BSC Manual Note' =
 			VAR __Value = ( -- measure body
@@ -9376,28 +9422,24 @@ table _Measures
 			RETURN IF ( LEN ( V ) > 0, V, "–" )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-
 	/// The KPI detail panel (user request 2026-11-05: its cards were empty): the source system of the one HR KPI in context; "–" when it has none or no KPI is selected (the page opened without a drill-through).
 	measure 'HR KPI Source Text' =
 			VAR V = SELECTEDVALUE ( 'HR KPI'[Source System] )
 			RETURN IF ( LEN ( V ) > 0, V, "–" )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-
 	/// The KPI detail panel (user request 2026-11-05: its cards were empty): the grain of the one HR KPI in context; "–" when it has none or no KPI is selected (the page opened without a drill-through).
 	measure 'HR KPI Grain Text' =
 			VAR V = SELECTEDVALUE ( 'HR KPI'[Grain] )
 			RETURN IF ( LEN ( V ) > 0, V, "–" )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-
 	/// The KPI detail panel (user request 2026-11-05: its cards were empty): the caveats of the one HR KPI in context; "None" when it has none or no KPI is selected (the page opened without a drill-through).
 	measure 'HR KPI Caveats Text' =
 			VAR V = SELECTEDVALUE ( 'HR KPI'[Caveats] )
 			RETURN IF ( LEN ( V ) > 0, V, "None" )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-
 	/// The KPI detail card (user request 2026-11-05): [HR KPI Actual Text] of the one HR KPI in context, "–" when no KPI is selected (the page opened without a drill-through) or the figure is blank.
 	measure 'HR KPI Detail Actual' =
 			VAR __Value = ( -- measure body
