@@ -16,7 +16,8 @@ unit_tests:
         format: sql
         rows: |
           select toUInt8(b) as branch_key, toInt64(k) as oasis_gl_account_key, toNullable(toDate(m)) as month_start,
-                 toUInt8(p) as is_posted, toUInt8(f) as is_brought_forward, toFloat64(a) as amount
+                 toUInt8(p) as is_posted, toUInt8(f) as is_brought_forward, toFloat64(a) as amount,
+                 toFloat64(greatest(a, 0)) as debit, toFloat64(greatest(-a, 0)) as credit
           from values('b UInt8, k UInt32, m String, p UInt8, f UInt8, a Float64',
               (1, 1, '2026-01-01', 1, 1, 100), (1, 1, '2026-02-01', 1, 0, 20),
               (1, 2, '2025-12-01', 1, 0, -40), (1, 2, '2026-01-01', 1, 0, -50), (1, 2, '2026-03-01', 1, 0, -30),
@@ -26,11 +27,11 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(k) as oasis_gl_account_key, toUInt8(b) as branch_key, c as account_code, t as fs_type, e as fs_element,
-                 g as fs_category, p as fs_caption, l as fs_line
-          from values('k UInt32, b UInt8, c String, t String, e String, g String, p String, l String',
-              (1, 1, '1101', 'bs', 'assets', 'current assets', 'trade receivables, net', 'receivables'),
-              (2, 1, '4101', 'is', 'revenue', 'revenue', 'revenue inpatient', 'inpatient'),
-              (3, 6, '4101', 'is', 'revenue', 'revenue', 'revenue inpatient', 'inpatient'))
+                 g as fs_category, p as fs_caption, l as fs_line, n as account_name
+          from values('k UInt32, b UInt8, c String, t String, e String, g String, p String, l String, n String',
+              (1, 1, '1101', 'bs', 'assets', 'current assets', 'trade receivables, net', 'receivables', 'TRADE RECEIVABLES'),
+              (2, 1, '4101', 'is', 'revenue', 'revenue', 'revenue inpatient', 'inpatient', 'REVENUE INPATIENT'),
+              (3, 6, '4101', 'is', 'revenue', 'revenue', 'revenue inpatient', 'inpatient', 'REVENUE INPATIENT'))
       - input: ref('stg_ref__gl_cutover')
         format: sql
         rows: |
@@ -52,8 +53,16 @@ unit_tests:
       - input: ref('hnh_dim_gl_account')
         format: sql
         rows: |
-          select toInt64(k) as gl_account_key, toNullable(toUInt32(41010101)) as natural_account, toInt64(77) as fs_line_key
+          select toInt64(k) as gl_account_key, toNullable(toUInt32(41010101)) as natural_account, toInt64(77) as fs_line_key,
+                 toNullable('Revenue Cash') as natural_account_name
           from values('k UInt32', (900), (901))
+      - input: ref('hnh_fact_gl_journal_line')
+        format: sql
+        rows: |
+          select toUInt8(6) as branch_key, toInt64(a) as gl_account_key, toInt32(p) as period_key, toFloat64(m) as amount,
+                 toUInt8(o) as is_opening_balance_journal
+          from values('a UInt32, p UInt32, m Float64, o UInt8',
+              (900, 202602, -14, 0), (900, 202602, 2, 0), (901, 202602, -4, 0), (900, 202602, -3, 1))
       - input: ref('dim_fs_line')
         format: sql
         rows: |
@@ -61,15 +70,15 @@ unit_tests:
                  'Revenue cash' as fs_caption, 'Cash' as fs_line
     expect:
       rows:
-        - {branch_key: 1, month_start: '2026-01-01', source_system: oasis, account_code: '1101', opening_balance: 0, opening_journal_amount: 100, movement: 0, closing_balance: 100}
-        - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '1101', opening_balance: 100, opening_journal_amount: 0, movement: 20, closing_balance: 120}
-        - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '1101', opening_balance: 120, opening_journal_amount: 0, movement: 0, closing_balance: 120}
-        - {branch_key: 1, month_start: '2025-12-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -40, closing_balance: -40}
-        - {branch_key: 1, month_start: '2026-01-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -50, closing_balance: -50}
-        - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: 0, closing_balance: -50}
-        - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '4101', opening_balance: -50, opening_journal_amount: 0, movement: -30, closing_balance: -80}
-        - {branch_key: 6, month_start: '2026-01-01', source_system: oasis, account_code: '4101', opening_balance: 0, opening_journal_amount: 0, movement: -10, closing_balance: -10}
-        - {branch_key: 6, month_start: '2026-02-01', source_system: fusion, account_code: '41010101', opening_balance: 0, opening_journal_amount: -3, movement: -16, closing_balance: -19}
+        - {branch_key: 1, month_start: '2026-01-01', source_system: oasis, account_code: '1101', account_name: Trade Receivables, opening_balance: 0, opening_journal_amount: 100, movement: 0, debit: 0, credit: 0, closing_balance: 100}
+        - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '1101', account_name: Trade Receivables, opening_balance: 100, opening_journal_amount: 0, movement: 20, debit: 20, credit: 0, closing_balance: 120}
+        - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '1101', account_name: Trade Receivables, opening_balance: 120, opening_journal_amount: 0, movement: 0, debit: 0, credit: 0, closing_balance: 120}
+        - {branch_key: 1, month_start: '2025-12-01', source_system: oasis, account_code: '4101', account_name: Revenue Inpatient, opening_balance: 0, opening_journal_amount: 0, movement: -40, debit: 0, credit: 40, closing_balance: -40}
+        - {branch_key: 1, month_start: '2026-01-01', source_system: oasis, account_code: '4101', account_name: Revenue Inpatient, opening_balance: 0, opening_journal_amount: 0, movement: -50, debit: 0, credit: 50, closing_balance: -50}
+        - {branch_key: 1, month_start: '2026-02-01', source_system: oasis, account_code: '4101', account_name: Revenue Inpatient, opening_balance: -50, opening_journal_amount: 0, movement: 0, debit: 0, credit: 0, closing_balance: -50}
+        - {branch_key: 1, month_start: '2026-03-01', source_system: oasis, account_code: '4101', account_name: Revenue Inpatient, opening_balance: -50, opening_journal_amount: 0, movement: -30, debit: 0, credit: 30, closing_balance: -80}
+        - {branch_key: 6, month_start: '2026-01-01', source_system: oasis, account_code: '4101', account_name: Revenue Inpatient, opening_balance: 0, opening_journal_amount: 0, movement: -10, debit: 0, credit: 10, closing_balance: -10}
+        - {branch_key: 6, month_start: '2026-02-01', source_system: fusion, account_code: '41010101', account_name: Revenue Cash, opening_balance: 0, opening_journal_amount: -3, movement: -16, debit: 2, credit: 18, closing_balance: -19}
 
   - name: bsc_vw_financial_uses_both_vocabularies
     description: >
