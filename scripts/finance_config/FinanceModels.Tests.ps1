@@ -1,7 +1,7 @@
 # Offline checks of the finance config staging models (plan 2026-11-18-finance-report, task 1).
 # Each model is rendered by scripts/render_model_sql.py; its default.map_finance_* source is replaced by inline rows,
 # and the SQL runs read-only through DSN HNH_Gold. Nothing is written.
-#   powershell -NoProfile -Command "Invoke-Pester -Script scriptsinance_config\FinanceModels.Tests.ps1"
+#   powershell -NoProfile -Command "Invoke-Pester -Script scripts\finance_config\FinanceModels.Tests.ps1"
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Split-Path -Parent (Split-Path -Parent $here)
 Import-Module (Join-Path $root 'scripts\HnhCh.psm1') -Force
