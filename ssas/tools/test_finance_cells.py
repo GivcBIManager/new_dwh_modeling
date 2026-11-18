@@ -67,3 +67,15 @@ def test_tiles_have_two_lines_and_colours():
     for tile in ("Net Revenue", "EBITDA", "EBITDA Margin", "Net Profit", "Total Assets", "Net Working Capital", "Current Ratio", "Receivable Days"):
         for line in ("vs Budget", "vs Budget Colour", "vs LY", "vs LY Colour"):
             assert f"FR Tile {tile} {line}" in MEASURES
+
+
+def test_chart_measures_are_allowed_under_finance_column_filters():
+    # ruling R15a: a selected matrix value cell passes 'Finance Column' on to the charts
+    charts = [name for name in MEASURES if name.startswith("FR Chart ")]
+    assert len(charts) >= 20
+    for name in charts:
+        measure = MEASURES[name]
+        assert "REMOVEFILTERS ( 'Finance Column' )" in measure.expression, name
+        assert "Finance Column" in measure.annotations.get("hnh_guard_allow", ""), name
+        guard = re.search(r"VAR __Wrong = \[(_Guard [^\]]+)\]", measure.expression).group(1)
+        assert "'Finance Column'" not in MEASURES[guard].expression, f"{name} would return guard text under Finance Column"

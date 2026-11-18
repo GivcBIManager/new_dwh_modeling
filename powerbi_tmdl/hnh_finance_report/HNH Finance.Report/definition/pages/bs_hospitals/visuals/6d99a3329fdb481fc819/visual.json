@@ -95,34 +95,6 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
-                    }
-                  },
-                  "Property": "Branch Name"
-                }
-              },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Finance Column"
-                    }
-                  },
-                  "Property": "Group Name"
-                }
-              },
-              "queryRef": "Finance Column.Group Name",
-              "nativeQueryRef": "Group Name"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
                       "Entity": "Finance Column"
                     }
                   },
@@ -131,6 +103,20 @@
               },
               "queryRef": "Finance Column.Column Name",
               "nativeQueryRef": "Column Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Branch"
+                    }
+                  },
+                  "Property": "Branch Name"
+                }
+              },
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name"
             }
           ]
         },
@@ -284,7 +270,7 @@
             "columnSubtotals": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "true"
                 }
               }
             },
@@ -305,7 +291,49 @@
                   }
                 }
               }
+            },
+            "perColumnLevel": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
             }
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Finance Column.Column Name"
+          }
+        },
+        {
+          "properties": {
+            "levelSubtotalEnabled": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "levelSubtotalLabel": {
+              "expr": {
+                "Literal": {
+                  "Value": "'All hospitals'"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Branch.Branch Name"
           }
         }
       ]
@@ -494,7 +522,7 @@
                     [
                       {
                         "Literal": {
-                          "Value": "'hospitals'"
+                          "Value": "'hospital'"
                         }
                       }
                     ]

@@ -68,7 +68,8 @@ def test_matrix_rows_per_page():
         m = _matrix(_page(name))
         assert m.roles["Rows"] == rows[st], name
         assert m.roles["Values"] == [meas(cells[st])], name
-        assert {(f.field.name, tuple(f.values)) for f in m.filters} == {("Page", (st,)), ("View", (view,))}, name
+        stored = {"monthly": "monthly", "hospitals": "hospital"}[view]
+        assert {(f.field.name, tuple(f.values)) for f in m.filters} == {("Page", (st,)), ("View", (stored,))}, name
         assert (BRANCH_NAME in m.roles["Columns"]) == (view == "hospitals"), name
 
 
@@ -76,9 +77,10 @@ def test_tiles_per_page():
     labels = {"tb": ["PERIOD DEBITS", "PERIOD CREDITS", "OUT OF BALANCE", "TOTAL ASSETS"],
               "is": ["NET REVENUE", "EBITDA", "EBITDA MARGIN", "NET PROFIT"],
               "bs": ["TOTAL ASSETS", "NET WORKING CAPITAL", "CURRENT RATIO", "RECEIVABLE DAYS"]}
-    values = {"tb": ["FR Period Debits", "FR Period Credits", "FR Out of Balance", "Fin Total Assets"],
-              "is": ["Fin Net Revenue", "Fin EBITDA", "EBITDA Margin %", "Fin Net Profit"],
-              "bs": ["Fin Total Assets", "FR Net Working Capital", "FR KPI Value", "FR KPI Value"]}
+    # ruling R15c: visible measures only (EBITDA Margin % is a visible Finance\Statement measure)
+    values = {"tb": ["FR Period Debits", "FR Period Credits", "FR Out of Balance", "FR Total Assets"],
+              "is": ["FR Net Revenue", "FR EBITDA", "EBITDA Margin %", "FR Net Profit"],
+              "bs": ["FR Total Assets", "FR Net Working Capital", "FR KPI Value", "FR KPI Value"]}
     kpi = col("Finance KPI", "KPI Code")
     for name in ORDER:
         st = name.split("_")[0]
@@ -125,7 +127,8 @@ def test_monthly_charts_and_hospital_ranked_bars():
         assert fills == ["'#0A2D6E'", "'#32A5E6'"]
         bars = _charts(_page(f"{st}_hospitals"))
         assert [b.sample for b in bars] == ["barChart", "barChart"]
-        assert [b.roles["Y"][0].name for b in bars] == [f"FR Chart {short} vs Budget %", f"FR Chart {short} vs LY %"]
+        # ruling R15d: budget achievement % on the left, growth % on the right
+        assert [b.roles["Y"][0].name for b in bars] == [f"FR Chart {short} Achievement %", f"FR Chart {short} vs LY %"]
         fav = [repr(b.props["dataPoint"]) for b in bars]
         if st == "is":
             assert "FR Chart IS vs Budget Colour" in fav[0] and "FR Chart IS vs LY Colour" in fav[1]
@@ -176,3 +179,19 @@ def test_balance_sheet_difference_card_under_the_matrix():
         assert abs(d.y - (m.y + m.h)) <= 8 and d.x == m.x and d.y + d.h <= 1080
     for name in ORDER[:4]:
         assert not any(v.roles.get("Values") == [meas("FR BS Difference")] for v in _page(name).visuals)
+
+
+def test_tiles_bind_visible_measures_only():
+    # ruling R15c: a tile binds no hidden measure
+    import re
+
+    import fields
+    text = (fields.MODEL_DIR / "tables" / "_Measures.tmdl").read_text(encoding="utf-8")
+    hidden = set()
+    for block in re.split(r"\n\t(?=measure )", text):
+        m = re.match(r"measure '?([^'=]+?)'? =", block)
+        if m and re.search(r"^\t\tisHidden$", block.split("\n\t///", 1)[0], re.M):
+            hidden.add(m.group(1))
+    assert "Fin Total Assets" in hidden and "FR Total Assets" not in hidden
+    used = {f.name for p in ps.PAGES for v in p.visuals if v.sample == "card" for f in v.roles.get("Values", [])}
+    assert used and not (used & hidden), sorted(used & hidden)

@@ -35,6 +35,8 @@ TILE_GAP, CARD_GAP = 8, 12
 FC_PAGE, FC_VIEW = col("Finance Column", "Page"), col("Finance Column", "View")
 FC_GROUP, FC_COLUMN = col("Finance Column", "Group Name"), col("Finance Column", "Column Name")
 CELL_COLOUR = "FR Cell Colour"
+VIEW_VALUES = {"monthly": "monthly", "hospitals": "hospital"}  # page view -> 'Finance Column'[View] (dim_finance_column)
+ALL_HOSPITALS = "All hospitals"
 WHITE = "#FFFFFF"
 LABEL_PT, VALUE_PT, LINE_PT = 11.5, 25, 11
 PAD, PAD_Y = 14, 8
@@ -131,23 +133,35 @@ def ranked_bars(title: str, measure: Field, rect: Rect, favourable: Field | None
 
 def statement_matrix(page: str, view: str, rows: list[Field], cell: Field, rect: Rect,
                      expand_levels: int, grand_total: bool = True, row_band: Field | None = None) -> Visual:
-    """The page's statement matrix: `rows` down, `Finance Column[Group Name]` > `[Column Name]` across (hospital
-    views: the branch first), `cell` in the values, filtered to the page's and view's Finance Column rows. Values
-    right-aligned, font colour from [FR Cell Colour]; header band navy with white text; row subtotals bold; no column
-    subtotals (a text cell has no total across columns). `grand_total` False hides the row grand total: subtotals per
-    row level, the first level's subtotal (the grand total) off, the others on. `row_band`: a measure returning each
-    row's background colour (conditional formatting of the values by field value; row headers keep theirs). The
-    matrix opens at its first row level (expand=False); opening `expand_levels` levels is not expressible by the
-    generator (see the task report), the argument is only checked to be at least 1."""
+    """The page's statement matrix: `rows` down, `cell` in the values, filtered to the page's and view's Finance Column
+    rows ('Finance Column'[View] holds "monthly" / "hospital"). Monthly: `Finance Column[Group Name]` > `[Column Name]`
+    across, no column subtotals (a text cell has no total across columns). Hospitals (ruling R15b): `[Column Name]` >
+    `Branch[Branch Name]` across, with the Branch level's column subtotal on, labelled "All hospitals" (the eight
+    hospitals' figure of each column: Closing / Actual, Ach %, Growth), the Column Name level's (the grand total, a
+    blank column: a cell needs a Finance Column kind) off; the view's Group Name is empty, so it is left out. Values
+    right-aligned, font colour from [FR Cell Colour]; header band navy with white text; row subtotals bold.
+    `grand_total` False hides the row grand total: subtotals per row level, the first level's subtotal (the grand
+    total) off, the others on. `row_band`: a measure returning each row's background colour (conditional formatting
+    of the values by field value; row headers keep theirs). The matrix opens at its first row level (expand=False);
+    opening `expand_levels` levels is not expressible by the generator (see the task report), the argument is only
+    checked to be at least 1."""
     if expand_levels < 1:
         raise ValueError(f"expand_levels {expand_levels}: at least 1")
-    columns = ([BRANCH_NAME] if view == "hospitals" else []) + [FC_GROUP, FC_COLUMN]
+    if view not in VIEW_VALUES:
+        raise ValueError(f"view must be one of {', '.join(VIEW_VALUES)}, got {view!r}")
+    hospitals = view == "hospitals"
+    columns = [FC_COLUMN, BRANCH_NAME] if hospitals else [FC_GROUP, FC_COLUMN]
     values = {"fontColor": hr_frame.measure_colour(CELL_COLOUR), "fontSize": _num(11),
               "fontFamily": _lit("Segoe UI"), "alignment": _lit("Right")}
     if row_band is not None:
         values["backColor"] = hr_frame.measure_colour(row_band.name)
-    subtotals = [{"properties": {"rowSubtotals": _lit(True), "columnSubtotals": _lit(False), "bold": _lit(True),
+    subtotals = [{"properties": {"rowSubtotals": _lit(True), "columnSubtotals": _lit(hospitals), "bold": _lit(True),
                                  "fontColor": _colour(INK)}}]
+    if hospitals:
+        subtotals[0]["properties"]["perColumnLevel"] = _lit(True)
+        subtotals += [{"properties": {"levelSubtotalEnabled": _lit(False)}, "selector": {"metadata": FC_COLUMN.ref}},
+                      {"properties": {"levelSubtotalEnabled": _lit(True), "levelSubtotalLabel": _lit(ALL_HOSPITALS)},
+                       "selector": {"metadata": BRANCH_NAME.ref}}]
     if not grand_total:
         subtotals[0]["properties"]["perRowLevel"] = _lit(True)
         subtotals.append({"properties": {"levelSubtotalEnabled": _lit(False)}, "selector": {"metadata": rows[0].ref}})
@@ -161,5 +175,5 @@ def statement_matrix(page: str, view: str, rows: list[Field], cell: Field, rect:
         **hr_frame.bsc.white_panel(),
     }
     return Visual("matrix", *rect, roles={"Rows": list(rows), "Columns": columns, "Values": [cell]},
-                  filters=[Filter(FC_PAGE, "eq", [page]), Filter(FC_VIEW, "eq", [view])], props=props,
+                  filters=[Filter(FC_PAGE, "eq", [page]), Filter(FC_VIEW, "eq", [VIEW_VALUES[view]])], props=props,
                   expand=False)

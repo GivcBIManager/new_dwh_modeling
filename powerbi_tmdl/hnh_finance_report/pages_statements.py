@@ -6,7 +6,7 @@ monthly page and a hospital comparison page, on fin_frame (frame, filter bar) an
 
 Monthly pages: the left chart shows the selected matrix row's actual, budget and last year by month, the right chart its
 variance % against budget and last year (the [FR Chart ...] measures fall back to a default line with no row selected).
-Hospital pages: the same tiles over the eight hospitals, the selected row's variance % against budget and growth on
+Hospital pages: the same tiles over the eight hospitals, the selected row's budget achievement % and growth on
 last year as bars by hospital (the income statement's in favourable / unfavourable colours), the hospital matrix.
 The matrix filters the charts; nothing else on the content filters anything (a chart's month or bar, the tiles).
 
@@ -61,9 +61,12 @@ HEADERS: dict[tuple[str, str], tuple[str, str]] = {
 DEFAULT_LINE = {"tb": "trade receivables, net", "is": "net revenue", "bs": "trade receivables, net"}
 LEFT_TITLE = {"tb": "Selected line · month-end balance by month", "is": "Selected line by month",
               "bs": "Selected line at month end"}
-BAR_TITLES = {"tb": ("Selected line · closing vs budget % by hospital", "Selected line · growth vs same date last year"),
-              "is": ("Selected line · vs budget % by hospital", "Selected line · growth vs same period last year"),
-              "bs": ("Selected line · vs budget % by hospital", "Selected line · growth vs same date last year")}
+BAR_TITLES = {"tb": ("Selected line · closing vs budget by hospital, 100% = on budget",
+                     "Selected line · growth vs same date last year"),
+              "is": ("Selected line · budget achievement by hospital, 100% = on budget",
+                     "Selected line · growth vs same period last year"),
+              "bs": ("Selected line · actual vs budget by hospital, 100% = on budget",
+                     "Selected line · growth vs same date last year")}
 
 # Header and matrix below the tiles and charts (MATRIX_RECT's box): the header, then the matrix; the balance sheet keeps
 # room under the matrix for the Difference card.
@@ -83,14 +86,14 @@ def _tile_spec(statement: str) -> list[tuple]:
                 ("Period credits", meas("FR Period Credits"), None, None, None, None, None, None),
                 ("Out of balance", meas("FR Out of Balance"), meas("FR Tile Out of Balance"),
                  meas("FR Tile Out of Balance Colour"), None, None, None, None),
-                ("Total assets", meas("Fin Total Assets"), *lines("Total Assets"), None, None)]
+                ("Total assets", meas("FR Total Assets"), *lines("Total Assets"), None, None)]
     if statement == "is":
-        return [("Net revenue", meas("Fin Net Revenue"), *lines("Net Revenue"), None, None),
-                ("EBITDA", meas("Fin EBITDA"), *lines("EBITDA"), None, None),
+        return [("Net revenue", meas("FR Net Revenue"), *lines("Net Revenue"), None, None),
+                ("EBITDA", meas("FR EBITDA"), *lines("EBITDA"), None, None),
                 ("EBITDA margin", meas("EBITDA Margin %"), *lines("EBITDA Margin"), None, None),
-                ("Net profit", meas("Fin Net Profit"), *lines("Net Profit"), None, None)]
+                ("Net profit", meas("FR Net Profit"), *lines("Net Profit"), None, None)]
     if statement == "bs":
-        return [("Total assets", meas("Fin Total Assets"), *lines("Total Assets"), None, None),
+        return [("Total assets", meas("FR Total Assets"), *lines("Total Assets"), None, None),
                 ("Net working capital", meas("FR Net Working Capital"), *lines("Net Working Capital"), None, None),
                 ("Current ratio", meas("FR KPI Value"), *lines("Current Ratio"),
                  [Filter(KPI_CODE, "eq", ["FR_CURRENT_RATIO"])], 2),
@@ -107,9 +110,9 @@ def tiles(statement: str) -> list[Visual]:
 
 
 def charts(statement: str, view: str) -> list[Visual]:
-    """Monthly: actual / budget / last year by month (left), variance % by month in two colours (right). Hospitals:
-    variance % against budget and growth on last year by hospital, largest first (income statement: favourable
-    colours by bar)."""
+    """Monthly: actual / budget / last year by month (left), variance % by month in two colours (right). Hospitals
+    (ruling R15d): budget achievement % and growth on last year by hospital, largest first (income statement:
+    favourable / unfavourable colour by bar; achievement takes the vs-budget colour, the same sign)."""
     s = SHORT[statement]
     if view == "monthly":
         default = f" (default: {DEFAULT_LINE[statement]})"
@@ -123,7 +126,7 @@ def charts(statement: str, view: str) -> list[Visual]:
     budget_fav = meas("FR Chart IS vs Budget Colour") if statement == "is" else None
     growth_fav = meas("FR Chart IS vs LY Colour") if statement == "is" else None
     left, right = BAR_TITLES[statement]
-    return [ranked_bars(left, meas(f"FR Chart {s} vs Budget %"), LEFT_CHART_RECT, budget_fav),
+    return [ranked_bars(left, meas(f"FR Chart {s} Achievement %"), LEFT_CHART_RECT, budget_fav),
             ranked_bars(right, meas(f"FR Chart {s} vs LY %"), RIGHT_CHART_RECT, growth_fav)]
 
 

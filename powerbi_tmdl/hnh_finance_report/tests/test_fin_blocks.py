@@ -42,12 +42,13 @@ def test_tile_rects_are_a_two_by_two_grid():
 def test_statement_matrix_filters_its_page_and_view():
     rows = [col("Finance Line", "FS Caption Name")]
     cell = meas("FR IS Cell")
-    for view, branch in (("monthly", False), ("hospitals", True)):
+    # 'Finance Column'[View] holds "monthly" and "hospital" (dim_finance_column.sql)
+    for view, stored in (("monthly", "monthly"), ("hospitals", "hospital")):
         m = statement_matrix("is", view, rows, cell, MATRIX_RECT, 1)
         assert m.sample == "matrix" and (m.x, m.y, m.w, m.h) == (24, 362, 1872, 694)
-        assert {(f.field, f.op, tuple(f.values)) for f in m.filters} == {(PAGE, "eq", ("is",)), (VIEW, "eq", (view,))}
+        assert {(f.field, f.op, tuple(f.values)) for f in m.filters} == {(PAGE, "eq", ("is",)), (VIEW, "eq", (stored,))}
         assert m.roles["Rows"] == rows and m.roles["Values"] == [cell]
-        assert m.roles["Columns"] == ([BRANCH_NAME] if branch else []) + [GROUP, COLUMN]
+        assert m.roles["Columns"] == ([COLUMN, BRANCH_NAME] if view == "hospitals" else [GROUP, COLUMN])
 
 
 def test_matrix_values_use_the_cell_colour_measure():
@@ -130,3 +131,16 @@ def test_matrix_row_band_measure_colours_the_value_background():
     assert "FR Row Band" in repr(values["backColor"]) and "Measure" in repr(values["backColor"])
     plain = statement_matrix("is", "monthly", [col("P&L Line", "Section Name")], meas("FR IS Cell"), MATRIX_RECT, 1)
     assert "backColor" not in plain.props["values"][0]["properties"]
+
+
+def test_hospital_matrix_totals_the_hospitals_per_column():
+    # ruling R15b: the "All hospitals" block is the Branch level's column subtotal (per column: Closing, Ach %, Growth)
+    m = statement_matrix("tb", "hospitals", [col("GL FS Monthly", "FS Type Name")], meas("FR TB Cell"), MATRIX_RECT, 1)
+    entries = m.props["subTotals"]
+    general = entries[0]["properties"]
+    assert general["columnSubtotals"]["expr"]["Literal"]["Value"] == "true"
+    assert general["perColumnLevel"]["expr"]["Literal"]["Value"] == "true"
+    by_level = {e["selector"]["metadata"]: e["properties"] for e in entries if "selector" in e}
+    assert by_level[COLUMN.ref]["levelSubtotalEnabled"]["expr"]["Literal"]["Value"] == "false"
+    assert by_level[BRANCH_NAME.ref]["levelSubtotalEnabled"]["expr"]["Literal"]["Value"] == "true"
+    assert by_level[BRANCH_NAME.ref]["levelSubtotalLabel"]["expr"]["Literal"]["Value"] == "'All hospitals'"

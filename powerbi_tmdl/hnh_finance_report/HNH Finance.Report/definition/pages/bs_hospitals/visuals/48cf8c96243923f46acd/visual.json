@@ -42,11 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FR Chart BS vs Budget %"
+                  "Property": "FR Chart BS Achievement %"
                 }
               },
-              "queryRef": "_Measures.FR Chart BS vs Budget %",
-              "nativeQueryRef": "FR Chart BS vs Budget %"
+              "queryRef": "_Measures.FR Chart BS Achievement %",
+              "nativeQueryRef": "FR Chart BS Achievement %"
             }
           ]
         }
@@ -61,7 +61,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "FR Chart BS vs Budget %"
+                "Property": "FR Chart BS Achievement %"
               }
             },
             "direction": "Descending"
@@ -176,7 +176,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Selected line · vs budget % by hospital'"
+                  "Value": "'Selected line · actual vs budget by hospital, 100% = on budget'"
                 }
               }
             }
