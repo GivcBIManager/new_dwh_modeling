@@ -14,6 +14,7 @@ select
     {{ hnh_id('service_dept') }}                as service_dept,
     {{ hnh_id('signon_id') }}                   as signon_id,
     {{ hnh_id('policy_code') }}                 as policy_code,
+    {{ hnh_id('contract_no') }}                 as contract_no,
     {{ hnh_id('package_id') }}                  as package_id,
     {{ hnh_id('doc_id') }}                      as doc_id,
     {{ hnh_str('invoice_no') }}                 as invoice_doc_no,

@@ -177,6 +177,14 @@ models:
     tests:
       - hnh_unique_combination:
           columns: [branch_id, policy_code]
+  - name: stg_oasis__contracts
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, contract_no]
+  - name: stg_oasis__policy_classes
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_id, class_id]
   - name: stg_oasis__authorisation_requests
     tests:
       - hnh_unique_combination:
