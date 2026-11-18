@@ -212,3 +212,26 @@ models:
         description: Account name, title-cased (Oasis from fact_gl_fs_monthly, Fusion the natural account name); the account code where it has no name; '' on subtotal rows.
       - name: amount
         description: Movement of the month, credit positive (-movement of the GL).
+  - name: fact_finance_budget_monthly
+    description: >
+      Finance budget by hospital, month and report line. Income statement rows are in the P&L sign (revenue and profit
+      positive, costs negative): a linked line is its budget line x budget_sign, an override from the finance budget
+      table replaces a detail line, and subtotals move by the override differences (or roll up the sections for a
+      hospital without budget). Balance sheet rows are the overrides as entered, by bs_caption, in the display sign. Every
+      month is kept; the cutoff at today is applied in the SSAS measures.
+    tests:
+      - hnh_unique_combination:
+          columns: [branch_key, month_start, statement, pl_line_key, bs_caption]
+    columns:
+      - name: statement
+        tests:
+          - accepted_values: {values: ['IS', 'BS']}
+      - name: source
+        tests:
+          - accepted_values: {values: ['budget', 'override', 'rollup']}
+      - name: branch_key
+        tests:
+          - relationships: {to: ref('hnh_dim_branch'), field: branch_key}
+      - name: month_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}

@@ -172,3 +172,75 @@ Describe 'dim_pl_report_line budget link' {
         $bad -join ';' | Should Be ''
     }
 }
+
+# fact_finance_budget_monthly (task 5). dim_pl_report_line is rendered as it is; fact_income_statement_monthly and
+# stg_ref__finance_budget are inline rows. Branch 1, 2026-01: budget DC_EMPLOYEE 100, TOTAL_DC 100, REV_NET 1000, GROSS_PROFIT 900,
+# GA_OTHER 25, GA_MARKETING 10, GA_HO_CHARGES 5, TOTAL_GA 40, EBITDA 860, NET_PROFIT 860. Branch 2 has no budget. Branch 7 has none.
+Describe 'fact_finance_budget_monthly' {
+    $fim = "select toUInt8(b) as branch_key, toDate('2026-01-01') as month_start, c as budget_line_code, toFloat64(a) as budget_most_likely " +
+           "from values('b UInt8, c String, a Float64', " +
+           "(1, 'DC_EMPLOYEE', 100), (1, 'TOTAL_DC', 100), (1, 'REV_NET', 1000), (1, 'GROSS_PROFIT', 900), (1, 'GA_OTHER', 25), (1, 'GA_MARKETING', 10), " +
+           "(1, 'GA_HO_CHARGES', 5), (1, 'TOTAL_GA', 40), (1, 'EBITDA', 860), (1, 'NET_PROFIT', 860), (2, 'DC_EMPLOYEE', 0))"
+    $stg = "select toUInt8(b) as branch_id, toUInt16(2026) as year, toUInt8(1) as month, st as statement, lc as line_code, toFloat64(a) as amount, now() as last_changed_at " +
+           "from values('b UInt8, st String, lc String, a Float64', " +
+           "(1, 'IS', 'DC_EMPLOYEE', 120), (1, 'IS', 'EBITDA', 9999), (1, 'BS', 'cash', 500), (7, 'IS', 'REV_CASH', 50), (7, 'IS', 'DC_EMPLOYEE', 30))"
+    $rep = @{ fact_income_statement_monthly = $fim; stg_ref__finance_budget = $stg; dim_pl_report_line = (Get-RenderedModel 'dim_pl_report_line') }
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_finance_budget_monthly' $rep) @{}
+    $k = @{}; foreach ($r in $rows) { $k["$($r.branch_key)|$($r.statement)|$($r.pl_line_code)$($r.bs_caption)"] = $r }
+    It 'signs linked lines by budget_sign' {
+        [double]$k['1|IS|GA_OTHER'].amount | Should Be -25
+        [double]$k['1|IS|SM'].amount | Should Be -10
+        [double]$k['1|IS|NET_REVENUE'].amount | Should Be 1000
+        $k['1|IS|NET_REVENUE'].source | Should Be 'budget'
+        $k['1|IS|GROSS_PROFIT'].pl_line_key | Should Be 699
+    }
+    It 'replaces a line by its override and moves EBITDA and NET_PROFIT by the difference' {
+        [double]$k['1|IS|DC_EMPLOYEE'].amount | Should Be -120
+        $k['1|IS|DC_EMPLOYEE'].source | Should Be 'override'
+        [double]$k['1|IS|DIRECT_COST'].amount | Should Be -120
+        [double]$k['1|IS|GROSS_PROFIT'].amount | Should Be 880
+        [double]$k['1|IS|EBITDA'].amount | Should Be 840
+        [double]$k['1|IS|NET_PROFIT'].amount | Should Be 840
+        $k['1|IS|EBITDA'].source | Should Be 'override'
+    }
+    It 'builds subtotals from overrides for a hospital without budget' {
+        [double]$k['7|IS|REV_CASH'].amount | Should Be 50
+        [double]$k['7|IS|DC_EMPLOYEE'].amount | Should Be -30
+        [double]$k['7|IS|NET_REVENUE'].amount | Should Be 50
+        [double]$k['7|IS|EBITDA'].amount | Should Be 20
+        $k['7|IS|EBITDA'].source | Should Be 'rollup'
+    }
+    It 'ignores a subtotal override and gives a branch-month without budget no rows' {
+        @($rows | Where-Object { $_.branch_key -eq 2 }).Count | Should Be 0
+        [double]$k['1|IS|EBITDA'].amount | Should Not Be 9999
+    }
+    It 'keeps BS overrides as entered' {
+        $r = $k['1|BS|cash']
+        [double]$r.amount | Should Be 500
+        [int]$r.pl_line_key | Should Be 0
+        $r.pl_line_code | Should Be ''
+        $r.bs_caption | Should Be 'cash'
+        [int64]$r.month_date_key | Should Be 20260101
+    }
+    It 'gives GA_TOTAL the budget less marketing and head office charges' {
+        [double]$k['1|IS|GA_TOTAL'].amount | Should Be -25
+    }
+}
+
+# Task 5 sign check (read-only gold, branch 3, 2026 Jan-Sep): for every linked line sign(budget * budget_sign) = sign(P&L amount)
+# wherever both are non-zero. GA_TOTAL budget = TOTAL_GA - GA_MARKETING - GA_HO_CHARGES.
+Describe 'budget_sign against the P&L on gold' {
+    $lines = Invoke-ModelWithSources (Get-RenderedModel 'dim_pl_report_line') @{}
+    $bud = @{}; foreach ($r in (Invoke-HnhSelect -Dsn HNH_Gold -Sql "select budget_line_code, sum(budget_most_likely) as v from gold.fact_income_statement_monthly where branch_key = 3 and month_start between '2026-01-01' and '2026-09-01' group by 1")) { $bud[$r.budget_line_code] = [double]$r.v }
+    $bud['GA_TOTAL'] = $bud['TOTAL_GA'] - $bud['GA_MARKETING'] - $bud['GA_HO_CHARGES']
+    $act = @{}; foreach ($r in (Invoke-HnhSelect -Dsn HNH_Gold -Sql "select d.pl_line_code as c, sum(f.amount) as v from gold.fact_pl_report_monthly as f inner join gold.dim_pl_report_line as d on d.pl_line_key = f.pl_line_key where f.branch_key = 3 and f.month_start between '2026-01-01' and '2026-09-01' group by 1")) { $act[$r.c] = [double]$r.v }
+    It 'agrees for every linked line' {
+        $bad = @()
+        foreach ($l in $lines | Where-Object { $_.budget_line_code -ne '' }) {
+            $key = if ($l.pl_line_code -eq 'GA_TOTAL') { 'GA_TOTAL' } else { $l.budget_line_code }
+            $b = [double]$bud[$key] * [int]$l.budget_sign; $a = [double]$act[$l.pl_line_code]
+            if ($b -ne 0 -and $a -ne 0 -and [math]::Sign($b) -ne [math]::Sign($a)) { $bad += "$($l.pl_line_code) budget=$b actual=$a" }
+        }
+        $bad -join ';' | Should Be ''
+    }
+}
