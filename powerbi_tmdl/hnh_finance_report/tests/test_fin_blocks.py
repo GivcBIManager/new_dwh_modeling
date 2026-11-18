@@ -70,3 +70,63 @@ def test_charts():
     assert "FR Fav" in repr(rb.props)
     assert "FR Fav" not in repr(ranked_bars("By hospital", a, (0, 0, 10, 10), None).props)
     assert fin_blocks.TILES_RECT == (24, 178, 540, 172)
+
+
+def test_variance_chart_takes_one_colour_per_series():
+    a, b = meas("FR A"), meas("FR B")
+    vc = variance_chart("Variance", [a, b], (1242, 178, 654, 172), ["#0A2D6E", "#32A5E6"])
+    points = vc.props["dataPoint"]
+    assert [(p["selector"]["metadata"], p["properties"]["fill"]["solid"]["color"]["expr"]["Literal"]["Value"])
+            for p in points] == [(a.ref, "'#0A2D6E'"), (b.ref, "'#32A5E6'")]
+    try:
+        variance_chart("Variance", [a, b], (1242, 178, 654, 172), ["#0A2D6E"])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("one colour per series")
+
+
+def test_tile_without_lines_has_only_the_value_card():
+    v = meas("FR V")
+    out = tile("Period credits", v, None, None, None, None, (24, 178, 266, 82))
+    assert [c.roles["Values"] for c in _cards(out)] == [[v]]
+    one = tile("Out of balance", v, meas("FR L1"), meas("FR C1"), None, None, (24, 178, 266, 82))
+    assert [c.roles["Values"] for c in _cards(one)] == [[v], [meas("FR L1")]]
+
+
+def test_tile_value_filter_and_decimals():
+    from model import Filter
+    kpi = Filter(col("Finance KPI", "KPI Code"), "eq", ["FR_CURRENT_RATIO"])
+    out = tile("Current ratio", meas("FR KPI Value"), meas("FR L1"), meas("FR C1"), meas("FR L2"), meas("FR C2"),
+               (24, 178, 266, 82), value_filters=[kpi], decimals=2)
+    value = _cards(out)[0]
+    assert value.filters == [kpi]
+    assert "labelPrecision" in repr(value.props["labels"]) and "2L" in repr(value.props["labels"])
+
+
+def test_matrix_column_subtotals_off_and_subtotals_bold():
+    m = statement_matrix("tb", "monthly", [col("GL FS Monthly", "FS Type Name")], meas("FR TB Cell"), MATRIX_RECT, 1)
+    sub = m.props["subTotals"][0]["properties"]
+    assert sub["columnSubtotals"]["expr"]["Literal"]["Value"] == "false"
+    assert sub["bold"]["expr"]["Literal"]["Value"] == "true" and "fontBold" not in sub
+
+
+def test_matrix_without_grand_total_turns_off_the_first_level_subtotal():
+    rows = [col("P&L Line", "Section Name"), col("P&L Line", "PL Line Label")]
+    m = statement_matrix("is", "monthly", rows, meas("FR IS Cell"), MATRIX_RECT, 1, grand_total=False)
+    entries = m.props["subTotals"]
+    assert entries[0]["properties"]["perRowLevel"]["expr"]["Literal"]["Value"] == "true"
+    level = [e for e in entries if e.get("selector") == {"metadata": rows[0].ref}]
+    assert len(level) == 1 and level[0]["properties"]["levelSubtotalEnabled"]["expr"]["Literal"]["Value"] == "false"
+    assert not any(e.get("selector") == {"metadata": rows[1].ref} for e in entries)  # section subtotals stay
+    shown = statement_matrix("is", "monthly", rows, meas("FR IS Cell"), MATRIX_RECT, 1)
+    assert "levelSubtotalEnabled" not in repr(shown.props["subTotals"])
+
+
+def test_matrix_row_band_measure_colours_the_value_background():
+    m = statement_matrix("is", "monthly", [col("P&L Line", "Section Name")], meas("FR IS Cell"), MATRIX_RECT, 1,
+                         row_band=meas("FR Row Band"))
+    values = m.props["values"][0]["properties"]
+    assert "FR Row Band" in repr(values["backColor"]) and "Measure" in repr(values["backColor"])
+    plain = statement_matrix("is", "monthly", [col("P&L Line", "Section Name")], meas("FR IS Cell"), MATRIX_RECT, 1)
+    assert "backColor" not in plain.props["values"][0]["properties"]

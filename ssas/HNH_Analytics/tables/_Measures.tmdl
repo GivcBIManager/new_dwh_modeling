@@ -3654,6 +3654,40 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = P&L Report
+	/// Bar colour of FR Chart IS vs Budget % (the income statement's hospital comparison): favourable bar #05A591 above zero, unfavourable #DC280A below (P&L sign, R9b), muted #4D5B6B at zero or without a figure.
+	measure 'FR Chart IS vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR Change = [FR Chart IS vs Budget %]
+				RETURN
+					IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#05A591", IF ( ROUND ( Change, 3 ) < 0, "#DC280A", "#4D5B6B" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Bar colour of FR Chart IS vs LY % (the income statement's hospital comparison): favourable bar #05A591 above zero, unfavourable #DC280A below (P&L sign, R9b), muted #4D5B6B at zero or without a figure.
+	measure 'FR Chart IS vs LY Colour' =
+			VAR __Value = ( -- measure body
+				VAR Change = [FR Chart IS vs LY %]
+				RETURN
+					IF ( ISBLANK ( Change ), "#4D5B6B", IF ( ROUND ( Change, 3 ) > 0, "#05A591", IF ( ROUND ( Change, 3 ) < 0, "#DC280A", "#4D5B6B" ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report | P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """FR Chart IS vs LY Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = P&L Report
+	/// Background of an income statement matrix row by its P&L line: net band #DFE8F1 on Net profit and Total comprehensive income, total band #EFF4F9 on the other subtotal lines (Line Kind 'subtotal'), white on detail lines and with several lines in context.
+	measure 'FR Row Band' =
+			VAR Code = SELECTEDVALUE ( 'P&L Line'[PL Line Code] )
+			VAR Kind = SELECTEDVALUE ( 'P&L Line'[Line Kind] )
+			RETURN
+				SWITCH ( TRUE (), Code IN { "NET_PROFIT", "TOTAL_COMPREHENSIVE_INCOME" }, "#DFE8F1", Kind = "subtotal", "#EFF4F9", "#FFFFFF" )
+		formatString: General
+		displayFolder: Finance\Report
 	/// Chart series: balance sheet month-end balance (display sign) actual. The matrix row in context drives it; with no row selected it shows the default line (trade receivables, net).
 	measure 'FR Chart BS Actual' =
 			VAR __Value = ( -- measure body

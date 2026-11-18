@@ -64,22 +64,29 @@ def _line(field: Field, colour: Field, x: float, y: float, w: float, h: float) -
     return Visual("card", x, y, w, h, roles={"Values": [field]}, props=look)
 
 
-def tile(label: str, value: Field, line1: Field, colour1: Field, line2: Field, colour2: Field,
-         rect: Rect) -> list[Visual]:
+def tile(label: str, value: Field, line1: Field | None, colour1: Field | None, line2: Field | None,
+         colour2: Field | None, rect: Rect, value_filters: list[Filter] | None = None,
+         decimals: int | None = None) -> list[Visual]:
     """A KPI tile (as hr_frame.kpi_tile): a white panel; on the left the value card (25 pt) under the label in muted
-    11.5 pt capitals (the card's title); on the right two stacked right-aligned text lines, each in the colour its measure returns."""
+    11.5 pt capitals (the card's title); on the right two stacked right-aligned text lines, each in the colour its
+    measure returns. A line given as None is left out (the trial balance's debits and credits have none; a tile
+    without lines gives the value card the whole width). `value_filters`: visual filters of the value card only (a
+    KPI code for [FR KPI Value]); `decimals`: the value's decimal places (card_look), None keeps the format's."""
     x, y, w, h = rect
     if h < 60 or w < 200:
         raise ValueError(f"tile {label}: {w} x {h} px is too small")
+    if (line1 is None) != (colour1 is None) or (line2 is None) != (colour2 is None):
+        raise ValueError(f"tile {label}: a line and its colour go together")
     ix, iw, ih = x + PAD, w - 2 * PAD, h - 2 * PAD_Y
-    value_w = round(iw * 0.46)  # label and figure on the left, the two lines stacked on the right
+    lines = [(f, c) for f, c in ((line1, colour1), (line2, colour2)) if f is not None]
+    value_w = round(iw * 0.46) if lines else iw  # label and figure on the left, the two lines stacked on the right
     line_h = ih / 2
     card = Visual("card", ix, y + PAD_Y, value_w, ih, roles={"Values": [value]}, title=label.upper(),
-                  props={**hr_frame.card_look(VALUE_PT, INK), **_label_title()})
+                  filters=list(value_filters or []),
+                  props={**hr_frame.card_look(VALUE_PT, INK, decimals=decimals), **_label_title()})
     lx, lw = ix + value_w, iw - value_w
-    return [hr_frame.white_panel(x, y, w, h), card,
-            _line(line1, colour1, lx, y + PAD_Y, lw, line_h),
-            _line(line2, colour2, lx, y + PAD_Y + line_h, lw, line_h)]
+    return [hr_frame.white_panel(x, y, w, h), card] + [_line(f, c, lx, y + PAD_Y + i * line_h, lw, line_h)
+                                                       for i, (f, c) in enumerate(lines)]
 
 
 def _series(measures: list[Field], colours: list[str]) -> dict:
@@ -101,14 +108,16 @@ def monthly_chart(title: str, measures: list[Field], colours: list[str], rect: R
                   props={**hr_frame.column_look("none"), **_series(measures, colours), **_legend(len(measures) > 1)})
 
 
-def variance_chart(title: str, measures: list[Field], rect: Rect) -> Visual:
-    """Variance by month: clustered columns in the canvas's month blue, labels on (the measures return the P&L sign,
-    positive favourable)."""
+def variance_chart(title: str, measures: list[Field], rect: Rect, colours: list[str] | None = None) -> Visual:
+    """Variance by month: clustered columns, one colour per series (`colours`; default the canvas's month blue for
+    every series), labels on (the measures return the P&L sign, positive favourable)."""
     ms = list(measures)
+    colours = list(colours) if colours is not None else [MONTH_BAND] * len(ms)
+    if len(colours) != len(ms):
+        raise ValueError("variance_chart: one colour per measure")
     return Visual("columnChart", *rect, roles={"Category": [MONTH_SHORT], "Y": ms}, title=title,
                   sort=MONTH_SHORT, sort_dir="asc",
-                  props={**hr_frame.column_look("none"), **_series(ms, [MONTH_BAND] * len(ms)),
-                         **_legend(len(ms) > 1)})
+                  props={**hr_frame.column_look("none"), **_series(ms, colours), **_legend(len(ms) > 1)})
 
 
 def ranked_bars(title: str, measure: Field, rect: Rect, favourable: Field | None) -> Visual:
@@ -121,24 +130,34 @@ def ranked_bars(title: str, measure: Field, rect: Rect, favourable: Field | None
 
 
 def statement_matrix(page: str, view: str, rows: list[Field], cell: Field, rect: Rect,
-                     expand_levels: int) -> Visual:
+                     expand_levels: int, grand_total: bool = True, row_band: Field | None = None) -> Visual:
     """The page's statement matrix: `rows` down, `Finance Column[Group Name]` > `[Column Name]` across (hospital
     views: the branch first), `cell` in the values, filtered to the page's and view's Finance Column rows. Values
-    right-aligned, font colour from [FR Cell Colour]; header band navy with white text; row subtotals bold. The
+    right-aligned, font colour from [FR Cell Colour]; header band navy with white text; row subtotals bold; no column
+    subtotals (a text cell has no total across columns). `grand_total` False hides the row grand total: subtotals per
+    row level, the first level's subtotal (the grand total) off, the others on. `row_band`: a measure returning each
+    row's background colour (conditional formatting of the values by field value; row headers keep theirs). The
     matrix opens at its first row level (expand=False); opening `expand_levels` levels is not expressible by the
     generator (see the task report), the argument is only checked to be at least 1."""
     if expand_levels < 1:
         raise ValueError(f"expand_levels {expand_levels}: at least 1")
     columns = ([BRANCH_NAME] if view == "hospitals" else []) + [FC_GROUP, FC_COLUMN]
+    values = {"fontColor": hr_frame.measure_colour(CELL_COLOUR), "fontSize": _num(11),
+              "fontFamily": _lit("Segoe UI"), "alignment": _lit("Right")}
+    if row_band is not None:
+        values["backColor"] = hr_frame.measure_colour(row_band.name)
+    subtotals = [{"properties": {"rowSubtotals": _lit(True), "columnSubtotals": _lit(False), "bold": _lit(True),
+                                 "fontColor": _colour(INK)}}]
+    if not grand_total:
+        subtotals[0]["properties"]["perRowLevel"] = _lit(True)
+        subtotals.append({"properties": {"levelSubtotalEnabled": _lit(False)}, "selector": {"metadata": rows[0].ref}})
     props = {
-        "values": [{"properties": {"fontColor": hr_frame.measure_colour(CELL_COLOUR), "fontSize": _num(11),
-                                   "fontFamily": _lit("Segoe UI"), "alignment": _lit("Right")}}],
+        "values": [{"properties": values}],
         "columnHeaders": [{"properties": {"backColor": _colour(PERIOD_BAND), "fontColor": _colour(WHITE),
                                           "fontSize": _num(11), "alignment": _lit("Center"),
                                           "fontFamily": _lit("Segoe UI Semibold")}}],
         "rowHeaders": [{"properties": {"fontSize": _num(11), "fontColor": _colour(INK)}}],
-        "subTotals": [{"properties": {"rowSubtotals": _lit(True), "fontBold": _lit(True),
-                                      "fontColor": _colour(INK)}}],
+        "subTotals": subtotals,
         **hr_frame.bsc.white_panel(),
     }
     return Visual("matrix", *rect, roles={"Rows": list(rows), "Columns": columns, "Values": [cell]},
