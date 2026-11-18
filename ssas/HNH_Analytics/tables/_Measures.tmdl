@@ -1810,12 +1810,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -1838,12 +1839,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -1866,12 +1868,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -1894,12 +1897,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -1922,12 +1926,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -1950,12 +1955,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -1978,12 +1984,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -2006,12 +2013,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
@@ -2034,12 +2042,13 @@ table _Measures
 			VAR __Value = ( -- measure body
 				SUMX (
 					VALUES ( Branch[Branch Key] ),
+					VAR B = Branch[Branch Key]
 					VAR LastMonth =
 						CALCULATE (
 							MAX ( 'GL FS Monthly'[Month Date Key] ),
 							REMOVEFILTERS ( 'GL FS Monthly' ),
 							VALUES ( 'Date'[Date] ),
-							VALUES ( Branch[Branch Key] ),
+							Branch[Branch Key] = B,
 							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
 						)
 					RETURN
