@@ -46,7 +46,7 @@ lines as (
 
 overrides as (
     select toUInt8(o.branch_id) as branch_key, makeDate(o.year, o.month, 1) as month_start, l.pl_line_key as pl_line_key,
-           l.pl_line_code as pl_line_code, l.section_name as section_name, toFloat64(o.amount) * l.natural_sign as amount
+           l.pl_line_code as pl_line_code, l.section_name as section_name, l.budget_sign as budget_sign, toFloat64(o.amount) * l.natural_sign as amount
     from {{ ref('stg_ref__finance_budget') }} as o
     inner join lines as l on l.pl_line_code = o.line_code
     where o.statement = 'IS' and l.line_kind = 'detail'
@@ -54,18 +54,18 @@ overrides as (
 
 detail_parts as (
     select c.branch_key as branch_key, c.month_start as month_start, l.pl_line_key as pl_line_key, l.pl_line_code as pl_line_code,
-           l.section_name as section_name, c.amount * l.budget_sign as budget_amount, toFloat64(0) as override_amount, toUInt8(0) as has_override
+           l.section_name as section_name, c.amount * l.budget_sign as budget_amount, toFloat64(0) as override_amount, toUInt8(0) as has_override, toUInt8(1) as is_linked
     from budget_codes as c
     inner join lines as l on l.budget_line_code = c.code
     where l.line_kind = 'detail' and l.budget_sign != 0
     union all
-    select branch_key, month_start, pl_line_key, pl_line_code, section_name, toFloat64(0), amount, toUInt8(1)
+    select branch_key, month_start, pl_line_key, pl_line_code, section_name, toFloat64(0), amount, toUInt8(1), toUInt8(budget_sign != 0)
     from overrides
 ),
 
 details as (
     select branch_key, month_start, pl_line_key, pl_line_code, section_name,
-           sum(budget_amount) as budget_total, max(has_override) as any_override,
+           sum(budget_amount) as budget_total, max(has_override) as any_override, max(is_linked) as linked_line,
            if(max(has_override) = 1, sum(override_amount), sum(budget_amount)) as amount
     from detail_parts
     group by branch_key, month_start, pl_line_key, pl_line_code, section_name
@@ -78,11 +78,12 @@ subtotal_lines as (
     where line_kind = 'subtotal'
 ),
 
--- per branch-month and subtotal: sum of the sections' lines, override differences, and any override
+-- per branch-month and subtotal: sum of the sections' lines, override differences on LINKED lines only (an unlinked line sits
+-- outside the budget's own totals), and any override
 subtotal_sums as (
     select d.branch_key as branch_key, d.month_start as month_start, s.pl_line_key as pl_line_key, s.pl_line_code as pl_line_code,
            s.budget_line_code as budget_line_code, s.budget_sign as budget_sign,
-           sum(d.amount) as section_sum, sum(d.amount - d.budget_total) as delta, max(d.any_override) as any_override
+           sum(d.amount) as section_sum, sum(if(d.linked_line = 1, d.amount - d.budget_total, 0)) as delta, max(if(d.linked_line = 1, d.any_override, 0)) as any_override
     from details as d
     inner join subtotal_lines as s on s.section_name = d.section_name
     group by d.branch_key, d.month_start, s.pl_line_key, s.pl_line_code, s.budget_line_code, s.budget_sign

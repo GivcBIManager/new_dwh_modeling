@@ -183,7 +183,7 @@ Describe 'fact_finance_budget_monthly' {
            "(1, 'GA_HO_CHARGES', 5), (1, 'TOTAL_GA', 40), (1, 'EBITDA', 860), (1, 'NET_PROFIT', 860), (2, 'DC_EMPLOYEE', 0))"
     $stg = "select toUInt8(b) as branch_id, toUInt16(2026) as year, toUInt8(1) as month, st as statement, lc as line_code, toFloat64(a) as amount, now() as last_changed_at " +
            "from values('b UInt8, st String, lc String, a Float64', " +
-           "(1, 'IS', 'DC_EMPLOYEE', 120), (1, 'IS', 'EBITDA', 9999), (1, 'BS', 'cash', 500), (7, 'IS', 'REV_CASH', 50), (7, 'IS', 'DC_EMPLOYEE', 30))"
+           "(1, 'IS', 'DC_EMPLOYEE', 120), (1, 'IS', 'EBITDA', 9999), (1, 'IS', 'REV_CASH', 50), (1, 'BS', 'cash', 500), (7, 'IS', 'REV_CASH', 50), (7, 'IS', 'DC_EMPLOYEE', 30))"
     $rep = @{ fact_income_statement_monthly = $fim; stg_ref__finance_budget = $stg; dim_pl_report_line = (Get-RenderedModel 'dim_pl_report_line') }
     $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_finance_budget_monthly' $rep) @{}
     $k = @{}; foreach ($r in $rows) { $k["$($r.branch_key)|$($r.statement)|$($r.pl_line_code)$($r.bs_caption)"] = $r }
@@ -221,6 +221,13 @@ Describe 'fact_finance_budget_monthly' {
         $r.pl_line_code | Should Be ''
         $r.bs_caption | Should Be 'cash'
         [int64]$r.month_date_key | Should Be 20260101
+    }
+    It 'leaves a linked subtotal alone for an unlinked override and rolls up the unlinked subtotal' {
+        [double]$k['1|IS|REV_CASH'].amount | Should Be 50
+        [double]$k['1|IS|NET_REVENUE'].amount | Should Be 1000
+        $k['1|IS|NET_REVENUE'].source | Should Be 'budget'
+        [double]$k['1|IS|REV_TOTAL'].amount | Should Be 50
+        $k['1|IS|REV_TOTAL'].source | Should Be 'rollup'
     }
     It 'gives GA_TOTAL the budget less marketing and head office charges' {
         [double]$k['1|IS|GA_TOTAL'].amount | Should Be -25
