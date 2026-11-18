@@ -136,8 +136,8 @@ def render(name, inline=frozenset(), replace=None, depth=0):
         if m:
             return surrogate_key([c.strip().strip("'\"") for c in m.group(1).split(",")])
         macro = render_macro(expr)
-        if macro is not None:
-            return macro
+        if macro is not None:  # the macro's body may call ref(), hnh_title() or another macro
+            return re.sub(r"\{\{(.*?)\}\}", sub, macro, flags=re.S)
         raise SystemExit(f"{name}: unsupported Jinja {{{{ {expr} }}}}")
 
     return re.sub(r"\{\{(.*?)\}\}", sub, sql, flags=re.S).strip()

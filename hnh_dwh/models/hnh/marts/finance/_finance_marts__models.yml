@@ -199,5 +199,7 @@ models:
           - relationships: {to: ref('dim_pl_report_line'), field: pl_line_key}
       - name: account_code
         description: Oasis main + sub account or the Fusion natural account; '' on subtotal rows.
+      - name: account_name
+        description: Account name, title-cased (Oasis from fact_gl_fs_monthly, Fusion the natural account name); the account code where it has no name; '' on subtotal rows.
       - name: amount
         description: Movement of the month, credit positive (-movement of the GL).

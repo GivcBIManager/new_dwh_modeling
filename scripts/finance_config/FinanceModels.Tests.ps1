@@ -104,3 +104,37 @@ Describe 'fact_gl_fs_monthly debit and credit' {
         $k['4200'].account_name | Should Be '4200'
     }
 }
+
+# fact_pl_report_monthly (task 3): account_name on the Oasis and Fusion rows. Branch 3: Oasis row from fact_gl_fs_monthly
+# (name already title-cased there, '' not possible: the model falls back to the code), Fusion from 2026-07.
+Describe 'fact_pl_report_monthly account_name' {
+    $plFsm = "select toUInt8(3) as branch_key, toDate('2026-06-01') as month_start, 'oasis' as source_system, c as account_code, n as account_name, " +
+             "'is' as fs_type, 'revenue' as fs_category, 'revenue cash' as fs_caption, 'revenue cash' as fs_line, toFloat64(-100) as movement " +
+             "from values('c String, n String', ('41101', 'Revenue Cash'))"
+    $plAcct = "select toInt64(a) as gl_account_key, toUInt32(nat) as natural_account, nn as natural_account_name, toInt64(1) as fs_line_key, " +
+              "cast(null as Nullable(String)) as specialty_name, cast(null as Nullable(String)) as service_location_name, cast(null as Nullable(String)) as service_group_name " +
+              "from values('a Int64, nat UInt32, nn Nullable(String)', (11, 4100, 'AUDIT FEES'), (12, 4200, ''), (13, 4300, 'CTAS Level 2'))"
+    $plBal = "select toUInt8(3) as branch_key, toInt32(202608) as period_key, toInt64(a) as gl_account_key, 'including_unposted' as balance_view, " +
+             "toFloat64(px) as period_movement_excl_opening from values('a Int64, px Float64', (11, 60), (12, 4), (13, 7))"
+    $plFs = "select toInt64(1) as fs_line_key, 'IS' as fs_type, 'Revenue' as fs_category, 'Revenue Cash' as fs_caption, 'Revenue Cash' as fs_line"
+    $plRule = "select '' as source_system, 'revenue' as fs_category, '' as fs_caption, '' as fs_line, 'REV_CASH' as pl_line_code, toUInt8(0) as score"
+    $plLine = "select toUInt16(100) as pl_line_key, 'REV_CASH' as pl_line_code, 'Revenue' as section_name, 'detail' as line_kind, cast([] as Array(String)) as subtotal_sections " +
+              "union all select toUInt16(199), 'REV_TOTAL', 'Revenue', 'subtotal', ['Revenue']"
+    $rep = @{ fact_gl_fs_monthly = $plFsm; stg_ref__gl_cutover = $glCutover; fact_gl_balance_monthly = $plBal; hnh_dim_gl_period = $glPeriod
+              hnh_dim_gl_account = $plAcct; dim_fs_line = $plFs; pl_report_line_rule = $plRule; dim_pl_report_line = $plLine }
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'fact_pl_report_monthly' $rep) @{}
+    $k = @{}; foreach ($r in $rows) { $k["$($r.source_system)|$($r.pl_line_code)|$($r.account_code)"] = $r }
+    It 'carries account_name for Oasis and Fusion rows' {
+        $k['oasis|REV_CASH|41101'].account_name | Should Be 'Revenue Cash'
+        $k['fusion|REV_CASH|4100'].account_name | Should Be 'Audit Fees'
+        $k['fusion|REV_CASH|4300'].account_name | Should Be 'CTAS Level 2'
+    }
+    It 'falls back to the code and leaves subtotal rows blank' {
+        $k['fusion|REV_CASH|4200'].account_name | Should Be '4200'
+        $k['fusion|REV_TOTAL|'].account_name | Should Be ''
+    }
+    It 'keeps the amounts' {
+        [double]$k['fusion|REV_CASH|4100'].amount | Should Be -60
+        [double]$k['fusion|REV_TOTAL|'].amount | Should Be -71
+    }
+}

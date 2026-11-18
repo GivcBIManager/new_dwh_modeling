@@ -36,6 +36,7 @@ select
     'fusion'                                                            as source_system,
     -- the natural account (segment 2), as fact_gl_fs_monthly; a combination without one keeps its own key
     ifNull(toString(a.natural_account), toString(f.gl_account_key))     as account_code,
+    ifNull(any(a.natural_account_name), '')                             as account_name,
     lower(d.fs_category)                                                as fs_category,
     lower(d.fs_caption)                                                 as fs_caption,
     lower(d.fs_line)                                                    as fs_line,
@@ -64,9 +65,10 @@ group by branch_key, month_start, account_code, fs_category, fs_caption, fs_line
 {%- endmacro %}
 
 {# P&L report rows from detail rows. `details` names a CTE with branch_key, month_start, source_system, account_code,
+   account_name (as entered; '' on subtotal rows),
    fs_category, fs_caption, fs_line (lower case, not Nullable), specialty_name, service_location_name,
    service_group_name and amount (credit positive), at any grain. Returns branch_key, month_start, source_system,
-   pl_line_key, pl_line_code, account_code, fs_category, fs_caption, fs_line, the three slicer names and amount:
+   pl_line_key, pl_line_code, account_code, account_name, fs_category, fs_caption, fs_line, the three slicer names and amount:
    - detail rows: the labels resolved to a detail or not-mapped line (hnh_pl_report_line_pick), summed per line,
      account, labels and slicer names;
    - subtotal rows: per subtotal line, the detail and not-mapped rows whose section is in its subtotal_sections
@@ -87,7 +89,7 @@ pl_detail as (
     select
         d.branch_key as branch_key, d.month_start as month_start, d.source_system as source_system,
         l.pl_line_key as pl_line_key, l.pl_line_code as pl_line_code, l.section_name as section_name,
-        d.account_code as account_code, d.fs_category as fs_category, d.fs_caption as fs_caption, d.fs_line as fs_line,
+        d.account_code as account_code, d.account_name as account_name, d.fs_category as fs_category, d.fs_caption as fs_caption, d.fs_line as fs_line,
         d.specialty_name as specialty_name, d.service_location_name as service_location_name,
         d.service_group_name as service_group_name, sum(d.amount) as amount
     from {{ details }} as d
@@ -100,13 +102,13 @@ pl_detail as (
         where line_kind in ('detail', 'not_mapped')
     ) as l on l.pl_line_code = k.pl_line_code
     group by branch_key, month_start, source_system, pl_line_key, pl_line_code, section_name, account_code,
-             fs_category, fs_caption, fs_line, specialty_name, service_location_name, service_group_name
+             account_name, fs_category, fs_caption, fs_line, specialty_name, service_location_name, service_group_name
 ),
 
 pl_subtotal as (
     select
         d.branch_key as branch_key, d.month_start as month_start, d.source_system as source_system,
-        s.pl_line_key as pl_line_key, s.pl_line_code as pl_line_code, '' as account_code, '' as fs_category,
+        s.pl_line_key as pl_line_key, s.pl_line_code as pl_line_code, '' as account_code, '' as account_name, '' as fs_category,
         '' as fs_caption, '' as fs_line, d.specialty_name as specialty_name,
         d.service_location_name as service_location_name, d.service_group_name as service_group_name,
         sum(d.amount) as amount
@@ -122,12 +124,12 @@ pl_subtotal as (
 ),
 
 pl_rows as (
-    select branch_key, month_start, source_system, pl_line_key, pl_line_code, account_code, fs_category, fs_caption,
-           fs_line, specialty_name, service_location_name, service_group_name, amount
+    select branch_key, month_start, source_system, pl_line_key, pl_line_code, account_code, account_name, fs_category,
+           fs_caption, fs_line, specialty_name, service_location_name, service_group_name, amount
     from pl_detail
     union all
-    select branch_key, month_start, source_system, pl_line_key, pl_line_code, account_code, fs_category, fs_caption,
-           fs_line, specialty_name, service_location_name, service_group_name, amount
+    select branch_key, month_start, source_system, pl_line_key, pl_line_code, account_code, account_name, fs_category,
+           fs_caption, fs_line, specialty_name, service_location_name, service_group_name, amount
     from pl_subtotal
 )
 
