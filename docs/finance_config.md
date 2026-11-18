@@ -26,7 +26,7 @@ Every row ends with the same four columns:
 **See the history of a key:**
 
 ```sql
-SELECT * FROM default.map_finance_target WHERE kpi_code = 'FIN_NET_MARGIN' ORDER BY changed_at;
+SELECT * FROM default.map_finance_target WHERE kpi_code = 'FR_AR_DAYS' ORDER BY changed_at;
 ```
 
 **Undo a change.** Insert the previous values again.
@@ -49,8 +49,23 @@ Key: `branch_id`, `year`, `month`, `statement`, `line_code`.
 | `branch_id` | hospital 1-8 |
 | `year`, `month` | calendar month, `month` 1-12 |
 | `statement` | `IS` (income statement) or `BS` (balance sheet); upper-cased and trimmed by the staging model |
-| `line_code` | `IS`: a `pl_line_code` of a detail line of `dim_pl_report_line` (for example `REV_CASH`, `DIS_CASH`, `DC_CONSUMABLES`, `DC_EMPLOYEE`); subtotals and `Not mapped` lines take no amount. `BS`: the lower-case FS caption as shown in `GL FS Monthly` |
+| `line_code` | `IS`: a `pl_line_code` of a detail line of `dim_pl_report_line` (full list below); subtotals and `Not mapped` lines take no amount. `BS`: the lower-case FS caption as shown in `GL FS Monthly` |
 | `amount` | SAR, **entered as a positive number** for revenue and costs alike. The model applies the line's sign (revenue positive, discounts and costs negative in the P&L Report) |
+
+**Detail lines (every `pl_line_code` that takes an amount), by section.** Subtotal lines (for example `NET_REVENUE`, `GROSS_PROFIT`, `EBITDA`, `NET_PROFIT`) and `Not mapped` lines are never entered: subtotals roll up from the detail lines.
+
+- Revenue: `REV_CASH` (Revenue Cash), `REV_CREDIT` (Revenue Credit)
+- Revenue - Contractual Discounts: `DIS_CASH` (Cash Discount), `DIS_CREDIT` (Credit Discount), `DIS_PACKAGE` (Package Discount)
+- Revenue - Settlement Discount: `DIS_REJECTION` (Rejection), `DIS_VOLUME` (Volume Discount), `DIS_EARLY_PAYMENT` (Early Payment Discount), `DIS_UNCLAIMED` (Unclaimed Discount), `DIS_PATIENT_REFERRAL` (Patient Referral Discount)
+- Direct Cost: `DC_CONSUMABLES` (Consumables), `DC_MEDICINES` (Cost of Medicines), `DC_DOCTORS_FEE` (Doctors Fee and Commission), `DC_EMPLOYEE` (Employee Costs), `DC_GOVT_FEES` (Employee Govt Fees), `DC_INSURANCE` (Insurance Expenses), `DC_KITCHEN` (Kitchen Expenses), `DC_MAINTENANCE` (Maintenance Expense), `DC_OTHER` (Other Direct expenses), `DC_REFERRAL` (Referral Cost), `DC_RENTAL` (Rental Cost), `DC_TRAINING` (Staff training and recruitments), `DC_TRAVEL` (Travelling Expenses), `DC_UTILITIES` (Utilities)
+- General and administrative expenses: `GA_GOVT_FEE` (Government Fee), `GA_AUDIT` (Audit Fees), `GA_BOARD` (Board Of Directors Expenses), `GA_COMMUNICATION` (Communication Expense), `GA_MGMT_REWARD` (Corporate Management Reward), `GA_ECL` (Expected credit loss), `GA_OTHER` (Other indirect Expenses), `GA_POSTAGE` (Postage printing and stationary), `GA_PROFESSIONAL` (Professional Fee and subscription), `GA_SECURITY` (Security and cleaning Expenses), `GA_TRAINING` (Staff training and recruitment), `GA_EMPLOYEE` (Employee Cost), `GA_MAINTENANCE` (Maintenance Expense), `GA_UTILITIES` (Utilities Expenses), `GA_TRAVEL` (Travelling Expenses), `GA_INSURANCE` (Insurance Expenses), `GA_KITCHEN` (Kitchen Expenses)
+- Selling and Marketing expenses: `SM` (Selling and Marketing expenses)
+- Charges from head office: `HO_CHARGES` (Charges from head office)
+- Other Income: `OTHER_INCOME` (Other Income)
+- Finance Cost: `FINANCE_COST` (Finance Cost)
+- Depreciation and Amortization: `DEPRECIATION` (Depreciation and Amortization)
+- Zakat: `ZAKAT` (Zakat)
+- OCI: `OCI` (OCI)
 
 Sign convention: never type a minus sign to mean a cost. A negative `amount` is taken literally and reverses the line.
 
@@ -74,5 +89,5 @@ Key: `kpi_code`, `branch_id`, `year`.
 
 ```sql
 INSERT INTO default.map_finance_target (kpi_code, branch_id, year, target_value, watch_pct, changed_at, changed_by, change_note, is_deleted) VALUES
-    ('FIN_NET_MARGIN', 0, 2026, 0.12, 0, now64(3), 'Your Name', 'target 2026', 0);
+    ('FR_AR_DAYS', 0, 2026, 60, 0, now64(3), 'Your Name', 'target 2026', 0);
 ```
