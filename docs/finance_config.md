@@ -84,10 +84,11 @@ Key: `kpi_code`, `branch_id`, `year`.
 | `kpi_code` | the finance KPI code |
 | `branch_id` | `0` = all hospitals, 1-8 = one hospital (a hospital row beats the `0` row) |
 | `year` | calendar year |
-| `target_value` | the target, in the KPI's own unit |
+| `target_value` | the target, in the KPI's own unit: days for a `d` KPI, times for an `x` KPI, and a **fraction** for a `%` KPI (`0.21` = 21%, never `21`) |
 | `watch_pct` | how far below the target still counts as Watch, as a fraction (`0.05` = 5%). `0` means the default `0.05` |
 
 ```sql
 INSERT INTO default.map_finance_target (kpi_code, branch_id, year, target_value, watch_pct, changed_at, changed_by, change_note, is_deleted) VALUES
-    ('FR_AR_DAYS', 0, 2026, 60, 0, now64(3), 'Your Name', 'target 2026', 0);
+    ('FR_AR_DAYS', 0, 2026, 60, 0, now64(3), 'Your Name', 'target 2026', 0),
+    ('FR_EBITDA_MARGIN', 0, 2026, 0.21, 0, now64(3), 'Your Name', 'target 2026: 21%', 0);
 ```

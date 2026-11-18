@@ -3787,36 +3787,42 @@ table _Measures
 								VAR Gap = DIVIDE ( Achieved - Planned, ABS ( Planned ) )
 								RETURN
 									IF ( NOT ISBLANK ( Gap ), 1 + Gap ),
-							"FR_GP_MARGIN", DIVIDE ( [Fin Gross Profit], [Fin Net Revenue] ),
-							"FR_EBITDA_MARGIN", DIVIDE ( [Fin EBITDA], [Fin Net Revenue] ),
-							"FR_OP_MARGIN", DIVIDE ( [Fin EBITDA] - [Fin D&A], [Fin Net Revenue] ),
-							"FR_NP_MARGIN", DIVIDE ( [Fin Net Profit], [Fin Net Revenue] ),
-							"FR_ROA", DIVIDE ( [Fin Net Profit] * [Fin Annualise], [Fin Total Assets] ),
-							"FR_ROE", DIVIDE ( [Fin Net Profit] * [Fin Annualise], [Fin Total Assets] - [Fin Total Liabilities] ),
-							"FR_CURRENT_RATIO", DIVIDE ( [Fin Current Assets], [Fin Current Liabilities] ),
-							"FR_QUICK_RATIO", DIVIDE ( [Fin Current Assets] - [Fin Inventories], [Fin Current Liabilities] ),
-							"FR_CASH_RATIO", DIVIDE ( [Fin Cash], [Fin Current Liabilities] ),
-							"FR_AR_DAYS", DIVIDE ( [Fin Trade Receivables], [Fin Net Revenue] ) * [Fin Period Days],
+							"FR_GP_MARGIN", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin Gross Profit], [Fin Net Revenue] ) ),
+							"FR_EBITDA_MARGIN", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin EBITDA], [Fin Net Revenue] ) ),
+							"FR_OP_MARGIN", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin EBITDA] - [Fin D&A], [Fin Net Revenue] ) ),
+							"FR_NP_MARGIN", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin Net Profit], [Fin Net Revenue] ) ),
+							"FR_ROA", IF ( [Fin Total Assets] > 0, DIVIDE ( [Fin Net Profit] * [Fin Annualise], [Fin Total Assets] ) ),
+							"FR_ROE",
+								VAR NetAssets = [Fin Total Assets] - [Fin Total Liabilities]
+								RETURN
+									IF ( NetAssets > 0, DIVIDE ( [Fin Net Profit] * [Fin Annualise], NetAssets ) ),
+							"FR_CURRENT_RATIO", IF ( [Fin Current Liabilities] > 0, DIVIDE ( [Fin Current Assets], [Fin Current Liabilities] ) ),
+							"FR_QUICK_RATIO", IF ( [Fin Current Liabilities] > 0, DIVIDE ( [Fin Current Assets] - [Fin Inventories], [Fin Current Liabilities] ) ),
+							"FR_CASH_RATIO", IF ( [Fin Current Liabilities] > 0, DIVIDE ( [Fin Cash], [Fin Current Liabilities] ) ),
+							"FR_AR_DAYS", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin Trade Receivables], [Fin Net Revenue] ) * [Fin Period Days] ),
 							"FR_INV_DAYS",
 								VAR Flow = IF ( NOT ISBLANK ( [Fin Consumables] ) || NOT ISBLANK ( [Fin Medicines] ), [Fin Consumables] + [Fin Medicines] )
 								RETURN
-									DIVIDE ( [Fin Inventories], Flow ) * [Fin Period Days],
+									IF ( Flow > 0, DIVIDE ( [Fin Inventories], Flow ) * [Fin Period Days] ),
 							"FR_AP_DAYS",
 								-- purchases on credit: direct cost less employee cost and doctors' fees, plus G&A less its employee cost, plus marketing
 								-- ( Fin Employee Cost holds the direct-cost and the G&A employee lines, so each leaves once )
 								VAR Flow = [Fin Direct Cost] - [Fin Employee Cost] - [Fin Doctors Fee] + [Fin G&A] + [Fin Marketing]
 								RETURN
-									DIVIDE ( [Fin Trade Payables], Flow ) * [Fin Period Days],
+									IF ( Flow > 0, DIVIDE ( [Fin Trade Payables], Flow ) * [Fin Period Days] ),
 							"FR_CCC",
-								VAR Receivable = DIVIDE ( [Fin Trade Receivables], [Fin Net Revenue] ) * [Fin Period Days]
+								VAR Receivable = IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin Trade Receivables], [Fin Net Revenue] ) * [Fin Period Days] )
 								VAR StockFlow = IF ( NOT ISBLANK ( [Fin Consumables] ) || NOT ISBLANK ( [Fin Medicines] ), [Fin Consumables] + [Fin Medicines] )
-								VAR Stock = DIVIDE ( [Fin Inventories], StockFlow ) * [Fin Period Days]
+								VAR Stock = IF ( StockFlow > 0, DIVIDE ( [Fin Inventories], StockFlow ) * [Fin Period Days] )
 								VAR PayFlow = [Fin Direct Cost] - [Fin Employee Cost] - [Fin Doctors Fee] + [Fin G&A] + [Fin Marketing]
-								VAR Payable = DIVIDE ( [Fin Trade Payables], PayFlow ) * [Fin Period Days]
+								VAR Payable = IF ( PayFlow > 0, DIVIDE ( [Fin Trade Payables], PayFlow ) * [Fin Period Days] )
 								RETURN
 									IF ( NOT ISBLANK ( Receivable ) && NOT ISBLANK ( Stock ) && NOT ISBLANK ( Payable ), Receivable + Stock - Payable ),
-							"FR_ASSET_TURNOVER", DIVIDE ( [Fin Net Revenue] * [Fin Annualise], [Fin Total Assets] ),
-							"FR_DEBT_EQUITY", DIVIDE ( [Fin Lease Liability], [Fin Total Assets] - [Fin Total Liabilities] ),
+							"FR_ASSET_TURNOVER", IF ( [Fin Total Assets] > 0, DIVIDE ( [Fin Net Revenue] * [Fin Annualise], [Fin Total Assets] ) ),
+							"FR_DEBT_EQUITY",
+								VAR NetAssets = [Fin Total Assets] - [Fin Total Liabilities]
+								RETURN
+									IF ( NetAssets > 0, DIVIDE ( [Fin Lease Liability], NetAssets ) ),
 							"FR_NET_DEBT_EBITDA",
 								VAR YearEBITDA = [Fin EBITDA] * [Fin Annualise]
 								RETURN
@@ -3825,15 +3831,15 @@ table _Measures
 								VAR Interest = [Fin Finance Cost]
 								RETURN
 									IF ( Interest > 0, DIVIDE ( [Fin EBITDA] - [Fin D&A], Interest ) ),
-							"FR_EQUITY_RATIO", DIVIDE ( [Fin Total Assets] - [Fin Total Liabilities], [Fin Total Assets] ),
-							"FR_COST_TO_REV", DIVIDE ( [Fin Direct Cost], [Fin Net Revenue] ),
-							"FR_STAFF_COST_RATIO", DIVIDE ( [Fin Employee Cost], [Fin Net Revenue] ),
+							"FR_EQUITY_RATIO", IF ( [Fin Total Assets] > 0, DIVIDE ( [Fin Total Assets] - [Fin Total Liabilities], [Fin Total Assets] ) ),
+							"FR_COST_TO_REV", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin Direct Cost], [Fin Net Revenue] ) ),
+							"FR_STAFF_COST_RATIO", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin Employee Cost], [Fin Net Revenue] ) ),
 							"FR_MED_MATERIALS_RATIO",
 								VAR Materials = IF ( NOT ISBLANK ( [Fin Consumables] ) || NOT ISBLANK ( [Fin Medicines] ), [Fin Consumables] + [Fin Medicines] )
 								RETURN
-									DIVIDE ( Materials, [Fin Net Revenue] ),
-							"FR_REJECTION_RATE", DIVIDE ( [Fin Rejections], [Fin Revenue Total] ),
-							"FR_ECL_RATIO", DIVIDE ( [Fin ECL], [Fin Net Revenue] )
+									IF ( [Fin Net Revenue] > 0, DIVIDE ( Materials, [Fin Net Revenue] ) ),
+							"FR_REJECTION_RATE", IF ( [Fin Revenue Total] > 0, DIVIDE ( [Fin Rejections], [Fin Revenue Total] ) ),
+							"FR_ECL_RATIO", IF ( [Fin Net Revenue] > 0, DIVIDE ( [Fin ECL], [Fin Net Revenue] ) )
 						),
 						REMOVEFILTERS ( 'Finance KPI' ),
 						REMOVEFILTERS ( 'Finance Column' )
@@ -3855,14 +3861,14 @@ table _Measures
 							Code,
 							"FR_REV_VS_BUD", IF ( NOT ISBLANK ( [Fin Budget Net Revenue] ), 1 ),
 							"FR_NP_VS_BUD", IF ( NOT ISBLANK ( [Fin Budget Net Profit] ), 1 ),
-							"FR_GP_MARGIN", IF ( NOT ISBLANK ( [Fin Budget Direct Cost] ), DIVIDE ( [Fin Budget Net Revenue] - [Fin Budget Direct Cost], [Fin Budget Net Revenue] ) ),
-							"FR_EBITDA_MARGIN", DIVIDE ( [Fin Budget EBITDA], [Fin Budget Net Revenue] ),
-							"FR_NP_MARGIN", DIVIDE ( [Fin Budget Net Profit], [Fin Budget Net Revenue] ),
-							"FR_COST_TO_REV", DIVIDE ( [Fin Budget Direct Cost], [Fin Budget Net Revenue] ),
+							"FR_GP_MARGIN", IF ( NOT ISBLANK ( [Fin Budget Direct Cost] ) && [Fin Budget Net Revenue] > 0, DIVIDE ( [Fin Budget Net Revenue] - [Fin Budget Direct Cost], [Fin Budget Net Revenue] ) ),
+							"FR_EBITDA_MARGIN", IF ( [Fin Budget Net Revenue] > 0, DIVIDE ( [Fin Budget EBITDA], [Fin Budget Net Revenue] ) ),
+							"FR_NP_MARGIN", IF ( [Fin Budget Net Revenue] > 0, DIVIDE ( [Fin Budget Net Profit], [Fin Budget Net Revenue] ) ),
+							"FR_COST_TO_REV", IF ( [Fin Budget Net Revenue] > 0, DIVIDE ( [Fin Budget Direct Cost], [Fin Budget Net Revenue] ) ),
 							"FR_MED_MATERIALS_RATIO",
 								VAR Materials = IF ( NOT ISBLANK ( [Fin Budget Consumables] ) || NOT ISBLANK ( [Fin Budget Medicines] ), [Fin Budget Consumables] + [Fin Budget Medicines] )
 								RETURN
-									DIVIDE ( Materials, [Fin Budget Net Revenue] )
+									IF ( [Fin Budget Net Revenue] > 0, DIVIDE ( Materials, [Fin Budget Net Revenue] ) )
 						),
 						REMOVEFILTERS ( 'Finance KPI' ),
 						REMOVEFILTERS ( 'Finance Column' )
@@ -3874,13 +3880,13 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
-	/// FR KPI Value of the same months last year (in the current year only the months up to today are shifted); blank for the vs-budget KPIs.
+	/// FR KPI Value of the same months last year (in the current year only the months up to today are shifted); blank for the growth and vs-budget KPIs (the canvas shows a dash).
 	measure 'FR KPI Last Year' =
 			VAR __Value = ( -- measure body
 				VAR Code = SELECTEDVALUE ( 'Finance KPI'[KPI Code] )
 				VAR Past = CALCULATETABLE ( VALUES ( 'Date'[Date] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
 				RETURN
-					IF ( NOT ISBLANK ( Code ) && NOT ( Code IN { "FR_REV_VS_BUD", "FR_NP_VS_BUD" } ), CALCULATE ( [FR KPI Value], SAMEPERIODLASTYEAR ( Past ) ) )
+					IF ( NOT ISBLANK ( Code ) && NOT ( Code IN { "FR_REV_GROWTH", "FR_NP_GROWTH", "FR_REV_VS_BUD", "FR_NP_VS_BUD" } ), CALCULATE ( [FR KPI Value], SAMEPERIODLASTYEAR ( Past ) ) )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
 			RETURN IF ( __Wrong = "", __Value, """FR KPI Last Year"" can't be analysed by " & __Wrong )
@@ -3888,7 +3894,7 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
-	/// Target of the finance KPI in context from 'Finance Target' (the config table), in the KPI's own unit, for the year of the last month in context: the hospital's own row when one hospital is in context and it has one, else the all-hospitals row (branch 0); several hospitals use the branch 0 row; blank without a target.
+	/// Target of the finance KPI in context from 'Finance Target' (the config table), in the KPI's own unit, for the year of the last month in context: the hospital's own row when one hospital is in context and it has one, else the all-hospitals row (branch 0); several hospitals use the branch 0 row; blank without a target. Targets of a '%' KPI are fractions (0.21 = 21%).
 	measure 'FR KPI Target' =
 			VAR Code = SELECTEDVALUE ( 'Finance KPI'[KPI Code] )
 			VAR TargetYear = CALCULATE ( MAX ( 'Date'[Year] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) )
@@ -4003,6 +4009,60 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// FR KPI Value over only the hospital-months that have a net revenue budget (the cell set FR Budget and FR Actual (Budgeted) use), so a hospital without a budget never biases a vs-budget comparison; the vs-budget KPIs are already like-for-like and read FR KPI Value; blank for KPIs the budget has no formula for and when no cell has a budget.
+	measure 'FR KPI Actual (Budgeted)' =
+			VAR __Value = ( -- measure body
+				VAR Code = SELECTEDVALUE ( 'Finance KPI'[KPI Code] )
+				VAR BudgetKeys =
+					CALCULATETABLE (
+						SUMMARIZE ( 'Finance Budget', 'Finance Budget'[Branch Key], 'Finance Budget'[Month Date Key] ),
+						'Finance Budget'[Statement] = "IS",
+						REMOVEFILTERS ( 'P&L Line' ),
+						'P&L Line'[PL Line Code] = "NET_REVENUE",
+						REMOVEFILTERS ( 'Finance KPI' ),
+						REMOVEFILTERS ( 'Finance Column' ),
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				VAR BudgetedCells =
+					SELECTCOLUMNS (
+						BudgetKeys,
+						"@Branch", 'Finance Budget'[Branch Key],
+						"@Month", DATE ( INT ( 'Finance Budget'[Month Date Key] / 10000 ), MOD ( INT ( 'Finance Budget'[Month Date Key] / 100 ), 100 ), 1 )
+					)
+				RETURN
+					SWITCH (
+						TRUE (),
+						ISBLANK ( Code ), BLANK (),
+						Code IN { "FR_REV_VS_BUD", "FR_NP_VS_BUD" }, [FR KPI Value],
+						Code IN { "FR_GP_MARGIN", "FR_EBITDA_MARGIN", "FR_NP_MARGIN", "FR_COST_TO_REV", "FR_MED_MATERIALS_RATIO" },
+							IF (
+								NOT ISEMPTY ( BudgetedCells ),
+								CALCULATE ( [FR KPI Value], TREATAS ( BudgetedCells, Branch[Branch Key], 'Date'[Start Of Month] ) )
+							)
+					)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI Actual (Budgeted)"" can't be analysed by " & __Wrong )
+		formatString: 0.0000
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
+	/// Colour of the KPI's change against budget (FR KPI Actual (Budgeted) - FR KPI Budget): favourable #04705F or unfavourable #C2230A by the KPI's direction, muted #4D5B6B when equal, placeholder grey #9AA7B5 without a budget.
+	measure 'FR KPI vs Budget Colour' =
+			VAR __Value = ( -- measure body
+				VAR Direction = SELECTEDVALUE ( 'Finance KPI'[Direction] )
+				VAR Planned = [FR KPI Budget]
+				VAR Matched = [FR KPI Actual (Budgeted)]
+				VAR Gap = IF ( NOT ISBLANK ( Matched ) && NOT ISBLANK ( Planned ), ( Matched - Planned ) * Direction )
+				RETURN
+					IF ( ISBLANK ( Planned ), "#9AA7B5", IF ( ISBLANK ( Gap ), "#4D5B6B", IF ( ROUND ( Gap, 6 ) > 0, "#04705F", IF ( ROUND ( Gap, 6 ) < 0, "#C2230A", "#4D5B6B" ) ) ) )
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
+			RETURN IF ( __Wrong = "", __Value, """FR KPI vs Budget Colour"" can't be analysed by " & __Wrong )
+		formatString: General
+		displayFolder: Finance\Report
+
+		annotation hnh_guard_allow = Finance Column, Finance KPI
 	/// Budget of the finance KPI of a card's small line chart, per month on the chart's axis (FR KPI Budget).
 	measure 'FR KPI Card Line Budget' =
 			VAR __Value = ( -- measure body
@@ -4100,7 +4160,7 @@ table _Measures
 						VAR Delta =
 							SWITCH (
 								Kind,
-								"vs_bud", VAR Planned = [FR KPI Budget] RETURN IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( Planned ), Actual - Planned ),
+								"vs_bud", VAR Planned = [FR KPI Budget] VAR Matched = [FR KPI Actual (Budgeted)] RETURN IF ( NOT ISBLANK ( Matched ) && NOT ISBLANK ( Planned ), Matched - Planned ),
 								"vs_ly", VAR Prior = [FR KPI Last Year] RETURN IF ( NOT ISBLANK ( Actual ) && NOT ISBLANK ( Prior ), Actual - Prior )
 							)
 						VAR Shown = SWITCH ( Unit, "%", FORMAT ( Num, "0.0%" ), "x", FORMAT ( Num, "0.00""x""" ), "d", FORMAT ( Num, "0 ""d""" ) )
