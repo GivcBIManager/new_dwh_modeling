@@ -121,7 +121,7 @@ Perspective `Finance Report` (spec `docs/superpowers/specs/2026-11-18-finance-re
 - **Config tables.** `map_finance_budget` and `map_finance_target` in ClickHouse `default` (`docs/finance_config.md`),
   read through `stg_ref__finance_budget` and `stg_ref__finance_target`. Percentage targets are fractions (`0.21`).
 - **Compare the scorecard before and after:** `ssas/scripts/compare_bsc_actuals.ps1 -Compare
-  C:\HNH\finance\bsc_before.csv <after.csv>`. Before-snapshots exist for 202610 and 202609 (October's GL was thin).
+  C:\HNH\finance\bsc_before.csv,<after.csv>` (one comma-separated pair). Before-snapshots exist for 202610 and 202609 (October's GL was thin).
   Show the user the table before production.
 - **Known older defect (not fixed by this work).** `GL Closing Balance`, `Profit for the Year`, `TB Opening Balance`,
   `TB Closing Balance` and similar older measures take the last period across all selected branches instead of per
