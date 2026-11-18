@@ -7,14 +7,14 @@ $root = Split-Path -Parent (Split-Path -Parent $here)
 Import-Module (Join-Path $root 'scripts\HnhCh.psm1') -Force
 
 # $Replace maps a ref'd model to inline SQL, written to a temp file for --replace.
-function Get-RenderedModel([string]$Model, [hashtable]$Replace = @{}) {
+function Get-RenderedModel([string]$Model, [hashtable]$Replace = @{}, [string]$Wrap = 'select * from ({model}) order by 1, 2') {
     $pyArgs = @((Join-Path $root 'scripts\render_model_sql.py'), $Model)
     foreach ($k in $Replace.Keys) {
         $f = [IO.Path]::GetTempFileName()
         [IO.File]::WriteAllText($f, $Replace[$k])
         $pyArgs += @('--replace', "$k=$f")
     }
-    $pyArgs += @('--wrap', 'select * from ({model}) order by 1, 2')
+    $pyArgs += @('--wrap', $Wrap)
     $sql = (& python @pyArgs) -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "render failed: $Model" }
     return $sql
@@ -249,5 +249,183 @@ Describe 'budget_sign against the P&L on gold' {
             if ($b -ne 0 -and $a -ne 0 -and [math]::Sign($b) -ne [math]::Sign($a)) { $bad += "$($l.pl_line_code) budget=$b actual=$a" }
         }
         $bad -join ';' | Should Be ''
+    }
+}
+
+# Task 6: finance KPI list, report columns, targets, year pick and the SSAS display columns.
+# A plain macro call (macros/hnh/hnh_finance.sql) is expanded by scripts/render_model_sql.py for the SSAS view checks:
+# the views themselves need the dbt adapter, so their expressions are checked through the macros they call.
+function Get-MacroSql([string]$Call) {
+    $code = "import sys; sys.path.insert(0, sys.argv[1]); import render_model_sql as r; sys.stdout.write(r.render_macro(sys.argv[2]))"
+    $sql = (& python -c $code (Join-Path $root 'scripts') $Call) -join "`n"
+    if ($LASTEXITCODE -ne 0 -or -not $sql) { throw "macro not rendered: $Call" }
+    return $sql
+}
+
+Describe 'dim_date year_pick' {
+    $hijri = "select toDate('2000-01-01') as date_day, toInt32(1) as hijri_year, toInt32(1) as hijri_month, toInt32(1) as hijri_day, 'x' as hijri_month_name"
+    $holiday = "select toDate('2000-01-01') as date_day, 'x' as holiday_name"
+    $wrap = 'select toYear(date_day) as y, uniqExact(year_pick) as n, any(year_pick) as pick from ({model}) group by y order by y'
+    $rows = Invoke-HnhSelect -Dsn HNH_Gold -Sql ((Get-RenderedModel 'dim_date' @{ stg_ref__hijri_calendar = $hijri; stg_ref__public_holiday = $holiday } $wrap) -replace '(?m)^\s*--.*$', '')
+    $ly = Invoke-HnhSelect -Dsn HNH_Gold -Sql 'select toYear(addMonths(toStartOfMonth(today()), -1)) as y'
+    $lastClosedYear = [int]$ly[0].y
+    It 'year_pick labels the last closed month''s year Current year' {
+        @($rows | Where-Object { $_.pick -eq 'Current year' }).Count | Should Be 1
+        [int]($rows | Where-Object { $_.pick -eq 'Current year' }).y | Should Be $lastClosedYear
+    }
+    It 'labels every other year with its number, one label per year' {
+        foreach ($r in $rows) {
+            [int]$r.n | Should Be 1
+            if ([int]$r.y -ne $lastClosedYear) { $r.pick | Should Be ([string]$r.y) }
+        }
+    }
+}
+
+Describe 'gl_fs balance sheet grouping (ssas_fact_gl_fs_monthly)' {
+    $vals = "('bs','assets','current assets','cash and bank balances'), ('bs','assets','non current assets','ppe cost'), " +
+            "('bs','liabilities','current liabilities','trade payables'), ('bs','liabilities','non current liabilities','long term loans'), " +
+            "('bs','equity','equity','retained earnings'), ('is','expenses','direct cost','employee costs'), ('is','revenue','revenue','revenue cash'), " +
+            "('bs','assets','not mapped','not mapped'), ('bs','liabilities','not mapped','not mapped'), ('bs','not mapped','not mapped','not mapped')"
+    $a3 = "'t.fs_type','t.fs_element','t.fs_category'"
+    $sql = "select t.fs_type as fs_type, t.fs_element as fs_element, t.fs_category as fs_category, t.fs_caption as fs_caption, " +
+           (Get-MacroSql "hnh_bs_side($a3)") + " as bs_side, " + (Get-MacroSql "hnh_bs_element($a3)") + " as bs_element, " +
+           (Get-MacroSql "hnh_bs_category($a3)") + " as bs_category, " + (Get-MacroSql "hnh_bs_caption($a3,'t.fs_caption')") + " as bs_caption, " +
+           (Get-MacroSql "hnh_bs_display_sign($a3)") + " as display_sign, " + (Get-MacroSql "hnh_bs_element_order($a3)") + " as eo, " +
+           (Get-MacroSql "hnh_bs_category_order($a3)") + " as co " +
+           "from values('fs_type String, fs_element String, fs_category String, fs_caption String', $vals) as t"
+    $rows = Invoke-HnhSelect -Dsn HNH_Gold -Sql $sql
+    $by = @{}; foreach ($r in $rows) { $by["$($r.fs_type)|$($r.fs_element)|$($r.fs_category)|$($r.fs_caption)"] = $r }
+    It 'maps IS rows to Equity / Current year profit' {
+        foreach ($k in 'is|expenses|direct cost|employee costs', 'is|revenue|revenue|revenue cash') {
+            $r = $by[$k]
+            $r.bs_side | Should Be 'Liabilities & equity'
+            $r.bs_element | Should Be 'Equity'
+            $r.bs_category | Should Be 'Equity'
+            $r.bs_caption | Should Be 'Current year profit'
+            [int]$r.display_sign | Should Be -1
+        }
+    }
+    It 'puts assets on one side and liabilities and equity on the other, title-cased' {
+        $a = $by['bs|assets|current assets|cash and bank balances']
+        $a.bs_side | Should Be 'Assets'; $a.bs_element | Should Be 'Assets'; $a.bs_category | Should Be 'Current Assets'
+        $a.bs_caption | Should Be 'Cash And Bank Balances'; [int]$a.display_sign | Should Be 1
+        $l = $by['bs|liabilities|non current liabilities|long term loans']
+        $l.bs_side | Should Be 'Liabilities & equity'; $l.bs_element | Should Be 'Liabilities'; $l.bs_category | Should Be 'Non Current Liabilities'
+        [int]$l.display_sign | Should Be -1
+        $e = $by['bs|equity|equity|retained earnings']
+        $e.bs_side | Should Be 'Liabilities & equity'; $e.bs_element | Should Be 'Equity'; $e.bs_category | Should Be 'Equity'
+    }
+    It 'orders elements and categories, one order per label' {
+        [int]$by['bs|assets|current assets|cash and bank balances'].eo | Should Be 1
+        [int]$by['bs|liabilities|current liabilities|trade payables'].eo | Should Be 2
+        [int]$by['bs|equity|equity|retained earnings'].eo | Should Be 3
+        foreach ($g in ($rows | Group-Object bs_element)) { @($g.Group | Select-Object -ExpandProperty eo -Unique).Count | Should Be 1 }
+        foreach ($g in ($rows | Group-Object bs_category)) { @($g.Group | Select-Object -ExpandProperty co -Unique).Count | Should Be 1 }
+        $c = @{}; foreach ($r in $rows) { $c[$r.bs_category] = [int]$r.co }
+        ($c['Current Assets'] -lt $c['Non Current Assets'] -and $c['Non Current Assets'] -lt $c['Current Liabilities'] -and
+         $c['Current Liabilities'] -lt $c['Non Current Liabilities'] -and $c['Non Current Liabilities'] -lt $c['Equity']) | Should Be $true
+    }
+    It 'shows unmapped balance sheet rows as Not mapped on every level' {
+        foreach ($k in 'bs|assets|not mapped|not mapped', 'bs|liabilities|not mapped|not mapped', 'bs|not mapped|not mapped|not mapped') {
+            $r = $by[$k]
+            $r.bs_side | Should Be 'Not mapped'; $r.bs_element | Should Be 'Not mapped'
+            $r.bs_category | Should Be 'Not mapped'; $r.bs_caption | Should Be 'Not mapped'
+        }
+    }
+}
+
+Describe 'dim_finance_kpi' {
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_finance_kpi') @{}
+    It 'lists 27 KPIs with six cards F1..F6' {
+        $rows.Count | Should Be 27
+        @($rows | Select-Object -ExpandProperty kpi_code -Unique).Count | Should Be 27
+        $cards = @{}; foreach ($r in $rows | Where-Object { $_.card_code -ne '' }) { $cards[$r.card_code] = $r.kpi_code }
+        $cards.Count | Should Be 6
+        $cards['F1'] | Should Be 'FR_REV_GROWTH'; $cards['F2'] | Should Be 'FR_EBITDA_MARGIN'; $cards['F3'] | Should Be 'FR_NP_VS_BUD'
+        $cards['F4'] | Should Be 'FR_AR_DAYS'; $cards['F5'] | Should Be 'FR_REJECTION_RATE'; $cards['F6'] | Should Be 'FR_COST_TO_REV'
+    }
+    It 'has six groups in order, unit % x or d and direction 1 or -1' {
+        @($rows | Select-Object -ExpandProperty kpi_group -Unique).Count | Should Be 6
+        @($rows | Where-Object { @('%', 'x', 'd') -notcontains $_.unit -or @(1, -1) -notcontains [int]$_.direction }).Count | Should Be 0
+        $sorted = @($rows | Sort-Object { [int]$_.display_order })
+        $sorted[0].kpi_code | Should Be 'FR_REV_GROWTH'; $sorted[26].kpi_code | Should Be 'FR_ECL_RATIO'
+        $groups = @($sorted | ForEach-Object { [int]$_.group_order })
+        (($groups | Sort-Object) -join ',') | Should Be ($groups -join ',')
+    }
+    It 'sets the lower-is-better and higher-is-better directions' {
+        $d = @{}; foreach ($r in $rows) { $d[$r.kpi_code] = [int]$r.direction }
+        foreach ($c in 'FR_AR_DAYS', 'FR_INV_DAYS', 'FR_CCC', 'FR_DEBT_EQUITY', 'FR_NET_DEBT_EBITDA', 'FR_COST_TO_REV', 'FR_STAFF_COST_RATIO',
+                       'FR_MED_MATERIALS_RATIO', 'FR_REJECTION_RATE', 'FR_ECL_RATIO') { $d[$c] | Should Be -1 }
+        foreach ($c in 'FR_AP_DAYS', 'FR_INTEREST_COVER', 'FR_ASSET_TURNOVER', 'FR_CURRENT_RATIO', 'FR_ROE', 'FR_EQUITY_RATIO') { $d[$c] | Should Be 1 }
+    }
+}
+
+Describe 'dim_finance_column' {
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_finance_column') @{}
+    function Kinds($page, $view, $group = $null) {
+        $r = @($rows | Where-Object { $_.page -eq $page -and $_.view -eq $view -and ($null -eq $group -or $_.group_name -eq $group) } | Sort-Object { [int]$_.column_order })
+        return ($r | ForEach-Object { $_.kind }) -join ','
+    }
+    It 'has 12 month columns per monthly page' {
+        foreach ($p in 'tb', 'is', 'bs', 'kpi') {
+            $m = @($rows | Where-Object { $_.page -eq $p -and $_.view -eq 'monthly' -and $_.kind -eq 'month' })
+            $m.Count | Should Be 12
+            (($m | Sort-Object { [int]$_.month_num } | ForEach-Object { $_.month_num }) -join ',') | Should Be '1,2,3,4,5,6,7,8,9,10,11,12'
+            (($m | Sort-Object { [int]$_.column_order } | ForEach-Object { $_.column_name }) -join ',') | Should Be 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec'
+        }
+    }
+    It 'has no month columns on the hospital views and a unique column_key' {
+        @($rows | Where-Object { $_.view -eq 'hospital' -and $_.kind -eq 'month' }).Count | Should Be 0
+        @($rows | Select-Object -ExpandProperty column_key -Unique).Count | Should Be $rows.Count
+        @($rows | Where-Object { [int]$_.month_num -ne 0 -and $_.kind -ne 'month' }).Count | Should Be 0
+    }
+    It 'lists the groups and kinds per page' {
+        Kinds 'tb' 'monthly' 'Period' | Should Be 'opening,opening_journal,debit,credit,closing,cutover'
+        Kinds 'tb' 'monthly' 'Closing vs last year and budget' | Should Be 'ly,growth,budget,vs_bud'
+        Kinds 'is' 'monthly' 'Period total' | Should Be 'actual,budget,variance,var_pct,ly,growth,pct_rev'
+        Kinds 'bs' 'monthly' 'End of period vs last year and budget' | Should Be 'ly,growth,budget,vs_bud,pct_assets'
+        Kinds 'kpi' 'monthly' 'Period' | Should Be 'target,actual,status,budget,vs_bud,ly,vs_ly'
+        foreach ($p in 'tb', 'is', 'bs', 'kpi') { @($rows | Where-Object { $_.page -eq $p -and $_.view -eq 'hospital' -and $_.group_name -ne '' }).Count | Should Be 0 }
+        Kinds 'kpi' 'hospital' | Should Be 'actual,vs_bud,vs_ly'
+        Kinds 'tb' 'hospital' | Should Be 'closing,ach,growth'
+        Kinds 'bs' 'hospital' | Should Be 'closing,ach,growth'
+        Kinds 'is' 'hospital' | Should Be 'actual,ach,growth'
+    }
+}
+
+Describe 'dim_finance_target' {
+    $src = "select k as kpi_code, toUInt8(b) as branch_id, toUInt16(2026) as year, toFloat64(v) as target_value, toFloat64(0.05) as watch_pct, now() as last_changed_at " +
+           "from values('k String, b UInt8, v Float64', ('FR_AR_DAYS', 0, 60), ('FR_AR_DAYS', 3, 45), ('FR_ROE', 0, 12))"
+    $rows = Invoke-ModelWithSources (Get-RenderedModel 'dim_finance_target' @{ stg_ref__finance_target = $src }) @{}
+    It 'keeps both the hospital row and the branch 0 row of a KPI' {
+        $rows.Count | Should Be 3
+        $ar = @($rows | Where-Object { $_.kpi_code -eq 'FR_AR_DAYS' } | Sort-Object { [int]$_.branch_id })
+        $ar.Count | Should Be 2
+        [double]$ar[0].target_value | Should Be 60
+        [double]$ar[1].target_value | Should Be 45
+    }
+}
+
+Describe 'finance SSAS contracts' {
+    $yaml = [IO.File]::ReadAllText((Join-Path $root 'hnh_dwh\models\hnh\marts\ssas\_ssas__models.yml'))
+    function Names($model) { return @(Get-HnhContractColumns -YamlText $yaml -Model $model) | ForEach-Object { $_.Name } }
+    foreach ($pair in @(@('dim_finance_kpi', 'ssas_dim_finance_kpi'), @('dim_finance_column', 'ssas_dim_finance_column'))) {
+        It "lists every column of $($pair[0]) in $($pair[1])" {
+            $sql = (Get-RenderedModel $pair[0] @{} 'describe ({model})') -replace '(?m)^\s*--.*$', ''
+            $mart = @(Invoke-HnhSelect -Dsn HNH_Gold -Sql $sql) | ForEach-Object { $_.name }
+            ((Names $pair[1]) -join ',') | Should Be ($mart -join ',')
+        }
+    }
+    It 'lists every column of dim_finance_target in ssas_dim_finance_target' {
+        ((Names 'ssas_dim_finance_target') -join ',') | Should Be 'kpi_code,branch_id,year,target_value,watch_pct'
+    }
+    It 'lists the new gl_fs, pl report and budget columns' {
+        $gl = Names 'ssas_fact_gl_fs_monthly'
+        foreach ($c in 'debit', 'credit', 'account_name', 'fs_caption_name', 'bs_side', 'bs_caption', 'display_sign', 'bs_element_order', 'bs_category_order') { ($gl -contains $c) | Should Be $true }
+        ((Names 'ssas_fact_pl_report_monthly') -contains 'account_name') | Should Be $true
+        $pl = Names 'ssas_dim_pl_report_line'
+        foreach ($c in 'budget_line_code', 'budget_sign', 'budget_kind') { ($pl -contains $c) | Should Be $true }
+        ((Names 'ssas_dim_date') -contains 'year_pick') | Should Be $true
+        (Names 'ssas_fact_finance_budget_monthly') -join ',' | Should Be 'branch_key,month_date_key,statement,pl_line_key,pl_line_code,bs_caption,amount,source'
     }
 }

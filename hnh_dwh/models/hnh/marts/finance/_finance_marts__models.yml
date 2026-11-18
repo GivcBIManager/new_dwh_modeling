@@ -235,3 +235,42 @@ models:
       - name: month_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
+
+  - name: dim_finance_kpi
+    description: The 27 finance report KPIs with group, unit, direction and Summary card. Repo labels, not title-cased.
+    columns:
+      - name: kpi_code
+        tests:
+          - unique
+          - not_null
+      - name: unit
+        tests:
+          - accepted_values: {values: ['%', 'x', 'd']}
+      - name: direction
+        tests:
+          - accepted_values: {values: [1, -1], quote: false}
+      - name: card_code
+        tests:
+          - accepted_values: {values: ['', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6']}
+  - name: dim_finance_column
+    description: Columns of the finance report pages (trial balance, income statement, balance sheet, KPI) in the monthly and hospital comparison view.
+    columns:
+      - name: column_key
+        tests:
+          - unique
+          - not_null
+      - name: page
+        tests:
+          - accepted_values: {values: ['tb', 'is', 'bs', 'kpi']}
+      - name: view
+        tests:
+          - accepted_values: {values: ['monthly', 'hospital']}
+  - name: dim_finance_target
+    description: Finance KPI targets by KPI, branch and year; branch_id 0 is all hospitals and stays beside a hospital's own row (the measure takes the hospital row first).
+    tests:
+      - hnh_unique_combination:
+          columns: [kpi_code, branch_id, year]
+    columns:
+      - name: kpi_code
+        tests:
+          - relationships: {to: ref('dim_finance_kpi'), field: kpi_code, config: {severity: warn}}

@@ -42,7 +42,12 @@ select
     -- HR report Month slicer (ruling R21): a saved selection of 'Last closed month' follows the daily build.
     -- A repo label, not title-cased; one label per year_month on any given day, so SSAS sorts it by year_month.
     if(dateDiff('month', d.date_day, today()) = 1, 'Last closed month',
-       formatDateTime(d.date_day, '%Y-%b'))          as month_pick
+       formatDateTime(d.date_day, '%Y-%b'))          as month_pick,
+    -- Finance report Year slicer: the year of the last closed month is 'Current year' (so a January report already
+    -- shows the closed December as the previous year's last month), other years show their number. A repo label;
+    -- one label per year on any given day, so SSAS sorts it by year.
+    if(toYear(d.date_day) = toYear(addMonths(toStartOfMonth(today()), -1)), 'Current year',
+       toString(toYear(d.date_day)))                 as year_pick
 from days as d
 left join {{ ref('stg_ref__hijri_calendar') }} as h on h.date_day = d.date_day
 left join {{ ref('stg_ref__public_holiday') }} as p on p.date_day = d.date_day

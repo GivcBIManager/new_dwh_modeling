@@ -376,6 +376,8 @@ models:
         data_type: "String"
       - name: month_pick
         data_type: "String"
+      - name: year_pick
+        data_type: "String"
   - name: ssas_dim_department
     config:
       contract: {enforced: true}
@@ -522,6 +524,62 @@ models:
         data_type: "Nullable(String)"
       - name: target_minutes
         data_type: "Nullable(Int64)"
+  - name: ssas_dim_finance_column
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: column_key
+        data_type: "Int64"
+      - name: page
+        data_type: "String"
+      - name: view
+        data_type: "String"
+      - name: group_name
+        data_type: "String"
+      - name: group_order
+        data_type: "Int64"
+      - name: column_name
+        data_type: "String"
+      - name: column_order
+        data_type: "Int64"
+      - name: kind
+        data_type: "String"
+      - name: month_num
+        data_type: "Int64"
+  - name: ssas_dim_finance_kpi
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: kpi_code
+        data_type: "String"
+      - name: kpi_group
+        data_type: "String"
+      - name: group_order
+        data_type: "Int64"
+      - name: kpi_name
+        data_type: "String"
+      - name: unit
+        data_type: "String"
+      - name: direction
+        data_type: "Int64"
+      - name: display_order
+        data_type: "Int64"
+      - name: card_code
+        data_type: "String"
+  - name: ssas_dim_finance_target
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: kpi_code
+        data_type: "String"
+      - name: branch_id
+        data_type: "Int64"
+      - name: year
+        data_type: "Int64"
+      - name: target_value
+        data_type: "Float64"
+      - name: watch_pct
+        data_type: "Float64"
   - name: ssas_dim_fs_line
     config:
       contract: {enforced: true}
@@ -971,6 +1029,12 @@ models:
       - name: line_kind
         data_type: "String"
       - name: is_in_fusion_report
+        data_type: "String"
+      - name: budget_line_code
+        data_type: "String"
+      - name: budget_sign
+        data_type: "Int64"
+      - name: budget_kind
         data_type: "String"
   - name: ssas_dim_policy
     config:
@@ -2036,6 +2100,26 @@ models:
         data_type: "Int64"
       - name: has_arrived_non_follow_up_encounter
         data_type: "String"
+  - name: ssas_fact_finance_budget_monthly
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: branch_key
+        data_type: "Int64"
+      - name: month_date_key
+        data_type: "Int64"
+      - name: statement
+        data_type: "String"
+      - name: pl_line_key
+        data_type: "Int64"
+      - name: pl_line_code
+        data_type: "String"
+      - name: bs_caption
+        data_type: "String"
+      - name: amount
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: source
+        data_type: "String"
   - name: ssas_fact_gl_balance_monthly
     config:
       contract: {enforced: true}
@@ -2094,7 +2178,35 @@ models:
         data_type: "Nullable(Decimal(18, 4))"
       - name: closing_balance
         data_type: "Nullable(Decimal(18, 4))"
+      - name: debit
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: credit
+        data_type: "Nullable(Decimal(18, 4))"
+      - name: account_name
+        data_type: "String"
       - name: month_date_key
+        data_type: "Int64"
+      - name: fs_type_name
+        data_type: "String"
+      - name: fs_element_name
+        data_type: "String"
+      - name: fs_category_name
+        data_type: "String"
+      - name: fs_caption_name
+        data_type: "String"
+      - name: bs_side
+        data_type: "String"
+      - name: bs_element
+        data_type: "String"
+      - name: bs_category
+        data_type: "String"
+      - name: bs_caption
+        data_type: "String"
+      - name: display_sign
+        data_type: "Int64"
+      - name: bs_element_order
+        data_type: "Int64"
+      - name: bs_category_order
         data_type: "Int64"
   - name: ssas_fact_gl_journal_line
     config:
@@ -2557,6 +2669,8 @@ models:
       - name: pl_line_code
         data_type: "String"
       - name: account_code
+        data_type: "String"
+      - name: account_name
         data_type: "String"
       - name: fs_category
         data_type: "String"
