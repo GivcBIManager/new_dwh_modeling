@@ -1487,6 +1487,765 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """P&L Amount"" can't be analysed by " & __Wrong )
 		formatString: #,0
 		displayFolder: Finance\P&L
+	/// Total revenue in SAR from the P&L report (line REV_TOTAL), months up to the current one; branches are not filtered here, pages and the scorecard filter them.
+	measure 'Fin Revenue Total' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'P&L Report'[Amount] ),
+					'P&L Line'[PL Line Code] = "REV_TOTAL",
+					KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Revenue Total"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Net revenue in SAR from the P&L report (line NET_REVENUE), months up to the current one; blank for future months.
+	measure 'Fin Net Revenue' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'P&L Report'[Amount] ),
+					'P&L Line'[PL Line Code] = "NET_REVENUE",
+					KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Net Revenue"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Direct cost in SAR, positive (P&L line DIRECT_COST, sign reversed), months up to the current one.
+	measure 'Fin Direct Cost' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "DIRECT_COST",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Direct Cost"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Gross profit in SAR from the P&L report (line GROSS_PROFIT), months up to the current one.
+	measure 'Fin Gross Profit' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'P&L Report'[Amount] ),
+					'P&L Line'[PL Line Code] = "GROSS_PROFIT",
+					KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Gross Profit"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// General and administrative cost in SAR, positive (P&L line GA_TOTAL, sign reversed), months up to the current one.
+	measure 'Fin G&A' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "GA_TOTAL",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin G&A"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Selling and marketing cost in SAR, positive (P&L line SM, sign reversed), months up to the current one.
+	measure 'Fin Marketing' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "SM",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Marketing"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Head office charges in SAR, positive (P&L line HO_CHARGES, sign reversed), months up to the current one.
+	measure 'Fin HO Charges' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "HO_CHARGES",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin HO Charges"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Other income in SAR from the P&L report (line OTHER_INCOME), months up to the current one.
+	measure 'Fin Other Income' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'P&L Report'[Amount] ),
+					'P&L Line'[PL Line Code] = "OTHER_INCOME",
+					KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Other Income"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// EBITDA in SAR from the P&L report (line EBITDA), months up to the current one.
+	measure 'Fin EBITDA' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'P&L Report'[Amount] ),
+					'P&L Line'[PL Line Code] = "EBITDA",
+					KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin EBITDA"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Depreciation and amortisation in SAR, positive (P&L line DEPRECIATION, sign reversed), months up to the current one.
+	measure 'Fin D&A' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "DEPRECIATION",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin D&A"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Finance cost in SAR, positive (P&L line FINANCE_COST, sign reversed), months up to the current one.
+	measure 'Fin Finance Cost' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "FINANCE_COST",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Finance Cost"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Zakat in SAR, positive (P&L line ZAKAT, sign reversed), months up to the current one.
+	measure 'Fin Zakat' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "ZAKAT",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Zakat"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Net profit in SAR from the P&L report (line NET_PROFIT), months up to the current one.
+	measure 'Fin Net Profit' =
+			VAR __Value = ( -- measure body
+				CALCULATE (
+					SUM ( 'P&L Report'[Amount] ),
+					'P&L Line'[PL Line Code] = "NET_PROFIT",
+					KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Net Profit"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Consumables cost in SAR, positive (P&L line DC_CONSUMABLES, sign reversed), months up to the current one.
+	measure 'Fin Consumables' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "DC_CONSUMABLES",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Consumables"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Medicines cost in SAR, positive (P&L line DC_MEDICINES, sign reversed), months up to the current one.
+	measure 'Fin Medicines' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "DC_MEDICINES",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Medicines"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Employee cost in SAR, positive: direct-cost plus G&A employee lines (DC_EMPLOYEE + GA_EMPLOYEE, sign reversed), months up to the current one.
+	measure 'Fin Employee Cost' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] IN { "DC_EMPLOYEE", "GA_EMPLOYEE" },
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Employee Cost"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Doctors' fees in SAR, positive (P&L line DC_DOCTORS_FEE, sign reversed), months up to the current one.
+	measure 'Fin Doctors Fee' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "DC_DOCTORS_FEE",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Doctors Fee"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Rejections in SAR, positive (P&L line DIS_REJECTION, sign reversed), months up to the current one.
+	measure 'Fin Rejections' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "DIS_REJECTION",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Rejections"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Expected credit loss in SAR, positive (P&L line GA_ECL, sign reversed), months up to the current one.
+	measure 'Fin ECL' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'P&L Report'[Amount] ),
+						'P&L Line'[PL Line Code] = "GA_ECL",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( NOT ISBLANK ( Total ), -Total )
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin ECL"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Operating cost in SAR, positive: net revenue plus other income minus EBITDA (everything between net revenue and EBITDA); blank when all three are blank.
+	measure 'Fin Opex' =
+			VAR __Value = ( -- measure body
+				IF (
+					NOT ISBLANK ( [Fin Net Revenue] ) || NOT ISBLANK ( [Fin Other Income] ) || NOT ISBLANK ( [Fin EBITDA] ),
+					[Fin Net Revenue] + [Fin Other Income] - [Fin EBITDA]
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard P&L Report]
+			RETURN IF ( __Wrong = "", __Value, """Fin Opex"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Trade receivables, net in SAR (debit positive). Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Trade Receivables' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Caption] = "trade receivables, net"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Trade Receivables"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Inventories, net in SAR (debit positive). Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Inventories' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Caption] = "inventories, net"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Inventories"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Cash and bank balances in SAR (debit positive). Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Cash' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Caption] = "cash and bank balances"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Cash"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Trade payables in SAR, credit positive. Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Trade Payables' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Caption] = "trade payables"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Trade Payables"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Current assets in SAR (debit positive). Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Current Assets' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Category] = "current assets"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Current Assets"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Current liabilities in SAR, credit positive. Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Current Liabilities' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Category] = "current liabilities"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Current Liabilities"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Total assets in SAR (debit positive). Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Total Assets' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Element] = "assets"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Total Assets"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Total liabilities in SAR, credit positive. Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Total Liabilities' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Element] = "liabilities"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Total Liabilities"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Lease liability in SAR, credit positive. Month-end balance of the last month with data in the selection (up to the current month), taken per branch and summed over branches. Snapshot.
+	measure 'Fin Lease Liability' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth =
+						CALCULATE (
+							MAX ( 'GL FS Monthly'[Month Date Key] ),
+							REMOVEFILTERS ( 'GL FS Monthly' ),
+							VALUES ( 'Date'[Date] ),
+							VALUES ( Branch[Branch Key] ),
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+					RETURN
+						CALCULATE (
+							SUMX ( 'GL FS Monthly', 'GL FS Monthly'[Closing Balance] * 'GL FS Monthly'[Display Sign] ),
+							'GL FS Monthly'[Month Date Key] = LastMonth,
+							'GL FS Monthly'[FS Caption] = "lease liability"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard GL FS Monthly]
+			RETURN IF ( __Wrong = "", __Value, """Fin Lease Liability"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+
+		annotation hnh_snapshot = 1
+	/// Days of the months in the selection up to the current month (every day of each month, 29 February in leap years); used for days ratios such as receivable days.
+	measure 'Fin Period Days' =
+			SUMX (
+				CALCULATETABLE ( VALUES ( 'Date'[Start Of Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ),
+				DAY ( EOMONTH ( 'Date'[Start Of Month], 0 ) )
+			)
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Factor that turns the selection's figure into a full year: 12 divided by the number of months in the selection up to the current month; blank when there is none.
+	measure 'Fin Annualise' =
+			DIVIDE ( 12, COUNTROWS ( CALCULATETABLE ( VALUES ( 'Date'[Start Of Month] ), KEEPFILTERS ( 'Date'[Date] <= TODAY () ) ) ) )
+		formatString: 0.00
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted net revenue in SAR (income-statement budget line NET_REVENUE). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Net Revenue' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "NET_REVENUE",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Net Revenue"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted direct cost in SAR, positive (line DIRECT_COST, sign reversed). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Direct Cost' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "DIRECT_COST",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, -Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Direct Cost"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted general and administrative cost in SAR, positive (line GA_TOTAL, sign reversed). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget G&A' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "GA_TOTAL",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, -Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget G&A"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted selling and marketing cost in SAR, positive (line SM, sign reversed). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Marketing' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "SM",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, -Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Marketing"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted EBITDA in SAR (line EBITDA). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget EBITDA' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "EBITDA",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget EBITDA"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted net profit in SAR (line NET_PROFIT). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Net Profit' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "NET_PROFIT",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Net Profit"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted consumables cost in SAR, positive (line DC_CONSUMABLES, sign reversed). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Consumables' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "DC_CONSUMABLES",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, -Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Consumables"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted medicines cost in SAR, positive (line DC_MEDICINES, sign reversed). Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Medicines' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+						SUM ( 'Finance Budget'[Amount] ),
+						'Finance Budget'[Statement] = "IS",
+						'P&L Line'[PL Line Code] = "DC_MEDICINES",
+						KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+					)
+				RETURN
+					IF ( Total <> 0, -Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Medicines"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
+	/// Budgeted operating cost in SAR, positive: budgeted NET_REVENUE plus OTHER_INCOME minus EBITDA. Months up to the current one, as the actuals; blank when the total is 0.
+	measure 'Fin Budget Opex' =
+			VAR __Value = ( -- measure body
+				VAR Total =
+					CALCULATE (
+							SUM ( 'Finance Budget'[Amount] ),
+							'Finance Budget'[Statement] = "IS",
+							'P&L Line'[PL Line Code] = "NET_REVENUE",
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+						+ CALCULATE (
+							SUM ( 'Finance Budget'[Amount] ),
+							'Finance Budget'[Statement] = "IS",
+							'P&L Line'[PL Line Code] = "OTHER_INCOME",
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+						- CALCULATE (
+							SUM ( 'Finance Budget'[Amount] ),
+							'Finance Budget'[Statement] = "IS",
+							'P&L Line'[PL Line Code] = "EBITDA",
+							KEEPFILTERS ( 'Date'[Date] <= TODAY () )
+						)
+				RETURN
+					IF ( Total <> 0, Total )  -- a total of 0 means no budget is loaded: no target, not a target of 0
+			) -- end of measure body
+			VAR __Wrong = [_Guard Finance Budget]
+			RETURN IF ( __Wrong = "", __Value, """Fin Budget Opex"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		isHidden
+		displayFolder: Finance\Building Blocks
 	/// Most likely budget in SAR of one budget code (Phase 3 spec section 8; budget covers branches 1-6).
 	measure 'IS Budget' =
 			VAR __Value = ( -- measure body
@@ -13908,6 +14667,120 @@ table _Measures
 				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
 				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
 				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
+				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
+				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
+				& IF ( ISFILTERED ( 'Store' ), ", ""Store""" )
+				& IF ( ISFILTERED ( 'Supplier' ), ", ""Supplier""" )
+				& IF ( ISFILTERED ( 'Surgeries' ), ", ""Surgeries""" )
+				& IF ( ISFILTERED ( 'Survey Answers' ), ", ""Survey Answers""" )
+				& IF ( ISFILTERED ( 'Survey Question' ), ", ""Survey Question""" )
+				& IF ( ISFILTERED ( 'Survey Responses' ), ", ""Survey Responses""" )
+				& IF ( ISFILTERED ( 'Survey Service' ), ", ""Survey Service""" )
+				& IF ( ISFILTERED ( 'Targets' ), ", ""Targets""" )
+				& IF ( ISFILTERED ( 'Time' ), ", ""Time""" )
+				& IF ( ISFILTERED ( 'Worker Action' ), ", ""Worker Action""" )
+				& IF ( ISFILTERED ( 'Worker Movements' ), ", ""Worker Movements""" )
+				& IF ( ISFILTERED ( 'Workforce Monthly' ), ", ""Workforce Monthly""" )
+			RETURN MID ( __Names, 3, 4000 )
+		formatString: General
+		isHidden
+		displayFolder: Diagnostics\Guards
+
+	/// Filtered tables that cannot filter Finance Budget, as a quoted list; generated by ssas/tools/measure_guards.py (SSAS spec P41).
+	measure '_Guard Finance Budget' =
+			VAR __Names =
+				IF ( ISFILTERED ( 'AP Invoice Lines' ), ", ""AP Invoice Lines""" )
+				& IF ( ISFILTERED ( 'AP Open Items' ), ", ""AP Open Items""" )
+				& IF ( ISFILTERED ( 'AP Payments' ), ", ""AP Payments""" )
+				& IF ( ISFILTERED ( 'Absence Days' ), ", ""Absence Days""" )
+				& IF ( ISFILTERED ( 'Absence Type' ), ", ""Absence Type""" )
+				& IF ( ISFILTERED ( 'Absences' ), ", ""Absences""" )
+				& IF ( ISFILTERED ( 'Admission Source' ), ", ""Admission Source""" )
+				& IF ( ISFILTERED ( 'Admission Treating Doctor' ), ", ""Admission Treating Doctor""" )
+				& IF ( ISFILTERED ( 'Admissions' ), ", ""Admissions""" )
+				& IF ( ISFILTERED ( 'Anaesthetist' ), ", ""Anaesthetist""" )
+				& IF ( ISFILTERED ( 'Appointment Outcome' ), ", ""Appointment Outcome""" )
+				& IF ( ISFILTERED ( 'BSC AR Collections' ), ", ""BSC AR Collections""" )
+				& IF ( ISFILTERED ( 'BSC Budgeted FTE' ), ", ""BSC Budgeted FTE""" )
+				& IF ( ISFILTERED ( 'BSC KPI' ), ", ""BSC KPI""" )
+				& IF ( ISFILTERED ( 'BSC Licensed Beds' ), ", ""BSC Licensed Beds""" )
+				& IF ( ISFILTERED ( 'BSC Manual Values' ), ", ""BSC Manual Values""" )
+				& IF ( ISFILTERED ( 'BSC Parameters' ), ", ""BSC Parameters""" )
+				& IF ( ISFILTERED ( 'BSC Targets' ), ", ""BSC Targets""" )
+				& IF ( ISFILTERED ( 'BSC Weights' ), ", ""BSC Weights""" )
+				& IF ( ISFILTERED ( 'Bed' ), ", ""Bed""" )
+				& IF ( ISFILTERED ( 'Bed Occupancy' ), ", ""Bed Occupancy""" )
+				& IF ( ISFILTERED ( 'Booked Doctor' ), ", ""Booked Doctor""" )
+				& IF ( ISFILTERED ( 'Budget' ), ", ""Budget""" )
+				& IF ( ISFILTERED ( 'Budget Line' ), ", ""Budget Line""" )
+				& IF ( ISFILTERED ( 'Care Type' ), ", ""Care Type""" )
+				& IF ( ISFILTERED ( 'Cash Receipts' ), ", ""Cash Receipts""" )
+				& IF ( ISFILTERED ( 'Charge Lines' ), ", ""Charge Lines""" )
+				& IF ( ISFILTERED ( 'Charged By' ), ", ""Charged By""" )
+				& IF ( ISFILTERED ( 'Claim Lines' ), ", ""Claim Lines""" )
+				& IF ( ISFILTERED ( 'Claim Payments' ), ", ""Claim Payments""" )
+				& IF ( ISFILTERED ( 'Claim Status' ), ", ""Claim Status""" )
+				& IF ( ISFILTERED ( 'Clinic Capacity' ), ", ""Clinic Capacity""" )
+				& IF ( ISFILTERED ( 'Department' ), ", ""Department""" )
+				& IF ( ISFILTERED ( 'Discharge Outcome' ), ", ""Discharge Outcome""" )
+				& IF ( ISFILTERED ( 'ER Priority' ), ", ""ER Priority""" )
+				& IF ( ISFILTERED ( 'Eligibility Type' ), ", ""Eligibility Type""" )
+				& IF ( ISFILTERED ( 'Employee' ), ", ""Employee""" )
+				& IF ( ISFILTERED ( 'Employee Details' ), ", ""Employee Details""" )
+				& IF ( ISFILTERED ( 'Encounters' ), ", ""Encounters""" )
+				& IF ( ISFILTERED ( 'Episode Billing' ), ", ""Episode Billing""" )
+				& IF ( ISFILTERED ( 'Episodes' ), ", ""Episodes""" )
+				& IF ( ISFILTERED ( 'FS Line' ), ", ""FS Line""" )
+				& IF ( ISFILTERED ( 'Finance Column' ), ", ""Finance Column""" )
+				& IF ( ISFILTERED ( 'Finance KPI' ), ", ""Finance KPI""" )
+				& IF ( ISFILTERED ( 'Finance Target' ), ", ""Finance Target""" )
+				& IF ( ISFILTERED ( 'From Branch' ), ", ""From Branch""" )
+				& IF ( ISFILTERED ( 'GL Account' ), ", ""GL Account""" )
+				& IF ( ISFILTERED ( 'GL Balances' ), ", ""GL Balances""" )
+				& IF ( ISFILTERED ( 'GL FS Monthly' ), ", ""GL FS Monthly""" )
+				& IF ( ISFILTERED ( 'GL Journal Lines' ), ", ""GL Journal Lines""" )
+				& IF ( ISFILTERED ( 'GL Period' ), ", ""GL Period""" )
+				& IF ( ISFILTERED ( 'Goods Receipts' ), ", ""Goods Receipts""" )
+				& IF ( ISFILTERED ( 'Grade' ), ", ""Grade""" )
+				& IF ( ISFILTERED ( 'HR Data Issue Records' ), ", ""HR Data Issue Records""" )
+				& IF ( ISFILTERED ( 'HR Data Issues' ), ", ""HR Data Issues""" )
+				& IF ( ISFILTERED ( 'HR Department' ), ", ""HR Department""" )
+				& IF ( ISFILTERED ( 'HR KPI' ), ", ""HR KPI""" )
+				& IF ( ISFILTERED ( 'HR Targets' ), ", ""HR Targets""" )
+				& IF ( ISFILTERED ( 'Headcount' ), ", ""Headcount""" )
+				& IF ( ISFILTERED ( 'Income Statement' ), ", ""Income Statement""" )
+				& IF ( ISFILTERED ( 'Invoices' ), ", ""Invoices""" )
+				& IF ( ISFILTERED ( 'Item' ), ", ""Item""" )
+				& IF ( ISFILTERED ( 'Job' ), ", ""Job""" )
+				& IF ( ISFILTERED ( 'Leave Balances' ), ", ""Leave Balances""" )
+				& IF ( ISFILTERED ( 'Location' ), ", ""Location""" )
+				& IF ( ISFILTERED ( 'MRP 1' ), ", ""MRP 1""" )
+				& IF ( ISFILTERED ( 'MRP 2' ), ", ""MRP 2""" )
+				& IF ( ISFILTERED ( 'MRP 3' ), ", ""MRP 3""" )
+				& IF ( ISFILTERED ( 'Movement Type' ), ", ""Movement Type""" )
+				& IF ( ISFILTERED ( 'NPHIES Reason' ), ", ""NPHIES Reason""" )
+				& IF ( ISFILTERED ( 'Order Lines' ), ", ""Order Lines""" )
+				& IF ( ISFILTERED ( 'Ordering Doctor' ), ", ""Ordering Doctor""" )
+				& IF ( ISFILTERED ( 'P&L Report' ), ", ""P&L Report""" )
+				& IF ( ISFILTERED ( 'Patient' ), ", ""Patient""" )
+				& IF ( ISFILTERED ( 'Patient Consumption' ), ", ""Patient Consumption""" )
+				& IF ( ISFILTERED ( 'Patient Details' ), ", ""Patient Details""" )
+				& IF ( ISFILTERED ( 'Pay Category' ), ", ""Pay Category""" )
+				& IF ( ISFILTERED ( 'Payer' ), ", ""Payer""" )
+				& IF ( ISFILTERED ( 'Payroll' ), ", ""Payroll""" )
+				& IF ( ISFILTERED ( 'Policy' ), ", ""Policy""" )
+				& IF ( ISFILTERED ( 'Position' ), ", ""Position""" )
+				& IF ( ISFILTERED ( 'Pre-auth Lines' ), ", ""Pre-auth Lines""" )
+				& IF ( ISFILTERED ( 'Pre-auth Outcome' ), ", ""Pre-auth Outcome""" )
+				& IF ( ISFILTERED ( 'Procedure Type' ), ", ""Procedure Type""" )
+				& IF ( ISFILTERED ( 'Product Category' ), ", ""Product Category""" )
+				& IF ( ISFILTERED ( 'Purchase Lines' ), ", ""Purchase Lines""" )
+				& IF ( ISFILTERED ( 'Requisitions' ), ", ""Requisitions""" )
+				& IF ( ISFILTERED ( 'Revenue Adjustments' ), ", ""Revenue Adjustments""" )
+				& IF ( ISFILTERED ( 'Service' ), ", ""Service""" )
+				& IF ( ISFILTERED ( 'Service Department' ), ", ""Service Department""" )
+				& IF ( ISFILTERED ( 'Staff' ), ", ""Staff""" )
 				& IF ( ISFILTERED ( 'Staff Productivity' ), ", ""Staff Productivity""" )
 				& IF ( ISFILTERED ( 'Stock Monthly' ), ", ""Stock Monthly""" )
 				& IF ( ISFILTERED ( 'Stock Movements' ), ", ""Stock Movements""" )
