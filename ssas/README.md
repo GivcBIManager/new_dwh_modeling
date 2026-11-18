@@ -80,7 +80,8 @@ Folder `Revenue Cycle\By Charges` (spec `docs/superpowers/specs/2026-11-16-charg
 visits and episodes **by charges**: `Census (Charged)` and `Episodes (Charged)` are the visits and episodes counted as in
 `Census` and `Episodes` that have a recognised charge line (`Is Recognised Revenue = Yes`) in the current Charge Lines
 filter, so Product Category, Service, Service Department, Ordering Doctor, MRP 1-3, Charged By, Policy, Department,
-Staff, Payer, Care Type, Patient and Charge Lines' `Policy Class` (REF, VIP, A, B, C, Not classified) narrow them (Department = Radiology: visits that had a Radiology charge, whatever
+Staff, Payer, Care Type, Patient and Charge Lines' `Policy Class` (REF, VIP, A, B, C, Not classified; a co-pay line is
+classed with its insurer line) narrow them (Department = Radiology: visits that had a Radiology charge, whatever
 clinic they were booked in); `Census (Ordered)` does the same through Order Lines. They are counted on the charge (order)
 lines themselves, as distinct hidden `Encounter Key` / `Episode Key` values. dbt puts on each line the visit's date and
 whether Census counts it (`visit_date_key`, `is_census_visit`, from `fact_encounter`) and the episode's start date and

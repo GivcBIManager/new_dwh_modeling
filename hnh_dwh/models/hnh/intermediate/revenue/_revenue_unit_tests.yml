@@ -145,3 +145,71 @@ unit_tests:
         from values('c UInt32, k String, s String', (1, 'B', 'Description'), (2, 'VIP', 'Description'),
                     (3, 'A', 'Mapping'), (4, 'C', 'Description'), (6, 'A', 'Description'), (7, 'C', 'Description'),
                     (10, 'VIP', 'Mapping'), (11, 'C', 'Mapping'))
+
+  - name: int_charge_line_links_policy_class
+    description: >
+      Policy class of a charge line: REF when its policy is a referral (77), even if its contract has a class; else its
+      contract's class (int_contract_class: 501 B, 502 VIP; 999 has none). A co-pay or deductible line (bill-to 2 or 3)
+      without its own contract takes the class of the live purchaser (bill-to 1) row on the same delivery line, so the
+      patient share of an insured visit is classed with it: id 2 (line 10) is REF, id 4 (line 20) is VIP. Its own
+      policy_code stays null (dim_policy keeps it on the Deductible member). A line with no purchaser row (id 5, cash) or
+      whose purchaser row is cancelled (id 8) has no class; id 9 has its own contract and keeps its class B.
+    model: int_charge_line_links
+    given:
+      - input: ref('stg_oasis__charges')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(id) as delivery_charge_id, toNullable(toInt64(line)) as delivery_line,
+                 toNullable(toDateTime('2026-06-01 10:00:00', 'Asia/Riyadh')) as delivered_at,
+                 toNullable(toInt64(100)) as patient_id, toNullable(toInt64(1)) as episode_no,
+                 cast(null as Nullable(Int64)) as service_dept, cast(null as Nullable(Int64)) as signon_id,
+                 if(pol = 0, cast(null as Nullable(Int64)), toNullable(toInt64(pol))) as policy_code,
+                 if(con = 0, cast(null as Nullable(Int64)), toNullable(toInt64(con))) as contract_no,
+                 toNullable(bt) as bill_to, nullIf(cf, '') as cancel_flag
+          from values('id UInt32, line UInt32, bt String, pol UInt32, con UInt32, cf String',
+              (1, 10, '1', 77, 501, ''), (2, 10, '3', 0, 0, ''), (3, 20, '1', 55, 502, ''), (4, 20, '3', 0, 0, ''),
+              (5, 30, '2', 0, 0, ''), (6, 40, '1', 55, 999, ''), (7, 50, '1', 55, 502, 'C'), (8, 50, '3', 0, 0, ''),
+              (9, 60, '3', 0, 501, ''))
+      - input: ref('stg_oasis__delivery_lines')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as delivery_line, cast(null as Nullable(Int64)) as order_line where 0
+      - input: ref('stg_oasis__order_lines')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as order_line, cast(null as Nullable(Int64)) as master_order_no where 0
+      - input: ref('stg_oasis__orders')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as master_order_no, cast(null as Nullable(String)) as orderer_staff_id where 0
+      - input: ref('stg_oasis__cashier_signons')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as signon_id, cast(null as Nullable(String)) as staff_id where 0
+      - input: ref('stg_oasis__eligibility')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(0) as patient_eligibility_id, cast(null as Nullable(Int64)) as patient_id,
+                 cast(null as Nullable(Int64)) as episode_no, cast(null as Nullable(String)) as responsibility,
+                 cast(null as Nullable(String)) as consultant_staff_id,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as eligibility_start,
+                 cast(null as Nullable(DateTime('Asia/Riyadh'))) as eligibility_end,
+                 cast(null as Nullable(String)) as eligibility_status
+          where 0
+      - input: ref('int_policy_client')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(p) as policy_code, toUInt8(r) as is_referral
+          from values('p UInt32, r UInt8', (77, 1), (55, 0))
+      - input: ref('int_contract_class')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(c) as contract_no, k as policy_class, 'Description' as class_source
+          from values('c UInt32, k String', (501, 'B'), (502, 'VIP'))
+    expect:
+      format: sql
+      rows: |
+        select toInt64(id) as delivery_charge_id, nullIf(k, '') as policy_class,
+               if(pol = 0, cast(null as Nullable(Int64)), toNullable(toInt64(pol))) as policy_code
+        from values('id UInt32, k String, pol UInt32', (1, 'REF', 77), (2, 'REF', 0), (3, 'VIP', 55), (4, 'VIP', 0),
+                    (5, '', 0), (6, '', 55), (7, 'VIP', 55), (8, '', 0), (9, 'B', 0))

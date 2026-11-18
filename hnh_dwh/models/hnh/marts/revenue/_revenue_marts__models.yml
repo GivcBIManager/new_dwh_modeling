@@ -87,7 +87,8 @@ models:
         description: >
           REF when the line's policy is a referral; else the insurance class of the line's contract (int_contract_class:
           the Oasis class description, else the old server's mapping); else Not classified (no contract, or a contract
-          without a class). Repo labels, not title-cased.
+          without a class). A co-pay or deductible line is classed with the purchaser row of its delivery line, so only
+          cash lines lack a contract. Repo labels, not title-cased.
         tests:
           - not_null
           - accepted_values:

@@ -28,6 +28,10 @@ coalesce(nullIf(IF(rp.POLICY_CODE!=0,'REF',''),''),
   (`NTW^C`, `NW2+^B`), kept as written.
 - **Referral:** the line's policy is a referral in `int_policy_client` (`is_referral = 1`, the BI manager's rules) →
   `REF`.
+- **Co-pay and deductible lines** (bill-to 2 or 3 with a purchaser row on the same delivery line) carry no policy or
+  contract in Oasis. They take the class, or REF, of the live purchaser (bill-to 1) row on their delivery line, so an
+  insured visit is not split between its class and `Not classified` (final review, 2026-11-18; the old server left
+  them unclassified). Their policy key is unchanged (dim_policy's Deductible member).
 - **No class** → `Not classified` (contracts without a class, `MOH`, `WAVE-1`, cash lines without a contract).
   Values: `REF`, `VIP`, `A`, `B`, `C`, `Not classified`. Repo labels, not title-cased.
 

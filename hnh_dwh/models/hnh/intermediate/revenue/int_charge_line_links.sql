@@ -14,13 +14,30 @@
 -- Charged by: cashier sign-on -> staff_id.
 -- Policy class: REF when the line's policy is a referral (int_policy_client), else the class of the line's contract
 -- (int_contract_class: Oasis class description, else the old server's mapping), else null (policy class design 2026-11-18).
+-- A co-pay or deductible line (bill-to other than 1) without its own contract has no policy or contract in Oasis; it
+-- takes the policy and contract of the live purchaser (bill-to 1) row on the same delivery line for its class, so an
+-- insured visit's patient share is classed with the visit. Its policy_code output is unchanged (dim_policy's Deductible).
 
 with charges as (
     select branch_id, delivery_charge_id, delivery_line, delivered_at, patient_id, episode_no,
-           service_dept, signon_id, policy_code, contract_no
+           service_dept, signon_id, policy_code, contract_no, bill_to, cancel_flag
     from {{ ref('stg_oasis__charges') }}
     where delivered_at >= toDateTime('{{ var('hnh_history_start_date') }} 00:00:00', 'Asia/Riyadh')
 ),
+
+purchaser_rows as (
+    -- the live purchaser (bill-to 1) row of each delivery line (the lowest charge id if there are several), only for the
+    -- delivery lines that have a patient-share row without a contract
+    select branch_id, delivery_line,
+           argMin(tuple(policy_code, contract_no), delivery_charge_id) as purchaser_policy_contract
+    from charges
+    where bill_to = '1' and cancel_flag is null
+      and (branch_id, delivery_line) in (
+          select branch_id, delivery_line from charges
+          where ifNull(bill_to, '') != '1' and contract_no is null and delivery_line is not null)
+    group by branch_id, delivery_line
+),
+
 
 delivery_lines as (
     select branch_id, delivery_line, order_line
@@ -60,16 +77,17 @@ linked as (
         c.branch_id as branch_id, c.delivery_charge_id as delivery_charge_id, c.delivered_at as delivered_at,
         c.patient_id as patient_id, c.episode_no as episode_no, c.service_dept as service_dept,
         c.policy_code as policy_code, od.orderer_staff_id as ordering_staff_id, cs.staff_id as charged_by_staff_id,
-        if(rp.policy_code is not null, 'REF', cc.policy_class) as policy_class
+        -- the policy and contract the class is taken from: the line's own, or its purchaser row's for a patient share
+        -- without a contract
+        if(ifNull(c.bill_to, '') != '1' and c.contract_no is null, pr.purchaser_policy_contract.1, c.policy_code) as class_policy_code,
+        if(ifNull(c.bill_to, '') != '1' and c.contract_no is null, pr.purchaser_policy_contract.2, c.contract_no) as class_contract_no
     from charges as c
     left join ordering as od
         on od.branch_id = c.branch_id and od.delivery_line = c.delivery_line
     left join signons as cs
         on cs.branch_id = c.branch_id and cs.signon_id = c.signon_id
-    left join (select branch_id, policy_code from {{ ref('int_policy_client') }} where is_referral = 1) as rp
-        on rp.branch_id = c.branch_id and rp.policy_code = c.policy_code
-    left join (select branch_id, contract_no, policy_class from {{ ref('int_contract_class') }}) as cc
-        on cc.branch_id = c.branch_id and cc.contract_no = c.contract_no
+    left join purchaser_rows as pr
+        on pr.branch_id = c.branch_id and pr.delivery_line = c.delivery_line
 ),
 
 eligibility as (
@@ -106,8 +124,12 @@ select
         arrayFilter(p -> p.1 = '3' and p.3 <= l.delivered_at and l.delivered_at <= ifNull(p.4, now()), e.periods)
     )[1].6                            as mrp_3_staff_id,
     l.charged_by_staff_id             as charged_by_staff_id,
-    l.policy_class                    as policy_class
+    if(rp.policy_code is not null, 'REF', cc.policy_class) as policy_class
 from linked as l
 left join eligibility as e
     on e.branch_id = l.branch_id and e.patient_id = l.patient_id and e.episode_no = l.episode_no
+left join (select branch_id, policy_code from {{ ref('int_policy_client') }} where is_referral = 1) as rp
+    on rp.branch_id = l.branch_id and rp.policy_code = l.class_policy_code
+left join (select branch_id, contract_no, policy_class from {{ ref('int_contract_class') }}) as cc
+    on cc.branch_id = l.branch_id and cc.contract_no = l.class_contract_no
 {{ hnh_settings() }}
