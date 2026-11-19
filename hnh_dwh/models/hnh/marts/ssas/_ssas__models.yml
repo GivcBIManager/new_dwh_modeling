@@ -1226,6 +1226,18 @@ models:
         data_type: "Nullable(String)"
       - name: service_start_date
         data_type: "Nullable(Date)"
+      - name: is_review_physician
+        data_type: "Int64"
+      - name: job_title
+        data_type: "String"
+      - name: pay_grade
+        data_type: "String"
+      - name: employment_type
+        data_type: "String"
+      - name: hire_date
+        data_type: "Nullable(Date)"
+      - name: review_physician_key
+        data_type: "Int64"
   - name: ssas_dim_staff_role
     config:
       contract: {enforced: true}
@@ -1915,6 +1927,8 @@ models:
       - name: payer_key
         data_type: "Int64"
       - name: service_key
+        data_type: "Int64"
+      - name: staff_key
         data_type: "Int64"
       - name: care_type_key
         data_type: "Int64"
@@ -3287,4 +3301,30 @@ models:
       - name: can_see_pay
         data_type: "Int64"
       - name: can_see_pii
+        data_type: "Int64"
+  - name: ssas_dim_physician_review_metric
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: metric_code
+        data_type: "String"
+      - name: metric_name
+        data_type: "String"
+      - name: section
+        data_type: "String"
+      - name: display_order
+        data_type: "Int64"
+      - name: unit
+        data_type: "String"
+      - name: direction
+        data_type: "Int64"
+  - name: ssas_dim_peer_scope
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: scope_code
+        data_type: "String"
+      - name: scope_name
+        data_type: "String"
+      - name: display_order
         data_type: "Int64"

@@ -109,11 +109,21 @@ unit_tests:
         format: sql
         rows: |
           select toInt64(-1) as nphies_reason_key
+      - input: ref('stg_oasis__claim_visits')
+        format: sql
+        rows: |
+          select toUInt8(1) as branch_id, toInt64(v) as visit_id, toNullable('D1') as doctor_code,
+                 toNullable(toDateTime('2026-06-01 08:00:00', 'Asia/Riyadh')) as created_at
+          from values('v UInt32', (1), (2))
+      - input: ref('dim_staff')
+        format: sql
+        rows: |
+          select toInt64(1198877926936873208) as staff_key
     expect:
       rows:
-        - {visit_id: 1, sequence_no: 1, is_latest_submission: 0, submitted_amount: 100, adjudication_status: Adjudicated, item_outcome: Rejected, approved_amount: 0, rejected_amount: 100, response_benefit_amount: 0, reason_source: NPHIES response, primary_reason_code: BE-1-3, legacy_approved_amount: 0, legacy_rejected_amount: 100, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 11}
+        - {visit_id: 1, sequence_no: 1, staff_key: 1198877926936873208, is_latest_submission: 0, submitted_amount: 100, adjudication_status: Adjudicated, item_outcome: Rejected, approved_amount: 0, rejected_amount: 100, response_benefit_amount: 0, reason_source: NPHIES response, primary_reason_code: BE-1-3, legacy_approved_amount: 0, legacy_rejected_amount: 100, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 11}
         - {visit_id: 2, sequence_no: 1, is_latest_submission: 1, submitted_amount: 100, adjudication_status: Adjudicated, item_outcome: Partially approved, approved_amount: 64, rejected_amount: 36, response_benefit_amount: 64, reason_source: Not given, primary_reason_code: null, legacy_approved_amount: 0, legacy_rejected_amount: 100, care_type_key: 1, legacy_in_scope: 1, claim_status_key: 11}
-        - {visit_id: 3, sequence_no: 1, is_latest_submission: 1, submitted_amount: null, adjudication_status: No response, item_outcome: Not adjudicated, approved_amount: 0, rejected_amount: 0, response_benefit_amount: null, reason_source: Not given, primary_reason_code: null, legacy_approved_amount: 50, legacy_rejected_amount: 0, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 1591316910076942424}
+        - {visit_id: 3, sequence_no: 1, staff_key: -1, is_latest_submission: 1, submitted_amount: null, adjudication_status: No response, item_outcome: Not adjudicated, approved_amount: 0, rejected_amount: 0, response_benefit_amount: null, reason_source: Not given, primary_reason_code: null, legacy_approved_amount: 50, legacy_rejected_amount: 0, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 1591316910076942424}
         - {visit_id: 4, sequence_no: 1, is_latest_submission: 1, submitted_amount: 30, adjudication_status: Adjudicated, item_outcome: Approved, approved_amount: 30, rejected_amount: 0, response_benefit_amount: 24, reason_source: Not given, primary_reason_code: null, legacy_approved_amount: 30, legacy_rejected_amount: 0, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 22}
         - {visit_id: 4, sequence_no: 2, is_latest_submission: 1, submitted_amount: 40, adjudication_status: Adjudicated, item_outcome: Rejected, approved_amount: 0, rejected_amount: 40, response_benefit_amount: 0, reason_source: Claim notes, primary_reason_code: MN-1-1, legacy_approved_amount: 0, legacy_rejected_amount: 40, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 22}
         - {visit_id: 5, sequence_no: 1, is_latest_submission: 1, submitted_amount: 50, adjudication_status: Adjudicated, item_outcome: Approved, approved_amount: 50, rejected_amount: 0, response_benefit_amount: 40, reason_source: Not given, primary_reason_code: null, legacy_approved_amount: 50, legacy_rejected_amount: 0, care_type_key: 1, legacy_in_scope: 0, claim_status_key: 1591316910076942424}

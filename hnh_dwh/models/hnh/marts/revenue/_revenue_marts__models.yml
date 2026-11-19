@@ -264,6 +264,10 @@ models:
       - name: service_key
         tests:
           - relationships: {to: ref('dim_service'), field: service_key}
+      - name: staff_key
+        description: Doctor of the claim visit (Oasis claim visit doctor_code in the line's branch), -1 when the visit has no code or the code is not in dim_staff.
+        tests:
+          - relationships: {to: ref('dim_staff'), field: staff_key}
       - name: care_type_key
         tests:
           - relationships: {to: ref('dim_care_type'), field: care_type_key}

@@ -96,6 +96,18 @@ toUInt8(ifNull({{ code }}, '') in ('CWK', 'CON'))
 select employee_key from {{ ref('hnh_dim_employee') }} where {{ hnh_is_contingent('worker_type_code') }} = 1
 {%- endmacro %}
 
+{# Physician contract review (ruling R2, 2026-11-19): a staff name as an array of tokens for comparing two staff rows.
+   Lower case, only the letters a-z and spaces kept (other characters removed), split on spaces, tokens of one letter and
+   the particles dr, al, el, bin, abu, abd dropped. #}
+{% macro hnh_name_tokens(name) -%}
+arrayFilter(t -> length(t) > 1 and t not in ('dr', 'al', 'el', 'bin', 'abu', 'abd'), splitByChar(' ', replaceRegexpAll(lower(ifNull({{ name }}, '')), '[^a-z ]', '')))
+{%- endmacro %}
+
+{# Two token arrays of hnh_name_tokens agree: the same first token and at least two distinct tokens in common. #}
+{% macro hnh_name_tokens_agree(a, b) -%}
+(length({{ a }}) > 0 and {{ a }}[1] = {{ b }}[1] and length(arrayIntersect(arrayDistinct({{ a }}), arrayDistinct({{ b }}))) >= 2)
+{%- endmacro %}
+
 {% macro hnh_worker_type_label(code) -%}
 multiIf(ifNull({{ code }}, '') = 'EMP', 'Employee', ifNull({{ code }}, '') = 'EX_EMP', 'Ex-employee',
         ifNull({{ code }}, '') = 'CWK', 'Contingent worker', ifNull({{ code }}, '') = 'CON', 'Contractor',
