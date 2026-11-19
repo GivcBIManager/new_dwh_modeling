@@ -79,6 +79,13 @@ def test_jinja_statements_stop(project):
         r.render("bsc_vw_z")
 
 
+def test_a_sql_file_path_renders_like_a_model(project, tmp_path):
+    query = tmp_path / "check.sql"
+    query.write_text("select * from {{ ref('fact_b') }}\n{{ hnh_settings() }}\n", encoding="utf-8")
+    assert r.render(str(query)) == "select * from gold.fact_b\nsettings join_use_nulls = 1"
+    assert r.render(str(query), inline={"stg_a"}).startswith("select * from gold.fact_b")
+
+
 def test_fusion_source_renders_the_fusion_table(project):
     (project / "staging" / "x" / "stg_f.sql").write_text(
         "select 1 from {{ hnh_fusion_source('fact_recruiting_requisition') }} final", encoding="utf-8")

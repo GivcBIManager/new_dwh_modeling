@@ -24,20 +24,24 @@ function Invoke-Sql([string]$Sql) {
     return @(Invoke-HnhSelect -Dsn HNH_Gold -Sql ($Sql -replace '(?m)^\s*--.*$', ''))
 }
 
-# Staff rows (staff_key = branch * 100 + person). Person A: physician home row in branch 1 (101); unlinked rows of the same
-# staff id in branches 2 (same national id), 3 (id missing) and 4 (id differs); a linked nurse row in branch 8 (801).
+# Staff rows (staff_key = branch * 100 + person), invented names. Person A: physician home row in branch 1 (101); unlinked
+# rows of the same staff id: branch 2 (same national id, another name), 3 (id missing, name agrees), 4 (id differs),
+# 5 (id missing, one shared name token), 6 (id missing, two shared tokens but another first token), 7 (id missing, name
+# agrees after dropping "Dr.", case and punctuation); a linked nurse row in branch 8 (801).
 # B: doctor with a nurse job (102) and its branch-2 row (202). C: one staff record shared by two employees (103) and its
-# branch-2 row (203). D: contingent (104). E: part-time specialist, home id missing (105), branch-2 row with an id (205).
-# F: physician in branches 1 and 5 (106, 506) and an unlinked branch-6 row (606). G: a nurse with a physician job (107).
-# H: an unlinked doctor (708). -1: the Unknown row.
+# branch-2 row (203). D: contingent (104). E: part-time specialist, home id missing (105), branch-2 row with an id and an
+# agreeing name (205). F: physician in branches 1 and 5 (106, 506) and an unlinked branch-6 row (606), same names.
+# G: a nurse with a physician job (107). H: an unlinked doctor (708). -1: the Unknown row.
 $staff = "select toInt64(k) as staff_key, toUInt8(b) as branch_key, sid as staff_id, cat as category, h as national_id_hash, nm as staff_name " +
          "from values('k Int64, b UInt8, sid Nullable(String), cat Nullable(String), h Nullable(Int64), nm Nullable(String)', " +
-         "(101, 1, 'A1', 'DOCTORS', 1001, 'Staff A'), (201, 2, 'A1', 'DOCTORS', 1001, 'Staff A'), (301, 3, 'A1', 'DOCTORS', NULL, 'Staff A'), " +
-         "(401, 4, 'A1', 'DOCTORS', 9999, 'Staff A'), (801, 8, 'A1', 'NURSE', 1001, 'Staff A'), " +
+         "(101, 1, 'A1', 'DOCTORS', 1001, 'Zorvan Keltri Amsod'), (201, 2, 'A1', 'DOCTORS', 1001, 'Quillon Barth'), " +
+         "(301, 3, 'A1', 'DOCTORS', NULL, 'zorvan  amsod'), (401, 4, 'A1', 'DOCTORS', 9999, 'Zorvan Keltri Amsod'), " +
+         "(501, 5, 'A1', 'DOCTORS', NULL, 'Zorvan Pellig'), (601, 6, 'A1', 'DOCTORS', NULL, 'Keltri Amsod Zorvan'), " +
+         "(701, 7, 'A1', 'DOCTORS', NULL, 'Dr. ZORVAN K. Keltri'), (801, 8, 'A1', 'NURSE', 1001, 'Zorvan Keltri Amsod'), " +
          "(102, 1, 'B1', 'DOCTORS', NULL, 'Staff B'), (202, 2, 'B1', 'DOCTORS', NULL, 'Staff B'), " +
          "(103, 1, 'C1', 'DOCTORS', NULL, 'Staff C'), (203, 2, 'C1', 'DOCTORS', NULL, 'Staff C'), (104, 1, 'D1', 'DOCTORS', NULL, 'Staff D'), " +
-         "(105, 1, 'E1', 'DOCTORS', NULL, 'Staff E'), (205, 2, 'E1', 'DOCTORS', 5555, 'Staff E'), " +
-         "(106, 1, 'F1', 'DOCTORS', NULL, 'Staff F'), (506, 5, 'F1', 'DOCTORS', NULL, 'Staff F'), (606, 6, 'F1', 'DOCTORS', NULL, 'Staff F'), " +
+         "(105, 1, 'E1', 'DOCTORS', NULL, 'Merrow Tastin Vogel'), (205, 2, 'E1', 'DOCTORS', 5555, 'Merrow Vogel'), " +
+         "(106, 1, 'F1', 'DOCTORS', NULL, 'Fennix Oradu'), (506, 5, 'F1', 'DOCTORS', NULL, 'Fennix Oradu'), (606, 6, 'F1', 'DOCTORS', NULL, 'Fennix Oradu'), " +
          "(107, 1, 'G1', 'NURSE', NULL, 'Staff G'), (708, 7, 'H1', 'DOCTORS', NULL, 'Staff H'), (-1, 0, NULL, NULL, NULL, 'Unknown'))"
 $bridge = "select toInt64(e) as employee_key, toInt64(k) as staff_key, toUInt8(b) as branch_key from values('e Int64, k Int64, b UInt8', " +
           "(1, 101, 1), (2, 102, 1), (3, 103, 1), (4, 103, 1), (5, 104, 1), (6, 105, 1), (7, 106, 1), (8, 506, 5), (9, 107, 1), (10, 801, 8))"
@@ -55,8 +59,8 @@ Describe 'dim_review_physician' {
     $rows = Invoke-Sql (Get-RenderedModel 'dim_review_physician' $physicianRefs)
     $k = @{}; foreach ($r in $rows) { $k[[string]$r.staff_key] = $r }
     It 'has one row per dim_staff row' {
-        $rows.Count | Should Be 18
-        $k.Count | Should Be 18
+        $rows.Count | Should Be 21
+        $k.Count | Should Be 21
     }
     It 'flags a linked doctor with a physician job as a home row' {
         [int]$k['101'].is_review_physician | Should Be 1
@@ -86,14 +90,23 @@ Describe 'dim_review_physician' {
         [int]$k['107'].is_review_physician | Should Be 0
         [int64]$k['107'].review_physician_key | Should Be -1
     }
-    It 'attaches another hospital''s row when the national id agrees' {
+    It 'attaches another hospital''s row when the national id agrees, whatever the names' {
         [int]$k['201'].is_review_physician | Should Be 0
         [int64]$k['201'].review_physician_key | Should Be 101
         $k['201'].job_title | Should Be 'Not linked'
     }
-    It 'attaches another hospital''s row when the national id is missing on either side' {
+    It 'attaches another hospital''s row when the national id is missing on either side and the names agree' {
         [int64]$k['301'].review_physician_key | Should Be 101
         [int64]$k['205'].review_physician_key | Should Be 105
+    }
+    It 'does not attach a row with the id missing whose name shares only one token' {
+        [int64]$k['501'].review_physician_key | Should Be -1
+    }
+    It 'does not attach a row with the id missing whose name shares two tokens but not the first' {
+        [int64]$k['601'].review_physician_key | Should Be -1
+    }
+    It 'compares names without case, punctuation, single letters and Dr.' {
+        [int64]$k['701'].review_physician_key | Should Be 101
     }
     It 'does not attach a row whose national id differs, or a row linked to HR itself' {
         [int64]$k['401'].review_physician_key | Should Be -1
@@ -149,34 +162,38 @@ Describe 'assert_review_physician_key_has_one_home_row' {
 }
 
 Describe 'list_review_matches' {
-    # A attached by national id (101 <- 201) and with the id missing (101 <- 301, name differs only in case and spaces);
-    # E attached with the id missing (105 <- 205, a different name).
-    $rp = "(select toInt64(k) as staff_key, toUInt8(f) as is_review_physician, toInt64(rk) as review_physician_key " +
-          "from values('k Int64, f UInt8, rk Int64', (101, 1, 101), (201, 0, 101), (301, 0, 101), (105, 1, 105), (205, 0, 105), (708, 0, -1)))"
-    $st = "(select toInt64(k) as staff_key, toUInt8(b) as branch_key, sid as staff_id, h as national_id_hash, nm as staff_name " +
-          "from values('k Int64, b UInt8, sid Nullable(String), h Nullable(Int64), nm Nullable(String)', " +
-          "(101, 1, 'A1', 1001, 'Staff A'), (201, 2, 'A1', 1001, 'Staff A'), (301, 3, 'A1', NULL, ' staff   a'), " +
-          "(105, 1, 'E1', NULL, 'Staff E'), (205, 2, 'E1', 5555, 'Other Person'), (708, 7, 'H1', NULL, 'Staff H')))"
-    $sql = (Get-Content (Join-Path $root 'scripts\physician_review\list_review_matches.sql') -Raw)
-    $sql = $sql.Replace('gold.dim_review_physician', $rp).Replace('gold.dim_staff', $st)
-    $rows = Invoke-Sql $sql
-    $k = @{}; foreach ($r in $rows) { $k[[string]$r.other_staff_key] = $r }
-    It 'lists one row per attached other-hospital row' {
-        $rows.Count | Should Be 3
-        (@($k.Keys | Sort-Object) -join ',') | Should Be '201,205,301'
-        [int64]$k['201'].home_staff_key | Should Be 101
-        [int]$k['201'].home_branch_key | Should Be 1
-        [int]$k['201'].other_branch_key | Should Be 2
+    # The list runs on the model rendered from the rows above (its settings move to the end of the list).
+    $model = (Get-RenderedModel 'dim_review_physician' $physicianRefs '{model}') -replace '(?s)\n\s*settings join_use_nulls = 1\s*$', ''
+    $listRefs = @{ dim_review_physician = $model; dim_staff = $staff; bridge_employee_staff = $bridge }
+    $rows = Invoke-Sql (Get-RenderedModel (Join-Path $root 'scripts\physician_review\list_review_matches.sql') $listRefs '{model}')
+    $k = @{}; foreach ($r in $rows) { $k["$($r.home_staff_key)|$($r.other_staff_key)"] = $r }
+    It 'lists every candidate pair, not a contradicting id or a row linked to HR' {
+        $rows.Count | Should Be 8
+        (@($k.Keys | Sort-Object) -join ',') | Should Be '101|201,101|301,101|501,101|601,101|701,105|205,106|606,506|606'
+        [int]$k['101|201'].home_branch_key | Should Be 1
+        [int]$k['101|201'].other_branch_key | Should Be 2
     }
-    It 'says whether the national id agreed or was missing' {
-        $k['201'].national_id | Should Be 'agreed'
-        $k['301'].national_id | Should Be 'missing'
-        $k['205'].national_id | Should Be 'missing'
+    It 'says whether a pair is attached and why' {
+        "$($k['101|201'].attached) $($k['101|201'].reason)" | Should Be '1 national id'
+        "$($k['101|301'].attached) $($k['101|301'].reason)" | Should Be '1 name agrees'
+        "$($k['101|701'].attached) $($k['101|701'].reason)" | Should Be '1 name agrees'
+        "$($k['105|205'].attached) $($k['105|205'].reason)" | Should Be '1 name agrees'
+        "$($k['101|501'].attached) $($k['101|501'].reason)" | Should Be '0 name differs'
+        "$($k['101|601'].attached) $($k['101|601'].reason)" | Should Be '0 name differs'
+        "$($k['106|606'].attached) $($k['106|606'].reason)" | Should Be '0 name agrees'
+        "$($k['506|606'].attached) $($k['506|606'].reason)" | Should Be '0 name agrees'
     }
-    It 'compares names in lower case with single spaces' {
-        [int]$k['201'].names_differ | Should Be 0
-        [int]$k['301'].names_differ | Should Be 0
-        [int]$k['205'].names_differ | Should Be 1
+    It 'lists the pairs that are not attached first' {
+        (@($rows | ForEach-Object { [int]$_.attached }) -join '') | Should Be '00001111'
+    }
+}
+
+Describe 'hnh_name_tokens' {
+    $code = "import sys; sys.path.insert(0, sys.argv[1]); import render_model_sql as r; sys.stdout.write(r.render_macro(sys.argv[2]))"
+    $expr = (& python -c $code (Join-Path $root 'scripts') "hnh_name_tokens('t.n')") -join "`n"
+    It 'drops case, punctuation, single letters and the particles dr, al, el, bin, abu, abd' {
+        $r = Invoke-Sql "select arrayStringConcat($expr, ',') as v from (select 'Dr. ABU Yarel  el-Q. M bin Abd Al Tovin' as n) as t"
+        $r[0].v | Should Be 'yarel,elq,tovin'
     }
 }
 

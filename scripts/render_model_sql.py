@@ -9,6 +9,7 @@ error.
   python scripts/render_model_sql.py bsc_vw_financial --inline fact_gl_fs_monthly,stg_bsc__oasis_gl_line \
       --replace stg_ref__gl_cutover=scripts/fixtures/gl_cutover_stub.sql --wrap "DESCRIBE ({model})" --out m.sql
 
+The model may also be the path of a .sql file outside the models (a read-only check query that uses ref() and macros).
 --inline renders a model that is not built yet as a subquery; --replace puts the given SQL in place of a model;
 --wrap places the model inside a query (a trailing settings clause moves to the end of the wrapping query).
 """
@@ -27,6 +28,8 @@ LAYER_SCHEMAS = {"staging": "stg", "intermediate": "int", "marts": "gold"}
 
 
 def model_path(name):
+    if name.endswith(".sql") and Path(name).is_file():  # a SQL file outside the models (a check query): rendered alike
+        return Path(name)
     hits = list(MODELS.rglob(f"{name}.sql"))
     if len(hits) != 1:
         raise SystemExit(f"model {name}: {len(hits)} files found")
