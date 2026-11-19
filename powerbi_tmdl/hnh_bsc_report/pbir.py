@@ -308,15 +308,21 @@ def _projection(f: Field, active: bool, label: str | None = None) -> dict:
     return p
 
 
-def _active(sample: str, role: str, position: int = 0, expand: bool = True) -> bool:
+def _active(sample: str, role: str, position: int = 0, expand: bool | int = True, count: int = 1) -> bool:
     """Desktop marks a chart's Category and a slicer's field `active`; every matrix row level is active so all
     levels show expanded (legacy writer). A chart with several Category fields is a drill-down: only the top level is
     active (all active would show the levels' values joined on one axis); a matrix with `expand` off shows its top
-    row level, the others reached by expand or drill down."""
+    row level, the others reached by expand or drill down; an int `expand` opens that many row levels. Every level of a
+    matrix's multi-level column header (`count` fields) is active (the finance statements' Group > Column header, 2026-11-19: Desktop showed only the top
+    level, where a cell measure that needs one column returns nothing, and the matrix came out empty)."""
     if role == "Category":
         return position == 0
     if sample == "matrix" and role == "Rows":
-        return expand or position == 0
+        if expand is True or expand is False:
+            return expand or position == 0
+        return position < expand  # an int: the first `expand` row levels open, the others by expand or drill
+    if sample == "matrix" and role == "Columns" and count > 1:
+        return True  # every column level shown: collapsed to the top level, a two-level header showed no columns
     return sample.startswith("slicer") and role == "Values"
 
 
@@ -352,7 +358,8 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
     v: dict = {"visualType": vtype}
     if fields:
         query: dict = {"queryState": {
-            role: {"projections": [_projection(f, _active(visual.sample, role, i, visual.expand), visual.labels.get(f))
+            role: {"projections": [_projection(f, _active(visual.sample, role, i, visual.expand, len(fs)),
+                                               visual.labels.get(f))
                                    for i, f in enumerate(fs)]}
             for role, fs in visual.roles.items()}}
         if visual.sort:

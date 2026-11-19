@@ -3,10 +3,10 @@
   "name": "bd2a543b11abf3a10d74",
   "position": {
     "x": 1606.0,
-    "y": 284,
+    "y": 324,
     "z": 97000,
-    "height": 20,
-    "width": 60,
+    "height": 24,
+    "width": 64,
     "tabOrder": 97000
   },
   "visual": {
@@ -22,7 +22,7 @@
                     "value": "Last year",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "10pt",
+                      "fontSize": "9.5pt",
                       "fontWeight": "normal",
                       "color": "#4D5B6B"
                     }
@@ -81,6 +81,40 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
                 }
               }
             }

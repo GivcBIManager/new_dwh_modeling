@@ -76,16 +76,21 @@ YEAR = col("Date", "Year")
 MONTH_SHORT = col("Date", "Month Short")
 PERIOD_TEXT = meas("FR Period Text")
 CURRENT_YEAR = "Current year"
+YEAR_OFFSET = col("Date", "Year Offset")
 # 'Date'[Year] 2022..2040: the years with data (the GL starts in 2022) up to a fixed horizon, no yearly rebuild until 2040
 YEARS_OFFERED = Filter(YEAR, "in", list(range(2022, 2041)))
+# 'Date'[Year Offset] 0 (the current year) and up (past years): the slicer never offers a future year (the Date table
+# runs two years ahead, screenshot 2026-11-19), whatever the year
+PAST_YEARS = Filter(YEAR_OFFSET, "in", list(range(0, 19)))
 
 # Filter bar rects (the frame's bar is y 84..162; controls 96..150)
 VIEW_W, VIEW_GAP, BAR_Y, BAR_H = 110, 6, 96, 54
 HOSPITAL_RECT: Rect = (275, 90, 540, 66)
 YEAR_RECT: Rect = (830, 90, 300, 66)
 MONTH_RECT: Rect = (1145, 90, 480, 66)
-PERIOD_RECT: Rect = (1640, 96, 250, 30)
-UNIT_RECT: Rect = (1640, 128, 250, 22)
+PERIOD_RECT: Rect = (1640, 94, 250, 34)
+UNIT_RECT: Rect = (1640, 128, 250, 24)
+PERIOD_PT = 13
 
 
 def hospitals() -> Filter:
@@ -146,12 +151,19 @@ def tile_look() -> dict:
             "items": [{"properties": {"textSize": _num(11), "fontColor": _colour(INK)}}]}
 
 
+def tight() -> dict:
+    """Padding 0 on every side: a text box or small card keeps its whole rect for the text (with the default
+    padding a 10 pt line in a 22 px box overflowed and showed a scroll bar, screenshot 2026-11-19)."""
+    zero = _num(0)
+    return {"padding": [{"properties": {"top": zero, "bottom": zero, "left": zero, "right": zero}}]}
+
+
 def _text_props(text: str, size: str, colour: str, weight: str = "normal", align: str | None = None) -> dict:
     style = {"fontFamily": "Segoe UI", "fontSize": size, "fontWeight": weight, "color": colour}
     para: dict = {"textRuns": [{"value": text, "textStyle": style}]}
     if align:
         para["horizontalTextAlignment"] = align
-    return {"general": [{"properties": {"paragraphs": [para]}}], **no_container()}
+    return {"general": [{"properties": {"paragraphs": [para]}}], **no_container(), **tight()}
 
 
 def _navigate(page_name: str) -> dict:
@@ -174,7 +186,7 @@ def nav_button(page_name: str, label: str, x: float, w: float, current: bool) ->
 def filter_bar(statement: str, view: str) -> list[Visual]:
     """The filter bar's visuals. `view`: "monthly" or "hospitals". View buttons to the twin pages; on a monthly page the
     Hospital tile slicer (multi-select, Select all on), on a hospitals page a note; the Year tile slicer (single select,
-    saved on "Current year", the years from 2022), the Month tile slicer (multi-select, nothing saved), the period text
+    saved on "Current year", the years from 2022 up to the current one, newest first), the Month tile slicer (multi-select, nothing saved), the period text
     and the unit."""
     if view not in dict(VIEWS):
         raise ValueError(f"view must be 'monthly' or 'hospitals', got {view!r}")
@@ -188,14 +200,24 @@ def filter_bar(statement: str, view: str) -> list[Visual]:
     else:
         out.append(Visual("textbox", *HOSPITAL_RECT,
                           props=_text_props("All eight, side by side with the total", "12pt", INK, "bold")))
-    out.append(Visual("slicerTile", *YEAR_RECT, roles={"Values": [YEAR_PICK]}, filters=[YEARS_OFFERED],
+    out.append(Visual("slicerTile", *YEAR_RECT, roles={"Values": [YEAR_PICK]}, filters=[YEARS_OFFERED, PAST_YEARS],
+                      sort=YEAR_PICK, sort_dir="desc",
                       props={**single_selection(), **tile_look(), **saved_selection(YEAR_PICK, CURRENT_YEAR)},
                       labels={YEAR_PICK: "Year"}))
     out.append(Visual("slicerTile", *MONTH_RECT, roles={"Values": [MONTH_SHORT]},
                       props={**multi_selection(), **tile_look()}, labels={MONTH_SHORT: "Month"}))
-    out.append(Visual("card", *PERIOD_RECT, roles={"Values": [PERIOD_TEXT]}, props=no_container()))
+    out.append(Visual("card", *PERIOD_RECT, roles={"Values": [PERIOD_TEXT]}, props=period_look()))
     out.append(Visual("textbox", *UNIT_RECT, props=_text_props("SAR '000", "10pt", MUTED, align="right")))
     return out
+
+
+def period_look() -> dict:
+    """The period text card: PERIOD_PT semibold ink, right-aligned, no category label (Desktop's default 27 pt card
+    was cut to "Jan to Nov 2...", screenshot 2026-11-19)."""
+    labels = {"fontSize": _num(PERIOD_PT), "fontFamily": _lit("Segoe UI Semibold"), "color": _colour(INK),
+              "horizontalAlignment": _lit("right")}
+    return {"labels": [{"properties": labels}], "categoryLabels": [{"properties": {"show": _lit(False)}}],
+            **no_container(), **tight()}
 
 
 def page_frame(statement: str, view: str) -> list[Visual]:

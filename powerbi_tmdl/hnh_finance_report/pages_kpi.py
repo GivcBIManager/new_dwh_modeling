@@ -5,9 +5,9 @@ and fin_blocks (the matrix).
     PAGES            the two pages in report order
     CARD_KPIS        [(card code, KPI code)] of the six cards, read from dim_finance_kpi.sql
 
-A card (white panel): code chip, name and `Target` on the first line; the value (28 pt) and a status chip filled by
-[FR KPI Status Colour]; two lines (monthly: Budget and Last year, each with its change, coloured by [FR KPI Cell
-Colour]; hospitals: the Best and the Lowest hospital); a 12-month sparkline of [FR KPI Value]. Text figures are
+A card (white panel): code chip and name on the first line; the value (24 pt) and a status chip filled by
+[FR KPI Status Colour]; the target; two lines (monthly: Budget and Last year, each with its change, coloured by
+[FR KPI Cell Colour]; hospitals: the Best and the Lowest hospital); a 12-month sparkline of [FR KPI Value]. Text figures are
 [FR KPI Cell] read for one column of 'Finance Column' (a visual filter on its Kind), so every figure is in the KPI's
 unit; the card's KPI is a visual filter on 'Finance KPI'[KPI Code]. The sparkline shows the 12 closed months before
 the current one whatever Year and Month are picked (ruling R4: NoFilter from both slicers, the Hospital slicer keeps
@@ -21,9 +21,9 @@ from __future__ import annotations
 import re
 
 import fin_frame
-from fin_blocks import FC_PAGE, FC_VIEW, MATRIX_RECT, VIEW_VALUES, WHITE, statement_matrix, tile_rects
+from fin_blocks import CARDS_RECT, FC_PAGE, FC_VIEW, MATRIX_RECT, VIEW_VALUES, WHITE, statement_matrix, tile_rects
 from fin_frame import (BRANCH_NAME, CHIP_OFF, CHIP_ON, CHIP_WATCH, INK, MUTED, SERIES_ACTUAL, YEAR_PICK,
-                       MONTH_SHORT, _colour, _lit, _num, no_container)
+                       MONTH_SHORT, _colour, _lit, _num, no_container, tight)
 from model import Field, Filter, Interaction, Page, Visual, col, meas
 
 import hr_frame  # noqa: E402  (on the path through fin_blocks)
@@ -58,8 +58,13 @@ if [c for c, _ in CARD_KPIS] != [f"F{i}" for i in range(1, 7)]:
     raise ValueError(f"{_DIM.name}: expected the cards F1 to F6, found {[c for c, _ in CARD_KPIS]}")
 
 PAD, GAP = 12, 4
-HEADER_H, HEADER_GAP = 40, 8
-_MX, _MY, _MW, _MH = MATRIX_RECT
+HEADER_H, HEADER_GAP = 48, 8
+ROW_H, LABEL_W = 24, 64
+SPARK_H = 52  # at 34 px Desktop drew a placeholder icon instead of the line (screenshot 2026-11-19)
+# the header and matrix start under the KPI cards (taller than the statement pages' tiles)
+_MX, _MW = MATRIX_RECT[0], MATRIX_RECT[2]
+_MY = CARDS_RECT[1] + CARDS_RECT[3] + 12
+_MH = MATRIX_RECT[1] + MATRIX_RECT[3] - _MY
 HEADERS = {"monthly": ("Financial ratios vs target",
                        "Flows over the selected period, balances at its end. Status counts follow the hospitals picked."),
            "hospitals": ("Financial ratios vs target · hospital comparison",
@@ -71,12 +76,12 @@ HEADERS = {"monthly": ("Financial ratios vs target",
 
 def _text(x: float, y: float, w: float, h: float, text: str, size: str, colour: str, weight: str = "normal",
           align: str | None = None, fill: str | None = None) -> Visual:
-    """A text box (one paragraph); `fill` a background colour (a chip)."""
+    """A text box (one paragraph), padding 0; `fill` a background colour (a chip)."""
     style = {"fontFamily": "Segoe UI", "fontSize": size, "fontWeight": weight, "color": colour}
     para: dict = {"textRuns": [{"value": text, "textStyle": style}]}
     if align:
         para["horizontalTextAlignment"] = align
-    props = {"general": [{"properties": {"paragraphs": [para]}}], **no_container()}
+    props = {"general": [{"properties": {"paragraphs": [para]}}], **no_container(), **tight()}
     if fill:
         props["background"] = [{"properties": {"show": _lit(True), "color": _colour(fill), "transparency": _num(0)}}]
     return Visual("textbox", x, y, w, h, props=props)
@@ -86,7 +91,7 @@ def _figure(x: float, y: float, w: float, h: float, field: Field, size: float, c
             filters: list[Filter], align: str = "left") -> Visual:
     look = hr_frame.card_look(size, colour)
     look["labels"][0]["properties"]["horizontalAlignment"] = _lit(align)
-    return Visual("card", x, y, w, h, roles={"Values": [field]}, filters=filters, props=look)
+    return Visual("card", x, y, w, h, roles={"Values": [field]}, filters=filters, props={**look, **tight()})
 
 
 def _kind_filters(code: str, kind: str, view: str = "monthly") -> list[Filter]:
@@ -98,52 +103,55 @@ def _kind_filters(code: str, kind: str, view: str = "monthly") -> list[Filter]:
 
 def _status_chip(x: float, y: float, w: float, h: float, code: str) -> Visual:
     """[FR KPI Status] on a chip filled by [FR KPI Status Colour] (On target / Watch / Off target; grey without a target)."""
-    look = hr_frame.card_look(11, hr_frame.measure_colour(STATUS_TEXT_COLOUR))
+    look = hr_frame.card_look(10, hr_frame.measure_colour(STATUS_TEXT_COLOUR))
     look["labels"][0]["properties"]["horizontalAlignment"] = _lit("center")
     look["background"] = [{"properties": {"show": _lit(True), "color": hr_frame.measure_colour(STATUS_COLOUR),
                                           "transparency": _num(0)}}]
-    return Visual("card", x, y, w, h, roles={"Values": [STATUS]}, filters=[Filter(KPI_CODE, "eq", [code])], props=look)
+    return Visual("card", x, y, w, h, roles={"Values": [STATUS]}, filters=[Filter(KPI_CODE, "eq", [code])],
+                  props={**look, **tight()})
 
 
 def _sparkline(x: float, y: float, w: float, h: float, code: str) -> Visual:
-    """[FR KPI Value] by month for the card's KPI, the last 12 closed months, one navy line, no axes, labels or legend."""
+    """[FR KPI Value] by month for the card's KPI, the last 12 closed months, one navy line, no title, axes, labels or
+    legend, padding 0 (with the default title the line had no room and Desktop drew a placeholder icon)."""
     off = {"properties": {"show": _lit(False)}}
-    props = {"categoryAxis": [{"properties": {"show": _lit(False), "gridlineShow": _lit(False)}}],
-             "valueAxis": [{"properties": {"show": _lit(False), "gridlineShow": _lit(False)}}],
+    axis = {"show": _lit(False), "gridlineShow": _lit(False), "showAxisTitle": _lit(False)}
+    props = {"categoryAxis": [{"properties": dict(axis)}], "valueAxis": [{"properties": dict(axis)}],
              "labels": [off], "legend": [off], "markers": [off],
              "lineStyles": [{"properties": {"strokeWidth": _num(2), "showMarker": _lit(False)}}],
              "dataPoint": [{"properties": {"fill": _colour(SERIES_ACTUAL)}, "selector": {"metadata": meas("FR KPI Value").ref}}],
-             **no_container()}
+             "title": [off], **no_container(), **tight()}
     return Visual("lineChart", x, y, w, h, roles={"Category": [YEAR_MONTH], "Y": [meas("FR KPI Value")]},
                   filters=[Filter(KPI_CODE, "eq", [code]), TREND_WINDOW], sort=YEAR_MONTH, sort_dir="asc", props=props)
 
 
 def card(view: str, rect: tuple, number: int, code: str, name: str) -> list[Visual]:
-    """One KPI card of the row (`number` 1..6)."""
+    """One KPI card of the row (`number` 1..6): code chip and name; value and status chip; target; Budget and Last
+    year (monthly) or Best and Lowest (hospitals); the sparkline. Every text in a box ROW_H tall, padding 0 (at 20-22
+    px with the default padding the labels scrolled and the names were cut, screenshot 2026-11-19)."""
     x, y, w, h = rect
     ix, iw = x + PAD, w - 2 * PAD
+    fx = ix + LABEL_W + 2  # the figures' column, after the row labels
     out = [hr_frame.white_panel(x, y, w, h)]
-    out.append(_text(ix, y + 8, 34, 22, f"F{number}", "10pt", WHITE, "bold", "center", fill=INK))
-    target_w = 106
-    out.append(_text(ix + 40, y + 8, iw - 40 - target_w - GAP, 22, name, "12pt", INK, "bold"))
-    out.append(_text(ix + iw - target_w, y + 8, 38, 22, "Target", "9pt", MUTED, align="right"))
-    out.append(_figure(ix + iw - target_w + 40, y + 8, target_w - 40, 22, CELL, 10, INK, _kind_filters(code, "target"),
-                       "right"))
-    out.append(_figure(ix, y + 34, 138, 44, CELL, 28, INK, _kind_filters(code, "actual")))
-    out.append(_status_chip(ix + 148, y + 46, iw - 148, 24, code))
+    out.append(_text(ix, y + 10, 32, ROW_H, f"F{number}", "9pt", WHITE, "bold", "center", fill=INK))
+    out.append(_text(ix + 38, y + 10, iw - 38, ROW_H, name, "11pt", INK, "bold"))
+    out.append(_figure(ix, y + 40, 132, 46, CELL, 24, INK, _kind_filters(code, "actual")))
+    out.append(_status_chip(ix + 140, y + 50, iw - 140, 26, code))
+    out.append(_text(ix, y + 94, LABEL_W, ROW_H, "Target", "9.5pt", MUTED))
+    out.append(_figure(fx, y + 94, iw - LABEL_W - 2, ROW_H, CELL, 10, INK, _kind_filters(code, "target")))
     for row, (label, kind, delta, best) in enumerate((("Budget", "budget", "vs_bud", "Best"),
                                                        ("Last year", "ly", "vs_ly", "Lowest"))):
-        ly = y + 84 + row * 22
+        ly = y + 120 + row * (ROW_H + 2)
         if view == "monthly":
-            out.append(_text(ix, ly, 60, 20, label, "10pt", MUTED))
-            out.append(_figure(ix + 62, ly, 84, 20, CELL, 11, INK, _kind_filters(code, kind)))
-            out.append(_figure(ix + 150, ly, iw - 150, 20, CHANGE[delta], 11, hr_frame.measure_colour(CELL_COLOUR),
-                               _kind_filters(code, delta)))
+            out.append(_text(ix, ly, LABEL_W, ROW_H, label, "9.5pt", MUTED))
+            out.append(_figure(fx, ly, 92, ROW_H, CELL, 10, INK, _kind_filters(code, kind)))
+            out.append(_figure(fx + 96, ly, ix + iw - fx - 96, ROW_H, CHANGE[delta], 10,
+                               hr_frame.measure_colour(CELL_COLOUR), _kind_filters(code, delta), "right"))
         else:
-            out.append(_text(ix, ly, 46, 20, best, "10pt", MUTED))
-            out.append(_figure(ix + 48, ly, iw - 48, 20, meas(f"FR KPI Card {best}"), 11, INK,
+            out.append(_text(ix, ly, LABEL_W, ROW_H, best, "9.5pt", MUTED))
+            out.append(_figure(fx, ly, iw - LABEL_W - 2, ROW_H, meas(f"FR KPI Card {best}"), 10, INK,
                                [Filter(KPI_CODE, "eq", [code])]))
-    out.append(_sparkline(ix, y + 130, iw, 34, code))
+    out.append(_sparkline(ix, y + h - SPARK_H - 6, iw, SPARK_H, code))
     return out
 
 
@@ -160,11 +168,11 @@ def header(view: str) -> list[Visual]:
     out = [Visual("textbox", _MX, _MY, _MW - chips_w - 12, HEADER_H,
                   props={"general": [{"properties": {"paragraphs": [run(title, "13pt", INK, "bold"),
                                                                      run(note, "10pt", MUTED, "normal")]}}],
-                         **no_container()})]
+                         **no_container(), **tight()})]
     x = _MX + _MW - chips_w
     for measure, words, (fill, fg), w in COUNTS:
-        out.append(_text(x, _MY + 6, w, 28, words, "10.5pt", fg, "bold", "right", fill=fill))
-        out.append(_figure(x + 8, _MY + 6, 36, 28, measure, 12, fg, [], "left"))
+        out.append(_text(x, _MY + 9, w, 30, words, "10pt", fg, "bold", "right", fill=fill))
+        out.append(_figure(x + 8, _MY + 9, 36, 30, measure, 12, fg, [], "left"))
         x += w + GAP * 2
     return out
 

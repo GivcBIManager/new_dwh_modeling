@@ -85,6 +85,10 @@ def test_sparkline_is_a_twelve_month_trend_off_the_year_and_month_slicers():
         off = _off(p)
         for s in _sparklines(p):
             assert s.roles["Category"] == [YEAR_MONTH] and s.roles["Y"] == [meas("FR KPI Value")]
+            # no title and 50+ px: smaller, or under the default title, Desktop drew a placeholder icon (2026-11-19)
+            assert s.h >= 50 and s.props["title"][0]["properties"]["show"]["expr"]["Literal"]["Value"] == "false"
+            for axis in ("categoryAxis", "valueAxis"):  # no axis title ("FR KP..." beside the line)
+                assert s.props[axis][0]["properties"]["showAxisTitle"]["expr"]["Literal"]["Value"] == "false"
             assert Filter(MONTH_OFFSET, "in", list(range(1, 13))) in s.filters
             assert (id(year), id(s)) in off and (id(month), id(s)) in off, name
             for h in hospital:  # the Hospital slicer keeps its effect

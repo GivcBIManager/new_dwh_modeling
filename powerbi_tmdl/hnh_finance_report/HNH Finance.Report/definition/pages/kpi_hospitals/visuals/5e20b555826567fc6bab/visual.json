@@ -3,10 +3,10 @@
   "name": "5e20b555826567fc6bab",
   "position": {
     "x": 36.0,
-    "y": 284,
+    "y": 324,
     "z": 26000,
-    "height": 20,
-    "width": 46,
+    "height": 24,
+    "width": 64,
     "tabOrder": 26000
   },
   "visual": {
@@ -22,7 +22,7 @@
                     "value": "Lowest",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "10pt",
+                      "fontSize": "9.5pt",
                       "fontWeight": "normal",
                       "color": "#4D5B6B"
                     }
@@ -81,6 +81,40 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
                 }
               }
             }
