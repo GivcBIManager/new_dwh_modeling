@@ -304,3 +304,58 @@ Describe 'staff_key on fact_claim_line' {
         $found[0].Type | Should Be 'Int64'
     }
 }
+
+Describe 'dim_physician_review_metric' {
+    $rows = Invoke-Sql (Get-RenderedModel 'dim_physician_review_metric')
+    $k = @{}; foreach ($r in $rows) { $k[[string]$r.metric_code] = $r }
+    It 'has nine metrics with unique codes' {
+        $rows.Count | Should Be 9
+        $k.Count | Should Be 9
+    }
+    It 'has only the Salary and Income sections and directions -1, 0, 1' {
+        foreach ($r in $rows) {
+            @('Salary', 'Income') -contains [string]$r.section | Should Be $true
+            @(-1, 0, 1) -contains [int]$r.direction | Should Be $true
+        }
+    }
+    It 'lists the metrics in order with their units' {
+        (@($rows | Sort-Object { [int]$_.display_order } | ForEach-Object { $_.metric_code }) -join ',') |
+            Should Be 'PR_PACKAGE,PR_REVENUE,PR_REJECTION,PR_OP_VISITS,PR_ADMISSIONS,PR_SURGERIES,PR_REV_PER_PATIENT,PR_GROWTH,PR_REV_TO_PAY'
+        (@($rows | Sort-Object { [int]$_.display_order } | ForEach-Object { $_.unit }) -join ',') | Should Be 'sar,sar,%,n,n,n,sar,%,x'
+        $k['PR_PACKAGE'].metric_name | Should Be 'Monthly package'
+        $k['PR_PACKAGE'].section | Should Be 'Salary'
+        [int]$k['PR_REJECTION'].direction | Should Be -1
+        [int]$k['PR_PACKAGE'].direction | Should Be 0
+        $k['PR_REV_TO_PAY'].metric_name | Should Be 'Revenue-to-salary ratio'
+    }
+}
+
+Describe 'dim_peer_scope' {
+    $rows = @(Invoke-Sql (Get-RenderedModel 'dim_peer_scope') | Sort-Object { [int]$_.display_order })
+    It 'has the two scopes' {
+        $rows.Count | Should Be 2
+        "$($rows[0].scope_code)|$($rows[0].scope_name)|$($rows[0].display_order)" | Should Be 'HOSPITAL|Same hospital|1'
+        "$($rows[1].scope_code)|$($rows[1].scope_name)|$($rows[1].display_order)" | Should Be 'GROUP|Group|2'
+    }
+}
+
+Describe 'review list views' {
+    $yaml = [IO.File]::ReadAllText((Join-Path $root 'hnh_dwh\models\hnh\marts\ssas\_ssas__models.yml'))
+    It 'declares the metric view columns' {
+        $c = @{}; foreach ($x in (Get-HnhContractColumns -YamlText $yaml -Model 'ssas_dim_physician_review_metric')) { $c[$x.Name] = $x.Type }
+        (@($c.Keys | Sort-Object) -join ',') | Should Be 'direction,display_order,metric_code,metric_name,section,unit'
+        $c['direction'] | Should Be 'Int64'
+        $c['display_order'] | Should Be 'Int64'
+        $c['metric_code'] | Should Be 'String'
+    }
+    It 'declares the scope view columns' {
+        $c = @{}; foreach ($x in (Get-HnhContractColumns -YamlText $yaml -Model 'ssas_dim_peer_scope')) { $c[$x.Name] = $x.Type }
+        (@($c.Keys | Sort-Object) -join ',') | Should Be 'display_order,scope_code,scope_name'
+        $c['display_order'] | Should Be 'Int64'
+    }
+    It 'has both view files' {
+        foreach ($m in 'dim_physician_review_metric', 'dim_peer_scope') {
+            [IO.File]::ReadAllText((Join-Path $root "hnh_dwh\models\hnh\marts\ssas\ssas_$m.sql")).Trim() | Should Be "{{ hnh_ssas_view('$m') }}"
+        }
+    }
+}

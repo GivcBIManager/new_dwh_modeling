@@ -24,6 +24,7 @@
     'dim_finance_kpi.kpi_name', 'dim_finance_column.group_name', 'dim_finance_column.column_name',
     'dim_hr_kpi.kpi_name', 'dim_hr_kpi.measure_name', 'dim_hr_kpi.definition', 'dim_hr_dq_issue.issue_name',
     'fact_hr_dq_record.field_name',
+    'dim_physician_review_metric.metric_name', 'dim_peer_scope.scope_name',
 ] -%}
 {%- set checks = [] -%}
 {%- if execute -%}
