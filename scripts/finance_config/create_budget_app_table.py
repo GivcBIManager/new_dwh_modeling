@@ -62,16 +62,26 @@ def main() -> int:
         if not cfg.get("PG_PASSWORD"):
             print(f"{SECRETS} has no PG_PASSWORD")
             return 1
-        ch.command(f"CREATE NAMED COLLECTION {COLLECTION} AS host = {_quote(cfg['PG_HOST'])}, "
-                   f"port = {int(cfg['PG_PORT'])}, database = {_quote(cfg['PG_DATABASE'])}, "
-                   f"schema = {_quote(cfg['PG_SCHEMA'])}, user = {_quote(cfg['PG_USER'])}, "
-                   f"password = {_quote(cfg['PG_PASSWORD'])}")
+        try:
+            ch.command(f"CREATE NAMED COLLECTION {COLLECTION} AS host = {_quote(cfg['PG_HOST'])}, "
+                       f"port = {int(cfg['PG_PORT'])}, database = {_quote(cfg['PG_DATABASE'])}, "
+                       f"schema = {_quote(cfg['PG_SCHEMA'])}, user = {_quote(cfg['PG_USER'])}, "
+                       f"password = {_quote(cfg['PG_PASSWORD'])}")
+        except Exception as exc:  # the server's message may quote the statement: never print the password
+            secret = cfg["PG_PASSWORD"]
+            print("creating the named collection failed:",
+                  str(exc).replace(secret, "***").replace(_quote(secret), "'***'")[:600])
+            return 1
         print(f"named collection {COLLECTION} created")
     if not has_table:
         ch.command(f"CREATE TABLE {TABLE}\n(\n{COLUMNS}\n)\n"
                    f"ENGINE = PostgreSQL({COLLECTION}, table = 'income_statement_budget')")
         print(f"{TABLE} created")
-    rows = ch.query(f"select fiscal_year, count(), countIf(is_latest) from {TABLE} group by 1 order by 1").result_rows
+    try:
+        rows = ch.query(f"select fiscal_year, count(), countIf(is_latest) from {TABLE} group by 1 order by 1").result_rows
+    except Exception as exc:  # e.g. the budget app unreachable from the ClickHouse server, or a wrong password
+        print("reading the budget app failed:", str(exc)[:600])
+        return 1
     print("rows by fiscal year (year, rows, latest):", rows)
     return 0
 

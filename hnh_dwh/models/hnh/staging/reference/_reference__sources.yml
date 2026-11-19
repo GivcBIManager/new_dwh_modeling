@@ -29,6 +29,7 @@ sources:
       - name: map_budget_fs_line
       - name: map_fusion_specialty_unified
       - name: income_statement_budget
+        identifier: income_statement_budget_app   # live from the budget app's Postgres (2026-11-19); the 1 Oct copy stays as income_statement_budget
       - name: map_pay_category
       - name: map_payroll_cutover
       - name: map_scm_cutover
