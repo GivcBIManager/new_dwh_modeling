@@ -216,3 +216,91 @@ Describe 'physician columns in ssas_dim_staff' {
         $role -match 'review_physician' | Should Be $false
     }
 }
+
+Describe 'staff_key on fact_claim_line' {
+    # fact_claim_line holds {% set %} lines and macros the offline renderer does not handle, so the test renders the model file
+    # itself after stubbing those (the date-key, care-type, status-key, outcome and note-reason macros do not touch staff_key).
+    $text = [IO.File]::ReadAllText((Join-Path $root 'hnh_dwh\models\hnh\marts\revenue\fact_claim_line.sql'))
+    $text = $text -replace '(?m)^\{%.*%\}\s*$', ''
+    $text = $text.Replace('{{ first_at }}', "toDateTime('2020-01-01 00:00:00', 'Asia/Riyadh')").Replace('{{ last_day }}', "toDate('2030-12-31')")
+    $text = $text -replace "\{\{ hnh_reason_from_notes\([^}]*\) \}\}", 'cast(null as Nullable(String))'
+    $text = $text -replace "\{\{ hnh_care_type\([^}]*\) \}\}", "'Unknown'"
+    $text = $text -replace "\{\{ hnh_date_key_in_range\([^}]*\) \}\}", 'cast(null as Nullable(Int64))'
+    $text = $text -replace "\{\{ hnh_care_type_key\([^}]*\) \}\}", 'toInt64(0)'
+    $text = $text -replace "\{\{ hnh_claim_status_key\([^}]*\) \}\}", 'toInt64(0)'
+    $text = $text.Replace("{{ hnh_surrogate_key(['d.branch_id', 'ifNull(d.purchaser_code, toInt64(9999))']) }}", 'toInt64(1)')  # the renderer splits arguments at commas
+    $text = $text -replace "\{\{ hnh_nphies_outcome\([^}]*\) \}\}", "'Unknown'"
+    $modelFile = [IO.Path]::GetTempFileName() -replace '\.tmp$', '.sql'
+    [IO.File]::WriteAllText($modelFile, $text)
+
+    # dim_staff keys exactly as dim_staff.sql builds them (hnh_surrogate_key of branch_id and staff_id).
+    $key = "if(isNull(b) or isNull(s), toInt64(-1), toInt64(bitShiftRight(cityHash64(concat(toString(assumeNotNull(b)), '|', toString(assumeNotNull(s)), '|')), 1)))"
+    $dimStaff = "select $key as staff_key from (select toUInt8(b) as b, toNullable(s) as s from values('b UInt8, s String', (1, 'D1'), (1, 'D2'), (2, 'D9')))"
+    $services = "select toUInt8(b) as branch_id, toInt64(v) as visit_id, toInt64(q) as sequence_no, toNullable(toInt64(500)) as ios, toNullable('S') as service_code, " +
+                "toFloat64(10) as net_amount, cast(null as Nullable(String)) as outcome, cast(null as Nullable(String)) as notes " +
+                "from values('b UInt8, v Int64, q Int64', (1, 10, 1), (1, 10, 2), (1, 20, 1), (1, 30, 1), (1, 40, 1), (1, 50, 1), (2, 10, 1))"
+    $submission = "select toUInt8(b) as branch_id, toInt64(v) as visit_id, toNullable(toInt64(v)) as claim_invoice_no, toNullable('S1') as stat_invoice_no, " +
+                  "toNullable(toInt64(1)) as patient_id, toNullable(toInt64(1)) as episode_no, toNullable(toInt64(300)) as purchaser_code, toNullable('O') as claim_type, " +
+                  "toNullable(toInt64(v)) as api_trans_id, toNullable(toDateTime('2026-06-01 09:00:00', 'Asia/Riyadh')) as request_at, " +
+                  "toNullable(toDateTime('2026-06-30 00:00:00', 'Asia/Riyadh')) as statement_end_at, toUInt8(0) as is_cancelled, toUInt64(1) as submission_number, " +
+                  "toUInt8(1) as is_latest_submission, toUInt8(1) as is_sent, cast(null as Nullable(Int64)) as final_response_id, " +
+                  "cast(null as Nullable(DateTime('Asia/Riyadh'))) as final_responded_at, 'No response' as adjudication_status " +
+                  "from values('b UInt8, v Int64', (1, 10), (1, 20), (1, 30), (1, 40), (1, 50), (2, 10))"
+    # Visit 10: known doctor; 20: code not in dim_staff; 30: no code; 40: two visit rows (the later one counts); 50: no visit row;
+    # branch 2 visit 10 has code D1, which only exists in branch 1.
+    $visits = "select toUInt8(b) as branch_id, toInt64(v) as visit_id, if(d = '', cast(null as Nullable(String)), toNullable(d)) as doctor_code, " +
+              "toNullable(toDateTime(c, 'Asia/Riyadh')) as created_at " +
+              "from values('b UInt8, v Int64, d String, c String', (1, 10, 'D1', '2026-06-01 08:00:00'), (1, 20, 'ZZ', '2026-06-01 08:00:00'), " +
+              "(1, 30, '', '2026-06-01 08:00:00'), (1, 40, 'D1', '2026-06-01 08:00:00'), (1, 40, 'D2', '2026-06-02 08:00:00'), (2, 10, 'D1', '2026-06-01 08:00:00'))"
+    $empty = @{
+        stg_oasis__episode_invoices = "select toUInt8(1) as branch_id, toInt64(1) as invoice_no, toNullable(toInt64(1)) as api_trans_id, toNullable('S1') as stat_invoice_no where 0"
+        stg_oasis__invoice_statements = "select toUInt8(1) as branch_id, 'S1' as stat_invoice_no where 0"
+        int_nphies_adjudication = "select toUInt8(1) as branch_id, toInt64(1) as response_id, toInt64(1) as item_sequence, 'Claim' as response_kind, 'x' as outcome, " +
+            "toNullable(toFloat64(1)) as submitted, toNullable(toFloat64(1)) as eligible, toNullable(toFloat64(1)) as benefit, toNullable(toFloat64(1)) as copay, " +
+            "toNullable(toFloat64(1)) as deductible, toNullable(toFloat64(1)) as tax, toNullable(toFloat64(1)) as patient_share, toNullable(toFloat64(1)) as approved_qty, " +
+            "cast([] as Array(String)) as reason_codes, cast(null as Nullable(String)) as primary_reason_code, cast(null as Nullable(Float64)) as legacy_reason_amount where 0"
+        int_episode = "select toUInt8(1) as branch_id, toInt64(1) as patient_id, toInt64(1) as episode_no, 'OP' as care_type"
+        dim_patient = 'select toInt64(-1) as patient_key'
+        dim_payer = 'select toInt64(-1) as payer_key'
+        dim_service = 'select toInt64(-1) as service_key'
+        dim_nphies_reason = 'select toInt64(-1) as nphies_reason_key'
+        int_invoice_claim_status = "select toUInt8(1) as branch_id, toInt64(1) as invoice_no, toInt64(1) as claim_status_key where 0"
+    }
+    $refs = @{ stg_oasis__claim_services = $services; int_claim_submission = $submission; stg_oasis__claim_visits = $visits; dim_staff = $dimStaff }
+    foreach ($e in $empty.GetEnumerator()) { $refs[$e.Key] = $e.Value }
+    $rows = Invoke-Sql (Get-RenderedModel $modelFile $refs 'select branch_key, visit_id, sequence_no, staff_key from ({model}) order by branch_key, visit_id, sequence_no')
+    $keyOf = @{ D1 = (Invoke-Sql "select $key as k from (select toUInt8(1) as b, toNullable('D1') as s)")[0].k; D2 = (Invoke-Sql "select $key as k from (select toUInt8(1) as b, toNullable('D2') as s)")[0].k }
+    function Line([int]$b, [int]$v, [int]$q) { return @($rows | Where-Object { [int]$_.branch_key -eq $b -and [int]$_.visit_id -eq $v -and [int]$_.sequence_no -eq $q })[0] }
+    It 'keeps one row per claim line whatever the number of visit rows' {
+        $rows.Count | Should Be 7
+    }
+    It 'gives every line of a visit with a known doctor that doctor''s dim_staff key' {
+        [string](Line 1 10 1).staff_key | Should Be ([string]$keyOf.D1)
+        [string](Line 1 10 2).staff_key | Should Be ([string]$keyOf.D1)
+    }
+    It 'uses the later visit row when a visit has two, without duplicating lines' {
+        [string](Line 1 40 1).staff_key | Should Be ([string]$keyOf.D2)
+    }
+    It 'gives -1 for a code that is not in dim_staff, a visit without a code and a visit without a row' {
+        [int64](Line 1 20 1).staff_key | Should Be -1
+        [int64](Line 1 30 1).staff_key | Should Be -1
+        [int64](Line 1 50 1).staff_key | Should Be -1
+    }
+    It 'matches the doctor within the line''s own branch' {
+        [int64](Line 2 10 1).staff_key | Should Be -1
+    }
+    It 'has staff_key as Int64 and a relationships test to dim_staff' {
+        $types = @{}
+        foreach ($c in (Invoke-Sql (Get-RenderedModel $modelFile $refs 'describe (select * from ({model}))'))) { $types[$c.name] = $c.type }
+        $types['staff_key'] | Should Be 'Int64'
+        $yml = [IO.File]::ReadAllText((Join-Path $root 'hnh_dwh\models\hnh\marts\revenue\_revenue_marts__models.yml'))
+        $yml -match "(?s)- name: fact_claim_line\b.*?- name: staff_key\s+description: [^\n]*\s+tests:\s+- relationships: \{to: ref\('dim_staff'\), field: staff_key\}" | Should Be $true
+    }
+    It 'exposes staff_key on ssas_fact_claim_line' {
+        $yaml = [IO.File]::ReadAllText((Join-Path $root 'hnh_dwh\models\hnh\marts\ssas\_ssas__models.yml'))
+        $list = Get-HnhContractColumns -YamlText $yaml -Model 'ssas_fact_claim_line'
+        $found = @(foreach ($col in $list) { if ($col.Name -eq 'staff_key') { $col } })
+        $found.Count | Should Be 1
+        $found[0].Type | Should Be 'Int64'
+    }
+}

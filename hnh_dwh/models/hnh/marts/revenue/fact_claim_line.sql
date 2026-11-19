@@ -76,6 +76,14 @@ adjudicated as (
         on a.branch_id = l.branch_id and a.response_id = l.final_response_id and a.item_sequence = l.sequence_no
 ),
 
+visit_doctors as (
+    -- The doctor of the claim visit, one row per visit (the later row when Oasis holds two) so the join keeps the line count.
+    select branch_id, visit_id,
+           argMax(doctor_code, ifNull(created_at, toDateTime('1970-01-01 03:00:00', 'Asia/Riyadh'))) as doctor_code
+    from {{ ref('stg_oasis__claim_visits') }}
+    group by branch_id, visit_id
+),
+
 keyed as (
     select
         d.*,
@@ -104,6 +112,7 @@ select
     k.episode_key                                                           as episode_key,
     ifNull(dpy.payer_key, toInt64(-1))                                      as payer_key,
     ifNull(dsv.service_key, toInt64(-1))                                    as service_key,
+    ifNull(dst.staff_key, toInt64(-1))                                      as staff_key,
     {{ hnh_care_type_key('k.care_type') }}                                  as care_type_key,
     k.invoice_key                                                           as invoice_key,
     if(k.primary_reason_code is null, toInt64(0), ifNull(dr.nphies_reason_key, toInt64(-1))) as nphies_reason_key,
@@ -156,6 +165,9 @@ from keyed as k
 left join (select patient_key from {{ ref('dim_patient') }}) as dp on dp.patient_key = k.patient_key_raw
 left join (select payer_key from {{ ref('dim_payer') }}) as dpy on dpy.payer_key = k.payer_key_raw
 left join (select service_key from {{ ref('dim_service') }}) as dsv on dsv.service_key = k.service_key_raw
+left join visit_doctors as vd on vd.branch_id = k.branch_id and vd.visit_id = k.visit_id
+left join (select staff_key from {{ ref('dim_staff') }}) as dst
+    on dst.staff_key = {{ hnh_surrogate_key(['k.branch_id', 'vd.doctor_code']) }}
 left join (select nphies_reason_key from {{ ref('dim_nphies_reason') }}) as dr
     on dr.nphies_reason_key = {{ hnh_surrogate_key(['k.primary_reason_code']) }}
 left join (select branch_id, invoice_no, claim_status_key from {{ ref('int_invoice_claim_status') }}) as ics
