@@ -90,6 +90,11 @@ table Employee
 		summarizeBy: none
 		sourceColumn: assignment_status
 
+	column 'Is Part Time'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_part_time
+
 	column 'Age Band Order'
 		dataType: int64
 		formatString: 0

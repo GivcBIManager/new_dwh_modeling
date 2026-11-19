@@ -9,7 +9,7 @@ with snap as (
 joined as (
     select s.person_id as person_id, s.month_end as month_end, s.branch_key as branch_key, s.assignment_status as assignment_status,
            s.organization_id as organization_id, s.job_id as job_id, s.grade_id as grade_id, s.position_id as position_id,
-           s.location_id as location_id, s.fte as fte,
+           s.location_id as location_id, s.fte as fte, s.is_part_time as is_part_time,
            e.employee_key as employee_key, e.worker_type_code as worker_type_code, e.gender as gender, e.is_saudi as is_saudi,
            e.birth_date as birth_date, e.staff_key as staff_key,
            p.start_date as start_date, p.original_hire_date as original_hire_date
@@ -36,6 +36,7 @@ select
     toUInt8(month_end < today())                                                    as is_closed_month,
     worker_type_code,
     {{ hnh_is_contingent('worker_type_code') }}                                     as is_contingent,
+    is_part_time,
     assignment_status,
     is_saudi,
     gender,

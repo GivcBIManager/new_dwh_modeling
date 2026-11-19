@@ -15,7 +15,7 @@ unit_tests:
           select toInt64(p) as person_id, toDate(me) as month_end, toInt64(p * 10) as assignment_id, toNullable('E') as assignment_type,
                  toNullable(st) as assignment_status, toNullable(toInt64(900)) as organization_id, toNullable(toInt64(1)) as job_id,
                  cast(null as Nullable(Int64)) as position_id, cast(null as Nullable(Int64)) as grade_id, cast(null as Nullable(Int64)) as location_id,
-                 toUInt8(6) as branch_key, toFloat64(1) as fte
+                 toUInt8(6) as branch_key, toUInt8(0) as is_part_time, toFloat64(1) as fte
           from values('p UInt32, me String, st String',
               (1, '2026-02-28', 'ACTIVE'), (1, '2026-03-31', 'ACTIVE'),
               (2, '2026-01-31', 'ACTIVE'), (2, '2026-02-28', 'INACTIVE'), (2, '2026-03-31', 'ACTIVE'),

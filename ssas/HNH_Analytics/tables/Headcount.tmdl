@@ -88,6 +88,11 @@ table Headcount
 		summarizeBy: none
 		sourceColumn: is_contingent
 
+	column 'Is Part Time'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: is_part_time
+
 	column 'Assignment Status'
 		dataType: string
 		summarizeBy: none

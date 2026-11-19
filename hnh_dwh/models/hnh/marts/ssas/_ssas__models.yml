@@ -492,6 +492,8 @@ models:
         data_type: "Int64"
       - name: assignment_status
         data_type: "Nullable(String)"
+      - name: is_part_time
+        data_type: "String"
       - name: age_band_order
         data_type: "Int64"
       - name: tenure_band_order
@@ -2309,6 +2311,8 @@ models:
       - name: worker_type_code
         data_type: "Nullable(String)"
       - name: is_contingent
+        data_type: "String"
+      - name: is_part_time
         data_type: "String"
       - name: assignment_status
         data_type: "Nullable(String)"

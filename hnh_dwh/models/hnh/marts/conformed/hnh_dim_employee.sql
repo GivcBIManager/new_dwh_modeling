@@ -9,7 +9,7 @@ with emp as (
 ),
 
 current_assignment as (
-    select person_id, organization_id, job_id, grade_id, position_id, location_id, assignment_status
+    select person_id, organization_id, job_id, grade_id, position_id, location_id, assignment_status, is_part_time
     from {{ ref('stg_fusion__assignments') }}
     where is_current = 1 and is_primary = 1 and person_id is not null
     order by person_id,
@@ -26,7 +26,8 @@ joined as (
         coalesce(p.termination_date, e.termination_date) as termination_date, ifNull(p.is_terminated, toUInt8(0)) as is_terminated,
         ifNull(p.branch_key, toUInt8(0)) as branch_key,
         a.organization_id as organization_id, a.job_id as job_id, a.grade_id as grade_id, a.position_id as position_id,
-        a.location_id as location_id, a.assignment_status as assignment_status, b.staff_key as staff_key
+        a.location_id as location_id, a.assignment_status as assignment_status, a.is_part_time as is_part_time,
+        b.staff_key as staff_key
     from emp as e
     left join {{ ref('int_employee_period') }} as p on p.person_id = e.person_id
     left join current_assignment as a on a.person_id = e.person_id
@@ -52,11 +53,12 @@ select
     if(position_id is null, toInt64(-1), {{ hnh_surrogate_key(['position_id']) }})         as position_key,
     if(location_id is null, toInt64(-1), {{ hnh_surrogate_key(['location_id']) }})         as location_key,
     assignment_status,
+    ifNull(is_part_time, toUInt8(0))                            as is_part_time,
     ifNull(staff_key, toInt64(-1))                              as staff_key
 from joined
 
 union all
 
 select toInt64(-1), null, null, null, 'Unknown', null, null, null, toUInt8(0), null, 'Unknown', null, null, null, toUInt8(0),
-       'Unknown', toUInt8(0), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), null, toInt64(-1)
+       'Unknown', toUInt8(0), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), toInt64(-1), null, toUInt8(0), toInt64(-1)
 {{ hnh_settings() }}

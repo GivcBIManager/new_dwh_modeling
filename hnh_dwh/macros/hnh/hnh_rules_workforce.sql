@@ -65,9 +65,16 @@ multiIf({{ band }} = '<25', 1, {{ band }} = '25-34', 2, {{ band }} = '35-44', 3,
 multiIf({{ band }} = '<1', 1, {{ band }} = '1-3', 2, {{ band }} = '3-5', 3, {{ band }} = '5-10', 4, {{ band }} = '10+', 5, 9)
 {%- endmacro %}
 
-{# Fusion FTE work measures are sparse and often 0: use a value only when it lies in (0, 1.5]. #}
-{% macro hnh_fte(value) -%}
-toFloat64(if(ifNull({{ value }}, 0) > 0 and ifNull({{ value }}, 0) <= 1.5, ifNull({{ value }}, 0), 1))
+{# Fusion FTE work measures are sparse and often 0: use a value only when it lies in (0, 1.5]. Otherwise 1, or 0.5
+   for a part-time assignment (the 0.5 the BSC workforce view gives part-time doctors). #}
+{% macro hnh_fte(value, part_time='0') -%}
+toFloat64(if(ifNull({{ value }}, 0) > 0 and ifNull({{ value }}, 0) <= 1.5, ifNull({{ value }}, 0), if({{ part_time }} = 1, 0.5, 1)))
+{%- endmacro %}
+
+{# Part-time Fusion assignment: assignment category (EMPLOYMENT_CATEGORY) PR or PT; FULL_PART_TIME only when the
+   category is not set (a few PR assignments say FULL_TIME there). #}
+{% macro hnh_is_part_time(category, full_part_time) -%}
+toUInt8(if({{ category }} is not null, {{ category }} in ('PR', 'PT'), ifNull({{ full_part_time }}, '') = 'PART_TIME'))
 {%- endmacro %}
 
 {# Branch of a Fusion HR department from its name prefix (H6). #}

@@ -12,5 +12,10 @@ select
     position_id,
     grade_id,
     location_id,
-    legal_employer_id
+    legal_employer_id,
+    {{ hnh_code('employment_category') }}   as employment_category,   -- assignment category: FR, FT, PR, PT
+    {{ hnh_code('full_part_time') }}        as full_part_time,
+    normal_hours,
+    {{ hnh_code('normal_hours_frequency') }} as normal_hours_frequency,
+    {{ hnh_is_part_time(hnh_code('employment_category'), hnh_code('full_part_time')) }} as is_part_time
 from {{ hnh_fusion_source('dim_assignment') }} final

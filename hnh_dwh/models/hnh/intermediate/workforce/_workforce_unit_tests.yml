@@ -31,7 +31,8 @@ unit_tests:
       Window January–March 2026. Person 1 changes job on 2026-01-16 (two history rows): January takes the row valid on
       31 January (job 20). Person 2 is INACTIVE in February (kept here with its status; the fact drops it). Person 3 has
       two primary active assignments: the one with the later valid_from (assignment 31) wins. Person 1 has an FTE
-      measure of 0.5 from February; values outside (0, 1.5] or missing give 1.
+      measure of 0.5 from February; values outside (0, 1.5] or missing give 1, or 0.5 for a part-time assignment
+      (assignment 31, no FTE measure).
     model: int_assignment_month_end
     overrides:
       vars:
@@ -44,7 +45,8 @@ unit_tests:
           select toInt64(a) as assignment_id, toDate32(vf) as valid_from, toDate32(vt) as valid_to, toNullable(toInt64(p)) as person_id,
                  toNullable('E') as assignment_type, toNullable(st) as assignment_status, toUInt8(1) as is_primary,
                  toNullable(toInt64(900)) as organization_id, toNullable(toInt64(j)) as job_id, cast(null as Nullable(Int64)) as position_id,
-                 cast(null as Nullable(Int64)) as grade_id, cast(null as Nullable(Int64)) as location_id, toNullable(toInt64(1)) as legal_employer_id
+                 cast(null as Nullable(Int64)) as grade_id, cast(null as Nullable(Int64)) as location_id, toNullable(toInt64(1)) as legal_employer_id,
+                 toUInt8(a = 31) as is_part_time
           from values('a UInt32, vf String, vt String, p UInt32, st String, j UInt32',
               (11, '2025-01-01', '2026-01-15', 1, 'ACTIVE', 10), (11, '2026-01-16', '2299-12-31', 1, 'ACTIVE', 20),
               (21, '2025-01-01', '2026-01-31', 2, 'ACTIVE', 10), (21, '2026-02-01', '2026-02-28', 2, 'INACTIVE', 10),
@@ -62,15 +64,15 @@ unit_tests:
           select toInt64(1) as legal_employer_id, toUInt8(6) as branch_key
     expect:
       rows:
-        - {person_id: 1, month_end: 2026-01-31, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, fte: 1}
-        - {person_id: 1, month_end: 2026-02-28, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, fte: 0.5}
-        - {person_id: 1, month_end: 2026-03-31, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, fte: 0.5}
-        - {person_id: 2, month_end: 2026-01-31, assignment_id: 21, job_id: 10, assignment_status: ACTIVE, branch_key: 6, fte: 1}
-        - {person_id: 2, month_end: 2026-02-28, assignment_id: 21, job_id: 10, assignment_status: INACTIVE, branch_key: 6, fte: 1}
-        - {person_id: 2, month_end: 2026-03-31, assignment_id: 21, job_id: 10, assignment_status: ACTIVE, branch_key: 6, fte: 1}
-        - {person_id: 3, month_end: 2026-01-31, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, fte: 1}
-        - {person_id: 3, month_end: 2026-02-28, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, fte: 1}
-        - {person_id: 3, month_end: 2026-03-31, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, fte: 1}
+        - {person_id: 1, month_end: 2026-01-31, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, is_part_time: 0, fte: 1}
+        - {person_id: 1, month_end: 2026-02-28, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, is_part_time: 0, fte: 0.5}
+        - {person_id: 1, month_end: 2026-03-31, assignment_id: 11, job_id: 20, assignment_status: ACTIVE, branch_key: 6, is_part_time: 0, fte: 0.5}
+        - {person_id: 2, month_end: 2026-01-31, assignment_id: 21, job_id: 10, assignment_status: ACTIVE, branch_key: 6, is_part_time: 0, fte: 1}
+        - {person_id: 2, month_end: 2026-02-28, assignment_id: 21, job_id: 10, assignment_status: INACTIVE, branch_key: 6, is_part_time: 0, fte: 1}
+        - {person_id: 2, month_end: 2026-03-31, assignment_id: 21, job_id: 10, assignment_status: ACTIVE, branch_key: 6, is_part_time: 0, fte: 1}
+        - {person_id: 3, month_end: 2026-01-31, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, is_part_time: 1, fte: 0.5}
+        - {person_id: 3, month_end: 2026-02-28, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, is_part_time: 1, fte: 0.5}
+        - {person_id: 3, month_end: 2026-03-31, assignment_id: 31, job_id: 30, assignment_status: ACTIVE, branch_key: 6, is_part_time: 1, fte: 0.5}
 
   - name: int_oasis_payroll_line_keeps_latest_run
     description: >

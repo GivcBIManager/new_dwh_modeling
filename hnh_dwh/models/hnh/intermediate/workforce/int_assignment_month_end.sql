@@ -6,7 +6,8 @@ candidates as (
     select a.person_id as person_id, m.month_end as month_end, a.assignment_id as assignment_id,
            a.valid_from as valid_from, a.assignment_type as assignment_type, a.assignment_status as assignment_status,
            a.organization_id as organization_id, a.job_id as job_id, a.position_id as position_id,
-           a.grade_id as grade_id, a.location_id as location_id, a.legal_employer_id as legal_employer_id
+           a.grade_id as grade_id, a.location_id as location_id, a.legal_employer_id as legal_employer_id,
+           a.is_part_time as is_part_time
     from {{ ref('stg_fusion__assignments') }} as a
     cross join months as m
     where a.is_primary = 1 and a.person_id is not null
@@ -45,7 +46,8 @@ select
     p.location_id                           as location_id,
     p.legal_employer_id                     as legal_employer_id,
     ifNull(b.branch_key, toUInt8(0))        as branch_key,
-    {{ hnh_fte('f.fte_value') }}            as fte
+    p.is_part_time                          as is_part_time,
+    {{ hnh_fte('f.fte_value', 'p.is_part_time') }} as fte
 from picked as p
 left join fte_at_month_end as f on f.assignment_id = p.assignment_id and f.month_end = p.month_end
 left join {{ ref('int_legal_employer_branch') }} as b on b.legal_employer_id = p.legal_employer_id
