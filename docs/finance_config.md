@@ -92,3 +92,8 @@ INSERT INTO default.map_finance_target (kpi_code, branch_id, year, target_value,
     ('FR_AR_DAYS', 0, 2026, 60, 0, now64(3), 'Your Name', 'target 2026', 0),
     ('FR_EBITDA_MARGIN', 0, 2026, 0.21, 0, now64(3), 'Your Name', 'target 2026: 21%', 0);
 ```
+
+## Placeholders and the budget app (2026-11-19)
+
+- **Placeholder rows.** `scripts/finance_config/finance_targets_2026_placeholder.sql` (167 KPI targets: 2025 actual, vs-budget KPIs 100%) and `finance_bs_budget_2026_placeholder.sql` (1,728 balance-sheet budget rows: the best hospital in Q1 and Q2 2026 by EBITDA margin, Jazan, its captions as a share of net revenue, applied to each hospital's 2026 net revenue budget) were loaded with `changed_by = 'BI placeholder'`. Replace a placeholder by inserting a new row with the same key; list them with `WHERE changed_by = 'BI placeholder'`.
+- **Income statement budget from the budget app.** `scripts/finance_config/create_budget_app_table.py` creates `default.income_statement_budget_app`, a PostgreSQL-engine table on the budget app (`172.22.24.7`, schema `budget`) through the ClickHouse named collection `budget_app`; the password is read from `C:\HNH\secrets\budget_pg.env` (`PG_PASSWORD=...`) and never written anywhere else. Once it exists and reads, the dbt source `reference.income_statement_budget` takes `identifier: income_statement_budget_app`, so the nightly build reads the latest published budget instead of the 1 October copy in `default.income_statement_budget`.
