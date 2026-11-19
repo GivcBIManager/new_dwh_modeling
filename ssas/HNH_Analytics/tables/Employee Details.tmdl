@@ -20,12 +20,6 @@ table 'Employee Details'
 		summarizeBy: none
 		sourceColumn: full_name
 
-	column 'Birth Date'
-		dataType: dateTime
-		formatString: yyyy-mm-dd
-		summarizeBy: none
-		sourceColumn: birth_date
-
 	column 'Marital Status'
 		dataType: string
 		summarizeBy: none
@@ -45,6 +39,13 @@ table 'Employee Details'
 		dataType: string
 		summarizeBy: none
 		sourceColumn: national_id
+
+	column 'Birth Date Key'
+		dataType: int64
+		isHidden
+		encodingHint: value
+		summarizeBy: none
+		sourceColumn: birth_date_key
 
 	partition 'Employee Details' = m
 		source =

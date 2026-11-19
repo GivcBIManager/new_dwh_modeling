@@ -11039,13 +11039,15 @@ table _Measures
 			RETURN IF ( __Wrong = "", __Value, """HR Employee Location"" can't be analysed by " & __Wrong )
 		formatString: General
 		displayFolder: HR Dashboard\Report
-	/// Birth date of the employee in context (Fusion, else the linked Oasis staff record), for the HR record lists; blank without pay access (the role hides Employee Details).
-	measure 'HR Employee Birth Date' = SELECTEDVALUE ( 'Employee Details'[Birth Date] )
+	/// Birth date of the employee in context (Fusion, else the linked Oasis staff record), for the HR record lists; blank without pay access (the role hides Employee Details). From the yyyymmdd Birth Date Key: a ClickHouse Date column would wrap the births before 1970.
+	measure 'HR Employee Birth Date' =
+			VAR BornKey = SELECTEDVALUE ( 'Employee Details'[Birth Date Key] )
+			RETURN IF ( NOT ISBLANK ( BornKey ), DATE ( INT ( BornKey / 10000 ), MOD ( INT ( BornKey / 100 ), 100 ), MOD ( BornKey, 100 ) ) )
 		formatString: yyyy-mm-dd
 		displayFolder: HR Dashboard\Report
 	/// Age in whole years today of the employee in context, from the birth date; blank without pay access.
 	measure 'HR Employee Age' =
-			VAR Born = SELECTEDVALUE ( 'Employee Details'[Birth Date] )
+			VAR Born = [HR Employee Birth Date]
 			RETURN IF ( NOT ISBLANK ( Born ), INT ( YEARFRAC ( Born, TODAY () ) ) )
 		formatString: 0
 		displayFolder: HR Dashboard\Report

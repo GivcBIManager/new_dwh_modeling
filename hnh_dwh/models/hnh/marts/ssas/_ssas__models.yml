@@ -508,8 +508,6 @@ models:
         data_type: "Int64"
       - name: full_name
         data_type: "Nullable(String)"
-      - name: birth_date
-        data_type: "Nullable(Date)"
       - name: marital_status
         data_type: "Nullable(String)"
       - name: email_address
@@ -518,6 +516,8 @@ models:
         data_type: "Nullable(String)"
       - name: national_id
         data_type: "Nullable(String)"
+      - name: birth_date_key
+        data_type: "Nullable(Int64)"
   - name: ssas_dim_er_priority
     config:
       contract: {enforced: true}
