@@ -5,10 +5,10 @@
   - an is_*/has_* UInt8 flag becomes 'Yes'/'No' unless named in `int_flags` (flags that measures sum);
   - every other integer becomes Int64, and a nullable non-date *_key becomes -1 when null;
   - LowCardinality text becomes String, Date32 becomes Date;
-  - `extra` appends select expressions; `joins` follows `from <model> as t`.
+  - `extra` appends select expressions; `joins` follows `from <model> as t`; `where` filters the rows (t.<column>).
   A name in drop/decimals/floats/int_flags that is not a column fails compilation (typo guard).
 #}
-{% macro hnh_ssas_view(model_name, drop=[], decimals=[], floats=[], int_flags=[], extra=[], joins='', titles=[]) -%}
+{% macro hnh_ssas_view(model_name, drop=[], decimals=[], floats=[], int_flags=[], extra=[], joins='', titles=[], where='') -%}
 {%- set relation = ref(model_name) -%}
 {%- if execute -%}
     {%- set columns = adapter.get_columns_in_relation(relation) -%}
@@ -31,6 +31,9 @@ select
     {{ (expressions + extra) | join(',\n    ') }}
 from {{ relation }} as t
 {{ joins }}
+{%- if where %}
+where {{ where }}
+{%- endif %}
 {%- else %}
 select 1 as compile_placeholder from {{ relation }}
 {%- endif -%}

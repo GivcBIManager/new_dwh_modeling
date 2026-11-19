@@ -77,6 +77,18 @@ toUInt8(multiIf(ifNull({{ prefix }}, '') = 'RBW', 1, ifNull({{ prefix }}, '') = 
                 ifNull({{ prefix }}, '') = 'GHI', 7, ifNull({{ prefix }}, '') = 'MHL', 8, ifNull({{ prefix }}, '') = 'HQ', 100, 0))
 {%- endmacro %}
 
+{# Contingent worker: Fusion worker type CWK (contingent worker) or CON (contractor). They are counted apart: out of the
+   headcount and every other HR measure, kept only for the contingent count (user decision 2026-11-19). No one has
+   changed between contingent and employee (gold, 2026-11-19), so the current worker type holds for every row. #}
+{% macro hnh_is_contingent(code) -%}
+toUInt8(ifNull({{ code }}, '') in ('CWK', 'CON'))
+{%- endmacro %}
+
+{# The employee keys of contingent workers, as a subquery: `employee_key not in ({{ hnh_contingent_employee_keys() }})`. #}
+{% macro hnh_contingent_employee_keys() -%}
+select employee_key from {{ ref('hnh_dim_employee') }} where {{ hnh_is_contingent('worker_type_code') }} = 1
+{%- endmacro %}
+
 {% macro hnh_worker_type_label(code) -%}
 multiIf(ifNull({{ code }}, '') = 'EMP', 'Employee', ifNull({{ code }}, '') = 'EX_EMP', 'Ex-employee',
         ifNull({{ code }}, '') = 'CWK', 'Contingent worker', ifNull({{ code }}, '') = 'CON', 'Contractor',

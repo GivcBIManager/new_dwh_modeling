@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "d015310aaac1e363a6b5",
   "position": {
-    "x": 1278.0,
-    "y": 572.0,
+    "x": 30,
+    "y": 996.0,
     "z": 35000,
-    "height": 300,
-    "width": 612.0,
+    "height": 454,
+    "width": 918.0,
     "tabOrder": 35000
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "HR Department"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Department Base Name"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "HR Department.Department Base Name",
+              "nativeQueryRef": "Department Base Name",
               "active": true
             },
             {
@@ -35,14 +35,42 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Location"
+                      "Entity": "Job"
                     }
                   },
-                  "Property": "Location Name"
+                  "Property": "Job Name"
                 }
               },
-              "queryRef": "Location.Location Name",
-              "nativeQueryRef": "Location Name"
+              "queryRef": "Job.Job Name",
+              "nativeQueryRef": "Job Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Position"
+                    }
+                  },
+                  "Property": "Position Base Name"
+                }
+              },
+              "queryRef": "Position.Position Base Name",
+              "nativeQueryRef": "Position Base Name"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Grade"
+                    }
+                  },
+                  "Property": "Grade Name"
+                }
+              },
+              "queryRef": "Grade.Grade Name",
+              "nativeQueryRef": "Grade Name"
             }
           ]
         },
@@ -174,7 +202,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by branch, then location'"
+                  "Value": "'Headcount by department, then job, position and grade'"
                 }
               }
             }
@@ -183,5 +211,111 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "3a9e885c150b8073be22",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "HR Department"
+              }
+            },
+            "Property": "Department Base Name"
+          }
+        },
+        "type": "TopN",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "subquery",
+              "Expression": {
+                "Subquery": {
+                  "Query": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "h",
+                        "Entity": "HR Department",
+                        "Type": 0
+                      },
+                      {
+                        "Name": "_",
+                        "Entity": "_Measures",
+                        "Type": 0
+                      }
+                    ],
+                    "Select": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "h"
+                            }
+                          },
+                          "Property": "Department Base Name"
+                        },
+                        "Name": "field"
+                      }
+                    ],
+                    "OrderBy": [
+                      {
+                        "Direction": 2,
+                        "Expression": {
+                          "Measure": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "_"
+                              }
+                            },
+                            "Property": "Headcount"
+                          }
+                        }
+                      }
+                    ],
+                    "Top": 15
+                  }
+                }
+              },
+              "Type": 2
+            },
+            {
+              "Name": "h",
+              "Entity": "HR Department",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "h"
+                          }
+                        },
+                        "Property": "Department Base Name"
+                      }
+                    }
+                  ],
+                  "Table": {
+                    "SourceRef": {
+                      "Source": "subquery"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

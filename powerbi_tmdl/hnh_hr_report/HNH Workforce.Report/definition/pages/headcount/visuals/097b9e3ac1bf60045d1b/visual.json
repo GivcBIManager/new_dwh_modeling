@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "097b9e3ac1bf60045d1b",
   "position": {
-    "x": 972.0,
+    "x": 1443.0,
     "y": 2078.0,
     "z": 41000,
     "height": 300,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "Job"
                     }
                   },
-                  "Property": "Worker Type"
+                  "Property": "Full Part Time"
                 }
               },
-              "queryRef": "Employee.Worker Type",
-              "nativeQueryRef": "Worker Type",
+              "queryRef": "Job.Full Part Time",
+              "nativeQueryRef": "Full Part Time",
               "active": true
             }
           ]
@@ -126,7 +126,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Worker type'"
+                  "Value": "'Full and part time'"
                 }
               }
             }

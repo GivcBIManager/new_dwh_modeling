@@ -1,1 +1,2 @@
-{{ hnh_ssas_view('fact_leave_balance_monthly', drop=['leave_balance_key', 'absence_plan_id'], decimals=['monthly_salary', 'daily_rate', 'leave_liability_amount'], floats=['begin_balance', 'accrued', 'used', 'end_balance']) }}
+{#- Contingent workers left out: they count only in the Headcount table's contingent rows (user decision 2026-11-19). -#}
+{{ hnh_ssas_view('fact_leave_balance_monthly', drop=['leave_balance_key', 'absence_plan_id'], decimals=['monthly_salary', 'daily_rate', 'leave_liability_amount'], floats=['begin_balance', 'accrued', 'used', 'end_balance'], where='t.employee_key not in (' ~ hnh_contingent_employee_keys() ~ ')') }}

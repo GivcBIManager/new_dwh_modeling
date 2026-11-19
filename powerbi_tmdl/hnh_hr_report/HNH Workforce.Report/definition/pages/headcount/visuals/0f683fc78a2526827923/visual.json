@@ -2,18 +2,68 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0f683fc78a2526827923",
   "position": {
-    "x": 972.0,
-    "y": 996.0,
+    "x": 30,
+    "y": 1474.0,
     "z": 37000,
-    "height": 454,
-    "width": 918.0,
+    "height": 480,
+    "width": 1860.0,
     "tabOrder": 37000
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "pivotTable",
     "query": {
       "queryState": {
-        "Category": {
+        "Rows": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "HR Department"
+                    }
+                  },
+                  "Property": "Department Base Name"
+                }
+              },
+              "queryRef": "HR Department.Department Base Name",
+              "nativeQueryRef": "Department Base Name",
+              "displayName": "Department",
+              "active": true
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Job"
+                    }
+                  },
+                  "Property": "Job Name"
+                }
+              },
+              "queryRef": "Job.Job Name",
+              "nativeQueryRef": "Job Name",
+              "displayName": "Job"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Position"
+                    }
+                  },
+                  "Property": "Position Base Name"
+                }
+              },
+              "queryRef": "Position.Position Base Name",
+              "nativeQueryRef": "Position Base Name",
+              "displayName": "Position"
+            }
+          ]
+        },
+        "Columns": {
           "projections": [
             {
               "field": {
@@ -28,11 +78,11 @@
               },
               "queryRef": "Grade.Grade Name",
               "nativeQueryRef": "Grade Name",
-              "active": true
+              "displayName": "Grade"
             }
           ]
         },
-        "Y": {
+        "Values": {
           "projections": [
             {
               "field": {
@@ -59,10 +109,10 @@
               "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "Grade"
+                    "Entity": "HR Department"
                   }
                 },
-                "Property": "Grade Name"
+                "Property": "Department Base Name"
               }
             },
             "direction": "Ascending"
@@ -71,70 +121,64 @@
       }
     },
     "objects": {
-      "valueAxis": [
+      "values": [
         {
           "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            },
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "FillRule": {
+                      "Input": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "_Measures"
+                            }
+                          },
+                          "Property": "Headcount"
+                        }
+                      },
+                      "FillRule": {
+                        "linearGradient2": {
+                          "min": {
+                            "color": {
+                              "Literal": {
+                                "Value": "'#FFFFFF'"
+                              }
+                            }
+                          },
+                          "max": {
+                            "color": {
+                              "Literal": {
+                                "Value": "'#1478BE'"
+                              }
+                            }
+                          },
+                          "nullColoringStrategy": {
+                            "strategy": {
+                              "Literal": {
+                                "Value": "'asZero'"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
-          }
-        }
-      ],
-      "categoryAxis": [
-        {
-          "properties": {
-            "showAxisTitle": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
                 }
               }
-            },
-            "gridlineShow": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "labels": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "labelDisplayUnits": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            }
+            ],
+            "metadata": "_Measures.Headcount"
           }
         }
       ]
@@ -153,7 +197,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by grade'"
+                  "Value": "'Headcount by department, job and position (rows) and grade (columns)'"
                 }
               }
             }

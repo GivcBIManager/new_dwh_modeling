@@ -114,9 +114,10 @@ EMPLOYEE_LIST = "employee_list"
 # staff with no Fusion employee)
 GRADE_KNOWN = Filter(GRADE, "notin", ["Unknown"])
 
-# The page slicers (field, label)
+# The page slicers (field, label). No Worker type slicer: contingent workers are out of every HR measure (user
+# decision 2026-11-19), so it would only offer blanks.
 WORKFORCE_SLICERS = [(DEPARTMENT, "Department"), (JOB, "Job"), (GRADE, "Grade"),
-                     (col("Employee", "Nationality"), "Nationality"), (col("Employee", "Worker Type"), "Worker type")]
+                     (col("Employee", "Nationality"), "Nationality")]
 # Slicers with a search box in their dropdown: long lists (Department has about 270 prefix-free names)
 SEARCH_FIELDS = {DEPARTMENT, JOB, GRADE, col("Employee", "Nationality")}
 
@@ -275,7 +276,7 @@ LABELS = {"Leavers": "Leavers in Fusion", "Voluntary Leavers": "Voluntary leaver
 # A card's icon (hr_frame.icon), by its measure
 CARD_ICONS = {
     "Headcount": "users", "FTE": "users", "Average Headcount": "users", "Average FTE": "users",
-    "BSC Saudization": "flag", "Female Share %": "female", "Contingent Share %": "badge",
+    "BSC Saudization": "flag", "Female Share %": "female", "Contingent Share %": "badge", "Contingent Workers": "badge",
     "Hires": "user_plus", "Leavers": "user_minus", "Involuntary Leavers": "user_minus", "BSC Turnover": "swap",
     "Voluntary Turnover Rate %": "percent", "New Hire Turnover %": "percent", "Branch Transfers": "swap",
     "Promotions": "trend_up", "Movements": "chart",
@@ -552,11 +553,11 @@ def headcount_page() -> Page:
                  # FTE equals headcount today (Fusion FTE values are 1; a zero FTE is replaced by 1): no decimals
                  card("FTE", "FTE", decimals=0), card("Average Headcount", "Average headcount", decimals=0),
                  card("BSC Saudization", "Saudization"), card("Female Share %", "Female share"),
-                 card("Contingent Share %", "Contingent workers")],
+                 card("Contingent Workers", "Contingent workers, apart")],
         # FTE equals headcount today: one line, or every label shows twice
         [[trend("Headcount by month", hc, span=2),
           bars("Headcount by branch, then location", [BRANCH_NAME, LOCATION], hc)]],
-        subtitle="Month-end headcount; contingent workers are counted apart.")
+        subtitle="Month-end headcount. Contingent workers are counted apart, out of every other figure.")
     organisation = section(
         "Organisation", [],
         [[bars("Headcount by department, then job, position and grade", [DEPARTMENT, JOB, POSITION, GRADE], hc,
@@ -570,7 +571,7 @@ def headcount_page() -> Page:
         "Workforce mix", [],
         [[donut("Saudi nationals", col("Headcount", "Is Saudi"), "Headcount"),
           donut("Gender", col("Headcount", "Gender"), "Headcount"),
-          donut("Worker type", col("Employee", "Worker Type"), "Headcount"),
+          bars("Contingent workers by branch (not in headcount)", BRANCH_NAME, ["Contingent Workers"]),
           donut("Full and part time", col("Job", "Full Part Time"), "Headcount")],
          [columns("Headcount by age band (years)", col("Headcount", "Age Band"), hc),
           columns("Headcount by tenure band (years)", col("Headcount", "Tenure Band"), hc)]])

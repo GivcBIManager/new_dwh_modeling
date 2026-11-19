@@ -134,6 +134,8 @@ GUIDE_SECTIONS = [
         "Turnover is the BSC turnover: Oasis resignations for hospitals 1 to 5, Fusion voluntary leavers for "
         "hospitals 6 to 8. Leaver figures marked in Fusion count Fusion leavers only.",
         "Promotions are the Fusion PROMOTION action (HR to confirm).",
+        "Contingent workers (Fusion worker type contingent worker or contractor) are counted apart: they are not in "
+        "the headcount, hires, leavers, pay, absence, leave or productivity figures.",
         "FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced by 1.",
         "Pay by grade uses each person's grade in the month's headcount; pay of people without one is left out.",
         "Absence days come from Fusion and, before each branch moved its absences to Fusion in 2026, from Oasis.",

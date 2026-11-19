@@ -1,7 +1,8 @@
 {{ config(order_by='(branch_key, month_date_key, staff_key)') }}
 
 -- Linked doctors and nurses per month from the snapshot start (spec 6.7): one row per staff and month with activity
--- or pay. Ratios are sums over this table in SSAS. Months after the current month (planned leave, future month-ends) are dropped.
+-- or pay. Ratios are sums over this table in SSAS. Contingent workers are left out (user decision 2026-11-19: their
+-- FTE was already out, so their visits, revenue and pay raised the per-FTE ratios). Months after the current month (planned leave, future month-ends) are dropped.
 {% set start_key = "toInt32(toYYYYMMDD(toDate('" ~ var('hnh_hr_snapshot_start') ~ "')))" %}
 
 with linked as (
@@ -10,6 +11,7 @@ with linked as (
     from {{ ref('bridge_employee_staff') }} as b
     inner join (select staff_key, category from {{ ref('dim_staff') }}) as s on s.staff_key = b.staff_key
     where ifNull(s.category, '') in ('DOCTORS', 'NURSE')
+      and b.employee_key not in ({{ hnh_contingent_employee_keys() }})
     group by b.staff_key
 ),
 

@@ -35,7 +35,7 @@ select
     month_end,
     toUInt8(month_end < today())                                                    as is_closed_month,
     worker_type_code,
-    toUInt8(ifNull(worker_type_code, '') in ('CWK', 'CON'))                         as is_contingent,
+    {{ hnh_is_contingent('worker_type_code') }}                                     as is_contingent,
     assignment_status,
     is_saudi,
     gender,

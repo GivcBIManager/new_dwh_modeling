@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "291aa91db02bcbd0e741",
   "position": {
-    "x": 30,
+    "x": 972.0,
     "y": 896.0,
     "z": 36000,
     "height": 528,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Branch"
+                      "Entity": "HR Department"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Department Base Name"
                 }
               },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
+              "queryRef": "HR Department.Department Base Name",
+              "nativeQueryRef": "Department Base Name",
               "active": true
             }
           ]
@@ -174,7 +174,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Hires and leavers by branch'"
+                  "Value": "'Hires and leavers by department, top 10'"
                 }
               }
             }
@@ -183,5 +183,111 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "f450494bb8d2b244f383",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "HR Department"
+              }
+            },
+            "Property": "Department Base Name"
+          }
+        },
+        "type": "TopN",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "subquery",
+              "Expression": {
+                "Subquery": {
+                  "Query": {
+                    "Version": 2,
+                    "From": [
+                      {
+                        "Name": "h",
+                        "Entity": "HR Department",
+                        "Type": 0
+                      },
+                      {
+                        "Name": "_",
+                        "Entity": "_Measures",
+                        "Type": 0
+                      }
+                    ],
+                    "Select": [
+                      {
+                        "Column": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Source": "h"
+                            }
+                          },
+                          "Property": "Department Base Name"
+                        },
+                        "Name": "field"
+                      }
+                    ],
+                    "OrderBy": [
+                      {
+                        "Direction": 2,
+                        "Expression": {
+                          "Measure": {
+                            "Expression": {
+                              "SourceRef": {
+                                "Source": "_"
+                              }
+                            },
+                            "Property": "Hires"
+                          }
+                        }
+                      }
+                    ],
+                    "Top": 10
+                  }
+                }
+              },
+              "Type": 2
+            },
+            {
+              "Name": "h",
+              "Entity": "HR Department",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "h"
+                          }
+                        },
+                        "Property": "Department Base Name"
+                      }
+                    }
+                  ],
+                  "Table": {
+                    "SourceRef": {
+                      "Source": "subquery"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      }
+    ]
   }
 }

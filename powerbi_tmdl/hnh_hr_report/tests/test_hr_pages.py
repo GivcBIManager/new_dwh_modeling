@@ -1089,14 +1089,14 @@ def test_detail_pages_use_underlying_measures_and_spec_breakdowns():
     assert {BRANCH_NAME, DEPARTMENT_BASE, col("Job", "Job Name"), col("Grade", "Grade Name"),
             POSITION_BASE, col("Location", "Location Name"), col("Headcount", "Is Saudi"),
             col("Headcount", "Gender"), col("Headcount", "Age Band"), col("Headcount", "Tenure Band"),
-            col("Employee", "Worker Type"), col("Job", "Full Part Time")} <= axes("headcount")
+            col("Job", "Full Part Time")} <= axes("headcount")
     assert {col("Worker Action", "Action Reason Name"), col("Employee", "Tenure Band")} <= axes("movements")
     assert {col("Pay Category", "Pay Category"), DEPARTMENT_BASE, col("Payroll", "Source"),
             col("Payroll", "Payroll Status")} <= axes("payroll")
     assert {col("Absence Type", "Absence Type Name"), BRANCH_NAME} <= axes("absence")
     assert {col("Staff Productivity", "Staff Category"), BRANCH_NAME} <= axes("productivity")
     card_measures = {m.name for v in _page("headcount").visuals if v.sample == "card" for m in _measures(v)}
-    assert "Contingent Share %" in card_measures  # contingent workers shown separately
+    assert "Contingent Workers" in card_measures  # contingent workers shown separately (user decision 2026-11-19)
 
 
 def test_charts_and_slicers_use_prefix_free_names():
@@ -1310,8 +1310,11 @@ def test_headcount_matrix_by_grade_and_bands_in_order():
         assert f"sortByColumn: '{band} Order'" in (Path(MODEL_DIR) / "tables" / "Headcount.tmdl").read_text(
             encoding="utf-8-sig")
     donuts = {v.roles["Category"][0] for v in page.visuals if v.sample == "donutChart"}
-    assert donuts == {col("Headcount", "Is Saudi"), col("Headcount", "Gender"), col("Employee", "Worker Type"),
-                      col("Job", "Full Part Time")}
+    assert donuts == {col("Headcount", "Is Saudi"), col("Headcount", "Gender"), col("Job", "Full Part Time")}
+    # contingent workers apart (user decision 2026-11-19): no worker type split or slicer, a count by branch instead
+    assert any(v.sample == "barChart" and meas("Contingent Workers") in v.roles.get("Y", []) for v in page.visuals)
+    assert all(col("Employee", "Worker Type") not in fs for p in ("headcount", "movements")
+               for v in _page(p).visuals for fs in v.roles.values())
 
 
 def _heat(v):

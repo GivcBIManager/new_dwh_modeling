@@ -2,74 +2,71 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "7a4426ce332ba1b87d27",
   "position": {
-    "x": 1537.2,
-    "y": 254,
+    "x": 30.0,
+    "y": 420.0,
     "z": 27000,
-    "height": 66,
-    "width": 352.8,
+    "height": 128,
+    "width": 290.0,
     "tabOrder": 27000
   },
   "visual": {
-    "visualType": "slicer",
+    "visualType": "card",
     "query": {
       "queryState": {
         "Values": {
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Employee"
+                      "Entity": "_Measures"
                     }
                   },
-                  "Property": "Worker Type"
+                  "Property": "Hires"
                 }
               },
-              "queryRef": "Employee.Worker Type",
-              "nativeQueryRef": "Worker Type",
-              "displayName": "Worker type",
-              "active": true
+              "queryRef": "_Measures.Hires",
+              "nativeQueryRef": "Hires",
+              "displayName": "Hires"
             }
           ]
         }
       }
     },
     "objects": {
-      "data": [
+      "labels": [
         {
           "properties": {
-            "mode": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "'Dropdown'"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "selection": [
-        {
-          "properties": {
-            "singleSelect": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "30D"
                 }
               }
             },
-            "selectAllCheckboxEnabled": {
+            "fontFamily": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "'Segoe UI Semibold'"
+                }
+              }
+            },
+            "color": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#0A1E32'"
+                    }
+                  }
                 }
               }
             }
           }
         }
       ],
-      "header": [
+      "categoryLabels": [
         {
           "properties": {
             "show": {
@@ -79,14 +76,14 @@
                 }
               }
             },
-            "textSize": {
+            "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "9D"
+                  "Value": "12D"
                 }
               }
             },
-            "fontColor": {
+            "color": {
               "solid": {
                 "color": {
                   "expr": {
@@ -114,50 +111,7 @@
             }
           }
         }
-      ],
-      "border": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#CBD3DC'"
-                    }
-                  }
-                }
-              }
-            },
-            "radius": {
-              "expr": {
-                "Literal": {
-                  "Value": "6D"
-                }
-              }
-            },
-            "width": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            }
-          }
-        }
       ]
-    },
-    "syncGroup": {
-      "groupName": "bsc Employee.Worker Type",
-      "fieldChanges": true,
-      "filterChanges": true
     },
     "drillFilterOtherVisuals": true
   }

@@ -2,45 +2,46 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "e96c75bf2042dde4cde3",
   "position": {
-    "x": 30,
-    "y": 344,
+    "x": 48.0,
+    "y": 462.0,
     "z": 45000,
-    "height": 64,
-    "width": 1860,
+    "height": 44,
+    "width": 44,
     "tabOrder": 45000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "image",
     "objects": {
-      "general": [
+      "image": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Size",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI Semibold",
-                      "fontSize": "16pt",
-                      "color": "#0A1E32"
+            "sourceFile": {
+              "image": {
+                "name": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'hr_icon_users.svg'"
                     }
                   }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "Month-end headcount; contingent workers are counted apart.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "11pt",
-                      "color": "#5B6B7D"
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hr_icon_users.svg"
                     }
                   }
-                ]
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
+                    }
+                  }
+                }
               }
-            ]
+            }
           }
         }
       ]

@@ -2,57 +2,37 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "8092d2ecc7e26bbeaea1",
   "position": {
-    "x": 972.0,
-    "y": 2252.0,
+    "x": 30,
+    "y": 2636.0,
     "z": 45000,
-    "height": 360,
+    "height": 484,
     "width": 918.0,
     "tabOrder": 45000
   },
   "visual": {
-    "visualType": "pivotTable",
+    "visualType": "clusteredBarChart",
     "query": {
       "queryState": {
-        "Rows": {
+        "Category": {
           "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "From Branch"
+                      "Entity": "Worker Action"
                     }
                   },
-                  "Property": "Branch Name"
+                  "Property": "Movement Group"
                 }
               },
-              "queryRef": "From Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
-              "displayName": "From",
+              "queryRef": "Worker Action.Movement Group",
+              "nativeQueryRef": "Movement Group",
               "active": true
             }
           ]
         },
-        "Columns": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Branch"
-                    }
-                  },
-                  "Property": "Branch Name"
-                }
-              },
-              "queryRef": "Branch.Branch Name",
-              "nativeQueryRef": "Branch Name",
-              "displayName": "To"
-            }
-          ]
-        },
-        "Values": {
+        "Y": {
           "projections": [
             {
               "field": {
@@ -62,12 +42,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Branch Transfers"
+                  "Property": "Movements"
                 }
               },
-              "queryRef": "_Measures.Branch Transfers",
-              "nativeQueryRef": "Branch Transfers",
-              "displayName": "Branch transfers"
+              "queryRef": "_Measures.Movements",
+              "nativeQueryRef": "Movements"
             }
           ]
         }
@@ -76,79 +55,92 @@
         "sort": [
           {
             "field": {
-              "Column": {
+              "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "From Branch"
+                    "Entity": "_Measures"
                   }
                 },
-                "Property": "Branch Name"
+                "Property": "Movements"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
     },
     "objects": {
-      "values": [
+      "valueAxis": [
         {
           "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "FillRule": {
-                      "Input": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "_Measures"
-                            }
-                          },
-                          "Property": "Branch Transfers"
-                        }
-                      },
-                      "FillRule": {
-                        "linearGradient2": {
-                          "min": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#FFFFFF'"
-                              }
-                            }
-                          },
-                          "max": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#1478BE'"
-                              }
-                            }
-                          },
-                          "nullColoringStrategy": {
-                            "strategy": {
-                              "Literal": {
-                                "Value": "'asZero'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "gridlineShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
             }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
+          }
+        }
+      ],
+      "categoryAxis": [
+        {
+          "properties": {
+            "showAxisTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
-            ],
-            "metadata": "_Measures.Branch Transfers"
+            },
+            "gridlineShow": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            },
+            "maxMarginFactor": {
+              "expr": {
+                "Literal": {
+                  "Value": "40L"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "labelDisplayUnits": {
+              "expr": {
+                "Literal": {
+                  "Value": "1D"
+                }
+              }
+            }
           }
         }
       ]
@@ -167,7 +159,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Branch transfers: from (rows) and to (columns)'"
+                  "Value": "'Movements by movement group'"
                 }
               }
             }

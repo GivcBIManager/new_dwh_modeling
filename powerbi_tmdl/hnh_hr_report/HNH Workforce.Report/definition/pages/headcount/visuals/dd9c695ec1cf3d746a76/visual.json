@@ -3,86 +3,36 @@
   "name": "dd9c695ec1cf3d746a76",
   "position": {
     "x": 30,
-    "y": 1474.0,
+    "y": 2078.0,
     "z": 38000,
-    "height": 480,
-    "width": 1860.0,
+    "height": 300,
+    "width": 447.0,
     "tabOrder": 38000
   },
   "visual": {
-    "visualType": "pivotTable",
+    "visualType": "donutChart",
     "query": {
       "queryState": {
-        "Rows": {
+        "Category": {
           "projections": [
             {
               "field": {
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR Department"
+                      "Entity": "Headcount"
                     }
                   },
-                  "Property": "Department Base Name"
+                  "Property": "Is Saudi"
                 }
               },
-              "queryRef": "HR Department.Department Base Name",
-              "nativeQueryRef": "Department Base Name",
-              "displayName": "Department",
+              "queryRef": "Headcount.Is Saudi",
+              "nativeQueryRef": "Is Saudi",
               "active": true
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Job"
-                    }
-                  },
-                  "Property": "Job Name"
-                }
-              },
-              "queryRef": "Job.Job Name",
-              "nativeQueryRef": "Job Name",
-              "displayName": "Job"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Position"
-                    }
-                  },
-                  "Property": "Position Base Name"
-                }
-              },
-              "queryRef": "Position.Position Base Name",
-              "nativeQueryRef": "Position Base Name",
-              "displayName": "Position"
             }
           ]
         },
-        "Columns": {
-          "projections": [
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Grade"
-                    }
-                  },
-                  "Property": "Grade Name"
-                }
-              },
-              "queryRef": "Grade.Grade Name",
-              "nativeQueryRef": "Grade Name",
-              "displayName": "Grade"
-            }
-          ]
-        },
-        "Values": {
+        "Y": {
           "projections": [
             {
               "field": {
@@ -106,79 +56,58 @@
         "sort": [
           {
             "field": {
-              "Column": {
+              "Measure": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "HR Department"
+                    "Entity": "_Measures"
                   }
                 },
-                "Property": "Department Base Name"
+                "Property": "Headcount"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
     },
     "objects": {
-      "values": [
+      "labels": [
         {
           "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "FillRule": {
-                      "Input": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "_Measures"
-                            }
-                          },
-                          "Property": "Headcount"
-                        }
-                      },
-                      "FillRule": {
-                        "linearGradient2": {
-                          "min": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#FFFFFF'"
-                              }
-                            }
-                          },
-                          "max": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#1478BE'"
-                              }
-                            }
-                          },
-                          "nullColoringStrategy": {
-                            "strategy": {
-                              "Literal": {
-                                "Value": "'asZero'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "labelStyle": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Category, percent of total'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
                 }
               }
             }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
+          }
+        }
+      ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
                 }
               }
-            ],
-            "metadata": "_Measures.Headcount"
+            }
           }
         }
       ]
@@ -197,7 +126,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Headcount by department, job and position (rows) and grade (columns)'"
+                  "Value": "'Saudi nationals'"
                 }
               }
             }

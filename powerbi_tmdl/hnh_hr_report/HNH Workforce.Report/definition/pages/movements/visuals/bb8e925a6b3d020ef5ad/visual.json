@@ -2,46 +2,45 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "bb8e925a6b3d020ef5ad",
   "position": {
-    "x": 1618.0,
-    "y": 462.0,
+    "x": 30,
+    "y": 2024.0,
     "z": 54000,
-    "height": 44,
-    "width": 44,
+    "height": 64,
+    "width": 1860,
     "tabOrder": 54000
   },
   "visual": {
-    "visualType": "image",
+    "visualType": "textbox",
     "objects": {
-      "image": [
+      "general": [
         {
           "properties": {
-            "sourceFile": {
-              "image": {
-                "name": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'hr_icon_percent.svg'"
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Changes and transfers",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "16pt",
+                      "color": "#0A1E32"
                     }
                   }
-                },
-                "url": {
-                  "expr": {
-                    "ResourcePackageItem": {
-                      "PackageName": "RegisteredResources",
-                      "PackageType": 1,
-                      "ItemName": "hr_icon_percent.svg"
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "A darker cell is a larger number.",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "11pt",
+                      "color": "#5B6B7D"
                     }
                   }
-                },
-                "scaling": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'Normal'"
-                    }
-                  }
-                }
+                ]
               }
-            }
+            ]
           }
         }
       ]

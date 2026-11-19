@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "b1b83d27f11a970d2773",
   "position": {
-    "x": 972.0,
-    "y": 896.0,
+    "x": 30,
+    "y": 1448.0,
     "z": 37000,
     "height": 528,
-    "width": 918.0,
+    "width": 604.0,
     "tabOrder": 37000
   },
   "visual": {
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "HR Department"
+                      "Entity": "Worker Action"
                     }
                   },
-                  "Property": "Department Base Name"
+                  "Property": "Action Reason Name"
                 }
               },
-              "queryRef": "HR Department.Department Base Name",
-              "nativeQueryRef": "Department Base Name",
+              "queryRef": "Worker Action.Action Reason Name",
+              "nativeQueryRef": "Action Reason Name",
               "active": true
             }
           ]
@@ -42,11 +42,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Hires"
+                  "Property": "Leavers"
                 }
               },
-              "queryRef": "_Measures.Hires",
-              "nativeQueryRef": "Hires"
+              "queryRef": "_Measures.Leavers",
+              "nativeQueryRef": "Leavers",
+              "displayName": "Leavers in Fusion"
             },
             {
               "field": {
@@ -56,12 +57,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Leavers"
+                  "Property": "Voluntary Leavers"
                 }
               },
-              "queryRef": "_Measures.Leavers",
-              "nativeQueryRef": "Leavers",
-              "displayName": "Leavers in Fusion"
+              "queryRef": "_Measures.Voluntary Leavers",
+              "nativeQueryRef": "Voluntary Leavers",
+              "displayName": "Voluntary leavers in Fusion"
             }
           ]
         }
@@ -76,7 +77,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Hires"
+                "Property": "Leavers"
               }
             },
             "direction": "Descending"
@@ -174,7 +175,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Hires and leavers by department, top 10'"
+                  "Value": "'Leavers by action reason, top 10'"
                 }
               }
             }
@@ -192,10 +193,10 @@
           "Column": {
             "Expression": {
               "SourceRef": {
-                "Entity": "HR Department"
+                "Entity": "Worker Action"
               }
             },
-            "Property": "Department Base Name"
+            "Property": "Action Reason Name"
           }
         },
         "type": "TopN",
@@ -210,8 +211,8 @@
                     "Version": 2,
                     "From": [
                       {
-                        "Name": "h",
-                        "Entity": "HR Department",
+                        "Name": "w",
+                        "Entity": "Worker Action",
                         "Type": 0
                       },
                       {
@@ -225,10 +226,10 @@
                         "Column": {
                           "Expression": {
                             "SourceRef": {
-                              "Source": "h"
+                              "Source": "w"
                             }
                           },
-                          "Property": "Department Base Name"
+                          "Property": "Action Reason Name"
                         },
                         "Name": "field"
                       }
@@ -243,7 +244,7 @@
                                 "Source": "_"
                               }
                             },
-                            "Property": "Hires"
+                            "Property": "Leavers"
                           }
                         }
                       }
@@ -255,8 +256,8 @@
               "Type": 2
             },
             {
-              "Name": "h",
-              "Entity": "HR Department",
+              "Name": "w",
+              "Entity": "Worker Action",
               "Type": 0
             }
           ],
@@ -269,10 +270,10 @@
                       "Column": {
                         "Expression": {
                           "SourceRef": {
-                            "Source": "h"
+                            "Source": "w"
                           }
                         },
-                        "Property": "Department Base Name"
+                        "Property": "Action Reason Name"
                       }
                     }
                   ],

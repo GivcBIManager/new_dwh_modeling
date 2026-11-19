@@ -10221,6 +10221,27 @@ table _Measures
 		displayFolder: Balanced Scorecard\Detail
 
 		annotation hnh_guard_allow = BSC KPI
+	/// Contingent workers (Fusion worker type CWK or CON) at month end, at the last closed month of the selection, by the Headcount rule (last closed month per branch, the projected current month excluded). They are counted apart: out of Headcount and every other HR measure (user decision 2026-11-19). Snapshot.
+	measure 'Contingent Workers' =
+			VAR __Value = ( -- measure body
+				SUMX (
+					VALUES ( Branch[Branch Key] ),
+					VAR LastMonth = CALCULATE ( MAX ( Headcount[Month Date Key] ), REMOVEFILTERS ( Headcount ), VALUES ( 'Date'[Date] ), VALUES ( Branch[Branch Key] ), Headcount[Is Closed Month] = "Yes" )
+					RETURN
+						CALCULATE (
+							SUM ( Headcount[Headcount Units] ),
+							Headcount[Month Date Key] = LastMonth,
+							Headcount[Is Closed Month] = "Yes",
+							Headcount[Is Contingent] = "Yes"
+						)
+				)
+			) -- end of measure body
+			VAR __Wrong = [_Guard Headcount]
+			RETURN IF ( __Wrong = "", __Value, """Contingent Workers"" can't be analysed by " & __Wrong )
+		formatString: #,0
+		displayFolder: HR Dashboard\Measures
+
+		annotation hnh_snapshot = 1
 	/// Contingent workers as a share of all heads (contingent included) at the last closed month of the selection, by the Headcount rule (last closed month per branch, the projected current month excluded). Snapshot.
 	measure 'Contingent Share %' =
 			VAR __Value = ( -- measure body

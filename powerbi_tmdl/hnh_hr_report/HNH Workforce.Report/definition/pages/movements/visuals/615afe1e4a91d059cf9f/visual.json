@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "615afe1e4a91d059cf9f",
   "position": {
-    "x": 30,
+    "x": 972.0,
     "y": 2636.0,
     "z": 46000,
     "height": 484,
@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Worker Action"
+                      "Entity": "Branch"
                     }
                   },
-                  "Property": "Movement Group"
+                  "Property": "Branch Name"
                 }
               },
-              "queryRef": "Worker Action.Movement Group",
-              "nativeQueryRef": "Movement Group",
+              "queryRef": "Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
               "active": true
             }
           ]
@@ -42,11 +42,27 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Movements"
+                  "Property": "Branch Transfers"
                 }
               },
-              "queryRef": "_Measures.Movements",
-              "nativeQueryRef": "Movements"
+              "queryRef": "_Measures.Branch Transfers",
+              "nativeQueryRef": "Branch Transfers",
+              "displayName": "Branch transfers"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Promotions"
+                }
+              },
+              "queryRef": "_Measures.Promotions",
+              "nativeQueryRef": "Promotions",
+              "displayName": "Promotions (Fusion action)"
             }
           ]
         }
@@ -61,7 +77,7 @@
                     "Entity": "_Measures"
                   }
                 },
-                "Property": "Movements"
+                "Property": "Branch Transfers"
               }
             },
             "direction": "Descending"
@@ -159,7 +175,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Movements by movement group'"
+                  "Value": "'Branch transfers and promotions by branch'"
                 }
               }
             }

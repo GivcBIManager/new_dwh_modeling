@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5937011e74c629d90fd3",
   "position": {
-    "x": 30,
+    "x": 972.0,
     "y": 2252.0,
     "z": 44000,
     "height": 360,
@@ -20,6 +20,26 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
+                      "Entity": "From Branch"
+                    }
+                  },
+                  "Property": "Branch Name"
+                }
+              },
+              "queryRef": "From Branch.Branch Name",
+              "nativeQueryRef": "Branch Name",
+              "displayName": "From",
+              "active": true
+            }
+          ]
+        },
+        "Columns": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
                       "Entity": "Branch"
                     }
                   },
@@ -28,8 +48,7 @@
               },
               "queryRef": "Branch.Branch Name",
               "nativeQueryRef": "Branch Name",
-              "displayName": "Branch",
-              "active": true
+              "displayName": "To"
             }
           ]
         },
@@ -43,57 +62,12 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "Job Changes"
+                  "Property": "Branch Transfers"
                 }
               },
-              "queryRef": "_Measures.Job Changes",
-              "nativeQueryRef": "Job Changes",
-              "displayName": "Job"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Grade Changes"
-                }
-              },
-              "queryRef": "_Measures.Grade Changes",
-              "nativeQueryRef": "Grade Changes",
-              "displayName": "Grade"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Position Changes"
-                }
-              },
-              "queryRef": "_Measures.Position Changes",
-              "nativeQueryRef": "Position Changes",
-              "displayName": "Position"
-            },
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Location Changes"
-                }
-              },
-              "queryRef": "_Measures.Location Changes",
-              "nativeQueryRef": "Location Changes",
-              "displayName": "Location"
+              "queryRef": "_Measures.Branch Transfers",
+              "nativeQueryRef": "Branch Transfers",
+              "displayName": "Branch transfers"
             }
           ]
         }
@@ -105,7 +79,7 @@
               "Column": {
                 "Expression": {
                   "SourceRef": {
-                    "Entity": "Branch"
+                    "Entity": "From Branch"
                   }
                 },
                 "Property": "Branch Name"
@@ -132,7 +106,7 @@
                               "Entity": "_Measures"
                             }
                           },
-                          "Property": "Job Changes"
+                          "Property": "Branch Transfers"
                         }
                       },
                       "FillRule": {
@@ -174,184 +148,7 @@
                 }
               }
             ],
-            "metadata": "_Measures.Job Changes"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "FillRule": {
-                      "Input": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "_Measures"
-                            }
-                          },
-                          "Property": "Grade Changes"
-                        }
-                      },
-                      "FillRule": {
-                        "linearGradient2": {
-                          "min": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#FFFFFF'"
-                              }
-                            }
-                          },
-                          "max": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#1478BE'"
-                              }
-                            }
-                          },
-                          "nullColoringStrategy": {
-                            "strategy": {
-                              "Literal": {
-                                "Value": "'asZero'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "_Measures.Grade Changes"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "FillRule": {
-                      "Input": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "_Measures"
-                            }
-                          },
-                          "Property": "Position Changes"
-                        }
-                      },
-                      "FillRule": {
-                        "linearGradient2": {
-                          "min": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#FFFFFF'"
-                              }
-                            }
-                          },
-                          "max": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#1478BE'"
-                              }
-                            }
-                          },
-                          "nullColoringStrategy": {
-                            "strategy": {
-                              "Literal": {
-                                "Value": "'asZero'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "_Measures.Position Changes"
-          }
-        },
-        {
-          "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "FillRule": {
-                      "Input": {
-                        "Measure": {
-                          "Expression": {
-                            "SourceRef": {
-                              "Entity": "_Measures"
-                            }
-                          },
-                          "Property": "Location Changes"
-                        }
-                      },
-                      "FillRule": {
-                        "linearGradient2": {
-                          "min": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#FFFFFF'"
-                              }
-                            }
-                          },
-                          "max": {
-                            "color": {
-                              "Literal": {
-                                "Value": "'#1478BE'"
-                              }
-                            }
-                          },
-                          "nullColoringStrategy": {
-                            "strategy": {
-                              "Literal": {
-                                "Value": "'asZero'"
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
-                }
-              }
-            ],
-            "metadata": "_Measures.Location Changes"
+            "metadata": "_Measures.Branch Transfers"
           }
         }
       ]
@@ -370,7 +167,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Changes by branch and kind'"
+                  "Value": "'Branch transfers: from (rows) and to (columns)'"
                 }
               }
             }

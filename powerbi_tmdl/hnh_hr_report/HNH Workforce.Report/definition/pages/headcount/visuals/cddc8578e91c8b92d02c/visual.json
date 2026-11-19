@@ -2,7 +2,7 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "cddc8578e91c8b92d02c",
   "position": {
-    "x": 30,
+    "x": 501.0,
     "y": 2078.0,
     "z": 39000,
     "height": 300,
@@ -23,11 +23,11 @@
                       "Entity": "Headcount"
                     }
                   },
-                  "Property": "Is Saudi"
+                  "Property": "Gender"
                 }
               },
-              "queryRef": "Headcount.Is Saudi",
-              "nativeQueryRef": "Is Saudi",
+              "queryRef": "Headcount.Gender",
+              "nativeQueryRef": "Gender",
               "active": true
             }
           ]
@@ -126,7 +126,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Saudi nationals'"
+                  "Value": "'Gender'"
                 }
               }
             }

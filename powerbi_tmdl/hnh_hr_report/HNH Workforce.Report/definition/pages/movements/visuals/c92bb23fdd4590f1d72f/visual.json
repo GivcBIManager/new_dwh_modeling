@@ -2,45 +2,46 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "c92bb23fdd4590f1d72f",
   "position": {
-    "x": 30,
-    "y": 344,
+    "x": 48.0,
+    "y": 462.0,
     "z": 48000,
-    "height": 64,
-    "width": 1860,
+    "height": 44,
+    "width": 44,
     "tabOrder": 48000
   },
   "visual": {
-    "visualType": "textbox",
+    "visualType": "image",
     "objects": {
-      "general": [
+      "image": [
         {
           "properties": {
-            "paragraphs": [
-              {
-                "textRuns": [
-                  {
-                    "value": "Hires and leavers",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI Semibold",
-                      "fontSize": "16pt",
-                      "color": "#0A1E32"
+            "sourceFile": {
+              "image": {
+                "name": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'hr_icon_user_plus.svg'"
                     }
                   }
-                ]
-              },
-              {
-                "textRuns": [
-                  {
-                    "value": "Turnover is the scorecard's; leaver figures marked in Fusion count Fusion leavers only.",
-                    "textStyle": {
-                      "fontFamily": "Segoe UI",
-                      "fontSize": "11pt",
-                      "color": "#5B6B7D"
+                },
+                "url": {
+                  "expr": {
+                    "ResourcePackageItem": {
+                      "PackageName": "RegisteredResources",
+                      "PackageType": 1,
+                      "ItemName": "hr_icon_user_plus.svg"
                     }
                   }
-                ]
+                },
+                "scaling": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'Normal'"
+                    }
+                  }
+                }
               }
-            ]
+            }
           }
         }
       ]
