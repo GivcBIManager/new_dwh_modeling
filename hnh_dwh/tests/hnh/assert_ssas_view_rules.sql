@@ -17,6 +17,8 @@ union all
 select table, name, type, 'amount stored as Float64'
 from cols
 where type like '%Float64%' and match(name, '(amount|_value$|cost|debit|credit|_pay$|fee|price|salary|_rate$|revenue)')
+  -- KPI targets (ratios, percents, counts) are floats on purpose: hnh_ssas_view floats=[...]
+  and not (table = 'ssas_dim_finance_target' and name = 'target_value')
 union all
 select table, name, type, 'nullable non-date key'
 from cols
@@ -30,6 +32,6 @@ where table in ('ssas_fact_charge_line', 'ssas_fact_order_line', 'ssas_fact_stoc
                'delivery_line', 'invoice_doc_no', 'master_order_no', 'order_line', 'oasis_line_id', 'oasis_doc_no',
                'fusion_transaction_id', 'claim_invoice_no', 'stat_invoice_no', 'visit_id', 'sequence_no', 'lot_number')
 union all
-select 'gold' as table, toString(n) as name, 'views' as type, 'expected 101 ssas_ views' as rule
+select 'gold' as table, toString(n) as name, 'views' as type, 'expected 105 ssas_ views' as rule
 from (select count() as n from system.tables where database = '{{ db }}' and startsWith(name, 'ssas_'))
-where n != 101
+where n != 105

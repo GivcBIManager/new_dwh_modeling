@@ -336,28 +336,28 @@ unit_tests:
     expect:
       rows:
         - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: REV_CASH, account_code: '41101', account_name: Revenue Cash, service_group_name: Unallocated, amount: 100}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: REV_TOTAL, account_code: '', service_group_name: Unallocated, amount: 100}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: NET_REVENUE, account_code: '', service_group_name: Unallocated, amount: 100}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: REV_TOTAL, account_code: '', account_name: '', service_group_name: Unallocated, amount: 100}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: NET_REVENUE, account_code: '', account_name: '', service_group_name: Unallocated, amount: 100}
         - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: DC_EMPLOYEE, account_code: '51101', account_name: Employee Costs, service_group_name: Unallocated, amount: -40}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: DIRECT_COST, account_code: '', service_group_name: Unallocated, amount: -40}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: GROSS_PROFIT, account_code: '', service_group_name: Unallocated, amount: 60}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: EBITDA, account_code: '', service_group_name: Unallocated, amount: 60}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: NET_PROFIT, account_code: '', service_group_name: Unallocated, amount: 60}
-        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', service_group_name: Unallocated, amount: 60}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: DIRECT_COST, account_code: '', account_name: '', service_group_name: Unallocated, amount: -40}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: GROSS_PROFIT, account_code: '', account_name: '', service_group_name: Unallocated, amount: 60}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: EBITDA, account_code: '', account_name: '', service_group_name: Unallocated, amount: 60}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: NET_PROFIT, account_code: '', account_name: '', service_group_name: Unallocated, amount: 60}
+        - {branch_key: 3, month_start: '2026-06-01', source_system: oasis, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', account_name: '', service_group_name: Unallocated, amount: 60}
         - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: REV_CREDIT, account_code: '41201101', account_name: Revenue Insurance, service_group_name: Consultation, amount: 200}
-        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: REV_TOTAL, account_code: '', service_group_name: Consultation, amount: 200}
-        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: NET_REVENUE, account_code: '', service_group_name: Consultation, amount: 200}
-        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: GROSS_PROFIT, account_code: '', service_group_name: Consultation, amount: 200}
-        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: EBITDA, account_code: '', service_group_name: Consultation, amount: 200}
-        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: NET_PROFIT, account_code: '', service_group_name: Consultation, amount: 200}
-        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', service_group_name: Consultation, amount: 200}
+        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: REV_TOTAL, account_code: '', account_name: '', service_group_name: Consultation, amount: 200}
+        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: NET_REVENUE, account_code: '', account_name: '', service_group_name: Consultation, amount: 200}
+        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: GROSS_PROFIT, account_code: '', account_name: '', service_group_name: Consultation, amount: 200}
+        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: EBITDA, account_code: '', account_name: '', service_group_name: Consultation, amount: 200}
+        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: NET_PROFIT, account_code: '', account_name: '', service_group_name: Consultation, amount: 200}
+        - {branch_key: 3, month_start: '2026-07-01', source_system: fusion, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', account_name: '', service_group_name: Consultation, amount: 200}
         - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: GA_EMPLOYEE, account_code: '52101102', account_name: Housing Expense, service_group_name: Unallocated, amount: -30}
-        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: GA_TOTAL, account_code: '', service_group_name: Unallocated, amount: -30}
-        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: EBITDA, account_code: '', service_group_name: Unallocated, amount: -30}
-        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: NET_PROFIT, account_code: '', service_group_name: Unallocated, amount: -30}
-        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', service_group_name: Unallocated, amount: -30}
+        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: GA_TOTAL, account_code: '', account_name: '', service_group_name: Unallocated, amount: -30}
+        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: EBITDA, account_code: '', account_name: '', service_group_name: Unallocated, amount: -30}
+        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: NET_PROFIT, account_code: '', account_name: '', service_group_name: Unallocated, amount: -30}
+        - {branch_key: 100, month_start: '2026-08-01', source_system: fusion, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', account_name: '', service_group_name: Unallocated, amount: -30}
         - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: GA_AUDIT, account_code: '52301101', account_name: Audit Fees, service_group_name: None, amount: -5}
-        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: GA_TOTAL, account_code: '', service_group_name: None, amount: -5}
-        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: EBITDA, account_code: '', service_group_name: None, amount: -5}
-        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: NET_PROFIT, account_code: '', service_group_name: None, amount: -5}
-        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', service_group_name: None, amount: -5}
+        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: GA_TOTAL, account_code: '', account_name: '', service_group_name: None, amount: -5}
+        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: EBITDA, account_code: '', account_name: '', service_group_name: None, amount: -5}
+        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: NET_PROFIT, account_code: '', account_name: '', service_group_name: None, amount: -5}
+        - {branch_key: 100, month_start: '2026-03-01', source_system: fusion, pl_line_code: TOTAL_COMPREHENSIVE_INCOME, account_code: '', account_name: '', service_group_name: None, amount: -5}
