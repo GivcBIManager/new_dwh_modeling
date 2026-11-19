@@ -228,6 +228,34 @@ models:
       - name: month_date_key
         tests:
           - relationships: {to: ref('dim_date'), field: date_key}
+  - name: dim_review_physician
+    description: >
+      Physician contract review columns, one row per dim_staff row (a separate model because bridge_employee_staff refs
+      dim_staff). is_review_physician: an Oasis doctor linked to exactly one employee, not contingent, with a physician
+      job in Fusion. review_physician_key: the home row's staff_key on a review physician's home row and on the rows of
+      the same person in other hospitals (same staff_id, not linked to HR, national id equal or missing), -1 elsewhere.
+      HR attributes read Not linked on a row without exactly one linked employee.
+    columns:
+      - name: staff_key
+        tests:
+          - unique
+          - not_null
+          - relationships: {to: ref('dim_staff'), field: staff_key}
+      - name: is_review_physician
+        tests: [not_null]
+      - name: job_title
+        tests: [not_null]
+      - name: pay_grade
+        tests: [not_null]
+      - name: employment_type
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Full-time', 'Part-time', 'Not linked']
+      - name: review_physician_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_staff'), field: staff_key}
   - name: hnh_fact_recruiting_requisition
     description: >
       Approved, not deleted Oracle Recruiting requisitions of the hospitals (branches 1-8) and Head Office (100;

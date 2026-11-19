@@ -1216,6 +1216,18 @@ models:
         data_type: "Nullable(String)"
       - name: service_start_date
         data_type: "Nullable(Date)"
+      - name: is_review_physician
+        data_type: "Int64"
+      - name: job_title
+        data_type: "String"
+      - name: pay_grade
+        data_type: "String"
+      - name: employment_type
+        data_type: "String"
+      - name: hire_date
+        data_type: "Nullable(Date)"
+      - name: review_physician_key
+        data_type: "Int64"
   - name: ssas_dim_staff_role
     config:
       contract: {enforced: true}
