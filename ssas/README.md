@@ -138,6 +138,7 @@ Perspective `Finance Report` (spec `docs/superpowers/specs/2026-11-18-finance-re
 | Try measure changes on the test database | `deploy.ps1 -Stage TestMeasures` (validate, metadata to `HNH_Analytics_Test` keeping its data, load unprocessed partitions, measure checks). The first run after a promotion loads the whole test database. |
 | After each successful dbt run | `process.ps1 -Mode Daily` (exit 2 = gate closed: no new successful `tag:hnh` run; `-Selected '<selector>'` when the dbt run used another selector) |
 | Friday | `process.ps1 -Mode Weekly` |
+| Only some tables (the Press Ganey flow: the survey tables after its dbt run) | `process.ps1 -Mode Daily -Tables "Survey Responses,Survey Answers,Survey Service,Survey Question" -Force` (an unknown name fails the run; does not mark the dbt run processed) |
 | In January (partition roll-over) | After `process.ps1 -Mode Daily`, run `test.ps1 -Database HNH_Analytics -Stage RowCounts`. |
 | Test production | `test.ps1 -Database HNH_Analytics` |
 | Partition preview | `partitions.ps1 -Database HNH_Analytics -DryRun` |

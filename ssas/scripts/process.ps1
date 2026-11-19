@@ -3,12 +3,15 @@
   Processes HNH_Analytics after a successful dbt run (SSAS spec 9.4).
   Daily: partitions in line with today, dimensions + last 3 months + Later + No date of each large table + small facts, then Calculate.
   Weekly: full refresh. One transaction each. Exit 0 = processed, 2 = gate closed (nothing done), 1 = error.
+  -Tables "A,B" limits either mode to those tables (partition sync included), then Calculate; it does not record the
+  dbt run as processed (ssas/state), so a later gated run still processes the whole model.
   The gate looks at the latest gold.ssas_etl_run_log row whose selected is -Selected (default tag:hnh): pass the
   selector of the dbt run that was just made when it was not tag:hnh. Dagster calls this script over SSH as
   svc_dagster (ssas/dagster/hnh_analytics_refresh.py, README "Trigger from Dagster").
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File ssas\scripts\process.ps1 -Mode Daily
   powershell -ExecutionPolicy Bypass -File ssas\scripts\process.ps1 -Mode Daily -Selected 'source:press_ganey+'
+  powershell -ExecutionPolicy Bypass -File ssas\scripts\process.ps1 -Mode Daily -Tables "Survey Responses,Survey Answers,Survey Service,Survey Question" -Force
 #>
 param(
     [string]$Server = 'HNHANALYTICSSRV\REPORTSERVERDB',
@@ -17,6 +20,7 @@ param(
     [string]$Dsn = 'HNH_Gold',
     [ValidatePattern('^[A-Za-z0-9_:+.*@,/ \-]+$')][string]$Selected = 'tag:hnh',   # a dbt selector: no quotes or backslashes, it goes into SQL
     [string]$TabularEditorDir = 'C:\Program Files (x86)\Tabular Editor',
+    [ValidatePattern('^[A-Za-z0-9_ &.(),\-]*$')][string]$Tables = '',   # comma-separated table names; empty = the whole model
     [datetime]$Today = (Get-Date),
     [switch]$Force
 )
@@ -56,14 +60,23 @@ try {
         try {
             $db = Get-HnhDatabase $srv $Database
             $model = $db.Model
-            $log = Sync-HnhPartitions -Model $model -Today $Today -NoRefresh -NoSave
+            $only = Split-HnhTableList $Tables
+            foreach ($name in $only) {
+                if ($model.Tables.Find($name) -eq $null) { throw "Table '$name' (-Tables) is not in $Database" }
+            }
+            if ($only.Count -gt 0) { Write-Host "Only these tables: $($only -join ', ')" }
+            $log = Sync-HnhPartitions -Model $model -Today $Today -NoRefresh -NoSave -Tables $only
             $log | ForEach-Object { Write-Host "partition $_" }
             $watch = [Diagnostics.Stopwatch]::StartNew()
             $dataOnly = [Microsoft.AnalysisServices.Tabular.RefreshType]::DataOnly
-            if ($Mode -eq 'Weekly') {
+            if ($Mode -eq 'Weekly' -and $only.Count -gt 0) {
+                foreach ($name in $only) { $model.Tables.Find($name).RequestRefresh([Microsoft.AnalysisServices.Tabular.RefreshType]::Full) }
+                $model.RequestRefresh([Microsoft.AnalysisServices.Tabular.RefreshType]::Calculate)
+            } elseif ($Mode -eq 'Weekly') {
                 $model.RequestRefresh([Microsoft.AnalysisServices.Tabular.RefreshType]::Full)
             } else {
                 foreach ($table in @($model.Tables)) {
+                    if ($only.Count -gt 0 -and $only -notcontains $table.Name) { continue }
                     $kind = Get-HnhAnnotation $table 'hnh_kind'
                     if ($kind -eq 'calculation_group') { continue }
                     if ($kind -eq $null) { Write-Host "WARNING: table $($table.Name) has no hnh_kind annotation; not refreshed"; continue }
@@ -91,8 +104,10 @@ try {
                 $model.RequestRefresh([Microsoft.AnalysisServices.Tabular.RefreshType]::Calculate)
             }
             Save-HnhModel $model
-            Write-Host ('{0} processing of {1} committed in {2:N1} minutes' -f $Mode, $Database, $watch.Elapsed.TotalMinutes)
-            if ($status -eq 'success' -and $finishedText) {
+            $what = $Database
+            if ($only.Count -gt 0) { $what = '{0} ({1} tables)' -f $Database, $only.Count }
+            Write-Host ('{0} processing of {1} committed in {2:N1} minutes' -f $Mode, $what, $watch.Elapsed.TotalMinutes)
+            if ($only.Count -eq 0 -and $status -eq 'success' -and $finishedText) {
                 @{ run_finished_at = $finishedText; processed_at = (Get-Date).ToString($format); mode = $Mode } |
                     ConvertTo-Json | Set-Content -Path $statePath -Encoding UTF8
             }
