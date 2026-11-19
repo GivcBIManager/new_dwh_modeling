@@ -331,11 +331,12 @@ Describe 'dim_physician_review_metric' {
 }
 
 Describe 'dim_peer_scope' {
-    $rows = @(Invoke-Sql (Get-RenderedModel 'dim_peer_scope') | Sort-Object { [int]$_.display_order })
+    $rows = Invoke-Sql (Get-RenderedModel 'dim_peer_scope')
+    $k = @{}; foreach ($r in $rows) { $k[[string]$r.scope_code] = $r }
     It 'has the two scopes' {
         $rows.Count | Should Be 2
-        "$($rows[0].scope_code)|$($rows[0].scope_name)|$($rows[0].display_order)" | Should Be 'HOSPITAL|Same hospital|1'
-        "$($rows[1].scope_code)|$($rows[1].scope_name)|$($rows[1].display_order)" | Should Be 'GROUP|Group|2'
+        "$($k['HOSPITAL'].scope_name)|$($k['HOSPITAL'].display_order)" | Should Be 'Same hospital|1'
+        "$($k['GROUP'].scope_name)|$($k['GROUP'].display_order)" | Should Be 'Group|2'
     }
 }
 
