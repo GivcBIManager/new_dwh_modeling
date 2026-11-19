@@ -1,9 +1,9 @@
 # HNH Finance report
 
 Power BI report "HNH Finance" on the `Finance Report` perspective, generated with the BSC generator's modules
-(`../hnh_bsc_report`), like `../hnh_hr_report`. Eleven pages: Home (`pages_home.py`, the page the report opens on:
+(`../hnh_bsc_report`), like `../hnh_hr_report`. Eleven pages: Home (`pages_landing.py`, the page the report opens on:
 headline tiles, a card per statement with its two views), a monthly and a hospitals view of the Trial Balance, Income
-Statement, Balance Sheet and KPIs & Ratios, then How to use and Definitions (`pages_home.py`; the KPI formulas in
+Statement, Balance Sheet and KPIs & Ratios, then How to use and Definitions (`pages_landing.py`; the KPI formulas in
 `KPI_DEFINITIONS`, kept in step with `dim_finance_kpi.sql` by a test). Every page has the frame (`fin_frame.py`): seven
 tabs (Home, the four statements, How to use, Definitions); the statement pages add the view buttons, the Hospital /
 Year / Month drop-down slicers (synced across pages) and the period text. Every page but Home is hidden: the tabs and

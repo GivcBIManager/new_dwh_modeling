@@ -1,5 +1,5 @@
 """Home, How to use and Definitions (user request 2026-11-19)."""
-import pages_home as ph
+import pages_landing as ph
 from fin_frame import PAGE_NAMES
 from model import meas
 
