@@ -73,6 +73,8 @@ select
     toUInt8(movement_group in ('Hire', 'Rehire'))                                           as is_hire,
     toUInt8(movement_group in ('Voluntary leaver', 'Involuntary leaver'))                   as is_leaver,
     toUInt8(movement_group = 'Voluntary leaver')                                            as is_voluntary_leaver,
-    toUInt8(branch_key != previous_branch_key)                                              as is_branch_transfer,
+    -- a hire is never a transfer: a rehire's day-before branch is the old, ended assignment's (November 2026: three
+    -- people left in September and were rehired at another branch)
+    toUInt8(branch_key != previous_branch_key and movement_group not in ('Hire', 'Rehire')) as is_branch_transfer,
     now()                                                                                   as _loaded_at
 from joined
