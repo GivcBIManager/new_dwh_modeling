@@ -87,3 +87,12 @@ def test_percent_of_revenue_ignores_the_income_statement_rows():
     expression = MEASURES["FR % of Revenue"].expression
     for column in ("FS Caption Name", "Account Name", "FS Caption", "FS Line", "Account Code"):
         assert f"'P&L Report'[{column}]" in expression, column
+
+
+def test_cell_colour_is_allowed_under_every_statement_row_table():
+    # FR Cell Colour colours the trial balance, income statement and balance sheet matrices, whose rows come from
+    # GL FS Monthly, P&L Line and P&L Report: none of them may trip its guard (G3: P&L Line rows showed guard text)
+    measure = MEASURES["FR Cell Colour"]
+    guard = re.search(r"VAR __Wrong = \[(_Guard [^\]]+)\]", measure.expression).group(1)
+    for table in ("GL FS Monthly", "P&L Line", "P&L Report", "Finance Column"):
+        assert f"ISFILTERED ( '{table}' )" not in MEASURES[guard].expression, table
