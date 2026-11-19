@@ -841,3 +841,28 @@ def test_filter_pane_hidden_for_the_scorecard_only(project):
     rep = load(report_dir(project) / "definition" / "report.json")
     assert rep["objects"]["outspacePane"] == [{"properties": {"visible": {"expr": {"Literal": {"Value": "false"}}}}}]
     assert "outspacePane" not in report_json(None, report=dataclasses.replace(BSC_REPORT, filter_pane=True))["objects"]
+
+
+def test_native_query_refs_unique_in_a_visual():
+    """Report Server refuses a query with two select expressions of the same native reference name ("Error fetching
+    data" on the HR transfer matrix, From Branch[Branch Name] by Branch[Branch Name], 2026-11-19): the second field
+    of a name takes its table in front. The same field in two roles keeps one name."""
+    from pbir import _native_names
+    branch, from_branch = col("Branch", "Branch Name"), col("From Branch", "Branch Name")
+    names = _native_names({"Rows": [from_branch], "Columns": [branch], "Values": [meas("Headcount")],
+                           "Tooltips": [from_branch]})
+    assert names == {from_branch: "Branch Name", branch: "Branch Branch Name", meas("Headcount"): "Headcount"}
+
+
+def test_built_reports_have_unique_native_query_refs():
+    """Every committed report (BSC, HR, Finance): no visual names two fields alike."""
+    root = Path(__file__).resolve().parents[2]
+    files = sorted(root.glob("*/*.Report/definition/pages/*/visuals/*/visual.json"))
+    assert files
+    for p in files:
+        state = json.loads(p.read_text(encoding="utf-8")).get("visual", {}).get("query", {}).get("queryState", {})
+        refs = {}
+        for role in state.values():
+            for pr in role.get("projections", []):
+                refs.setdefault(pr["nativeQueryRef"], set()).add(pr["queryRef"])
+        assert all(len(s) == 1 for s in refs.values()), (p, refs)

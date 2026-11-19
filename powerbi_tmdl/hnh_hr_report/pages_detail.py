@@ -550,11 +550,11 @@ def headcount_page() -> Page:
     hc = ["Headcount"]
     size = section(
         "Size", [card("Headcount", "Headcount"),
-                 # FTE equals headcount today (Fusion FTE values are 1; a zero FTE is replaced by 1): no decimals
-                 card("FTE", "FTE", decimals=0), card("Average Headcount", "Average headcount", decimals=0),
+                 # a part-timer without a Fusion FTE value counts 0.5 (2026-11-19): FTE shows one decimal
+                 card("FTE", "FTE", decimals=1), card("Average Headcount", "Average headcount", decimals=0),
                  card("BSC Saudization", "Saudization"), card("Female Share %", "Female share"),
                  card("Contingent Workers", "Contingent workers, apart")],
-        # FTE equals headcount today: one line, or every label shows twice
+        # FTE is within about 1% of headcount (part-timers): one line, or every label shows twice
         [[trend("Headcount by month", hc, span=2),
           bars("Headcount by branch, then location", [BRANCH_NAME, LOCATION], hc)]],
         subtitle="Month-end headcount. Contingent workers are counted apart, out of every other figure.")
@@ -572,7 +572,8 @@ def headcount_page() -> Page:
         [[donut("Saudi nationals", col("Headcount", "Is Saudi"), "Headcount"),
           donut("Gender", col("Headcount", "Gender"), "Headcount"),
           bars("Contingent workers by branch (not in headcount)", BRANCH_NAME, ["Contingent Workers"]),
-          donut("Full and part time", col("Job", "Full Part Time"), "Headcount")],
+          # the assignment's Fusion category (PR/PT), not the job's Full Part Time, which says FULL_TIME for everyone
+          donut("Part time", col("Headcount", "Is Part Time"), "Headcount")],
          [columns("Headcount by age band (years)", col("Headcount", "Age Band"), hc),
           columns("Headcount by tenure band (years)", col("Headcount", "Tenure Band"), hc)]])
     return detail_page("headcount", "Headcount & mix", [size, organisation, mix], page_slicers=WORKFORCE_SLICERS)

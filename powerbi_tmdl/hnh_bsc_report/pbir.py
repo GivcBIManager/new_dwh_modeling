@@ -298,9 +298,22 @@ def committed_year(project_dir, report: ReportSpec = BSC_REPORT) -> int | None:
     return None
 
 
-def _projection(f: Field, active: bool, label: str | None = None) -> dict:
-    """`label`: the field's name in this visual (`displayName`, as Desktop writes a field renamed in a visual)."""
-    p = {"field": field_expr(f), "queryRef": f.ref, "nativeQueryRef": f.name}
+def _native_names(roles: dict) -> dict:
+    """Each field's nativeQueryRef in one visual: its name, or "<table> <name>" for a second field of the same name
+    (From Branch[Branch Name] beside Branch[Branch Name]). Report Server refuses a query whose select clause has two
+    expressions with the same native reference name ("Error fetching data"); Desktop does not mind."""
+    out: dict = {}
+    for fs in roles.values():
+        for f in fs:
+            if f not in out:
+                out[f] = f.name if f.name not in out.values() else f"{f.table} {f.name}"
+    return out
+
+
+def _projection(f: Field, active: bool, label: str | None = None, native: str | None = None) -> dict:
+    """`label`: the field's name in this visual (`displayName`, as Desktop writes a field renamed in a visual).
+    `native`: its nativeQueryRef, unique in the visual (`_native_names`)."""
+    p = {"field": field_expr(f), "queryRef": f.ref, "nativeQueryRef": native or f.name}
     if label:
         p["displayName"] = label
     if active:
@@ -357,9 +370,10 @@ def visual_json(page: Page, visual: Visual, index: int, visual_guid: str) -> dic
 
     v: dict = {"visualType": vtype}
     if fields:
+        native = _native_names(visual.roles)
         query: dict = {"queryState": {
             role: {"projections": [_projection(f, _active(visual.sample, role, i, visual.expand, len(fs)),
-                                               visual.labels.get(f))
+                                               visual.labels.get(f), native[f])
                                    for i, f in enumerate(fs)]}
             for role, fs in visual.roles.items()}}
         if visual.sort:

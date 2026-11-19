@@ -20,14 +20,14 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Job"
+                      "Entity": "Headcount"
                     }
                   },
-                  "Property": "Full Part Time"
+                  "Property": "Is Part Time"
                 }
               },
-              "queryRef": "Job.Full Part Time",
-              "nativeQueryRef": "Full Part Time",
+              "queryRef": "Headcount.Is Part Time",
+              "nativeQueryRef": "Is Part Time",
               "active": true
             }
           ]
@@ -126,7 +126,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Full and part time'"
+                  "Value": "'Part time'"
                 }
               }
             }

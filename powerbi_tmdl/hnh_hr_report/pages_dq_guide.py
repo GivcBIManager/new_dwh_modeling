@@ -136,7 +136,8 @@ GUIDE_SECTIONS = [
         "Promotions are the Fusion PROMOTION action (HR to confirm).",
         "Contingent workers (Fusion worker type contingent worker or contractor) are counted apart: they are not in "
         "the headcount, hires, leavers, pay, absence, leave or productivity figures.",
-        "FTE equals headcount today: Fusion records an FTE of 1 for almost everyone, and a zero FTE is replaced by 1.",
+        "Part time is the Fusion assignment category (part-time regular or temporary). FTE is Fusion's FTE value; "
+        "where it is missing or zero, a full-timer counts 1 and a part-timer 0.5.",
         "Pay by grade uses each person's grade in the month's headcount; pay of people without one is left out.",
         "Absence days come from Fusion and, before each branch moved its absences to Fusion in 2026, from Oasis.",
         "Leave balances come from Fusion absence plans. Where Fusion has none for a person and month, Oasis gives "

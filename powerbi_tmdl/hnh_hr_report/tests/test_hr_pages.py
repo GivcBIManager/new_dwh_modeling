@@ -1089,7 +1089,7 @@ def test_detail_pages_use_underlying_measures_and_spec_breakdowns():
     assert {BRANCH_NAME, DEPARTMENT_BASE, col("Job", "Job Name"), col("Grade", "Grade Name"),
             POSITION_BASE, col("Location", "Location Name"), col("Headcount", "Is Saudi"),
             col("Headcount", "Gender"), col("Headcount", "Age Band"), col("Headcount", "Tenure Band"),
-            col("Job", "Full Part Time")} <= axes("headcount")
+            col("Headcount", "Is Part Time")} <= axes("headcount")
     assert {col("Worker Action", "Action Reason Name"), col("Employee", "Tenure Band")} <= axes("movements")
     assert {col("Pay Category", "Pay Category"), DEPARTMENT_BASE, col("Payroll", "Source"),
             col("Payroll", "Payroll Status")} <= axes("payroll")
@@ -1109,12 +1109,13 @@ def test_charts_and_slicers_use_prefix_free_names():
     assert DEPARTMENT_BASE in slicers
 
 
-def test_headcount_cards_show_whole_numbers():
-    """FTE equals headcount today (Fusion FTE values are 1): FTE and the monthly averages show no decimal."""
+def test_headcount_cards_decimals():
+    """A part-timer without a Fusion FTE value counts 0.5 (2026-11-19): FTE shows one decimal, the average
+    headcount none."""
     page = _page("headcount")
-    for m in ("FTE", "Average Headcount"):
+    for m, places in (("FTE", "1L"), ("Average Headcount", "0L")):
         (card,) = [v for v in page.visuals if v.sample == "card" and v.roles["Values"] == [meas(m)]]
-        assert card.props["labels"][0]["properties"]["labelPrecision"]["expr"]["Literal"]["Value"] == "0L", m
+        assert card.props["labels"][0]["properties"]["labelPrecision"]["expr"]["Literal"]["Value"] == places, m
 
 
 def test_recruitment_says_when_budgeted_fte_is_missing():
@@ -1264,7 +1265,7 @@ def test_guide_text_covers_the_rules():
     for needle in ("Last closed month", "● On track", "◆ Watch", "■ At risk", "○ No target yet", "– No data", "Parked",
                    "🔒 Requires pay access", "within the watch threshold", "(placeholder)", "BI manager", "Head Office", "PROMOTION", "2 decimals",
                    "largest change", "nightly", "Back", "BSC turnover", "in Fusion", "Period", "pro-rated",
-                   "Unknown", "FTE equals headcount", "zero FTE", "budgeted FTE",
+                   "Unknown", "Part time is the Fusion assignment category", "part-timer 0.5", "budgeted FTE",
                    # user decision 2026-11-03: Head Office everywhere; the scorecard report stays hospitals only
                    "Branch lists the eight hospitals and Head Office", "covers the hospitals only",
                    "no Head Office data", "include Head Office's requisitions"):  # ruling R32
@@ -1310,7 +1311,8 @@ def test_headcount_matrix_by_grade_and_bands_in_order():
         assert f"sortByColumn: '{band} Order'" in (Path(MODEL_DIR) / "tables" / "Headcount.tmdl").read_text(
             encoding="utf-8-sig")
     donuts = {v.roles["Category"][0] for v in page.visuals if v.sample == "donutChart"}
-    assert donuts == {col("Headcount", "Is Saudi"), col("Headcount", "Gender"), col("Job", "Full Part Time")}
+    # part time from the assignment (2026-11-19): the job's Full Part Time says FULL_TIME for everyone
+    assert donuts == {col("Headcount", "Is Saudi"), col("Headcount", "Gender"), col("Headcount", "Is Part Time")}
     # contingent workers apart (user decision 2026-11-19): no worker type split or slicer, a count by branch instead
     assert any(v.sample == "barChart" and meas("Contingent Workers") in v.roles.get("Y", []) for v in page.visuals)
     assert all(col("Employee", "Worker Type") not in fs for p in ("headcount", "movements")
