@@ -37,6 +37,132 @@
             "Property": "Department Base Name"
           }
         }
+      },
+      {
+        "name": "Param_f0f6e96206ec123c33a6",
+        "boundFilter": "f0f6e96206ec123c33a6",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Job"
+              }
+            },
+            "Property": "Job Name"
+          }
+        }
+      },
+      {
+        "name": "Param_2608969a5393b25c7eec",
+        "boundFilter": "2608969a5393b25c7eec",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Position"
+              }
+            },
+            "Property": "Position Base Name"
+          }
+        }
+      },
+      {
+        "name": "Param_eed2ee483eebabf9474c",
+        "boundFilter": "eed2ee483eebabf9474c",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Grade"
+              }
+            },
+            "Property": "Grade Name"
+          }
+        }
+      },
+      {
+        "name": "Param_c1070763d58ea6de6db2",
+        "boundFilter": "c1070763d58ea6de6db2",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Location"
+              }
+            },
+            "Property": "Location Name"
+          }
+        }
+      },
+      {
+        "name": "Param_febedc9d0c63f1fe992f",
+        "boundFilter": "febedc9d0c63f1fe992f",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Gender"
+          }
+        }
+      },
+      {
+        "name": "Param_b830e76596a7e9894225",
+        "boundFilter": "b830e76596a7e9894225",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Is Saudi"
+          }
+        }
+      },
+      {
+        "name": "Param_e3a9c16fad2c1a313938",
+        "boundFilter": "e3a9c16fad2c1a313938",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Age Band"
+          }
+        }
+      },
+      {
+        "name": "Param_dcb4bf0c835825c33036",
+        "boundFilter": "dcb4bf0c835825c33036",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Tenure Band"
+          }
+        }
+      },
+      {
+        "name": "Param_efba43b54d75da84f3a7",
+        "boundFilter": "efba43b54d75da84f3a7",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Is Part Time"
+          }
+        }
       }
     ],
     "acceptsFilterContext": "None"
@@ -68,6 +194,141 @@
               }
             },
             "Property": "Department Base Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "f0f6e96206ec123c33a6",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Job"
+              }
+            },
+            "Property": "Job Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "2608969a5393b25c7eec",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Position"
+              }
+            },
+            "Property": "Position Base Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "eed2ee483eebabf9474c",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Grade"
+              }
+            },
+            "Property": "Grade Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "c1070763d58ea6de6db2",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Location"
+              }
+            },
+            "Property": "Location Name"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "febedc9d0c63f1fe992f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Gender"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "b830e76596a7e9894225",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Is Saudi"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "e3a9c16fad2c1a313938",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Age Band"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "dcb4bf0c835825c33036",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Tenure Band"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drillthrough"
+      },
+      {
+        "name": "efba43b54d75da84f3a7",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Headcount"
+              }
+            },
+            "Property": "Is Part Time"
           }
         },
         "type": "Categorical",

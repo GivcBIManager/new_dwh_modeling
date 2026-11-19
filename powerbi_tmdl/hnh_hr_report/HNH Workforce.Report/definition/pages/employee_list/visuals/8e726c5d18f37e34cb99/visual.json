@@ -128,12 +128,132 @@
                       "Entity": "_Measures"
                     }
                   },
+                  "Property": "HR Employee Position"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Position",
+              "nativeQueryRef": "HR Employee Position",
+              "displayName": "Position"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
                   "Property": "HR Employee Grade"
                 }
               },
               "queryRef": "_Measures.HR Employee Grade",
               "nativeQueryRef": "HR Employee Grade",
               "displayName": "Grade"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Location"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Location",
+              "nativeQueryRef": "HR Employee Location",
+              "displayName": "Location"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
+                  "Property": "Is Part Time"
+                }
+              },
+              "queryRef": "Employee.Is Part Time",
+              "nativeQueryRef": "Is Part Time",
+              "displayName": "Part time"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "FTE"
+                }
+              },
+              "queryRef": "_Measures.FTE",
+              "nativeQueryRef": "FTE",
+              "displayName": "FTE"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
+                  "Property": "Gender"
+                }
+              },
+              "queryRef": "Employee.Gender",
+              "nativeQueryRef": "Gender",
+              "displayName": "Gender"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
+                  "Property": "Nationality"
+                }
+              },
+              "queryRef": "Employee.Nationality",
+              "nativeQueryRef": "Nationality",
+              "displayName": "Nationality"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
+                  "Property": "Age Band"
+                }
+              },
+              "queryRef": "Employee.Age Band",
+              "nativeQueryRef": "Age Band",
+              "displayName": "Age band"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
+                  "Property": "Tenure Band"
+                }
+              },
+              "queryRef": "Employee.Tenure Band",
+              "nativeQueryRef": "Tenure Band",
+              "displayName": "Tenure band"
             },
             {
               "field": {
@@ -158,12 +278,147 @@
                       "Entity": "Employee"
                     }
                   },
+                  "Property": "Original Hire Date"
+                }
+              },
+              "queryRef": "Employee.Original Hire Date",
+              "nativeQueryRef": "Original Hire Date",
+              "displayName": "Original hire date"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Employee"
+                    }
+                  },
                   "Property": "Assignment Status"
                 }
               },
               "queryRef": "Employee.Assignment Status",
               "nativeQueryRef": "Assignment Status",
               "displayName": "Status"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Birth Date"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Birth Date",
+              "nativeQueryRef": "HR Employee Birth Date",
+              "displayName": "Birth date (pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Age"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Age",
+              "nativeQueryRef": "HR Employee Age",
+              "displayName": "Age (pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Marital Status"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Marital Status",
+              "nativeQueryRef": "HR Employee Marital Status",
+              "displayName": "Marital status (pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Phone"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Phone",
+              "nativeQueryRef": "HR Employee Phone",
+              "displayName": "Phone (pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Email"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Email",
+              "nativeQueryRef": "HR Employee Email",
+              "displayName": "Email (pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee National ID"
+                }
+              },
+              "queryRef": "_Measures.HR Employee National ID",
+              "nativeQueryRef": "HR Employee National ID",
+              "displayName": "National ID (pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Gross Pay"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Gross Pay",
+              "nativeQueryRef": "HR Employee Gross Pay",
+              "displayName": "Gross pay (SAR, pay access)"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "HR Employee Payroll Cost"
+                }
+              },
+              "queryRef": "_Measures.HR Employee Payroll Cost",
+              "nativeQueryRef": "HR Employee Payroll Cost",
+              "displayName": "Payroll cost (SAR, pay access)"
             },
             {
               "field": {

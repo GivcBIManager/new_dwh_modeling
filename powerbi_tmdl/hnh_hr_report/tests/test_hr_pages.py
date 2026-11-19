@@ -37,6 +37,8 @@ TREND_WINDOW = (MONTH_OFFSET, "in", list(range(1, 13)))  # the trend charts: the
 STATUS_COLOUR = meas("HR KPI Status Colour")
 TAB_NAMES = ["home", "story", "scorecard", "headcount", "data_quality", "guide"]
 DETAIL_NAMES = ["headcount", "movements", "payroll", "absence", "recruitment", "productivity"]
+# the hidden record lists (user request 2026-11-19), last in PAGES
+RECORD_NAMES = ["employee_list", "movement_list", "absence_list", "leave_list", "pay_list"]
 # R13: the slicers a page with HR KPI Actual / Status / Status Text / Status Colour may carry
 KPI_MEASURES = {"HR KPI Actual", "HR KPI Actual Text", "HR KPI Status", "HR KPI Status Text", "HR KPI Status Colour"}
 AREA = col("HR KPI", "Area")
@@ -1029,7 +1031,7 @@ def test_detail_visuals_never_hit_a_measure_guard():
     assert "Pay Category" in blocked_tables("Payroll Cost per FTE")
     assert "Pay Category" not in blocked_tables("Payroll Cost") and blocked_tables("HR Pay Notice") == frozenset()
     assert "Grade" not in blocked_tables("Gross Pay")  # Payroll's grade (user request 2026-11-05)
-    for page in _detail_pages() + [_page("employee_list")]:
+    for page in _detail_pages() + [_page(n) for n in RECORD_NAMES]:
         fixed = {f.field.table for f in page.filters} | {f.table for f in page.drill_fields or []}
         no_filter = {(s, t) for s, t, k in interaction_indexes(page) if k == "NoFilter"}
         data = _data_visuals(page)
@@ -1149,9 +1151,13 @@ def test_employee_list_filtered_by_headcount():
     'Pay Category', would make Headcount return its guard message); the month and the other selections come from
     the page's slicers, synced with the detail pages' slicers."""
     page = _page("employee_list")
-    assert page.hidden and page.display == "Employee list" and PAGES[-1] is page
-    # the drill fields are the detail charts' axes: hospital and the prefix-free department (R30)
-    assert page.drill_fields == [BRANCH_NAME, DEPARTMENT_BASE] and not page.keep_filters
+    assert page.hidden and page.display == "Employee list" and PAGES[-5] is page
+    # the drill fields are the Headcount & mix page's axes (R30: the prefix-free department and position)
+    assert page.drill_fields == [BRANCH_NAME, DEPARTMENT_BASE, col("Job", "Job Name"), POSITION_BASE,
+                                 col("Grade", "Grade Name"), col("Location", "Location Name"), col("Headcount", "Gender"),
+                                 col("Headcount", "Is Saudi"), col("Headcount", "Age Band"),
+                                 col("Headcount", "Tenure Band"), col("Headcount", "Is Part Time")]
+    assert not page.keep_filters
     tables = [v for v in page.visuals if v.sample == "table"]
     assert len(tables) == 1
     people = tables[0]
@@ -1159,7 +1165,14 @@ def test_employee_list_filtered_by_headcount():
     for f in (col("Employee", "Worker Number"), col("Employee", "Person Number"), meas("HR Employee Name"),
               meas("HR Employee Staff ID"),
               meas("HR Employee Hospital"), meas("HR Employee Department"), meas("HR Employee Job"),
-              meas("HR Employee Grade"), col("Employee", "Hire Date"), col("Employee", "Assignment Status")):
+              meas("HR Employee Grade"), col("Employee", "Hire Date"), col("Employee", "Assignment Status"),
+              # user request 2026-11-19: work, personal and pay details (personal and pay: pay access)
+              meas("HR Employee Position"), meas("HR Employee Location"), col("Employee", "Is Part Time"),
+              meas("FTE"), col("Employee", "Gender"), col("Employee", "Nationality"), col("Employee", "Age Band"),
+              col("Employee", "Tenure Band"), col("Employee", "Original Hire Date"), meas("HR Employee Birth Date"),
+              meas("HR Employee Age"), meas("HR Employee Marital Status"), meas("HR Employee Phone"),
+              meas("HR Employee Email"), meas("HR Employee National ID"), meas("HR Employee Gross Pay"),
+              meas("HR Employee Payroll Cost")):
         assert f in people.roles["Values"], f
     # Grouped by Employee columns only: a table grouped by six dimensions' columns ran for minutes (empty in
     # Desktop); the hospital, department, job, grade and staff ID are measures through the month's headcount row
@@ -1189,7 +1202,7 @@ def _text_of(page):
 
 def test_dq_guide_pages_registered_in_order():
     names = [p.name for p in PAGES]
-    assert names[-4:] == ["data_quality", "guide", "guide_definitions", "employee_list"]
+    assert names[-8:] == ["data_quality", "guide", "guide_definitions"] + RECORD_NAMES
     for n in ("data_quality", "guide", "guide_definitions"):
         assert not _page(n).hidden
 
@@ -1396,3 +1409,55 @@ def test_card_text_is_large_enough():
                 want = "16D" if v.roles["Values"][0].name.endswith(" Text") else "30D"
                 assert lit(v.props["labels"][0]["properties"]["fontSize"]) == want, (page.name, v.roles)
                 assert lit(v.props["categoryLabels"][0]["properties"]["fontSize"]) == "12D", (page.name, v.roles)
+
+
+# ---- Record lists (user request 2026-11-19: drill through from all pages to the record level) ------------------
+
+def test_record_lists_are_hidden_drill_throughs_with_one_table():
+    """Each record list: hidden, keep all filters off (only the drill fields arrive), a Back button, one table of
+    records without a total, the person's worker and person numbers and the name (pay access) on every list."""
+    for n in RECORD_NAMES:
+        page = _page(n)
+        assert page.hidden and not page.keep_filters and page.drill_fields, n
+        tables = [v for v in page.visuals if v.sample == "table"]
+        assert len(tables) == 1, n
+        (table,) = tables
+        assert table.props["total"][0]["properties"]["totals"]["expr"]["Literal"]["Value"] == "false", n
+        assert {col("Employee", "Worker Number"), col("Employee", "Person Number")} <= set(table.roles["Values"]), n
+        # the name is blank where the row has no record: a name independent of the list's fact would fill every
+        # combination of the list's columns (the movement list ran for over ten minutes)
+        name = {"employee_list": "HR Employee Name", "movement_list": "HR Movement Name",
+                "absence_list": "HR Absence Name", "leave_list": "HR Leave Name", "pay_list": "HR Pay Name"}[n]
+        assert meas(name) in table.roles["Values"], n
+        assert any(v.sample == "buttonNavigate" and "Back" in json.dumps(v.props) for v in page.visuals), n
+        # names and personal details are measures: a column of Employee Details would empty the list without pay access
+        assert "Employee Details" not in {f.table for f in page_fields(page)}, n
+
+
+def test_every_detail_chart_drills_to_a_record_list():
+    """Every column a chart groups by on the Headcount, Movements, Payroll and Absence pages (months aside: the
+    dates arrive through the slicers) is a drill field of a record list, so a bar or cell drills to its records."""
+    drill = {f for n in RECORD_NAMES for f in _page(n).drill_fields}
+    for name in ("headcount", "movements", "payroll", "absence"):
+        page = _page(name)
+        axes = {f for v in _data_visuals(page) for role, fs in v.roles.items()
+                if role not in ("Values", "Y", "Y2", "Tooltips") for f in fs if f.kind == "column"}
+        assert axes - {col("Date", "Year Month Name")} <= drill, (name, axes - drill)
+
+
+def test_record_list_contents():
+    """Movements: one row per action (date, kind, from and to branch); absences: counted entries by start date with
+    their end date and days; leave: the balance per person and plan; pay lines: month, pay category, gross pay and
+    cost, with the pay notice. Departments and positions prefix-free (R30)."""
+    def values(n):
+        (table,) = [v for v in _page(n).visuals if v.sample == "table"]
+        return table.roles["Values"]
+    assert {DATE, col("Worker Action", "Movement Group"), col("Worker Action", "Action Name"),
+            col("From Branch", "Branch Name"), BRANCH_NAME, DEPARTMENT_BASE, POSITION_BASE, meas("Movements")
+            } <= set(values("movement_list"))
+    assert {DATE, meas("HR Absence End Date"), col("Absence Type", "Absence Type Name"),
+            meas("HR Absence Entry Days")} <= set(values("absence_list"))
+    assert {col("Leave Balances", "Absence Plan Name"), meas("HR Leave Entry Balance")} <= set(values("leave_list"))
+    assert {col("Date", "Year Month Name"), col("Pay Category", "Pay Category"), meas("Gross Pay"),
+            meas("Payroll Cost")} <= set(values("pay_list"))
+    assert [v for v in _page("pay_list").visuals if v.roles.get("Values") == [PAY_NOTICE]]

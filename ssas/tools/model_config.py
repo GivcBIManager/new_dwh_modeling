@@ -44,7 +44,7 @@ TABLES = [
     Table("ssas_dim_store", "Store", "dim", "Stores and subinventories with store type."),
     Table("ssas_dim_movement_type", "Movement Type", "dim", "Stock movement types with direction and consumption flag."),
     Table("ssas_dim_employee", "Employee", "dim", "Fusion workers (current state) with age and tenure bands."),
-    Table("ssas_dim_employee_pii", "Employee Details", "dim", "Employee names; visible only to users with pay access, for their branches."),
+    Table("ssas_dim_employee_pii", "Employee Details", "dim", "Employee names and personal details (birth date, marital status, email, phone, national ID); visible only to users with pay access, for their branches."),
     Table("ssas_dim_hr_department", "HR Department", "dim", "Fusion HR departments with unified department."),
     Table("ssas_dim_job", "Job", "dim", "Fusion jobs."),
     Table("ssas_dim_grade", "Grade", "dim", "Fusion grades."),

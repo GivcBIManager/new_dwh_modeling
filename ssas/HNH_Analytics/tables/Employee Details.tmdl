@@ -1,4 +1,4 @@
-/// Employee names; visible only to users with pay access, for their branches.
+/// Employee names and personal details (birth date, marital status, email, phone, national ID); visible only to users with pay access, for their branches.
 table 'Employee Details'
 
 	column 'Employee Key'
@@ -19,6 +19,32 @@ table 'Employee Details'
 		dataType: string
 		summarizeBy: none
 		sourceColumn: full_name
+
+	column 'Birth Date'
+		dataType: dateTime
+		formatString: yyyy-mm-dd
+		summarizeBy: none
+		sourceColumn: birth_date
+
+	column 'Marital Status'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: marital_status
+
+	column 'Email Address'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: email_address
+
+	column 'Phone Number'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: phone_number
+
+	column 'National ID'
+		dataType: string
+		summarizeBy: none
+		sourceColumn: national_id
 
 	partition 'Employee Details' = m
 		source =

@@ -101,8 +101,10 @@ GUIDE_SECTIONS = [
         "Home: the headline figures. Story: one sentence and one chart per area. Scorecard: every KPI and its "
         "status. Details: six pages of breakdowns. Data quality and Guide.",
         "On the Scorecard, select a KPI row, then Drill through to KPI detail.",
-        "Right-click a branch or department bar, then Drill through > Employee list, to see the people. Back "
-        "returns to the page you came from.",
+        "Right-click a bar, a matrix cell or a row, then Drill through, for the records behind it: Employee list "
+        "(people, with their work, personal and pay details), Movement records, Absence records, Leave balance "
+        "records or Pay lines. Names, personal details and pay show to users with pay access. Back returns to the "
+        "page you came from.",
         "Charts with arrows drill down a level: branch, then location; department, then job, position and grade; "
         "absence category, then type.",
         "Click a bar or a cell to filter the rest of the page; click it again to clear."]),

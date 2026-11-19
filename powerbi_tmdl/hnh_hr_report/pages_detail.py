@@ -1,4 +1,5 @@
-"""The six detail pages under the Details tab (spec "Pages" 4) and the hidden Employee list (spec "Pages" 7).
+"""The six detail pages under the Details tab (spec "Pages" 4), the hidden Employee list (spec "Pages" 7) and the
+other hidden record lists (Movements, Absences, Leave balances, Pay lines; user request 2026-11-19).
 
 Each detail page has the frame with the Details tab current and Branch, Dates and Last closed month in the filter
 bar; in the content box the six sub-tabs, the page's own slicers, then sections. A section has a heading (title, a
@@ -52,8 +53,8 @@ Rules the pages keep:
   2026-11-05); the model's measure is still Open Openings.
 - Fusion leaver measures are labelled "in Fusion"; the headline turnover is [BSC Turnover]. Labels are this repo's.
 
-Employee list (hidden): drill-through on 'Branch'[Branch Name] and 'HR Department'[Department Base Name] (the
-detail charts' axes) with "keep all filters" off: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker
+Employee list (hidden): drill-through on the Headcount & mix page's axes (PEOPLE_DRILL: branch, the prefix-free
+department and position, job, grade, location, and the Headcount gender, Saudi, age band, tenure band and part-time columns) with "keep all filters" off: a source visual's own filters ('HR KPI', 'Pay Category', 'Worker
 Action') would make [Headcount] return its guard message. The dates and the other selections arrive through the
 page's slicers, synced with the detail pages'. One table (worker number, person number, name, Oasis staff ID,
 branch, department, job, grade, hire date, status, headcount), filtered to [Headcount] not blank (ruling R4):
@@ -759,38 +760,149 @@ def detail_pages() -> list[Page]:
             productivity_page()]
 
 
-# ---- Employee list ------------------------------------------------------------------------------------------------
 
-def employee_list_page() -> Page:
-    """Hidden drill-through on branch and the prefix-free department (keep all filters off; see the module
-    docstring)."""
+
+# ---- Record lists -------------------------------------------------------------------------------------------------
+# Hidden drill-throughs to the records behind a chart (user request 2026-11-19: "drill through from all pages to the
+# record level"): People (the Employee list), Movements, Absences, Leave balances and Pay lines. Each takes the fields
+# its source page's charts group by as drill fields, with "keep all filters" off (a source visual's own filters would
+# make the list's measures return their guard message); the dates and the other selections arrive through the
+# page's slicers, synced with the detail pages'. A list groups by columns of its own fact and of the dimensions
+# related to it, which stays fast (under a second for a year); the People list groups by Employee columns only
+# (see the module docstring) and reads the rest through [HR Employee ...] measures. Personal details and pay are
+# measures too: blank without pay access, as the name.
+
+MOVEMENT_LIST, ABSENCE_LIST, LEAVE_LIST, PAY_LIST = "movement_list", "absence_list", "leave_list", "pay_list"
+WORKER = col("Employee", "Worker Number")
+PERSON = col("Employee", "Person Number")
+
+
+def _person(name: Field = EMPLOYEE_NAME) -> list[tuple[Field, str]]:
+    """The person columns of a record list. `name`: the list's name measure, blank where the row has no record
+    ([HR Movement Name] ...): [HR Employee Name] does not depend on the list's fact, so on a list grouped by several
+    tables it would fill every combination of their columns (minutes, and rows that are not records)."""
+    return [(WORKER, "Worker number"), (PERSON, "Person number"), (name, "Name (pay access)")]
+
+DAY = col("Date", "Date")
+MOVEMENT_GROUP = col("Worker Action", "Movement Group")
+ACTION_NAME = col("Worker Action", "Action Name")
+ACTION_REASON = col("Worker Action", "Action Reason Name")
+# the People list's drill fields: the Headcount & mix page's axes (its band, nationality, gender and part-time
+# charts are on Headcount columns, which reach the list through [Headcount])
+PEOPLE_DRILL = [BRANCH_NAME, DEPARTMENT, JOB, POSITION, GRADE, LOCATION, col("Headcount", "Gender"),
+                col("Headcount", "Is Saudi"), col("Headcount", "Age Band"), col("Headcount", "Tenure Band"),
+                col("Headcount", "Is Part Time")]
+MOVEMENT_DRILL = [BRANCH_NAME, FROM_BRANCH, DEPARTMENT, MOVEMENT_GROUP, ACTION_NAME, ACTION_REASON,
+                  col("Employee", "Tenure Band")]
+ABSENCE_DRILL = [BRANCH_NAME, ABSENCE_CATEGORY, ABSENCE_TYPE]
+LEAVE_DRILL = [BRANCH_NAME, LEAVE_PLAN]
+PAY_DRILL = [BRANCH_NAME, DEPARTMENT, GRADE, PAY_GROUP, PAY_CATEGORY]
+# (page name, display name, drill fields): the record lists, in PAGES order
+RECORD_PAGES = [(EMPLOYEE_LIST, "Employee list", PEOPLE_DRILL), (MOVEMENT_LIST, "Movement records", MOVEMENT_DRILL),
+                (ABSENCE_LIST, "Absence records", ABSENCE_DRILL), (LEAVE_LIST, "Leave balance records", LEAVE_DRILL),
+                (PAY_LIST, "Pay lines", PAY_DRILL)]
+NO_TOTAL = {"total": [{"properties": {"totals": _lit(False)}}]}  # a list of records has no total
+
+
+def _record_page(name: str, title: str, fields: list[tuple[Field, str]], slicers: list[tuple[Field, str]],
+                 row_filters: list[Filter] = (), sort: Field | None = None, sort_dir: str = "asc",
+                 pay: bool = False) -> Page:
+    """A hidden drill-through: the frame with a Back button, the list's slicers, one table of records."""
+    display, drill = next((d, dr) for n, d, dr in RECORD_PAGES if n == name)
     bar = filters()
     back = bsc.back_button(BAR_X, BAR_BUTTON_Y, BACK_W, BAR_BUTTON_H)
     visuals = page_frame(None, bar + [back])
-    own_slicers = _slicer_row(WORKFORCE_SLICERS, Y0)
+    own_slicers = _slicer_row(slicers, Y0)
     y = Y0 + SLICER_H + GAP
-    worker = col("Employee", "Worker Number")
-    # [HR Employee Name] is blank for every row without pay access, and a table keeps only the rows where one of its
-    # measures is not blank: [Headcount] (1 a person) is a column too, so the rows stay. Grouped by Employee columns
-    # only; the other attributes are measures through the month's headcount row (fast; see the module docstring)
+    table = Visual("table", X0, y, W0, CONTENT_END - y, roles={"Values": [f for f, _ in fields]}, title=title,
+                   labels=dict(fields), filters=list(row_filters), sort=sort or fields[0][0], sort_dir=sort_dir,
+                   props=NO_TOTAL)
+    visuals += own_slicers + [table]
+    if pay:  # in the table's title band (ruling R31)
+        visuals.append(title_notice(table, PAY_NOTICE.name))
+    page_filters = [branches()]
+    interactions = trend_interactions(bar, [])
+    interactions += _slicer_interactions(bar[:1] + own_slicers, [], [table])
+    interactions += [Interaction(s, t, "NoFilter") for s, t in
+                     _guarded(name, [table], {f.field.table for f in page_filters} | {f.table for f in drill})]
+    return Page(name, display, visuals, filters=page_filters, drill_fields=drill, hidden=True, keep_filters=False,
+                interactions=interactions)
+
+
+def employee_list_page() -> Page:
+    """People in the headcount, one row each, with their work, personal and pay details (see the module docstring)."""
+    # [HR Employee Name] and the personal details are blank for every row without pay access, and a table keeps only
+    # the rows where one of its measures is not blank: [Headcount] (1 a person) is a column too, so the rows stay.
+    # Grouped by Employee columns only; the other attributes are measures through the month's headcount row (fast).
     # Person Number is one per person (4,314 people, 4,276 worker numbers in October 2026): without it the people
     # with no worker number and the same hire date fold into one row
-    fields = [(worker, "Worker number"), (col("Employee", "Person Number"), "Person number"),
-              (EMPLOYEE_NAME, "Name (pay access)"),
-              (meas("HR Employee Staff ID"), "Oasis staff ID"), (meas("HR Employee Hospital"), "Branch"),
-              (meas("HR Employee Department"), "Department"), (meas("HR Employee Job"), "Job"),
-              (meas("HR Employee Grade"), "Grade"), (col("Employee", "Hire Date"), "Hire date"),
-              (col("Employee", "Assignment Status"), "Status"), (HEADCOUNT, "Headcount")]
-    people = Visual("table", X0, y, W0, CONTENT_END - y, roles={"Values": [f for f, _ in fields]},
-                    title="People in the headcount", labels=dict(fields),
-                    filters=[Filter(HEADCOUNT, "notblank")], sort=worker, sort_dir="asc",
-                    props={"total": [{"properties": {"totals": _lit(False)}}]})  # a list of people has no total
-    visuals += own_slicers + [people]
-    page_filters = [branches()]
-    drill = [BRANCH_NAME, DEPARTMENT]
-    interactions = trend_interactions(bar, [])
-    interactions += _slicer_interactions(bar[:1] + own_slicers, [], [people])
-    interactions += [Interaction(s, t, "NoFilter") for s, t in
-                     _guarded(EMPLOYEE_LIST, [people], {f.field.table for f in page_filters} | {f.table for f in drill})]
-    return Page(EMPLOYEE_LIST, "Employee list", visuals, filters=page_filters, drill_fields=drill, hidden=True,
-                keep_filters=False, interactions=interactions)
+    fields = _person() + [
+        (meas("HR Employee Staff ID"), "Oasis staff ID"), (meas("HR Employee Hospital"), "Branch"),
+        (meas("HR Employee Department"), "Department"), (meas("HR Employee Job"), "Job"),
+        (meas("HR Employee Position"), "Position"), (meas("HR Employee Grade"), "Grade"),
+        (meas("HR Employee Location"), "Location"), (col("Employee", "Is Part Time"), "Part time"),
+        (meas("FTE"), "FTE"), (col("Employee", "Gender"), "Gender"), (col("Employee", "Nationality"), "Nationality"),
+        (col("Employee", "Age Band"), "Age band"), (col("Employee", "Tenure Band"), "Tenure band"),
+        (col("Employee", "Hire Date"), "Hire date"), (col("Employee", "Original Hire Date"), "Original hire date"),
+        (col("Employee", "Assignment Status"), "Status"),
+        (meas("HR Employee Birth Date"), "Birth date (pay access)"), (meas("HR Employee Age"), "Age (pay access)"),
+        (meas("HR Employee Marital Status"), "Marital status (pay access)"),
+        (meas("HR Employee Phone"), "Phone (pay access)"), (meas("HR Employee Email"), "Email (pay access)"),
+        (meas("HR Employee National ID"), "National ID (pay access)"),
+        (meas("HR Employee Gross Pay"), "Gross pay (SAR, pay access)"),
+        (meas("HR Employee Payroll Cost"), "Payroll cost (SAR, pay access)"), (HEADCOUNT, "Headcount")]
+    return _record_page(EMPLOYEE_LIST, "People in the headcount", fields, WORKFORCE_SLICERS,
+                        row_filters=[Filter(HEADCOUNT, "notblank")], sort=WORKER)
+
+
+def movement_list_page() -> Page:
+    """Fusion assignment actions, one row each: date, person, kind, from and to branch, organisation."""
+    fields = [(DAY, "Date")] + _person(meas("HR Movement Name")) + [
+        (MOVEMENT_GROUP, "Movement group"), (ACTION_NAME, "Action"), (ACTION_REASON, "Reason"),
+        (FROM_BRANCH, "From branch"), (BRANCH_NAME, "Branch"), (DEPARTMENT, "Department"),
+        (JOB, "Job"), (POSITION, "Position"), (GRADE, "Grade"), (LOCATION, "Location"),
+        (meas("Movements"), "Movements")]
+    return _record_page(MOVEMENT_LIST, "Movements in the selected dates", fields,
+                        [(MOVEMENT_GROUP, "Movement group"), (DEPARTMENT, "Department"), (JOB, "Job"),
+                         (GRADE, "Grade")], sort=DAY, sort_dir="desc")
+
+
+def absence_list_page() -> Page:
+    """Counted absence entries starting in the selected dates, one row each."""
+    fields = [(DAY, "Start date"), (meas("HR Absence End Date"), "End date")] + _person(meas("HR Absence Name")) + [
+        (BRANCH_NAME, "Branch"), (ABSENCE_CATEGORY, "Category"), (ABSENCE_TYPE, "Absence type"),
+        (col("Absences", "Source"), "Source"), (col("Absences", "Absence Status"), "Status"),
+        (meas("HR Absence Entry Days"), "Days")]
+    return _record_page(ABSENCE_LIST, "Absence entries starting in the selected dates (each entry's whole length)",
+                        fields, [(ABSENCE_CATEGORY, "Absence category"), (ABSENCE_TYPE, "Absence type"),
+                                 (col("Absences", "Source"), "Source")], sort=DAY, sort_dir="desc")
+
+
+def leave_list_page() -> Page:
+    """Leave balances at the last closed accrual month of the selection, one row per person and plan."""
+    # [HR Leave Entry Balance] is Leave Balance (days) with the branch's last closed month found once per branch
+    # (0.8 s for the list against 17 s); it adds up to Leave Balance (days)
+    balance = meas("HR Leave Entry Balance")
+    fields = _person(meas("HR Leave Name")) + [
+        (BRANCH_NAME, "Branch"), (LEAVE_PLAN, "Plan"), (LEAVE_SOURCE, "Source"),
+        (balance, "Balance (days)"), (meas("HR Leave Entry Liability"), "Liability (SAR, pay access)")]
+    return _record_page(LEAVE_LIST, "Leave balances at the last closed month of the selection", fields,
+                        [(LEAVE_PLAN, "Plan"), (LEAVE_SOURCE, "Source")],
+                        row_filters=[Filter(balance, "notblank")], sort=WORKER)
+
+
+def pay_list_page() -> Page:
+    """Payroll lines by month, person and pay category (pay access)."""
+    fields = [(YEAR_MONTH, "Month")] + _person(meas("HR Pay Name")) + [
+        (BRANCH_NAME, "Branch"), (DEPARTMENT, "Department"), (GRADE, "Grade"),
+        (PAY_GROUP, "Pay group"), (PAY_CATEGORY, "Pay category"), (col("Payroll", "Source"), "Source"),
+        (col("Payroll", "Payroll Status"), "Payroll status"), (meas("Gross Pay"), "Gross pay (SAR)"),
+        (meas("Payroll Cost"), "Payroll cost (SAR)")]
+    return _record_page(PAY_LIST, "Pay lines in the selected months", fields,
+                        [(DEPARTMENT, "Department"), (GRADE, "Grade"), (PAY_GROUP, "Pay group"),
+                         (PAY_CATEGORY, "Pay category")], sort=WORKER, pay=True)
+
+
+def record_pages() -> list[Page]:
+    """The hidden record lists, in RECORD_PAGES order."""
+    return [employee_list_page(), movement_list_page(), absence_list_page(), leave_list_page(), pay_list_page()]
