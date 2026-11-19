@@ -2414,7 +2414,7 @@ table _Measures
 					CALCULATE (
 						[Fin Net Revenue],
 						REMOVEFILTERS ( 'P&L Line' ),
-						REMOVEFILTERS ( 'P&L Report'[FS Category], 'P&L Report'[FS Caption], 'P&L Report'[FS Line], 'P&L Report'[Account Code], 'P&L Report'[Account Name] )
+						REMOVEFILTERS ( 'P&L Report'[FS Category], 'P&L Report'[FS Caption], 'P&L Report'[FS Line], 'P&L Report'[Account Code], 'P&L Report'[Account Name], 'P&L Report'[FS Caption Name] )
 					)
 				RETURN
 					DIVIDE ( [FR Actual], Revenue )

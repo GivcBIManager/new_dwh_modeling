@@ -79,3 +79,11 @@ def test_chart_measures_are_allowed_under_finance_column_filters():
         assert "Finance Column" in measure.annotations.get("hnh_guard_allow", ""), name
         guard = re.search(r"VAR __Wrong = \[(_Guard [^\]]+)\]", measure.expression).group(1)
         assert "'Finance Column'" not in MEASURES[guard].expression, f"{name} would return guard text under Finance Column"
+
+
+def test_percent_of_revenue_ignores_the_income_statement_rows():
+    # the income statement's rows are P&L Report caption and account columns; revenue must be read across them
+    # or "% Rev" is blank below line level
+    expression = MEASURES["FR % of Revenue"].expression
+    for column in ("FS Caption Name", "Account Name", "FS Caption", "FS Line", "Account Code"):
+        assert f"'P&L Report'[{column}]" in expression, column
