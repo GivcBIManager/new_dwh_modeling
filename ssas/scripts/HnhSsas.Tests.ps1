@@ -71,6 +71,17 @@ Describe 'ConvertTo-HnhOdbcExpression' {
     }
 }
 
+Describe 'Split-HnhTableList' {
+    It 'trims names and drops empty and repeated ones' {
+        $names = Split-HnhTableList ' Survey Responses, Survey Answers ,, survey responses,P&L Report'
+        $names.Count | Should Be 3
+        $names[0] | Should Be 'Survey Responses'
+        $names[2] | Should Be 'P&L Report'
+    }
+    It 'keeps a single name as a list' { (Split-HnhTableList 'Survey Answers').Count | Should Be 1 }
+    It 'is empty (the whole model) for no names' { (Split-HnhTableList '').Count | Should Be 0; (Split-HnhTableList ' , ').Count | Should Be 0 }
+}
+
 Describe 'Test-HnhGate (review focus 5)' {
     $run = Get-Date '2026-10-07 09:30:00'
     It 'opens for a successful run never processed before' { Test-HnhGate -Status 'success' -FinishedAt $run -LastProcessedRunAt $null | Should Be $true }

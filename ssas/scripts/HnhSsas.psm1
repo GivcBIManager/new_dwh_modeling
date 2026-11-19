@@ -67,6 +67,18 @@ function ConvertTo-HnhOdbcExpression {
     return "let`n    Source = Odbc.Query(""dsn=$Dsn"", ""$sql"")`nin`n    Source"
 }
 
+function Split-HnhTableList {
+    # process.ps1 -Tables: comma-separated SSAS table names, trimmed, empty and repeated names dropped (case-insensitive,
+    # as SSAS names are). An empty result means the whole model.
+    param([string]$Tables)
+    $names = @()
+    foreach ($part in ($Tables -split ',')) {
+        $name = $part.Trim()
+        if ($name -and $names -notcontains $name) { $names += $name }
+    }
+    return ,$names
+}
+
 function Test-HnhGate {
     # SSAS spec 9.4: process only the latest successful tag:hnh run, and only once.
     param([string]$Status, [Nullable[datetime]]$FinishedAt, [Nullable[datetime]]$LastProcessedRunAt)
@@ -129,10 +141,13 @@ function Save-HnhModel {
 function Sync-HnhPartitions {
     # Bring every table that has an hnh_partition_column annotation to the partition plan of $Today.
     # -NoSave leaves the changes pending on $Model (no Calculate, no SaveChanges) so the caller commits them in its own single transaction.
-    param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][datetime]$Today, [switch]$DryRun, [switch]$NoRefresh, [switch]$NoSave)
+    # -Tables limits it to those tables (process.ps1 -Tables); empty = every table.
+    param([Parameter(Mandatory = $true)]$Model, [Parameter(Mandatory = $true)][datetime]$Today, [switch]$DryRun, [switch]$NoRefresh, [switch]$NoSave,
+          [string[]]$Tables = @())
     $dataOnly = [Microsoft.AnalysisServices.Tabular.RefreshType]::DataOnly
     $log = @()
     foreach ($table in @($Model.Tables)) {
+        if ($Tables.Count -gt 0 -and $Tables -notcontains $table.Name) { continue }
         $column = Get-HnhAnnotation $table 'hnh_partition_column'
         if (-not $column) { continue }
         $view = Get-HnhAnnotation $table 'hnh_view'
