@@ -36,10 +36,24 @@ def _matrix(page):
     return found[0]
 
 
+def _text_of(v):
+    return "".join(r["value"] for p in v.props["general"][0]["properties"]["paragraphs"] for r in p["textRuns"])
+
+
+def _tile_cards(page):
+    """(label, value card) of each tile: the capitals label text box and the card right under it, in page order."""
+    out = []
+    for t in page.visuals:
+        if t.sample == "textbox" and 170 < t.y < 380 and _text_of(t).isupper():  # under the frame
+            card = [v for v in page.visuals if v.sample == "card" and v.x == t.x and v.y == t.y + t.h]
+            assert len(card) == 1, _text_of(t)
+            out.append((_text_of(t), card[0]))
+    return out
+
+
 def _tile_values(page):
-    """(title, value measure, value filters) of each tile's value card, in page order."""
-    return [(v.title, v.roles["Values"][0], v.filters) for v in page.visuals
-            if v.sample == "card" and v.title and v.title.isupper()]
+    """(label, value measure, value filters) of each tile's value card, in page order."""
+    return [(label, v.roles["Values"][0], v.filters) for label, v in _tile_cards(page)]
 
 
 def _charts(page):
@@ -91,15 +105,15 @@ def test_tiles_per_page():
             assert tiles[2][2] == [Filter(kpi, "eq", ["FR_CURRENT_RATIO"])]
             assert tiles[3][2] == [Filter(kpi, "eq", ["FR_AR_DAYS"])]
     lines = {v.roles["Values"][0].name for p in ps.PAGES for v in p.visuals
-             if v.sample == "card" and not v.title and v.roles.get("Values")}
+             if v.sample == "card" and v.roles.get("Values")}
     for needed in ("FR Tile Out of Balance", "FR Tile Total Assets vs Budget", "FR Tile Total Assets vs LY",
                    "FR Tile Net Revenue vs Budget", "FR Tile EBITDA vs LY", "FR Tile EBITDA Margin vs Budget",
                    "FR Tile Net Profit vs LY", "FR Tile Net Working Capital vs Budget", "FR Tile Current Ratio vs LY",
                    "FR Tile Receivable Days vs Budget"):
         assert needed in lines, needed
     tb = _page("tb_monthly")
-    debit_cards = [v for v in tb.visuals if v.sample == "card" and v.title in ("PERIOD DEBITS", "PERIOD CREDITS")]
-    assert all(v.w > 200 for v in debit_cards)  # no lines: the value takes the tile's width
+    debit_cards = [v for label, v in _tile_cards(tb) if label in ("PERIOD DEBITS", "PERIOD CREDITS")]
+    assert len(debit_cards) == 2 and all(v.w > 200 for v in debit_cards)  # no lines: the value takes the tile's width
 
 
 def test_hospital_pages_have_no_hospital_slicer():
@@ -172,19 +186,24 @@ def test_page_headers_and_the_income_statement_note():
         assert any(v.sample == "textbox" and IS_NOTE in repr(v.props) for v in _page(name).visuals), name
     for p in ps.PAGES:
         m = _matrix(p)
-        heads = [v for v in p.visuals if v.sample == "textbox" and v.y < m.y and v.y > 340]
+        heads = [v for v in p.visuals if v.sample == "textbox" and v.y < m.y and v.y > 380
+                 and "Difference (cutover / unmapped)" not in repr(v.props)]
         assert len(heads) == 1, p.name
 
 
-def test_balance_sheet_difference_card_under_the_matrix():
+def test_balance_sheet_difference_card_at_the_header_right():
+    # under the matrix the card ran off the page (screenshot 2026-11-19): it sits at the header's right, labelled
     for name in ("bs_monthly", "bs_hospitals"):
         p = _page(name)
         m = _matrix(p)
         diff = [v for v in p.visuals if v.roles.get("Values") == [meas("FR BS Difference")]]
         assert len(diff) == 1, name
         d = diff[0]
-        assert d.sample == "card" and d.labels == {meas("FR BS Difference"): "Difference (cutover / unmapped)"}
-        assert abs(d.y - (m.y + m.h)) <= 8 and d.x == m.x and d.y + d.h <= 1080
+        assert d.sample == "card" and d.x + d.w == m.x + m.w and m.y - 60 <= d.y and d.y + d.h <= m.y
+        label = [v for v in p.visuals if v.sample == "textbox" and "Difference (cutover / unmapped)" in repr(v.props)]
+        assert len(label) == 1 and label[0].x + label[0].w <= d.x and abs(label[0].y - d.y) <= 8
+        head = [v for v in p.visuals if v.sample == "textbox" and "Statement of financial position" in repr(v.props)]
+        assert len(head) == 1 and head[0].x + head[0].w <= label[0].x
     for name in ORDER[:4]:
         assert not any(v.roles.get("Values") == [meas("FR BS Difference")] for v in _page(name).visuals)
 

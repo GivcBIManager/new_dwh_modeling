@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "8a8321dcf16d7b9ce2e8",
   "position": {
-    "x": 147.0,
-    "y": 186.0,
+    "x": 38.0,
+    "y": 208.0,
     "z": 19000,
-    "height": 33.0,
-    "width": 129.0,
+    "height": 56.0,
+    "width": 117,
     "tabOrder": 19000
   },
   "visual": {
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FR Tile Total Assets vs Budget"
+                  "Property": "FR Total Assets"
                 }
               },
-              "queryRef": "_Measures.FR Tile Total Assets vs Budget",
-              "nativeQueryRef": "FR Tile Total Assets vs Budget"
+              "queryRef": "_Measures.FR Total Assets",
+              "nativeQueryRef": "FR Total Assets"
             }
           ]
         }
@@ -40,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "22D"
                 }
               }
             },
@@ -55,22 +55,10 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "FR Tile Total Assets vs Budget Colour"
+                    "Literal": {
+                      "Value": "'#0A1E32'"
                     }
                   }
-                }
-              }
-            },
-            "horizontalAlignment": {
-              "expr": {
-                "Literal": {
-                  "Value": "'right'"
                 }
               }
             }
@@ -138,6 +126,40 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
                 }
               }
             }

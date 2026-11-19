@@ -69,7 +69,7 @@ class Visual:
     sort_dir: Literal["desc", "asc"] = "desc"
     date_range: tuple[str, str] | None = None  # slicerDateRange: the saved (from, to) as ISO dates, both inclusive
     labels: dict[Field, str] = field(default_factory=dict)  # a field's name in this visual (a slicer's header)
-    expand: bool = True  # a matrix shows every row level expanded; False: the top level, the others by expand / drill
+    expand: bool | int = True  # a matrix shows every row level expanded; False: the top level; an int: that many levels
 
 
 # How a selection in one visual reaches another on the page (PBIR page schema `VisualInteractionFilterType`).

@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import fin_frame
 from fin_blocks import (LEFT_CHART_RECT, MATRIX_RECT, RIGHT_CHART_RECT, monthly_chart, ranked_bars, statement_matrix,
-                        tile, tile_rects, variance_chart)
+                        text, tile, tile_rects, variance_chart)
 from fin_frame import (INK, MONTH_BAND, MUTED, PERIOD_BAND, SERIES_ACTUAL, SERIES_BUDGET, SERIES_LAST_YEAR, _lit,
-                       no_container)
+                       no_container, tight)
 from model import Field, Filter, Interaction, Page, Visual, col, meas
 
 import hr_frame  # noqa: E402  (on the path through fin_blocks)
@@ -34,8 +34,10 @@ ROWS: dict[str, list[Field]] = {
 }
 CELLS = {"tb": meas("FR TB Cell"), "is": meas("FR IS Cell"), "bs": meas("FR BS Cell")}
 SHORT = {"tb": "TB", "is": "IS", "bs": "BS"}
-# the row levels the matrix should open at (canvas); the generator opens the first only (fin_blocks.statement_matrix)
+# the row levels the matrix opens at (canvas); the others by expand or drill (fin_blocks.statement_matrix)
 EXPAND = {"tb": 2, "is": 2, "bs": 3}
+SERIES_NAMES = ["Actual", "Budget", "Last year"]
+VARIANCE_NAMES = ["vs budget", "vs last year"]
 ROW_BAND = meas("FR Row Band")
 BS_DIFFERENCE = meas("FR BS Difference")
 DIFFERENCE_LABEL = "Difference (cutover / unmapped)"
@@ -68,10 +70,12 @@ BAR_TITLES = {"tb": ("Selected line · closing vs budget by hospital, 100% = on 
               "bs": ("Selected line · actual vs budget by hospital, 100% = on budget",
                      "Selected line · growth vs same date last year")}
 
-# Header and matrix below the tiles and charts (MATRIX_RECT's box): the header, then the matrix; the balance sheet keeps
-# room under the matrix for the Difference card.
-HEADER_H, HEADER_GAP, DIFF_H, DIFF_W, DIFF_GAP = 40, 8, 48, 520, 8
+# Header and matrix below the tiles and charts (MATRIX_RECT's box): the header, then the matrix. The balance sheet's
+# Difference sits at the header's right (under the matrix it ran off the page, screenshot 2026-11-19).
+HEADER_H, HEADER_GAP = 48, 8
+DIFF_LABEL_W, DIFF_VALUE_W, DIFF_H = 250, 150, 30
 _MX, _MY, _MW, _MH = MATRIX_RECT
+DIFF_W = DIFF_LABEL_W + DIFF_VALUE_W + 8
 HEADER_RECT = (_MX, _MY, _MW, HEADER_H)
 
 
@@ -119,10 +123,10 @@ def charts(statement: str, view: str) -> list[Visual]:
         return [monthly_chart(LEFT_TITLE[statement] + default,
                               [meas(f"FR Chart {s} Actual"), meas(f"FR Chart {s} Budget"),
                                meas(f"FR Chart {s} Last Year")],
-                              [SERIES_ACTUAL, SERIES_BUDGET, SERIES_LAST_YEAR], LEFT_CHART_RECT),
+                              [SERIES_ACTUAL, SERIES_BUDGET, SERIES_LAST_YEAR], LEFT_CHART_RECT, SERIES_NAMES),
                 variance_chart("Selected line · variance % by month",
                                [meas(f"FR Chart {s} vs Budget %"), meas(f"FR Chart {s} vs LY %")], RIGHT_CHART_RECT,
-                               [PERIOD_BAND, MONTH_BAND])]
+                               [PERIOD_BAND, MONTH_BAND], VARIANCE_NAMES)]
     budget_fav = meas("FR Chart IS vs Budget Colour") if statement == "is" else None
     growth_fav = meas("FR Chart IS vs LY Colour") if statement == "is" else None
     left, right = BAR_TITLES[statement]
@@ -131,7 +135,8 @@ def charts(statement: str, view: str) -> list[Visual]:
 
 
 def header(statement: str, view: str) -> Visual:
-    """The matrix's header: the statement's title in bold ink and its note in muted grey under it."""
+    """The matrix's header: the statement's title in bold ink and its note in muted grey under it (the balance sheet
+    leaves the right DIFF_W px to the Difference)."""
     title, note = HEADERS[(statement, view)]
 
     def run(text: str, size: str, colour: str, weight: str) -> dict:
@@ -139,23 +144,30 @@ def header(statement: str, view: str) -> Visual:
                                                           "fontWeight": weight, "color": colour}}]}
 
     paragraphs = [run(title, "13pt", INK, "bold"), run(note, "10pt", MUTED, "normal")]
-    return Visual("textbox", *HEADER_RECT, props={"general": [{"properties": {"paragraphs": paragraphs}}],
-                                                  **no_container()})
+    x, y, w, h = HEADER_RECT
+    if statement == "bs":
+        w -= DIFF_W + 16
+    return Visual("textbox", x, y, w, h, props={"general": [{"properties": {"paragraphs": paragraphs}}],
+                                                **no_container(), **tight()})
 
 
-def difference_card(matrix: Visual) -> Visual:
-    """The balance sheet's Difference under the matrix: [FR BS Difference] (blank unless the sides and the year's
-    profit differ by 1 SAR or more, e.g. a cutover or unmapped accounts), labelled "Difference (cutover / unmapped)".
-    A matrix cannot add a row no GL row carries, so this card stands for the canvas's grey Difference row."""
-    look = hr_frame.card_look(14, INK, category=True)
-    look["labels"][0]["properties"]["horizontalAlignment"] = _lit("left")
-    return Visual("card", matrix.x, matrix.y + matrix.h + DIFF_GAP, DIFF_W, DIFF_H, roles={"Values": [BS_DIFFERENCE]},
-                  labels={BS_DIFFERENCE: DIFFERENCE_LABEL}, props=look)
+def difference_card() -> list[Visual]:
+    """The balance sheet's Difference at the header's right: the label "Difference (cutover / unmapped)" and
+    [FR BS Difference] (blank unless the sides and the year's profit differ by 1 SAR or more, e.g. a cutover or
+    unmapped accounts). A matrix cannot add a row no GL row carries, so this stands for the canvas's grey Difference
+    row. Returns [label text box, value card]."""
+    x = _MX + _MW - DIFF_W
+    y = _MY + (HEADER_H - DIFF_H) / 2
+    look = hr_frame.card_look(13, INK)
+    look["labels"][0]["properties"]["horizontalAlignment"] = _lit("right")
+    return [text(x, y + 4, DIFF_LABEL_W, DIFF_H - 4, DIFFERENCE_LABEL, 10, MUTED, align="right"),
+            Visual("card", x + DIFF_LABEL_W + 8, y, DIFF_VALUE_W, DIFF_H, roles={"Values": [BS_DIFFERENCE]},
+                   props={**look, **tight()})]
 
 
 def matrix(statement: str, view: str) -> Visual:
     y = _MY + HEADER_H + HEADER_GAP
-    h = _MY + _MH - y - (DIFF_H + DIFF_GAP if statement == "bs" else 0)
+    h = _MY + _MH - y
     if statement == "is":  # R9e: budget figures are blank over several sections, so no grand total row
         return statement_matrix("is", view, ROWS["is"], CELLS["is"], (_MX, y, _MW, h), EXPAND["is"],
                                 grand_total=False, row_band=ROW_BAND)
@@ -175,14 +187,14 @@ def interactions(m: Visual, chart_visuals: list[Visual], cards: list[Visual]) ->
 
 def statement_page(statement: str, view: str) -> Page:
     """One statement page: the frame and filter bar, four tiles, two charts, the header, the matrix (balance sheet:
-    the Difference card under it), on the hospitals page filter."""
+    the Difference at the header's right), on the hospitals page filter."""
     name = fin_frame.PAGE_NAMES[statement][0 if view == "monthly" else 1]
     tile_visuals = tiles(statement)
     chart_visuals = charts(statement, view)
     m = matrix(statement, view)
     content = [*tile_visuals, *chart_visuals, header(statement, view), m]
     if statement == "bs":
-        content.append(difference_card(m))
+        content += difference_card()
     cards = [v for v in content if v.sample == "card"]
     visuals = fin_frame.page_frame(statement, view) + content
     return Page(name, fin_frame.DISPLAY[name], visuals, filters=[fin_frame.hospitals()],

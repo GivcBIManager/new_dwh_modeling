@@ -4412,10 +4412,10 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
-	/// Change against budget of a card's budget line (the vs Bud text of FR KPI Cell); blank when the KPI has no budget, so the card's Budget figure shows the placeholder ('No budget yet' or a dash) once.
+	/// Change against budget of a card's budget line (the vs Bud text of FR KPI Cell); empty text ("", not blank: a card prints "(Blank)") when the KPI has no budget, so the card's Budget figure shows the placeholder ('No budget yet' or a dash) once.
 	measure 'FR KPI Card Budget Change' =
 			VAR __Value = ( -- measure body
-				IF ( NOT ISBLANK ( [FR KPI Budget] ), [FR KPI Cell] )
+				COALESCE ( IF ( NOT ISBLANK ( [FR KPI Budget] ), [FR KPI Cell] ), "" )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
 			RETURN IF ( __Wrong = "", __Value, """FR KPI Card Budget Change"" can't be analysed by " & __Wrong )
@@ -4423,10 +4423,10 @@ table _Measures
 		displayFolder: Finance\Report
 
 		annotation hnh_guard_allow = Finance Column, Finance KPI
-	/// Change against last year of a card's last-year line (the vs LY text of FR KPI Cell); blank when the KPI has no last-year value, so the card's Last year figure shows the placeholder once.
+	/// Change against last year of a card's last-year line (the vs LY text of FR KPI Cell); empty text ("", not blank: a card prints "(Blank)") when the KPI has no last-year value, so the card's Last year figure shows the placeholder once.
 	measure 'FR KPI Card LY Change' =
 			VAR __Value = ( -- measure body
-				IF ( NOT ISBLANK ( [FR KPI Last Year] ), [FR KPI Cell] )
+				COALESCE ( IF ( NOT ISBLANK ( [FR KPI Last Year] ), [FR KPI Cell] ), "" )
 			) -- end of measure body
 			VAR __Wrong = [_Guard Finance Budget + GL FS Monthly + P&L Report | Finance Column, Finance KPI]
 			RETURN IF ( __Wrong = "", __Value, """FR KPI Card LY Change"" can't be analysed by " & __Wrong )

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "74ed720568174262aefb",
   "position": {
-    "x": 147.0,
-    "y": 219.0,
+    "x": 155.0,
+    "y": 208.0,
     "z": 20000,
-    "height": 33.0,
-    "width": 129.0,
+    "height": 28.0,
+    "width": 161.0,
     "tabOrder": 20000
   },
   "visual": {
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FR Tile Total Assets vs LY"
+                  "Property": "FR Tile Total Assets vs Budget"
                 }
               },
-              "queryRef": "_Measures.FR Tile Total Assets vs LY",
-              "nativeQueryRef": "FR Tile Total Assets vs LY"
+              "queryRef": "_Measures.FR Tile Total Assets vs Budget",
+              "nativeQueryRef": "FR Tile Total Assets vs Budget"
             }
           ]
         }
@@ -40,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "10D"
                 }
               }
             },
@@ -61,7 +61,7 @@
                           "Entity": "_Measures"
                         }
                       },
-                      "Property": "FR Tile Total Assets vs LY Colour"
+                      "Property": "FR Tile Total Assets vs Budget Colour"
                     }
                   }
                 }
@@ -138,6 +138,40 @@
               "expr": {
                 "Literal": {
                   "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "padding": [
+        {
+          "properties": {
+            "top": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "bottom": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "left": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
+                }
+              }
+            },
+            "right": {
+              "expr": {
+                "Literal": {
+                  "Value": "0D"
                 }
               }
             }
