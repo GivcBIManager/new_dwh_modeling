@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "dc869c82f2bb9b1f9268",
   "position": {
-    "x": 38.0,
-    "y": 310.0,
+    "x": 469.0,
+    "y": 236.0,
     "z": 29000,
-    "height": 56.0,
-    "width": 117,
+    "height": 28.0,
+    "width": 161.0,
     "tabOrder": 29000
   },
   "visual": {
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "EBITDA Margin %"
+                  "Property": "FR Tile EBITDA vs LY"
                 }
               },
-              "queryRef": "_Measures.EBITDA Margin %",
-              "nativeQueryRef": "EBITDA Margin %"
+              "queryRef": "_Measures.FR Tile EBITDA vs LY",
+              "nativeQueryRef": "FR Tile EBITDA vs LY"
             }
           ]
         }
@@ -40,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "22D"
+                  "Value": "10D"
                 }
               }
             },
@@ -55,10 +55,22 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Literal": {
-                      "Value": "'#0A1E32'"
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "FR Tile EBITDA vs LY Colour"
                     }
                   }
+                }
+              }
+            },
+            "horizontalAlignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'right'"
                 }
               }
             }

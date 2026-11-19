@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "4fb6e1a29cce40e4fc36",
   "position": {
-    "x": 826.0,
-    "y": 298,
+    "x": 730.0,
+    "y": 272,
     "z": 54000,
     "height": 24,
-    "width": 116.0,
+    "width": 212.0,
     "tabOrder": 54000
   },
   "visual": {
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FR KPI Card Budget Change"
+                  "Property": "FR KPI Cell"
                 }
               },
-              "queryRef": "_Measures.FR KPI Card Budget Change",
-              "nativeQueryRef": "FR KPI Card Budget Change"
+              "queryRef": "_Measures.FR KPI Cell",
+              "nativeQueryRef": "FR KPI Cell"
             }
           ]
         }
@@ -55,13 +55,8 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "_Measures"
-                        }
-                      },
-                      "Property": "FR KPI Cell Colour"
+                    "Literal": {
+                      "Value": "'#0A1E32'"
                     }
                   }
                 }
@@ -70,7 +65,7 @@
             "horizontalAlignment": {
               "expr": {
                 "Literal": {
-                  "Value": "'right'"
+                  "Value": "'left'"
                 }
               }
             }
@@ -387,7 +382,7 @@
                     [
                       {
                         "Literal": {
-                          "Value": "'vs_bud'"
+                          "Value": "'target'"
                         }
                       }
                     ]

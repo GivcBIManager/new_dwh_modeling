@@ -191,7 +191,7 @@ def interactions(visuals: list[Visual], m: Visual, sparks: list[Visual]) -> list
     slicers do not reach the sparklines (R4; the Hospital slicer does); clicks in the content leave the frame alone."""
     data = [v for v in visuals if v.y > 170 and v.sample in ("card", "lineChart", "matrix")]
     out = [Interaction(s, t, "NoFilter") for s in [m, *sparks] for t in data if t is not s]
-    slicers = [v for v in visuals if v.sample == "slicerTile" and BRANCH_NAME not in v.roles["Values"]]
+    slicers = [v for v in visuals if v.sample.startswith("slicer") and BRANCH_NAME not in v.roles["Values"]]
     assert len(slicers) == 2 and {v.roles["Values"][0] for v in slicers} == {YEAR_PICK, MONTH_SHORT}
     out += [Interaction(s, sp, "NoFilter") for s in slicers for sp in sparks]
     return out + fin_frame.isolate_from_frame([m, *sparks], visuals)

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "5802a105ffa84c0439bd",
   "position": {
-    "x": 1135.5,
+    "x": 738.0,
     "y": 0,
     "z": 3000,
     "height": 80,
-    "width": 178.5,
+    "width": 84.0,
     "tabOrder": 3000
   },
   "visual": {
@@ -29,7 +29,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Trial Balance'"
+                  "Value": "'Home'"
                 }
               }
             },
@@ -38,7 +38,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#FFFFFF'"
+                      "Value": "'#C3CEDB'"
                     }
                   }
                 }
@@ -63,35 +63,10 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "92D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ],
@@ -143,7 +118,7 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'tb_monthly'"
+                  "Value": "'home'"
                 }
               }
             }

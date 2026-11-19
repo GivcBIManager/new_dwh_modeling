@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "4309d34f2ece179b74e1",
   "position": {
-    "x": 352.0,
+    "x": 155.0,
     "y": 310.0,
     "z": 29000,
-    "height": 56.0,
-    "width": 117,
+    "height": 28.0,
+    "width": 161.0,
     "tabOrder": 29000
   },
   "visual": {
@@ -23,11 +23,11 @@
                       "Entity": "_Measures"
                     }
                   },
-                  "Property": "FR Total Assets"
+                  "Property": "FR Tile Out of Balance"
                 }
               },
-              "queryRef": "_Measures.FR Total Assets",
-              "nativeQueryRef": "FR Total Assets"
+              "queryRef": "_Measures.FR Tile Out of Balance",
+              "nativeQueryRef": "FR Tile Out of Balance"
             }
           ]
         }
@@ -40,7 +40,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "22D"
+                  "Value": "10D"
                 }
               }
             },
@@ -55,10 +55,22 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Literal": {
-                      "Value": "'#0A1E32'"
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "FR Tile Out of Balance Colour"
                     }
                   }
+                }
+              }
+            },
+            "horizontalAlignment": {
+              "expr": {
+                "Literal": {
+                  "Value": "'right'"
                 }
               }
             }

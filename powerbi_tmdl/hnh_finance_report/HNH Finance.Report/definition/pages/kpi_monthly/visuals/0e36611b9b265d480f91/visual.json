@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "0e36611b9b265d480f91",
   "position": {
-    "x": 74.0,
-    "y": 188,
+    "x": 1640,
+    "y": 128,
     "z": 19000,
     "height": 24,
-    "width": 240.0,
+    "width": 250,
     "tabOrder": 19000
   },
   "visual": {
@@ -19,15 +19,16 @@
               {
                 "textRuns": [
                   {
-                    "value": "Net revenue growth",
+                    "value": "SAR '000",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
-                      "fontSize": "11pt",
-                      "fontWeight": "bold",
-                      "color": "#0A1E32"
+                      "fontSize": "10pt",
+                      "fontWeight": "normal",
+                      "color": "#4D5B6B"
                     }
                   }
-                ]
+                ],
+                "horizontalTextAlignment": "right"
               }
             ]
           }

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "59c550ace57f8f01a28d",
   "position": {
-    "x": 30.0,
-    "y": 96,
+    "x": 1732.5,
+    "y": 0,
     "z": 10000,
-    "height": 54,
-    "width": 110,
+    "height": 80,
+    "width": 157.5,
     "tabOrder": 10000
   },
   "visual": {
@@ -29,7 +29,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Monthly'"
+                  "Value": "'Definitions'"
                 }
               }
             },
@@ -38,9 +38,16 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#0A1E32'"
+                      "Value": "'#C3CEDB'"
                     }
                   }
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
                 }
               }
             }
@@ -69,42 +76,10 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
-          }
-        },
-        {
-          "properties": {
-            "lineColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#0A1E32'"
-                    }
-                  }
-                }
-              }
-            },
-            "weight": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ]
@@ -143,7 +118,7 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'tb_monthly'"
+                  "Value": "'definitions'"
                 }
               }
             }

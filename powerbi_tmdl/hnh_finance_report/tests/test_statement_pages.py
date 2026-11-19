@@ -63,10 +63,10 @@ def _charts(page):
 def test_six_statement_pages_in_order():
     assert [p.name for p in ps.PAGES] == ORDER
     report = _fin_pages().PAGES
-    assert [p.name for p in report][:6] == ORDER
-    for p in report[:6]:
+    assert [p.name for p in report][1:7] == ORDER  # after Home
+    for p in report[1:7]:
         assert any(v.sample == "matrix" for v in p.visuals), p.name
-    assert [p.name for p in report][6:] == ["kpi_monthly", "kpi_hospitals"]
+    assert [p.name for p in report][7:] == ["kpi_monthly", "kpi_hospitals", "guide", "definitions"]
 
 
 def test_matrix_rows_per_page():

@@ -1,10 +1,15 @@
 """The Finance report's frame and filter bar, on the BSC generator's modules (powerbi_tmdl/hnh_bsc_report: frame, model,
 pbir; the look is the design canvas's, plan Task 13).
 
-    FIN_FRAME, FIN_REPORT   the frame (title, four tabs) and the report (name, perspective, theme, logo)
+    FIN_FRAME, FIN_REPORT   the frame (title, seven tabs) and the report (name, perspective, theme, logo)
     PAGE_NAMES              statement -> (monthly page, hospitals page); display names in DISPLAY
     page_frame(st, view)    the BSC frame with the statement's tab current and the filter bar
     filter_bar(st, view)    view buttons, Hospital slicer (monthly) or the hospitals note, Year, Month, period text
+    home_frame(), text_frame(name)   the frame of the Home page (filter bar without view buttons) and of the How to
+                            use and Definitions pages (no filter bar)
+
+Every page but Home is hidden: the tabs and the Monthly / Hospitals buttons are the navigation (user request
+2026-11-19). The slicers are drop-downs and sync across pages (one sync group per field, pbir).
     hospitals()             the page filter Branch[Branch Key] in 1..8, locked in view mode on every page
 
 Labels here are this repo's (not title-cased). Colours are the canvas's (global constraints of the plan).
@@ -54,8 +59,10 @@ PLACEHOLDER_GREY = "#9AA7B5"
 
 # ---- frame and report ---------------------------------------------------------------------------------------------
 
-TABS: list[tuple[str, str]] = [("tb_monthly", "Trial Balance"), ("is_monthly", "Income Statement"),
-                               ("bs_monthly", "Balance Sheet"), ("kpi_monthly", "KPIs & Ratios")]
+HOME, GUIDE, DEFINITIONS = "home", "guide", "definitions"
+TABS: list[tuple[str, str]] = [(HOME, "Home"), ("tb_monthly", "Trial Balance"), ("is_monthly", "Income Statement"),
+                               ("bs_monthly", "Balance Sheet"), ("kpi_monthly", "KPIs & Ratios"),
+                               (GUIDE, "How to use"), (DEFINITIONS, "Definitions")]
 FIN_FRAME = frame.FrameSpec("Finance Report", "Hayat Healthcare", TABS, [], logo=LOGO.name)
 FIN_REPORT = ReportSpec("HNH Finance", "Finance Report", THEME, LOGO, custom_visual=False, cross_filter=True)
 
@@ -66,6 +73,7 @@ DISPLAY: dict[str, str] = {}
 for _st, (_m, _h) in PAGE_NAMES.items():
     DISPLAY[_m] = STATEMENT_NAMES[_st]
     DISPLAY[_h] = f"{STATEMENT_NAMES[_st]} · Hospitals"
+DISPLAY.update({HOME: "Home", GUIDE: "How to use", DEFINITIONS: "Definitions"})
 VIEWS = (("monthly", "Monthly"), ("hospitals", "Hospitals"))
 
 BRANCH_NAME = col("Branch", "Branch Name")
@@ -85,9 +93,11 @@ PAST_YEARS = Filter(YEAR_OFFSET, "in", list(range(0, 19)))
 
 # Filter bar rects (the frame's bar is y 84..162; controls 96..150)
 VIEW_W, VIEW_GAP, BAR_Y, BAR_H = 110, 6, 96, 54
-HOSPITAL_RECT: Rect = (275, 90, 540, 66)
-YEAR_RECT: Rect = (830, 90, 300, 66)
-MONTH_RECT: Rect = (1145, 90, 480, 66)
+# drop-down slicers (user request 2026-11-19): header over the box
+HOSPITAL_RECT: Rect = (275, 92, 330, 62)
+YEAR_RECT: Rect = (620, 92, 220, 62)
+MONTH_RECT: Rect = (855, 92, 300, 62)
+HOME_NOTE_RECT: Rect = (30, 100, 230, 46)
 PERIOD_RECT: Rect = (1640, 94, 250, 34)
 UNIT_RECT: Rect = (1640, 128, 250, 24)
 PERIOD_PT = 13
@@ -183,10 +193,37 @@ def nav_button(page_name: str, label: str, x: float, w: float, current: bool) ->
     return Visual("buttonNavigate", x, BAR_Y, w, BAR_H, props={**props, **no_container()})
 
 
+def dropdown_look() -> dict:
+    """The drop-down slicers' look (the BSC report's: small grey header, #CBD3DC border, radius 6), items in ink."""
+    return {**bsc.dropdown_look(), "items": [{"properties": {"textSize": _num(11), "fontColor": _colour(INK)}}]}
+
+
+def hospital_slicer(rect: Rect = HOSPITAL_RECT) -> Visual:
+    """The Hospital drop-down: multi-select with Select all, the eight hospitals."""
+    return Visual("slicerDropdown", *rect, roles={"Values": [BRANCH_NAME]}, filters=[hospitals()],
+                  props={**bsc.select_all_selection(), **dropdown_look()}, labels={BRANCH_NAME: "Hospital"})
+
+
+def date_slicers() -> list[Visual]:
+    """The Year drop-down (single select, saved on "Current year", the years from 2022 up to the current one, newest
+    first) and the Month drop-down (multi-select with Select all, nothing saved: every month of the year to date)."""
+    return [Visual("slicerDropdown", *YEAR_RECT, roles={"Values": [YEAR_PICK]}, filters=[YEARS_OFFERED, PAST_YEARS],
+                   sort=YEAR_PICK, sort_dir="desc",
+                   props={**single_selection(), **dropdown_look(), **saved_selection(YEAR_PICK, CURRENT_YEAR)},
+                   labels={YEAR_PICK: "Year"}),
+            Visual("slicerDropdown", *MONTH_RECT, roles={"Values": [MONTH_SHORT]},
+                   props={**bsc.select_all_selection(), **dropdown_look()}, labels={MONTH_SHORT: "Month"})]
+
+
+def period_visuals() -> list[Visual]:
+    """The period text and the unit, at the bar's right."""
+    return [Visual("card", *PERIOD_RECT, roles={"Values": [PERIOD_TEXT]}, props=period_look()),
+            Visual("textbox", *UNIT_RECT, props=_text_props("SAR '000", "10pt", MUTED, align="right"))]
+
+
 def filter_bar(statement: str, view: str) -> list[Visual]:
     """The filter bar's visuals. `view`: "monthly" or "hospitals". View buttons to the twin pages; on a monthly page the
-    Hospital tile slicer (multi-select, Select all on), on a hospitals page a note; the Year tile slicer (single select,
-    saved on "Current year", the years from 2022 up to the current one, newest first), the Month tile slicer (multi-select, nothing saved), the period text
+    Hospital drop-down, on a hospitals page a note; the Year and Month drop-downs (date_slicers), the period text
     and the unit."""
     if view not in dict(VIEWS):
         raise ValueError(f"view must be 'monthly' or 'hospitals', got {view!r}")
@@ -195,20 +232,12 @@ def filter_bar(statement: str, view: str) -> list[Visual]:
         out.append(nav_button(page, label, x, VIEW_W, name == view))
         x += VIEW_W + VIEW_GAP
     if view == "monthly":
-        out.append(Visual("slicerTile", *HOSPITAL_RECT, roles={"Values": [BRANCH_NAME]}, filters=[hospitals()],
-                          props={**bsc.select_all_selection(), **tile_look()}, labels={BRANCH_NAME: "Hospital"}))
+        out.append(hospital_slicer())
     else:
-        out.append(Visual("textbox", *HOSPITAL_RECT,
-                          props=_text_props("All eight, side by side with the total", "12pt", INK, "bold")))
-    out.append(Visual("slicerTile", *YEAR_RECT, roles={"Values": [YEAR_PICK]}, filters=[YEARS_OFFERED, PAST_YEARS],
-                      sort=YEAR_PICK, sort_dir="desc",
-                      props={**single_selection(), **tile_look(), **saved_selection(YEAR_PICK, CURRENT_YEAR)},
-                      labels={YEAR_PICK: "Year"}))
-    out.append(Visual("slicerTile", *MONTH_RECT, roles={"Values": [MONTH_SHORT]},
-                      props={**multi_selection(), **tile_look()}, labels={MONTH_SHORT: "Month"}))
-    out.append(Visual("card", *PERIOD_RECT, roles={"Values": [PERIOD_TEXT]}, props=period_look()))
-    out.append(Visual("textbox", *UNIT_RECT, props=_text_props("SAR '000", "10pt", MUTED, align="right")))
-    return out
+        out.append(Visual("textbox", HOSPITAL_RECT[0], HOSPITAL_RECT[1] + 8, HOSPITAL_RECT[2], 40,
+                          props=_text_props("All eight hospitals, side by side with the total", "11pt", INK, "bold")))
+    out += date_slicers()
+    return out + period_visuals()
 
 
 def period_look() -> dict:
@@ -223,6 +252,21 @@ def period_look() -> dict:
 def page_frame(statement: str, view: str) -> list[Visual]:
     """The BSC frame with the Finance title and tabs, the statement's tab current, and filter_bar(statement, view)."""
     return frame.frame(PAGE_NAMES[statement][0], filter_bar(statement, view), spec=FIN_FRAME)
+
+
+def home_frame() -> list[Visual]:
+    """The Home page's frame: its tab current; the filter bar with a note where the view buttons sit, the Hospital,
+    Year and Month drop-downs (synced with every page's) and the period text."""
+    note = Visual("textbox", *HOME_NOTE_RECT,
+                  props=_text_props("Your picks follow you to every page", "10pt", MUTED, align="left"))
+    return frame.frame(HOME, [note, hospital_slicer(), *date_slicers(), *period_visuals()], spec=FIN_FRAME)
+
+
+def text_frame(name: str) -> list[Visual]:
+    """The frame of a text page (How to use, Definitions): its tab current, no filter bar."""
+    if name not in (GUIDE, DEFINITIONS):
+        raise ValueError(f"text pages: {GUIDE}, {DEFINITIONS}; got {name!r}")
+    return frame.frame(name, [], filter_bar=False, spec=FIN_FRAME)
 
 
 def frame_targets(visuals: list[Visual]) -> list[Visual]:

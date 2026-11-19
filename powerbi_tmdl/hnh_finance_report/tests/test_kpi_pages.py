@@ -78,7 +78,7 @@ def test_six_cards_f1_to_f6():
 def test_sparkline_is_a_twelve_month_trend_off_the_year_and_month_slicers():
     for name in KPI_PAGES:
         p = _page(name)
-        slicers = [v for v in p.visuals if v.sample == "slicerTile"]
+        slicers = [v for v in p.visuals if v.sample.startswith("slicer")]
         hospital = [v for v in slicers if BRANCH_NAME in v.roles["Values"]]
         year, month = [v for v in slicers if BRANCH_NAME not in v.roles["Values"]]
         assert (len(hospital) == 1) == (name == "kpi_monthly")
@@ -163,7 +163,7 @@ def test_the_matrix_and_sparklines_filter_nothing_on_the_content():
 
 
 def test_content_clicks_leave_the_period_card_and_slicers_alone_on_every_page():
-    pages = _fin_pages().PAGES
+    pages = [p for p in _fin_pages().PAGES if p.name not in ("home", "guide", "definitions")]
     assert len(pages) == 8
     for p in pages:
         frame = [v for v in p.visuals if v.sample.startswith("slicer") or
@@ -196,6 +196,6 @@ def test_fields_in_perspective_and_cards_bind_visible_measures_only():
 
 def test_report_has_the_kpi_pages_in_place():
     pages = _fin_pages().PAGES
-    assert [p.name for p in pages][6:] == list(KPI_PAGES)
-    for p in pages[6:]:
+    assert [p.name for p in pages][7:9] == list(KPI_PAGES)
+    for p in pages[7:9]:
         assert any(v.sample == "matrix" for v in p.visuals)

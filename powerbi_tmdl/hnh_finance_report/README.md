@@ -1,15 +1,18 @@
 # HNH Finance report
 
 Power BI report "HNH Finance" on the `Finance Report` perspective, generated with the BSC generator's modules
-(`../hnh_bsc_report`), like `../hnh_hr_report`. Eight pages (a monthly and a hospitals view of the Trial Balance,
-Income Statement, Balance Sheet and KPIs & Ratios), each with the frame (`fin_frame.py`): four tabs, the view buttons,
-the Hospital / Year / Month tile slicers and the period text. Every page carries the locked page filter
-`Branch[Branch Key]` in 1..8 (hospitals only).
+(`../hnh_bsc_report`), like `../hnh_hr_report`. Eleven pages: Home (`pages_home.py`, the page the report opens on:
+headline tiles, a card per statement with its two views), a monthly and a hospitals view of the Trial Balance, Income
+Statement, Balance Sheet and KPIs & Ratios, then How to use and Definitions (`pages_home.py`; the KPI formulas in
+`KPI_DEFINITIONS`, kept in step with `dim_finance_kpi.sql` by a test). Every page has the frame (`fin_frame.py`): seven
+tabs (Home, the four statements, How to use, Definitions); the statement pages add the view buttons, the Hospital /
+Year / Month drop-down slicers (synced across pages) and the period text. Every page but Home is hidden: the tabs and
+buttons are the navigation. Every page carries the locked page filter `Branch[Branch Key]` in 1..8 (hospitals only).
 
 The trial balance, income statement and balance sheet pages (`pages_statements.py`) add four tiles, two charts
 driven by the matrix row (by month on the monthly pages, by hospital on the hospitals pages), a header and the
 statement matrix (`fin_blocks.py`); the income statement hides its grand total row (R9e) and bands its subtotal lines
-([FR Row Band]); the balance sheet shows [FR BS Difference] in a card under the matrix.
+([FR Row Band]); the balance sheet shows [FR BS Difference] at the right of the matrix's header.
 
     python powerbi_tmdl/hnh_finance_report/build.py [--database HNH_Analytics_Test]
     python -m pytest powerbi_tmdl/hnh_finance_report
@@ -33,7 +36,7 @@ In this order. Every step except the read-only ones needs the user's go-ahead at
 - **G1 ClickHouse.** `powershell -ExecutionPolicy Bypass -File scripts\finance_config\apply_finance_config.ps1` (`-DryRun` first). It creates the two empty config tables `map_finance_budget` and `map_finance_target` (`docs/finance_config.md`). A write to production ClickHouse.
 - **G2 dbt** (the user, in the receiving project, off-hours, `--threads 1`): `dbt build --select stg_bsc__oasis_gl_line stg_bsc__oasis_gl_account fact_gl_fs_monthly+ fact_pl_report_monthly+ dim_pl_report_line+ stg_ref__finance_budget+ stg_ref__finance_target+ dim_finance_kpi+ dim_finance_column+ dim_date+`. It must end with ERROR=0: the unit and yml tests run, among them `assert_gl_fs_debit_credit_ties`, `assert_pl_line_budget_link`, `assert_pl_report_ties_to_gl` and the title-case test. Then run `python ssas/tools/generate.py` against ClickHouse (read-only; not `--from-contracts`), so the sort-by pairs are validated against the real views. `generate.py` writes the model's TMDL files into `ssas/HNH_Analytics` (tables, relationships, perspectives): read `git diff ssas/HNH_Analytics` to compare with the hand-written contracts, and run `generate.py --from-contracts` again if they differ.
 - **G3 test slot.** `deploy.ps1 -Stage TestMeasures`, which loads only the partitions not yet processed (new tables). Tables that already hold data (`GL FS Monthly`, `P&L Report`, `P&L Line`, `Finance *`, `Date`) are refreshed by `powershell -ExecutionPolicy Bypass -File ssas\scripts\process.ps1 -Database HNH_Analytics_Test -Mode Daily -Force` (`process.ps1` takes no table list; it refreshes the daily partitions and the small tables). Read-only checks: `python ssas/tools/check_measure_sql.py`, then `test.ps1` one stage per run (`-Stage Measures` for the finance, BSC and HR checks, then `-Stage Security`). Then compare the scorecard before and after the unified definitions (`ssas/README.md`, "Finance report"): `ssas/scripts/compare_bsc_actuals.ps1 -Database HNH_Analytics_Test -YearMonth 202610 -Out C:\HNH\finance\bsc_after.csv`, then `-Compare C:\HNH\finance\bsc_before.csv,C:\HNH\finance\bsc_after.csv` (one comma-separated pair, no space). Before-snapshots exist for 202610 and 202609; October's GL is thin, so read 202609 too. Show the user the table before production.
-- **G4 upload.** Build, convert, `check_upload_rules` returns `[]`, open in Desktop for Report Server, upload (Route above). Take screenshots of the eight pages against the canvas.
+- **G4 upload.** Build, convert, `check_upload_rules` returns `[]`, open in Desktop for Report Server, upload (Route above). Take screenshots of the pages against the canvas.
 - **G5 production** (separate, later). `deploy.ps1 -Stage Promote`, rebuild with `--database HNH_Analytics`, upload again.
 
 ## Nightly refresh

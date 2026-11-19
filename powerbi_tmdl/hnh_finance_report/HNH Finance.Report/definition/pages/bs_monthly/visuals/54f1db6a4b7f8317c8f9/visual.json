@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "54f1db6a4b7f8317c8f9",
   "position": {
-    "x": 1530.0,
+    "x": 1006.5,
     "y": 0,
     "z": 5000,
     "height": 80,
-    "width": 178.5,
+    "width": 210.0,
     "tabOrder": 5000
   },
   "visual": {
@@ -29,7 +29,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Balance Sheet'"
+                  "Value": "'Income Statement'"
                 }
               }
             },
@@ -38,7 +38,7 @@
                 "color": {
                   "expr": {
                     "Literal": {
-                      "Value": "'#FFFFFF'"
+                      "Value": "'#C3CEDB'"
                     }
                   }
                 }
@@ -63,35 +63,10 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
+                  "Value": "false"
                 }
               }
             }
-          }
-        },
-        {
-          "properties": {
-            "fillColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFFFFF'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "92D"
-                }
-              }
-            }
-          },
-          "selector": {
-            "id": "default"
           }
         }
       ],
@@ -143,7 +118,7 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'bs_monthly'"
+                  "Value": "'is_monthly'"
                 }
               }
             }

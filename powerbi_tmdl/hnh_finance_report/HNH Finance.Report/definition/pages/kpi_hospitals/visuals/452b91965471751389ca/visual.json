@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "452b91965471751389ca",
   "position": {
-    "x": 1498,
-    "y": 431,
+    "x": 24,
+    "y": 422,
     "z": 92000,
-    "height": 30,
-    "width": 214,
+    "height": 48,
+    "width": 1286,
     "tabOrder": 92000
   },
   "visual": {
@@ -19,16 +19,28 @@
               {
                 "textRuns": [
                   {
-                    "value": "watch, within 5%",
+                    "value": "Financial ratios vs target · hospital comparison",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI",
+                      "fontSize": "13pt",
+                      "fontWeight": "bold",
+                      "color": "#0A1E32"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "Actual is shaded by status against target. vs Bud and vs LY are the change against budget and last year. Status counts are for all hospitals.",
                     "textStyle": {
                       "fontFamily": "Segoe UI",
                       "fontSize": "10pt",
-                      "fontWeight": "bold",
-                      "color": "#5C3F00"
+                      "fontWeight": "normal",
+                      "color": "#4D5B6B"
                     }
                   }
-                ],
-                "horizontalTextAlignment": "right"
+                ]
               }
             ]
           }
@@ -55,25 +67,7 @@
             "show": {
               "expr": {
                 "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
-            "color": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Literal": {
-                      "Value": "'#FFDF8A'"
-                    }
-                  }
-                }
-              }
-            },
-            "transparency": {
-              "expr": {
-                "Literal": {
-                  "Value": "0D"
+                  "Value": "false"
                 }
               }
             }

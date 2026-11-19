@@ -1,5 +1,6 @@
-"""The Finance report's frame: on every page, four tabs, view buttons to the twin pages, the Hospital slicer on the
-monthly pages only, the hospitals page filter locked, the fields in the `Finance Report` perspective."""
+"""The Finance report's frame: on every page, seven tabs, view buttons to the twin pages, drop-down slicers (the
+Hospital slicer on Home and the monthly pages only), the hospitals page filter locked, every page but Home hidden, the
+fields in the `Finance Report` perspective."""
 import importlib.util
 import json
 import sys
@@ -26,9 +27,11 @@ def _fin_pages():
 PAGES, REPORT_FILTERS = _fin_pages().PAGES, _fin_pages().REPORT_FILTERS
 BRANCH_NAME = col("Branch", "Branch Name")
 BRANCH_KEY = col("Branch", "Branch Key")
-ORDER = ["tb_monthly", "tb_hospitals", "is_monthly", "is_hospitals", "bs_monthly", "bs_hospitals", "kpi_monthly",
-         "kpi_hospitals"]
+STATEMENT_ORDER = ["tb_monthly", "tb_hospitals", "is_monthly", "is_hospitals", "bs_monthly", "bs_hospitals",
+                   "kpi_monthly", "kpi_hospitals"]
+ORDER = ["home", *STATEMENT_ORDER, "guide", "definitions"]
 MONTHLY = [n for n in ORDER if n.endswith("monthly")]
+WITH_FILTER_BAR = ["home", *STATEMENT_ORDER]
 
 
 def lit(prop):
@@ -42,20 +45,39 @@ def nav_target(v):
 
 def test_specs_and_page_order():
     assert FIN_FRAME.title == "Finance Report" and FIN_FRAME.subtitle == "Hayat Healthcare" and FIN_FRAME.help == []
-    assert TABS == [("tb_monthly", "Trial Balance"), ("is_monthly", "Income Statement"),
-                    ("bs_monthly", "Balance Sheet"), ("kpi_monthly", "KPIs & Ratios")]
+    assert TABS == [("home", "Home"), ("tb_monthly", "Trial Balance"), ("is_monthly", "Income Statement"),
+                    ("bs_monthly", "Balance Sheet"), ("kpi_monthly", "KPIs & Ratios"), ("guide", "How to use"),
+                    ("definitions", "Definitions")]
     assert FIN_REPORT.name == "HNH Finance" and FIN_REPORT.perspective == "Finance Report"
     assert [p.name for p in PAGES] == ORDER
     assert PAGE_NAMES["tb"] == ("tb_monthly", "tb_hospitals")
-    assert [p.display for p in PAGES][:2] == ["Trial Balance", "Trial Balance · Hospitals"]
+    assert [p.display for p in PAGES][:3] == ["Home", "Trial Balance", "Trial Balance · Hospitals"]
 
 
-def test_every_page_has_the_frame_and_four_tabs():
+def test_only_home_is_visible():
+    # user request 2026-11-19: navigation only through the tabs and buttons; the report opens on Home (first page)
+    assert [p.name for p in PAGES if not p.hidden] == ["home"] and PAGES[0].name == "home"
+
+
+def test_every_page_has_the_frame_and_seven_tabs():
     for p in PAGES:
         tab_targets = [nav_target(v) for v in p.visuals if nav_target(v) in dict(TABS)]
-        assert [t for t in tab_targets if t in dict(TABS)][:4] == [n for n, _ in TABS], p.name
+        assert tab_targets[:7] == [n for n, _ in TABS], p.name
         assert any(v.sample == "image" for v in p.visuals)
-        assert any(v.roles.get("Values") == [meas("FR Period Text")] for v in p.visuals), p.name
+        has_period = any(v.roles.get("Values") == [meas("FR Period Text")] for v in p.visuals)
+        assert has_period == (p.name in WITH_FILTER_BAR), p.name
+
+
+def test_slicers_are_drop_downs():
+    for p in PAGES:
+        slicers = [v for v in p.visuals if v.sample.startswith("slicer")]
+        assert all(v.sample == "slicerDropdown" for v in slicers), p.name
+        assert (len(slicers) >= 2) == (p.name in WITH_FILTER_BAR), p.name
+
+
+def test_every_page_is_reachable_by_a_button():
+    targets = {nav_target(v) for p in PAGES for v in p.visuals if v.sample == "buttonNavigate"}
+    assert {p.name for p in PAGES} <= targets
 
 
 def test_view_buttons_link_the_twin_pages():
@@ -73,10 +95,10 @@ def test_view_buttons_link_the_twin_pages():
 def test_hospital_slicer_only_on_monthly_pages():
     for p in PAGES:
         has = any(v.sample.startswith("slicer") and BRANCH_NAME in v.roles.get("Values", []) for v in p.visuals)
-        assert has == (p.name in MONTHLY), p.name
-        has_text = any(v.sample == "textbox" and "All eight, side by side with the total" in repr(v.props)
+        assert has == (p.name in MONTHLY or p.name == "home"), p.name
+        has_text = any(v.sample == "textbox" and "All eight hospitals, side by side with the total" in repr(v.props)
                        for v in p.visuals)
-        assert has_text == (p.name not in MONTHLY), p.name
+        assert has_text == (p.name in STATEMENT_ORDER and p.name not in MONTHLY), p.name
 
 
 def test_year_and_month_slicers():

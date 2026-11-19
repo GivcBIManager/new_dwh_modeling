@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
   "name": "a203847dd1076e4a9962",
   "position": {
-    "x": 1530.0,
+    "x": 1006.5,
     "y": 0,
     "z": 5000,
     "height": 80,
-    "width": 178.5,
+    "width": 210.0,
     "tabOrder": 5000
   },
   "visual": {
@@ -29,7 +29,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Balance Sheet'"
+                  "Value": "'Income Statement'"
                 }
               }
             },
@@ -118,7 +118,7 @@
             "navigationSection": {
               "expr": {
                 "Literal": {
-                  "Value": "'bs_monthly'"
+                  "Value": "'is_monthly'"
                 }
               }
             }
